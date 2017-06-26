@@ -52,6 +52,18 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Elastic\Driver\Impl\Constants.cs" />
+    <Compile Include="Elastic\Driver\ITaskSetStatusView.cs" />
+    <Compile Include="Elastic\Operators\IElasticOperator.cs" />
+    <Compile Include="Elastic\Driver\IElasticTaskSetSubscriptionDriver.cs" />
+    <Compile Include="Elastic\Driver\IElasticTaskSetServiceDriver.cs" />
+    <Compile Include="Elastic\Operators\IBroadcastReceiver.cs" />
+    <Compile Include="Elastic\Operators\IBroadcastSender.cs" />
+    <Compile Include="Elastic\Operators\IIterator.cs" />
+    <Compile Include="Elastic\Operators\IReduceReceiver.cs" />
+    <Compile Include="Elastic\Operators\IReduceSender.cs" />
+    <Compile Include="Elastic\Operators\IScatterReceiver.cs" />
+    <Compile Include="Elastic\Operators\IScatterSender.cs" />
     <Compile Include="Group\Config\CodecToStreamingCodecConfiguration.cs" />
     <Compile Include="Group\Config\StreamingCodecConfigurationMinusMessage.cs" />
     <Compile Include="Group\Driver\Impl\GeneralGroupCommunicationMessage.cs" />
@@ -190,6 +202,7 @@ under the License.
       <Name>Org.Apache.REEF.Wake</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Import Project="$(PackagesDir)\StyleCop.MSBuild.$(StyleCopVersion)\build\StyleCop.MSBuild.Targets" Condition="Exists('$(PackagesDir)\StyleCop.MSBuild.$(StyleCopVersion)\build\StyleCop.MSBuild.Targets')" />
