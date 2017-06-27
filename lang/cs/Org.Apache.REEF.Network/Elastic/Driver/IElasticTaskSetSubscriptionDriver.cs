@@ -15,8 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using System;
 using Org.Apache.REEF.Driver.Evaluator;
@@ -29,29 +27,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// All operators in the same Communication Group run on the the 
     /// same set of tasks.
     /// </summary>
-    public interface IElasticTaskSetSubscriptionDriver : ITaskSetStatusView, IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    public interface IElasticTaskSetSubscriptionDriver : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
     {
-        /// <summary>
-        /// Returns the list of task ids that belong to this Communication Group
-        /// </summary>
-        IList<string> TaskSet { get; }
-
-        IElasticTaskSetSubscriptionDriver Next { get; }
-
-        IElasticTaskSetSubscriptionDriver Prev { get; }
-
         /// <summary>
         /// Create a new CommunicationGroup with the given name and number of tasks/operators. 
         /// </summary>
         /// <param name="taskSetName">The new group name</param>
         /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscriptionDriver NewTaskSetSubscription(string taskSetName);
-
-        /// <summary>
-        /// Create a new CommunicationGroup with the given name and number of tasks/operators. 
-        /// </summary>
-        /// <returns>The new task set subscription</returns>
-        IElasticOperator getRootOperator();
+        IElasticTaskSetSubscriptionDriver NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscriptionDriver prev);
 
         /// <summary>
         /// Finalizes the CommunicationGroupDriver.
@@ -74,6 +57,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
         /// <returns>The Task Configuration for this communication group</returns>
-        IConfiguration GetGroupTaskConfiguration(string taskId);
+        IConfiguration GetElasticTaskConfiguration(string taskId);
     }
 }

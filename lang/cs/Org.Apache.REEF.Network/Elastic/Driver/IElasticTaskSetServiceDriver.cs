@@ -27,23 +27,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// Used to create Communication Groups for Group Communication Operators.
     /// Also manages configuration for Group Communication tasks/services.
     /// </summary>
-    public interface IElasticTaskSetServiceDriver: ITaskSetStatusView, IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    public interface IElasticTaskSetServiceDriver: IObserver<IFailedEvaluator>, IObserver<IFailedTask>
     {
-        IElasticTaskSetSubscriptionDriver DefaultTaskSetSubscription { get; }
+        IElasticTaskSetSubscriptionDriver DefaultElasticTaskSetSubscription { get; }
 
         /// <summary>
         /// Create a new CommunicationGroup with the given name and number of tasks/operators. 
         /// </summary>
         /// <param name="taskSetName">The new group name</param>
         /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscriptionDriver NewTaskSetSubscription(string taskSetName);
+        IElasticTaskSetSubscriptionDriver NewElasticTaskSetSubscription(string taskSetName);
 
         /// <summary>
         /// remove a communication group
         /// Throw ArgumentException if the group does not exist
         /// </summary>
         /// <param name="groupName"></param>
-        void RemoveTaskSetSubscription(string taskSetName);
+        void RemoveElasticTaskSetSubscription(string taskSetName);
 
         /// <summary>
         /// Generates context configuration with a unique identifier.

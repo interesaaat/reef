@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using System;
@@ -27,11 +28,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// Used to create Communication Groups for Group Communication Operators.
     /// Also manages configuration for Group Communication tasks/services.
     /// </summary>
-    public interface IElasticOperator : ITaskSetStatusView, IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    public interface IElasticOperator : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
     {
-        IElasticOperator Next { get; }
+        void AddTask(string taskId);
 
-        IElasticOperator Prev { get; }
+        void GetElasticTaskConfiguration(out ICsConfigurationBuilder confBuilder);
 
         /// <summary>
         /// Adds the Broadcast Group Communication operator to the communication group.
@@ -83,6 +84,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <returns>The same CommunicationGroupDriver with the added Scatter operator info</returns>
         IElasticOperator Iterate<T>(String operatorName, System.Delegate condition, params IConfiguration[] configurations);
 
-        void ensurePolicy(PolicyLevel level = PolicyLevel.IGNORE);
+        void EnsurePolicy(int level = (int)PolicyLevel.IGNORE);
+
+        void Reset();
     }
 }
