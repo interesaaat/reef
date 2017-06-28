@@ -15,23 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
-
-namespace Org.Apache.REEF.Network.Elastic.Operators
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
     /// <summary>
     /// Group Communication operator used to receive and reduce messages.
     /// </summary>
     /// <typeparam name="T">The message type</typeparam>
-    public interface IReduceReceiver<T>
+    public interface IElasticBroadcast<T>
     {
-        /// <summary>
-        /// Receives messages sent by all ReduceSenders and aggregates them
-        /// using the specified IReduceFunction.
-        /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        /// <returns>The single aggregated data</returns>
-        //// TODO : REEF-1489 to remove null
-        T Reduce(CancellationTokenSource cancellationSource = null);
     }
 }

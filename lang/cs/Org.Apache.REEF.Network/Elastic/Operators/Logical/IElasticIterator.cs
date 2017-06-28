@@ -15,18 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Operators
+using System.Collections.Generic;
+
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
-    /// <summary>
-    /// Group Communication Operator used to send messages to child Tasks.
-    /// </summary>
-    /// <typeparam name="T">The message type</typeparam>
-    public interface IBroadcastSender<T>
+    public interface IElasticIterator<T> : IEnumerator<T>
     {
-        /// <summary>
-        /// Send the data to all BroadcastReceivers.
-        /// </summary>
-        /// <param name="data">The data to send.</param>
-        void Send(T data);
     }
 }

@@ -15,22 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.Policy
+namespace Org.Apache.REEF.Network.Elastic.Physical.Operators
 {
-    public enum PolicyLevel
+    /// <summary>
+    /// Group Communication Operator used to send messages to child Tasks.
+    /// </summary>
+    /// <typeparam name="T">The message type</typeparam>
+    public interface ISender<T>
     {
-        IGNORE,
-
-        STOP_OPERATOR_AND_RESUBMIT,
-
-        STOP_OPERATOR_AND_RECOMPUTE,
-
-        STOP_SUBSCRIPTION_AND_RESUBMIT,
-
-        STOP_SUBSCRIPTION_AND_RECOMPUTE,
-
-        STOP_THE_WORLD_AND_RESUBMIT,
-
-        STOP_THE_WORLD_AND_RECOMPUTE
+        /// <summary>
+        /// Send the data to all BroadcastReceivers.
+        /// </summary>
+        /// <param name="data">The data to send.</param>
+        void Send(T data);
     }
 }

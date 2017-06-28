@@ -16,9 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Tang.Interface;
-using System;
-using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -27,14 +25,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// All operators in the same Communication Group run on the the 
     /// same set of tasks.
     /// </summary>
-    public interface IElasticTaskSetSubscriptionDriver : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    public interface IElasticTaskSetSubscription
     {
         /// <summary>
         /// Create a new CommunicationGroup with the given name and number of tasks/operators. 
         /// </summary>
         /// <param name="taskSetName">The new group name</param>
         /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscriptionDriver NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscriptionDriver prev);
+        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscription prev);
 
         /// <summary>
         /// Finalizes the CommunicationGroupDriver.
@@ -42,8 +40,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// be added to the group.
         /// </summary>
         /// <returns>The same finalized CommunicationGroupDriver</returns>
-        IElasticTaskSetSubscriptionDriver Build();
+        IElasticTaskSetSubscription Build();
 
+        IElasticTaskSetService GetElasticService { get; }
+ 
+        ElasticOperator GetRootOperator { get; }
+ 
         /// <summary>
         /// Add a task to the communication group.
         /// The CommunicationGroupDriver must have called Build() before adding tasks to the group.

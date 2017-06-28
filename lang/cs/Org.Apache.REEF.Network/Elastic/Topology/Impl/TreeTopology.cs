@@ -15,22 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.Policy
+using System;
+using Org.Apache.REEF.Network.Group.Operators;
+using Org.Apache.REEF.Tang.Interface;
+
+namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
-    public enum PolicyLevel
+    class TreeTopology : ITopology
     {
-        IGNORE,
+        public TreeTopology()
+        {
 
-        STOP_OPERATOR_AND_RESUBMIT,
+        }
+    
+        public IOperatorSpec OperatorSpec => throw new NotImplementedException();
 
-        STOP_OPERATOR_AND_RECOMPUTE,
+        public void AddTask(string taskId)
+        {
+            throw new NotImplementedException();
+        }
 
-        STOP_SUBSCRIPTION_AND_RESUBMIT,
-
-        STOP_SUBSCRIPTION_AND_RECOMPUTE,
-
-        STOP_THE_WORLD_AND_RESUBMIT,
-
-        STOP_THE_WORLD_AND_RECOMPUTE
+        public IConfiguration GetTaskConfiguration(string taskId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

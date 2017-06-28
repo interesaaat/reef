@@ -15,23 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
-using System.Threading;
-
-namespace Org.Apache.REEF.Network.Elastic.Operators
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
     /// <summary>
-    /// Group Communication operator used to receive a sublist of messages sent
-    /// from the IScatterSender.
+    /// Group Communication Operator used to send messages to be reduced by the ReduceReceiver.
     /// </summary>
     /// <typeparam name="T">The message type</typeparam>
-    public interface IScatterReceiver<T>
+    public interface IElasticReduce<T>
     {
-        /// <summary>
-        /// Receive a sublist of messages sent from the IScatterSender.
-        /// </summary>
-        /// <returns>The sublist of messages</returns>
-        //// TODO : REEF-1489 to remove null
-        List<T> Receive(CancellationTokenSource cancellationSource = null);
     }
 }

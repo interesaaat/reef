@@ -17,7 +17,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Reflection;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Group.Config;
@@ -28,7 +27,7 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
-using System.Collections;
+using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -37,22 +36,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// All operators in the same Communication Group run on the the 
     /// same set of tasks.
     /// </summary>
-    public sealed class ElasticTaskSetSubscriptionDriver : IElasticTaskSetSubscriptionDriver
+    public sealed class ElasticTaskSetSubscription : FailureResponse, IElasticTaskSetSubscription
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticTaskSetSubscriptionDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticTaskSetSubscription));
 
         private readonly string _subscriptionName;
-        private readonly string _driverId;
         private int _tasksAdded;
         private bool _finalized;
         private readonly AvroConfigurationSerializer _confSerializer;
+        private readonly IElasticTaskSetService _elasticService;
 
         private readonly Dictionary<string, TaskSetStatus> _taskSet;
         private TaskSetStatus _status;
-        private readonly IElasticTaskSetSubscriptionDriver _prev;
-        private readonly Dictionary<string, IElasticTaskSetSubscriptionDriver> _next;
-        private readonly object _taskSetLock;
-        private readonly object _statusLock;
+        private readonly IElasticTaskSetSubscription _prev;
+        private readonly Dictionary<string, IElasticTaskSetSubscription> _next;
+        private ElasticOperator _root;
+        private readonly object _taskSetLock = new object();
+        private readonly object _statusLock = new object ();
 
         /// <summary>
         /// Create a new CommunicationGroupDriver.
@@ -62,10 +62,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="numTasks">The number of tasks each operator will use</param>
         /// <param name="fanOut"></param>
         /// <param name="confSerializer">Used to serialize task configuration</param>
-        public ElasticTaskSetSubscriptionDriver(
+        public ElasticTaskSetSubscription(
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
-            IElasticTaskSetSubscriptionDriver prev = null)
+            IElasticTaskSetSubscription prev = null,
+            IElasticTaskSetService elasticService = null)
         {
             _confSerializer = confSerializer;
             _subscriptionName = subscriptionName;
@@ -73,14 +74,24 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _finalized = false;
             _status = TaskSetStatus.WAITING;
             _prev = prev;
+            _root = new ElasticEmpty();
+            _elasticService = elasticService;
 
             _taskSet = new Dictionary<string, TaskSetStatus>();
-            _next = new Dictionary<string, IElasticTaskSetSubscriptionDriver>();
+            _next = new Dictionary<string, IElasticTaskSetSubscription>();
         }
 
-        public IElasticTaskSetSubscriptionDriver NewElasticTaskSetSubscription(string subscriptiontName, IElasticTaskSetSubscriptionDriver prev)
+        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptiontName, IElasticTaskSetSubscription prev)
         {
-            var next = new ElasticTaskSetSubscriptionDriver(subscriptiontName, _confSerializer, this);
+            if(_next.ContainsKey(subscriptiontName))
+            {
+                throw new ArgumentException(
+                       "Subscription Name already present");
+            }
+
+            var next = new ElasticTaskSetSubscription(subscriptiontName, _confSerializer, this);
+            _next[subscriptiontName] = next;
+ 
             return next;
         }
 
@@ -104,7 +115,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _taskSet[taskId] = TaskSetStatus.WAITING;
             }
 
-            getRootOperator().AddTask(taskId);
+            GetRootOperator.AddTask(taskId);
         }
 
         /// <summary>
@@ -123,49 +134,66 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             var confBuilder = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
                     GenericType<GroupCommConfigurationOptions.DriverId>.Class,
-                    _driverId)
+                    GetElasticService.GetDriverId)
                 .BindNamedParameter<GroupCommConfigurationOptions.CommunicationGroupName, string>(
                     GenericType<GroupCommConfigurationOptions.CommunicationGroupName>.Class,
                     _subscriptionName);
 
-            getRootOperator().GetElasticTaskConfiguration(out confBuilder);
+            GetRootOperator.GetElasticTaskConfiguration(out confBuilder);
 
             return confBuilder.Build();
         }
 
-        public IElasticOperator getRootOperator()
+        public IElasticTaskSetService GetElasticService
         {
-            throw new NotImplementedException();
+            get
+            {
+                if(_elasticService == null)
+                {
+                    if(_prev == null)
+                    {
+                        throw new IllegalStateException("No Elastic Service was set");
+                    }
+
+                    return _prev.GetElasticService;
+                }
+
+                return _elasticService;
+            }
         }
 
-        IElasticTaskSetSubscriptionDriver IElasticTaskSetSubscriptionDriver.Build()
+        public ElasticOperator GetRootOperator
         {
-            throw new NotImplementedException();
+            get
+            {
+                return _root;
+            }
         }
 
-        public void Reset()
-        {
-            throw new NotImplementedException();
+       public IElasticTaskSetSubscription Build()
+       {
+            _finalized = true;
+            foreach (var next in _next.Values)
+            {
+                next.Build();
+            }
+            return this;
         }
 
-        public void OnNext(IFailedEvaluator value)
+        public new void OnNext(IFailedEvaluator value)
         {
-            throw new NotImplementedException();
+            lock (_statusLock)
+            {
+                _status = TaskSetStatus.RUNNING;
+            }
         }
 
-        public void OnError(Exception error)
+        public new void OnNext(IFailedTask value)
         {
-            throw new NotImplementedException();
-        }
-
-        public void OnCompleted()
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnNext(IFailedTask value)
-        {
-            throw new NotImplementedException();
+            lock (_statusLock)
+            {
+                _status = TaskSetStatus.RUNNING;
+            }
         }
     }
 }

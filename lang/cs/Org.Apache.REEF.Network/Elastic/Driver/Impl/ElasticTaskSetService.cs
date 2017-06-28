@@ -46,9 +46,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// Used to create Communication Groups for Group Communication Operators on the Reef driver.
     /// Also manages configuration for Group Communication tasks/services.
     /// </summary>
-    public sealed class ElasticTaskSetServiceDriver : IElasticTaskSetServiceDriver
+    public sealed class ElasticTaskSetService : FailureResponse, IElasticTaskSetService
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(ElasticTaskSetServiceDriver));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(ElasticTaskSetService));
 
         private readonly string _driverId;
         private readonly string _nameServerAddr;
@@ -56,7 +56,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _contextIds;
         private readonly string _defaultSubscriptionName;
 
-        private readonly Dictionary<string, IElasticTaskSetSubscriptionDriver> _subscriptions;
+        private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private TaskSetStatus _status;
         private readonly AvroConfigurationSerializer _configSerializer;
         private readonly object _subsLock = new object();
@@ -69,7 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="defaultSubscriptionName">default communication group name</param>
         /// <param name="nameServer">Used to map names to ip addresses</param>
         [Inject]
-        private ElasticTaskSetServiceDriver(
+        private ElasticTaskSetService(
             [Parameter(typeof(GroupCommConfigurationOptions.DriverId))] string driverId,
             [Parameter(typeof(GroupCommConfigurationOptions.GroupName))] string defaultSubscriptionName,
             AvroConfigurationSerializer configSerializer,
@@ -81,20 +81,20 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _status = TaskSetStatus.WAITING;
 
             _configSerializer = configSerializer;
-            _subscriptions = new Dictionary<string, IElasticTaskSetSubscriptionDriver>();
+            _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 
             IPEndPoint localEndpoint = nameServer.LocalEndpoint;
             _nameServerAddr = localEndpoint.Address.ToString();
             _nameServerPort = localEndpoint.Port;
         }
  
-        public IElasticTaskSetSubscriptionDriver DefaultElasticTaskSetSubscription
+        public IElasticTaskSetSubscription DefaultElasticTaskSetSubscription
         {
             get
             {
                 lock (_subsLock)
                 {
-                    IElasticTaskSetSubscriptionDriver defaultSubscription;
+                    IElasticTaskSetSubscription defaultSubscription;
                     _subscriptions.TryGetValue(_defaultSubscriptionName, out defaultSubscription);
 
                     if (defaultSubscription == null)
@@ -112,7 +112,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="groupName">The new group name</param>
         /// <param name="numTasks">The number of tasks/operators in the group.</param>
         /// <returns>The new Communication Group</returns>
-        public IElasticTaskSetSubscriptionDriver NewElasticTaskSetSubscription(string subscriptionName)
+        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptionName)
         {
             if (string.IsNullOrEmpty(subscriptionName))
             {
@@ -127,7 +127,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         "Subscription Name already registered with TaskSetSubscriptionDriver");
                 }
 
-                var subscription = new ElasticTaskSetSubscriptionDriver(
+                var subscription = new ElasticTaskSetSubscription(
                     subscriptionName,
                     _configSerializer);
                 _subscriptions[subscriptionName] = subscription;
@@ -209,7 +209,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             var confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
-            foreach (IElasticTaskSetSubscriptionDriver sub in _subscriptions.Values)
+            foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
             {
                 var taskConf = sub.GetElasticTaskConfiguration(taskId);
                 if (taskConf != null)
@@ -239,29 +239,33 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return int.Parse(parts[1], CultureInfo.InvariantCulture);
         }
 
+        public string GetDriverId
+        {
+            get
+            {
+                return _driverId;
+            }
+        }
+
         private string GetTaskContextName(int contextNum)
         {
             return string.Format(CultureInfo.InvariantCulture, "TaskContext-{0}", contextNum);
         }
- 
-        public void OnNext(IFailedEvaluator value)
+
+        public new void OnNext(IFailedEvaluator value)
         {
-            throw new NotImplementedException();
+            lock (_statusLock)
+            {
+                _status = TaskSetStatus.RUNNING;
+            }
         }
 
-        public void OnError(Exception error)
+        public new void OnNext(IFailedTask value)
         {
-            throw new NotImplementedException();
-        }
-
-        public void OnNext(IFailedTask value)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnCompleted()
-        {
-            throw new NotImplementedException();
+            lock (_statusLock)
+            {
+                _status = TaskSetStatus.RUNNING;
+            }
         }
     }
 }

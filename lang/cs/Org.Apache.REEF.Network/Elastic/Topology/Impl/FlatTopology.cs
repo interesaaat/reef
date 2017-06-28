@@ -15,22 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
+using System;
+using Org.Apache.REEF.Network.Group.Operators;
+using Org.Apache.REEF.Tang.Interface;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators
+namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
-    /// <summary>
-    /// Group Communication Operator used to send messages to be reduced by the ReduceReceiver.
-    /// </summary>
-    /// <typeparam name="T">The message type</typeparam>
-    public interface IReduceSender<T>
+    class FlatTopology : ITopology
     {
-        /// <summary>
-        /// Get reduced data from children, reduce with the data given, then sends reduced data to parent
-        /// </summary>
-        /// <param name="data">The data to send</param>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        //// TODO : REEF-1489 to remove null
-        void Send(T data, CancellationTokenSource cancellationSource = null);
+        public FlatTopology()
+        {
+
+        }
+
+        public IOperatorSpec OperatorSpec => throw new NotImplementedException();
+
+        public void AddTask(string taskId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IConfiguration GetTaskConfiguration(string taskId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

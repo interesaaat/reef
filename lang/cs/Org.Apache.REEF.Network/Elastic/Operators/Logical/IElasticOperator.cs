@@ -17,22 +17,28 @@
 
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using System;
 
-namespace Org.Apache.REEF.Network.Elastic.Driver
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
     /// <summary>
     /// Used to create Communication Groups for Group Communication Operators.
     /// Also manages configuration for Group Communication tasks/services.
     /// </summary>
-    public interface IElasticOperator : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    [System.Obsolete]
+    public interface IElasticOperator
     {
         void AddTask(string taskId);
 
         void GetElasticTaskConfiguration(out ICsConfigurationBuilder confBuilder);
+
+        void EnsurePolicy(PolicyLevel level);
+    
+        void Reset();
 
         /// <summary>
         /// Adds the Broadcast Group Communication operator to the communication group.
@@ -43,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="senderTaskId">The master task id in broadcast operator</param>
         /// <param name="topologyType">The topology type for the operator</param>
         /// <returns>The same CommunicationGroupDriver with the added Broadcast operator info</returns>
-        IElasticOperator Broadcast<T>(String operatorName, string masterTaskId, TopologyTypes topologyType, params IConfiguration[] configurations);
+        IElasticOperator Broadcast<T>(String operatorName, string senderTaskId, IElasticOperator prev, TopologyTypes topologyType, params IConfiguration[] configurations);
 
         /// <summary>
         /// Adds the Broadcast Group Communication operator to the communication group. Default to IntCodec
@@ -52,7 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="senderTaskId">The master task id in broadcast operator</param>
         /// <param name="topologyType">The topology type for the operator</param>
         /// <returns>The same CommunicationGroupDriver with the added Broadcast operator info</returns>
-        IElasticOperator Broadcast(String operatorName, string masterTaskId, TopologyTypes topologyType = TopologyTypes.Flat);
+        IElasticOperator Broadcast(String operatorName, string senderTaskId, IElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat);
 
         /// <summary>
         /// Adds the Reduce Group Communication operator to the communication group.
@@ -63,7 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="receiverTaskId">The master task id for the typology</param>
         /// <param name="topologyType">The topology for the operator</param>
         /// <returns>The same CommunicationGroupDriver with the added Reduce operator info</returns>
-        IElasticOperator Reduce<T>(String operatorName, string receiverTaskId, TopologyTypes topologyType, params IConfiguration[] configurations);
+        IElasticOperator Reduce<T>(String operatorName, string receiverTaskId, IElasticOperator prev, TopologyTypes topologyType, params IConfiguration[] configurations);
 
         /// <summary>
         /// Adds the Scatter Group Communication operator to the communication group with default Codec
@@ -72,7 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="senderTaskId">The sender id</param>
         /// <param name="topologyType">type of topology used in the operator</param>
         /// <returns>The same CommunicationGroupDriver with the added Scatter operator info</returns>
-        IElasticOperator Scatter(String operatorName, string senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat);
+        IElasticOperator Scatter(String operatorName, string senderTaskId, IElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat);
 
         /// <summary>
         /// Adds the Scatter Group Communication operator to the communication group.
@@ -82,10 +88,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="condition">The sender id</param>
         /// <param name="configurations">The configuration for task</param>
         /// <returns>The same CommunicationGroupDriver with the added Scatter operator info</returns>
-        IElasticOperator Iterate<T>(String operatorName, System.Delegate condition, params IConfiguration[] configurations);
-
-        void EnsurePolicy(int level = (int)PolicyLevel.IGNORE);
-
-        void Reset();
+        IElasticOperator Iterate<T>(String operatorName, System.Delegate condition, IElasticOperator prev, params IConfiguration[] configurations);
     }
 }

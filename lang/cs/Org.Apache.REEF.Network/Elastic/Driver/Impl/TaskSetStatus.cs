@@ -17,7 +17,7 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.TaskSet
 {
-    internal enum TaskSetStatus
+    public enum TaskSetStatus
     {
         WAITING,
 

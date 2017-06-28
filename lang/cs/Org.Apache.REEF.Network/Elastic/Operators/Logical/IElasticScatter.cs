@@ -15,21 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
-
-namespace Org.Apache.REEF.Network.Elastic.Operators
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Group Communication operator used to receive a sublist of messages sent
+    /// from the IScatterSender.
     /// </summary>
-    /// <typeparam name="T">The type of message being sent.</typeparam>
-    public interface IBroadcastReceiver<T>
+    /// <typeparam name="T">The message type</typeparam>
+    public interface IElasticScatter<T>
     {
-        /// <summary>
-        /// Receive a message from parent BroadcastSender.
-        /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        /// <returns>The incoming message</returns>
-        T Receive(CancellationTokenSource cancellationSource = null);
     }
 }
