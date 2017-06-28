@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly Dictionary<string, IElasticTaskSetSubscription> _next;
         private ElasticOperator _root;
         private readonly object _taskSetLock = new object();
-        private readonly object _statusLock = new object ();
+        private readonly object _statusLock = new object();
 
         /// <summary>
         /// Create a new CommunicationGroupDriver.
@@ -83,7 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptiontName, IElasticTaskSetSubscription prev)
         {
-            if(_next.ContainsKey(subscriptiontName))
+            if (_next.ContainsKey(subscriptiontName))
             {
                 throw new ArgumentException(
                        "Subscription Name already present");
@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             lock (_taskSetLock)
             {
-                if(_taskSet.ContainsKey(taskId))
+                if (_taskSet.ContainsKey(taskId))
                 {
                     throw new ArgumentException(
                        "Task Id already registered with TaskSet");
@@ -148,9 +148,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             get
             {
-                if(_elasticService == null)
+                if (_elasticService == null)
                 {
-                    if(_prev == null)
+                    if (_prev == null)
                     {
                         throw new IllegalStateException("No Elastic Service was set");
                     }
@@ -184,7 +184,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _status = TaskSetStatus.RUNNING;
+                if (_status == TaskSetStatus.RUNNING)
+                {
+                    _status = TaskSetStatus.RUNNING;
+                }
             }
         }
 

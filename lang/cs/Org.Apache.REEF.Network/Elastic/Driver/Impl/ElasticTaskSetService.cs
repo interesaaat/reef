@@ -256,7 +256,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _status = TaskSetStatus.RUNNING;
+                if (_status == TaskSetStatus.RUNNING)
+                {
+                    _status = TaskSetStatus.RUNNING;
+                }
             }
         }
 

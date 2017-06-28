@@ -13,12 +13,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     class ElasticBroadcast : ElasticOperator
     {
-        //private string _senderId;
-
+        // private string _senderId;
         public ElasticBroadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel)
         {
             _prev = prev;
-            _topology = topologyType == TopologyTypes.Flat ? (ITopology) new FlatTopology() : (ITopology) new TreeTopology();
+            _topology = topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
         }
     }

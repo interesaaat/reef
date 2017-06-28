@@ -25,10 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
     {
         public TreeTopology()
         {
-
         }
-    
-        public IOperatorSpec OperatorSpec => throw new NotImplementedException();
 
         public void AddTask(string taskId)
         {
