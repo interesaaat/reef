@@ -94,8 +94,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 lock (_subsLock)
                 {
-                    IElasticTaskSetSubscription defaultSubscription;
-                    _subscriptions.TryGetValue(_defaultSubscriptionName, out defaultSubscription);
+                    _subscriptions.TryGetValue(_defaultSubscriptionName, out IElasticTaskSetSubscription defaultSubscription);
 
                     if (defaultSubscription == null)
                     {

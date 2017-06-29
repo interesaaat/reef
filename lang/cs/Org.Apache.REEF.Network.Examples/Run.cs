@@ -16,10 +16,9 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Network.Examples.GroupCommunication;
 using Org.Apache.REEF.Network.Examples.Elastic.Broadcast;
 
-namespace Org.Apache.REEF.Network.Examples.Client
+namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     public class Run
     {
@@ -30,7 +29,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 9;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "RunBroadcastAndReduce";
+            string testToRun = "RunElasticBroadcast";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -61,26 +60,10 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 }
             }
 
-            if (testToRun.Equals("RunPipelineBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
-            {
-                int arraySize = GroupTestConstants.ArrayLength;
-                int chunkSize = GroupTestConstants.ChunkSize;
-
-                if (args.Length > 5)
-                {
-                    arraySize = int.Parse(args[5]);
-                    chunkSize = int.Parse(args[6]);
-                }
-
-                new PipelineBroadcastAndReduceClient().RunPipelineBroadcastAndReduce(runOnYarn, numNodes, startPort,
-                    portRange, arraySize, chunkSize);
-                Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
-            }
-
-            if (testToRun.Equals("RunBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
+            if (testToRun.Equals("RunElasticBroadcast".ToLower()) || testToRun.Equals("all"))
             {
                 new ElasticBroadcastClient().RunElasticBroadcast(runOnYarn, numNodes, startPort, portRange);
-                Console.WriteLine("RunBroadcastAndReduce completed!!!");
+                Console.WriteLine("RunBroadcast completed!!!");
             }           
         }
     }

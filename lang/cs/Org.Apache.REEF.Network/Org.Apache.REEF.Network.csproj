@@ -53,12 +53,19 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Elastic\Config\CodecConfiguration.cs" />
+    <Compile Include="Elastic\Config\CodecToStreamingCodecConfiguration.cs" />
+    <Compile Include="Elastic\Config\ElasticConfig.cs" />
+    <Compile Include="Elastic\Config\GroupCommConfigurationOptions.cs" />
+    <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />
+    <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
+    <Compile Include="Elastic\Config\StreamingCodecConfiguration.cs" />
+    <Compile Include="Elastic\Config\StreamingCodecConfigurationMinusMessage.cs" />
     <Compile Include="Elastic\Driver\Impl\TaskSetStatus.cs" />
     <Compile Include="Elastic\Driver\Impl\ElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\Impl\ElasticTaskSetService.cs" />
     <Compile Include="Elastic\Driver\Impl\PolicyLevel.cs" />
     <Compile Include="Elastic\Driver\FailureResponse.cs" />
-    <Compile Include="Elastic\Driver\ITaskSetStatusView.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticOperator.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetService.cs" />

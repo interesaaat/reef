@@ -34,6 +34,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <returns>The new task set subscription</returns>
         IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscription prev);
 
+        string GetSubscriptionName { get; }
+
         /// <summary>
         /// Finalizes the CommunicationGroupDriver.
         /// After the CommunicationGroupDriver has been finalized, no more operators may

@@ -74,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _finalized = false;
             _status = TaskSetStatus.WAITING;
             _prev = prev;
-            _root = new ElasticEmpty();
+            _root = new ElasticEmpty(this);
             _elasticService = elasticService;
 
             _taskSet = new Dictionary<string, TaskSetStatus>();
@@ -91,8 +91,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             var next = new ElasticTaskSetSubscription(subscriptiontName, _confSerializer, this);
             _next[subscriptiontName] = next;
- 
+
             return next;
+        }
+
+        public string GetSubscriptionName
+        {
+            get
+            {
+                return _subscriptionName;
+            }
         }
 
         public void AddTask(string taskId)
@@ -172,7 +180,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
        public IElasticTaskSetSubscription Build()
        {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("Subscription cannot be built more than once");
+            }
+
             _finalized = true;
+
             foreach (var next in _next.Values)
             {
                 next.Build();
