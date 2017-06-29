@@ -31,8 +31,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         public ElasticEmpty(IElasticTaskSetSubscription subscription)
         {
-            _policy = PolicyLevel.IGNORE;
+            _policy = PolicyLevel.Ignore;
             _subscription = subscription;
+        }
+
+        public override void OnStopAndRecompute()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void OnStopAndResubmit()
+        {
+            throw new NotImplementedException();
         }
     }
 }

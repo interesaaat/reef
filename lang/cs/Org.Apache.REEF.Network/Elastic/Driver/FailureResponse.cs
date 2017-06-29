@@ -21,17 +21,16 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
-    public class FailureResponse : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    public abstract class FailureResponse : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
     {
-        public void OnNext(IFailedEvaluator value)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void OnNext(IFailedEvaluator value);
 
-        public void OnNext(IFailedTask value)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void OnNext(IFailedTask value);
+
+        public abstract void OnStopAndResubmit();
+
+        public abstract void OnStopAndRecompute();
+       
 
         public void OnCompleted()
         {

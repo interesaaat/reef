@@ -38,13 +38,16 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 {
-    public class ElasticBroadcastDriver : FailureResponse,
+    public class ElasticBroadcastDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
-        IObserver<IDriverStarted>
+        IObserver<IDriverStarted>,
+        IObserver<IFailedEvaluator>, 
+        IObserver<IFailedTask>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
 
@@ -65,8 +68,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
             ElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
-            System.Threading.Thread.Sleep(30);
-            Console.WriteLine("Done with sleeping");
             _numEvaluators = numEvaluators;
             _numRetry = numRetry;
             _service = service;
@@ -93,7 +94,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 
             // Create and build the pipeline (in this case composed by only one operator)
             pipeline.Broadcast(TopologyTypes.Tree,
-                        PolicyLevel.IGNORE,
+                        PolicyLevel.Ignore,
                         dataConverterConfig)
                     .Build();
 
@@ -165,6 +166,26 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
                     .SetEvaluatorBatchId("BroadcastEvaluator")
                     .Build();
             _evaluatorRequestor.Submit(request);
+        }
+
+        public void OnNext(IFailedEvaluator value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnNext(IFailedTask value)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnCompleted()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnError(Exception error)
+        {
+            throw new NotImplementedException();
         }
 
         private class SumFunction : IReduceFunction<int>

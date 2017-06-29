@@ -19,6 +19,7 @@ using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -29,8 +30,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     
         public ElasticBroadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel)
         {
-            _senderId = senderId ?? BuildMasterTaskId(GetSubscription.GetSubscriptionName, _operator);
             _prev = prev;
+            _senderId = senderId ?? BuildMasterTaskId(GetSubscription.GetSubscriptionName, _operator);
             _topology = topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
         }
@@ -49,6 +50,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 return GetSenderTaskId;
             }
+        }
+
+        public override void OnStopAndRecompute()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void OnStopAndResubmit()
+        {
+            throw new NotImplementedException();
         }
     }
 }

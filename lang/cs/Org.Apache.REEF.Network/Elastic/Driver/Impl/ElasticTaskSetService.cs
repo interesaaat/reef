@@ -252,7 +252,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return string.Format(CultureInfo.InvariantCulture, "TaskContext-{0}", contextNum);
         }
 
-        public new void OnNext(IFailedEvaluator value)
+        public override void OnNext(IFailedEvaluator value)
         {
             lock (_statusLock)
             {
@@ -263,12 +263,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public new void OnNext(IFailedTask value)
+        public override void OnNext(IFailedTask value)
         {
             lock (_statusLock)
             {
                 _status = TaskSetStatus.RUNNING;
             }
+        }
+
+        public override void OnStopAndResubmit()
+        {
+            throw new NotImplementedException();
+        }
+
+        public override void OnStopAndRecompute()
+        {
+            throw new NotImplementedException();
         }
     }
 }

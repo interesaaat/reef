@@ -112,13 +112,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public ElasticOperator Broadcast(string senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.IGNORE, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast(string senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
             _next = new ElasticBroadcast(senderTaskId, this, topologyType, policyLevel);
             return _next;
         }
 
-        public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.IGNORE, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
             return Broadcast(_masterTaskId, topologyType, policyLevel, configurations);
         }
@@ -143,12 +143,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public new void OnNext(IFailedEvaluator value)
+        public override void OnNext(IFailedEvaluator value)
         {
             _next.OnNext(value);
         }
 
-        public new void OnNext(IFailedTask value)
+        public override void OnNext(IFailedTask value)
         {
             _next.OnNext(value);
         }

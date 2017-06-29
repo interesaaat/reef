@@ -19,18 +19,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Policy
 {
     public enum PolicyLevel
     {
-        IGNORE,
+        Ignore,
 
-        STOP_OPERATOR_AND_RESUBMIT,
+        StopAndResubmit,
 
-        STOP_OPERATOR_AND_RECOMPUTE,
-
-        STOP_SUBSCRIPTION_AND_RESUBMIT,
-
-        STOP_SUBSCRIPTION_AND_RECOMPUTE,
-
-        STOP_THE_WORLD_AND_RESUBMIT,
-
-        STOP_THE_WORLD_AND_RECOMPUTE
+        StopAndRecompute
     }
 }
