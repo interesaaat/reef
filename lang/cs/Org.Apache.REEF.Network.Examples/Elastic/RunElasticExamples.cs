@@ -20,7 +20,7 @@ using Org.Apache.REEF.Network.Examples.Elastic.Broadcast;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class Run
+    public class RunElasticExamples
     {
         public static void Main(string[] args)
         {

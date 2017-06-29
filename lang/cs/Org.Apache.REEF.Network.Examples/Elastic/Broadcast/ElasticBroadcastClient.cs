@@ -19,8 +19,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using Org.Apache.REEF.Driver;
-using Org.Apache.REEF.Network.Examples.GroupCommunication;
-using Org.Apache.REEF.Network.Examples.GroupCommunication.BroadcastReduceDriverAndTasks;
 using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -30,6 +28,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Client.API;
 using Org.Apache.REEF.Client.Local;
 using Org.Apache.REEF.Client.Yarn;
+using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Network.Examples.GroupCommunication.BroadcastReduceDriverAndTasks;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 {
@@ -53,24 +53,24 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
                     .Set(DriverConfiguration.OnContextActive, GenericType<ElasticBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<GroupTestConfig.NumIterations, int>(
-                    GenericType<GroupTestConfig.NumIterations>.Class,
+                .BindNamedParameter<ElasticConfig.NumRetry, int>(
+                    GenericType<ElasticConfig.NumRetry>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<GroupTestConfig.NumEvaluators, int>(
-                    GenericType<GroupTestConfig.NumEvaluators>.Class,
+                .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
+                    GenericType<ElasticConfig.NumEvaluators>.Class,
                     numTasks.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<GroupTestConfig.StartingPort, int>(
-                    GenericType<GroupTestConfig.StartingPort>.Class,
+                .BindNamedParameter<ElasticConfig.StartingPort, int>(
+                    GenericType<ElasticConfig.StartingPort>.Class,
                     startingPortNo.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<GroupTestConfig.PortRange, int>(
-                    GenericType<GroupTestConfig.PortRange>.Class,
+                .BindNamedParameter<ElasticConfig.PortRange, int>(
+                    GenericType<ElasticConfig.PortRange>.Class,
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindStringNamedParam<GroupCommConfigurationOptions.DriverId>(driverId)
-                .BindStringNamedParam<GroupCommConfigurationOptions.GroupName>(groupName)
-                .BindIntNamedParam<GroupCommConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.SubscriptionName>(groupName)
+                .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);

@@ -17,7 +17,6 @@
 
 using System;
 using Org.Apache.REEF.Network.Examples.GroupCommunication;
-using Org.Apache.REEF.Network.Examples.Elastic.Broadcast;
 
 namespace Org.Apache.REEF.Network.Examples.Client
 {
@@ -79,7 +78,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
 
             if (testToRun.Equals("RunBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
             {
-                new ElasticBroadcastClient().RunElasticBroadcast(runOnYarn, numNodes, startPort, portRange);
+                new BroadcastAndReduceClient().RunBroadcastAndReduce(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("RunBroadcastAndReduce completed!!!");
             }           
         }

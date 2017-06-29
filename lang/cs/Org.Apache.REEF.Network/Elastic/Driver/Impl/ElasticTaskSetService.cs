@@ -39,6 +39,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Group.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
+using Org.Apache.REEF.Network.Elastic.Config;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -70,8 +71,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="nameServer">Used to map names to ip addresses</param>
         [Inject]
         private ElasticTaskSetService(
-            [Parameter(typeof(GroupCommConfigurationOptions.DriverId))] string driverId,
-            [Parameter(typeof(GroupCommConfigurationOptions.GroupName))] string defaultSubscriptionName,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.DriverId))] string driverId,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.SubscriptionName))] string defaultSubscriptionName,
             AvroConfigurationSerializer configSerializer,
             INameServer nameServer)
         {

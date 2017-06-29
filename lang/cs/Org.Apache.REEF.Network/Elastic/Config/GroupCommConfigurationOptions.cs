@@ -20,7 +20,7 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    public sealed class GroupCommConfigurationOptions
+    public sealed class ElasticServiceConfigurationOptions
     {
         [NamedParameter("Name of the communication group")]
         public class CommunicationGroupName : Name<string>
@@ -70,7 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         }
 
         [NamedParameter("Group name", defaultValue: "Group1")]
-        public class GroupName : Name<string>
+        public class SubscriptionName : Name<string>
         {
         }
 
