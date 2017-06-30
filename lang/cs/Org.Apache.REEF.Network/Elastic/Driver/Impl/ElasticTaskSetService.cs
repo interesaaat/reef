@@ -40,6 +40,8 @@ using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Group.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
 using Org.Apache.REEF.Network.Elastic.Config;
+using System.Linq;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -52,9 +54,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private static readonly Logger Logger = Logger.GetLogger(typeof(ElasticTaskSetService));
 
         private readonly string _driverId;
+        private readonly int _numEvaluators;
         private readonly string _nameServerAddr;
         private readonly int _nameServerPort;
-        private int _contextIds;
         private readonly string _defaultSubscriptionName;
 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
@@ -73,13 +75,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private ElasticTaskSetService(
             [Parameter(typeof(ElasticServiceConfigurationOptions.DriverId))] string driverId,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SubscriptionName))] string defaultSubscriptionName,
+            [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
             AvroConfigurationSerializer configSerializer,
             INameServer nameServer)
         {
             _driverId = driverId;
-            _contextIds = -1;
+            _numEvaluators = numEvaluators;
             _defaultSubscriptionName = defaultSubscriptionName;
-            _status = TaskSetStatus.WAITING;
+            _status = TaskSetStatus.Init;
 
             _configSerializer = configSerializer;
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
@@ -99,7 +102,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     if (defaultSubscription == null)
                     {
-                        NewElasticTaskSetSubscription(_defaultSubscriptionName);
+                        NewElasticTaskSetSubscription(_defaultSubscriptionName, _numEvaluators);
                     }
                     return _subscriptions[_defaultSubscriptionName];
                 }
@@ -112,7 +115,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="groupName">The new group name</param>
         /// <param name="numTasks">The number of tasks/operators in the group.</param>
         /// <returns>The new Communication Group</returns>
-        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptionName)
+        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptionName, int numTasks)
         {
             if (string.IsNullOrEmpty(subscriptionName))
             {
@@ -129,7 +132,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 var subscription = new ElasticTaskSetSubscription(
                     subscriptionName,
-                    _configSerializer);
+                    _configSerializer,
+                    numTasks);
                 _subscriptions[subscriptionName] = subscription;
                 return subscription;
             }
@@ -154,18 +158,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        /// <summary>
-        /// Generates context configuration with a unique identifier.
-        /// </summary>
-        /// <returns>The configured context configuration</returns>
-        public IConfiguration GetContextConfiguration()
+        public IEnumerator<IElasticTaskSetSubscription> GetSubscriptions
         {
-            int contextNum = Interlocked.Increment(ref _contextIds);
-            string id = GetTaskContextName(contextNum);
-
-            return ContextConfiguration.ConfigurationModule
-                .Set(ContextConfiguration.Identifier, id)
-                .Build();
+            get
+            {
+                return _subscriptions.Values.GetEnumerator();
+            }
         }
 
         /// <summary>
@@ -223,20 +221,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return confBuilder.Build();
         }
 
-        /// <summary>
-        /// Gets the context number associated with the Active Context id.
-        /// </summary>
-        /// <param name="activeContext">The active context to check</param>
-        /// <returns>The context number associated with the active context id</returns>
-        public int GetContextNum(IActiveContext activeContext)
+        public bool IsMasterTaskContext(IActiveContext activeContext)
         {
-            string[] parts = activeContext.Id.Split('-');
-            if (parts.Length != 2)
+            var subscriptions = _subscriptions.Values.GetEnumerator();
+
+            while (subscriptions.MoveNext())
             {
-               throw new ArgumentException("Invalid id in active context");
+                var sub = subscriptions.Current;
+                if(!sub.DoneWithTasks)
+                {
+                    if (sub.IsMasterTaskContext(activeContext))
+                    {
+                        return true;
+                    }
+
+                    return false;
+                }
             }
 
-            return int.Parse(parts[1], CultureInfo.InvariantCulture);
+            return false;
         }
 
         public string GetDriverId
@@ -247,18 +250,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        private string GetTaskContextName(int contextNum)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "TaskContext-{0}", contextNum);
-        }
-
         public override void OnNext(IFailedEvaluator value)
         {
             lock (_statusLock)
             {
-                if (_status == TaskSetStatus.RUNNING)
+                if (_status == TaskSetStatus.Running)
                 {
-                    _status = TaskSetStatus.RUNNING;
+                    _status = TaskSetStatus.Running;
                 }
             }
         }
@@ -267,7 +265,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _status = TaskSetStatus.RUNNING;
+                _status = TaskSetStatus.Running;
             }
         }
 

@@ -44,6 +44,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public void AddTask(string taskId)
         {
+            if (!IsMasterTaskId)
+            {
+                SetMasterTaskId(taskId);
+            }
+
             _topology.AddTask(taskId);
 
             if (_next != null)
@@ -52,12 +57,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        protected string GetMasterTaskId
+        protected bool IsMasterTaskId
         {
             get
             {
-                return _masterTaskId;
+                return _masterTaskId == null;
             }
+        }
+
+        protected void SetMasterTaskId(string taskId)
+        {
+            _masterTaskId = taskId;    
         }
 
         protected IElasticTaskSetSubscription GetSubscription
@@ -74,11 +84,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 }
                 return _subscription;
             }
-        }
-
-        protected string BuildMasterTaskId(string subscriptionName, string op)
-        {
-            return string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}", subscriptionName, op, new Random().Next());
         }
 
         public ElasticOperator Build()

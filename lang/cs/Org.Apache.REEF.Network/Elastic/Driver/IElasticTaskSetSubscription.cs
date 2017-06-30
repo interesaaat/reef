@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
+using Org.Apache.REEF.Driver.Context;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -32,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="taskSetName">The new group name</param>
         /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscription prev);
+        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscription prev, int numTasks);
 
         string GetSubscriptionName { get; }
 
@@ -47,14 +48,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IElasticTaskSetService GetElasticService { get; }
  
         ElasticOperator GetRootOperator { get; }
- 
+
+        int GetTaskContextId();
+
+        bool DoneWithContexts { get; }
+
+        bool DoneWithTasks { get; }
+
         /// <summary>
         /// Add a task to the communication group.
         /// The CommunicationGroupDriver must have called Build() before adding tasks to the group.
         /// </summary>
         /// <param name="taskId">The id of the task to add</param>
         void AddTask(string taskId);
-  
+
+        bool IsMasterTaskContext(IActiveContext activeContext);
+
         /// <summary>
         /// Get the Task Configuration for this communication group. 
         /// Must be called only after all tasks have been added to the CommunicationGroupDriver.

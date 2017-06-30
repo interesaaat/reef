@@ -20,18 +20,18 @@ using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using System;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     class ElasticBroadcast : ElasticOperator
     {
         private const string _operator = "broadcast";
-        private readonly string _senderId;
+        private string _senderId;
     
         public ElasticBroadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel)
         {
             _prev = prev;
-            _senderId = senderId ?? BuildMasterTaskId(GetSubscription.GetSubscriptionName, _operator);
             _topology = topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
         }
@@ -44,12 +44,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        protected new string GetMasterTaskId
+        protected new bool IsMasterTaskId
         {
             get
             {
-                return GetSenderTaskId;
+                return _senderId == null;
             }
+        }
+
+        protected new void SetMasterTaskId(string taskId)
+        {
+            _senderId = taskId;
         }
 
         public override void OnStopAndRecompute()

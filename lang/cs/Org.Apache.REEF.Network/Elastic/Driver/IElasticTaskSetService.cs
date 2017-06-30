@@ -20,6 +20,7 @@ using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Interface;
 using System;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -36,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="taskSetName">The new group name</param>
         /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName);
+        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, int numTasks);
 
         /// <summary>
         /// remove a communication group
@@ -45,11 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="groupName"></param>
         void RemoveElasticTaskSetSubscription(string taskSetName);
 
-        /// <summary>
-        /// Generates context configuration with a unique identifier.
-        /// </summary>
-        /// <returns>The configured context configuration</returns>
-        IConfiguration GetContextConfiguration();
+        IEnumerator<IElasticTaskSetSubscription> GetSubscriptions { get; }
 
         /// <summary>
         /// Get the service configuration required for running Group Communication on Reef tasks.
@@ -72,5 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IConfiguration GetElasticTaskConfiguration(string taskId);
 
         string GetDriverId { get; }
+
+        bool IsMasterTaskContext(IActiveContext activeContext);
     }
 }

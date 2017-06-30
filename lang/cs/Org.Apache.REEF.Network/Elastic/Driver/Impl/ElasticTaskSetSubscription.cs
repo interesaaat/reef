@@ -28,6 +28,8 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
+using System.Threading;
+using Org.Apache.REEF.Driver.Context;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -42,6 +44,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly string _subscriptionName;
         private int _tasksAdded;
+        private int _contextsAdded;
+        private int _numTasks;
+        private int _numContexts;
         private bool _finalized;
         private readonly AvroConfigurationSerializer _confSerializer;
         private readonly IElasticTaskSetService _elasticService;
@@ -65,14 +70,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public ElasticTaskSetSubscription(
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
+            int numTasks,
             IElasticTaskSetSubscription prev = null,
             IElasticTaskSetService elasticService = null)
         {
             _confSerializer = confSerializer;
             _subscriptionName = subscriptionName;
             _tasksAdded = 0;
+            _numTasks = numTasks;
+            _numContexts = numTasks;
+            _contextsAdded = 0;
             _finalized = false;
-            _status = TaskSetStatus.WAITING;
+            _status = TaskSetStatus.Init;
             _prev = prev;
             _root = new ElasticEmpty(this);
             _elasticService = elasticService;
@@ -81,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _next = new Dictionary<string, IElasticTaskSetSubscription>();
         }
 
-        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptiontName, IElasticTaskSetSubscription prev)
+        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptiontName, IElasticTaskSetSubscription prev, int numTasks = -1)
         {
             if (_next.ContainsKey(subscriptiontName))
             {
@@ -89,7 +98,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                        "Subscription Name already present");
             }
 
-            var next = new ElasticTaskSetSubscription(subscriptiontName, _confSerializer, this);
+            var next = new ElasticTaskSetSubscription(subscriptiontName, _confSerializer, numTasks < 0 ? _numTasks : numTasks, this);
             _next[subscriptiontName] = next;
 
             return next;
@@ -120,10 +129,57 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
 
                 _tasksAdded++;
-                _taskSet[taskId] = TaskSetStatus.WAITING;
+                _taskSet[taskId] = TaskSetStatus.Init;
             }
 
             GetRootOperator.AddTask(taskId);
+        }
+
+        public int GetTaskContextId()
+        {
+            if (!_finalized || DoneWithContexts)
+            {
+                throw new IllegalStateException(
+                    "CommunicationGroupDriver must call Build() before adding tasks to the group.");
+            }
+
+            return Interlocked.Increment(ref _contextsAdded);
+        }
+
+        public int GetTaskId
+        {
+            get
+            {
+                if (!_finalized)
+                {
+                    throw new IllegalStateException(
+                        "CommunicationGroupDriver must call Build() before adding tasks to the group.");
+                }
+
+                return _tasksAdded;
+            }
+        }
+
+        public bool DoneWithContexts
+        {
+            get
+            {
+                return _contextsAdded == _numContexts && _status == TaskSetStatus.Init;
+            }
+        }
+
+        public bool DoneWithTasks
+        {
+            get
+            {
+                return _tasksAdded == _numTasks && _status == TaskSetStatus.Init;
+            }
+        }
+
+        public bool IsMasterTaskContext(IActiveContext activeContext)
+        {
+            int id = Utils.GetContextNum(activeContext);
+            return id == 0;
         }
 
         /// <summary>
@@ -198,9 +254,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                if (_status == TaskSetStatus.RUNNING)
+                if (_status == TaskSetStatus.Running)
                 {
-                    _status = TaskSetStatus.RUNNING;
+                    _status = TaskSetStatus.Running;
                 }
             }
         }
@@ -209,7 +265,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _status = TaskSetStatus.RUNNING;
+                _status = TaskSetStatus.Running;
             }
         }
 

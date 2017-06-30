@@ -61,6 +61,7 @@ under the License.
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfigurationMinusMessage.cs" />
+    <Compile Include="Elastic\Driver\Impl\Utils.cs" />
     <Compile Include="Elastic\Driver\Impl\TaskSetStatus.cs" />
     <Compile Include="Elastic\Driver\Impl\ElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\Impl\ElasticTaskSetService.cs" />

@@ -22,7 +22,6 @@ using System.Linq;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Network.Group.Pipelining.Impl;
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Annotations;
@@ -39,6 +38,9 @@ using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Common.Tasks;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Common.Context;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 {
@@ -104,7 +106,29 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            IConfiguration contextConf = _service.GetContextConfiguration();
+            int id = -1;
+            var subscriptions = _service.GetSubscriptions;
+            IElasticTaskSetSubscription sub = null;
+
+            while (id < 0 && subscriptions.MoveNext())
+            {
+                sub = subscriptions.Current;
+                if (!sub.DoneWithContexts)
+                {
+                    id = sub.GetTaskContextId();
+                }
+            }
+
+            if (sub == null || id < 0)
+            {
+                throw new IllegalStateException("Somethig went wrong while generating context configuration");
+            }
+
+            string identifier = Utils.GetTaskContextName(sub.GetSubscriptionName, id);
+
+            IConfiguration contextConf = ContextConfiguration.ConfigurationModule
+                .Set(ContextConfiguration.Identifier, identifier)
+                .Build();
             IConfiguration serviceConf = _service.GetServiceConfiguration();
             serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
             allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
@@ -114,45 +138,30 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         {
             IConfiguration serviceConfig = _service.GetServiceConfiguration();
 
-            ////if (_groupCommDriver.IsMasterTaskContext(activeContext))
-            ////{
-            ////    // Configure Master Task
-            ////    IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-            ////        TaskConfiguration.ConfigurationModule
-            ////            .Set(TaskConfiguration.Identifier, GroupTestConstants.MasterTaskId)
-            ////            .Set(TaskConfiguration.Task, GenericType<MasterTask>.Class)
-            ////            .Build())
-            ////        .BindNamedParameter<GroupTestConfig.NumEvaluators, int>(
-            ////            GenericType<GroupTestConfig.NumEvaluators>.Class,
-            ////            _numEvaluators.ToString(CultureInfo.InvariantCulture))
-            ////        .BindNamedParameter<GroupTestConfig.NumIterations, int>(
-            ////            GenericType<GroupTestConfig.NumIterations>.Class,
-            ////            _numIterations.ToString(CultureInfo.InvariantCulture))
-            ////        .Build();
+            bool isMaster = _service.IsMasterTaskContext(activeContext);
 
-            ////    _commGroup.AddTask(GroupTestConstants.MasterTaskId);
-            ////    _groupCommTaskStarter.QueueTask(partialTaskConf, activeContext);
-            ////}
-            ////else
-            ////{
-            ////    // Configure Slave Task
-            ////    string slaveTaskId = "SlaveTask-" + activeContext.Id;
-            ////    IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-            ////        TaskConfiguration.ConfigurationModule
-            ////            .Set(TaskConfiguration.Identifier, slaveTaskId)
-            ////            .Set(TaskConfiguration.Task, GenericType<SlaveTask>.Class)
-            ////            .Build())
-            ////        .BindNamedParameter<GroupTestConfig.NumEvaluators, int>(
-            ////            GenericType<GroupTestConfig.NumEvaluators>.Class,
-            ////            _numEvaluators.ToString(CultureInfo.InvariantCulture))
-            ////        .BindNamedParameter<GroupTestConfig.NumIterations, int>(
-            ////            GenericType<GroupTestConfig.NumIterations>.Class,
-            ////            _numIterations.ToString(CultureInfo.InvariantCulture))
-            ////        .Build();
+            var subscriptions = _service.GetSubscriptions;
+            _commGroup.AddTask(GroupTestConstants.MasterTaskId);
+            string taskId = Utils.BuildTaskId(s)
 
-            ////    _commGroup.AddTask(slaveTaskId);
-            ////    _groupCommTaskStarter.QueueTask(partialTaskConf, activeContext);
-            ////}
+                           
+            IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, GroupTestConstants.MasterTaskId)
+                    .Set(TaskConfiguration.Task, GenericType<ITask>.Class)
+                    .Build())
+                .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
+                    GenericType<ElasticConfig.NumEvaluators>.Class,
+                    _numEvaluators.ToString(CultureInfo.InvariantCulture))
+                .BindNamedParameter<ElasticConfig.NumRetry, int>(
+                    GenericType<ElasticConfig.NumRetry>.Class,
+                    _numRetry.ToString(CultureInfo.InvariantCulture))
+                .BindNamedParameter<ElasticConfig.IsMasterTask, bool>(
+                    GenericType<ElasticConfig.IsMasterTask>.Class,
+                    isMaster.ToString(CultureInfo.InvariantCulture))
+                .Build();
+
+            _groupCommTaskStarter.QueueTask(partialTaskConf, activeContext);
         }
 
         public void OnNext(IDriverStarted value)
@@ -186,19 +195,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         public void OnError(Exception error)
         {
             throw new NotImplementedException();
-        }
-
-        private class SumFunction : IReduceFunction<int>
-        {
-            [Inject]
-            public SumFunction()
-            {
-            }
-
-            public int Reduce(IEnumerable<int> elements)
-            {
-                return elements.Sum();
-            }
         }
     }
 }

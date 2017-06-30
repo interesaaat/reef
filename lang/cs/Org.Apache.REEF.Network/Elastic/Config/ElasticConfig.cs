@@ -31,6 +31,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
+        [NamedParameter("Is Master Task")]
+        public class IsMasterTask : Name<bool>
+        {
+        }
+
         [NamedParameter("tree width")]
         public class FanOut : Name<int>
         {

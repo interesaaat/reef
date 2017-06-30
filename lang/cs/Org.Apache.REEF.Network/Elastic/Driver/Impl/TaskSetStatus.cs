@@ -19,12 +19,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.TaskSet
 {
     public enum TaskSetStatus
     {
-        WAITING,
+        Init,
 
-        RUNNING,
+        Running,
 
-        STOPPED,
+        Recovery,
 
-        FINISHED
+        Finished
     }
 }
