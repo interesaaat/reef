@@ -69,7 +69,5 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IConfiguration GetElasticTaskConfiguration(string taskId);
 
         string GetDriverId { get; }
-
-        bool IsMasterTaskContext(IActiveContext activeContext);
     }
 }

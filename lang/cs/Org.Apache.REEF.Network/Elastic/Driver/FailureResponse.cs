@@ -31,7 +31,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         public abstract void OnStopAndRecompute();
        
-
         public void OnCompleted()
         {
         }

@@ -135,7 +135,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             GetRootOperator.AddTask(taskId);
         }
 
-        public int GetTaskContextId()
+        public int GetNextTaskContextId()
         {
             if (!_finalized || DoneWithContexts)
             {

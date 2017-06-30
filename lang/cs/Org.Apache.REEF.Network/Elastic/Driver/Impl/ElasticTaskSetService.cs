@@ -221,27 +221,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return confBuilder.Build();
         }
 
-        public bool IsMasterTaskContext(IActiveContext activeContext)
-        {
-            var subscriptions = _subscriptions.Values.GetEnumerator();
-
-            while (subscriptions.MoveNext())
-            {
-                var sub = subscriptions.Current;
-                if(!sub.DoneWithTasks)
-                {
-                    if (sub.IsMasterTaskContext(activeContext))
-                    {
-                        return true;
-                    }
-
-                    return false;
-                }
-            }
-
-            return false;
-        }
-
         public string GetDriverId
         {
             get

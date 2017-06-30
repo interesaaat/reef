@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
  
         ElasticOperator GetRootOperator { get; }
 
-        int GetTaskContextId();
+        int GetNextTaskContextId();
 
         bool DoneWithContexts { get; }
 

@@ -31,9 +31,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return string.Format(CultureInfo.InvariantCulture, "TaskContext-{0}-{1}", subscriptionName, contextNum);
         }
 
-        public static string BuildTaskId(string subscriptionName, string op)
+        public static string BuildTaskId(string subscriptionName, int id)
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}", subscriptionName, op, new Random().Next());
+            return string.Format(CultureInfo.InvariantCulture, "{0}-{1}", subscriptionName, id);
         }
     }
 }

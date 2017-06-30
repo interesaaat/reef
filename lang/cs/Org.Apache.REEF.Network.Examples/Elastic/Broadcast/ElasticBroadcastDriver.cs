@@ -56,10 +56,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         private readonly int _numEvaluators;
         private readonly int _numRetry;
 
-        private readonly IElasticTaskSetService _service;
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
+
+        private readonly IElasticTaskSetService _service;
+        private readonly IElasticTaskSetSubscription _subscription;
 
         [Inject]
         private ElasticBroadcastDriver(
@@ -101,30 +103,25 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
                     .Build();
 
             // Build the subscription
-            subscription.Build();
+            _subscription = subscription.Build();
+        }
+
+        public void OnNext(IDriverStarted value)
+        {
+            var request = _evaluatorRequestor.NewBuilder()
+                .SetNumber(_numEvaluators)
+                .SetMegabytes(512)
+                .SetCores(2)
+                .SetRackName("WonderlandRack")
+                .SetEvaluatorBatchId("BroadcastEvaluator")
+                .Build();
+            _evaluatorRequestor.Submit(request);
         }
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id = -1;
-            var subscriptions = _service.GetSubscriptions;
-            IElasticTaskSetSubscription sub = null;
-
-            while (id < 0 && subscriptions.MoveNext())
-            {
-                sub = subscriptions.Current;
-                if (!sub.DoneWithContexts)
-                {
-                    id = sub.GetTaskContextId();
-                }
-            }
-
-            if (sub == null || id < 0)
-            {
-                throw new IllegalStateException("Somethig went wrong while generating context configuration");
-            }
-
-            string identifier = Utils.GetTaskContextName(sub.GetSubscriptionName, id);
+            int id = _subscription.GetNextTaskContextId();
+            string identifier = Utils.GetTaskContextName(_subscription.GetSubscriptionName, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -136,18 +133,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 
         public void OnNext(IActiveContext activeContext)
         {
-            IConfiguration serviceConfig = _service.GetServiceConfiguration();
-
-            bool isMaster = _service.IsMasterTaskContext(activeContext);
-
-            var subscriptions = _service.GetSubscriptions;
-            _commGroup.AddTask(GroupTestConstants.MasterTaskId);
-            string taskId = Utils.BuildTaskId(s)
-
+            bool isMaster = _subscription.IsMasterTaskContext(activeContext);
+            string taskId = Utils.BuildTaskId(_subscription.GetSubscriptionName, Utils.GetContextNum(activeContext));
                            
             IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
-                    .Set(TaskConfiguration.Identifier, GroupTestConstants.MasterTaskId)
+                    .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<ITask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
@@ -160,21 +151,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
                     GenericType<ElasticConfig.IsMasterTask>.Class,
                     isMaster.ToString(CultureInfo.InvariantCulture))
                 .Build();
-
-            _groupCommTaskStarter.QueueTask(partialTaskConf, activeContext);
-        }
-
-        public void OnNext(IDriverStarted value)
-        {
-            var request =
-                _evaluatorRequestor.NewBuilder()
-                    .SetNumber(_numEvaluators)
-                    .SetMegabytes(512)
-                    .SetCores(2)
-                    .SetRackName("WonderlandRack")
-                    .SetEvaluatorBatchId("BroadcastEvaluator")
-                    .Build();
-            _evaluatorRequestor.Submit(request);
         }
 
         public void OnNext(IFailedEvaluator value)
