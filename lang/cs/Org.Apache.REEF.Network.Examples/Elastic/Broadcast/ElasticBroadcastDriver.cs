@@ -41,6 +41,7 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Examples.HelloREEF;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 {
@@ -96,7 +97,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 
             ElasticOperator pipeline = subscription.GetRootOperator;
 
-            // Create and build the pipeline (in this case composed by only one operator)
+            // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree,
                         PolicyLevel.Ignore,
                         dataConverterConfig)
@@ -111,7 +112,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(_numEvaluators)
                 .SetMegabytes(512)
-                .SetCores(2)
+                .SetCores(1)
                 .SetRackName("WonderlandRack")
                 .SetEvaluatorBatchId("BroadcastEvaluator")
                 .Build();
@@ -139,7 +140,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
             IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<ITask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<HelloTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
                     GenericType<ElasticConfig.NumEvaluators>.Class,

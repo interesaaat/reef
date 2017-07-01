@@ -19,7 +19,7 @@ under the License.
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
   <PropertyGroup>
     <ProjectGuid>{B1B43B60-DDD0-4805-A9B4-BA84A0CCB7C7}</ProjectGuid>
-    <OutputType>Exe</OutputType>
+    <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Org.Apache.REEF.Network.Examples</RootNamespace>
     <AssemblyName>Org.Apache.REEF.Network.Examples</AssemblyName>
@@ -53,9 +53,7 @@ under the License.
   <PropertyGroup>
     <GenerateManifests>false</GenerateManifests>
   </PropertyGroup>
-  <PropertyGroup>
-    <ApplicationManifest>Properties\app.manifest</ApplicationManifest>
-  </PropertyGroup>
+  <PropertyGroup />
   <Import Project="$(SolutionDir)\build.props" />
   <PropertyGroup>
     <BuildPackage>false</BuildPackage>
@@ -73,9 +71,7 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Elastic\Broadcast\ElasticBroadcastClient.cs" />
     <Compile Include="Elastic\Broadcast\ElasticBroadcastDriver.cs" />
-    <Compile Include="Elastic\RunElasticExamples.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\BroadcastReduceDriver.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\MasterTask.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\SlaveTask.cs" />
@@ -117,6 +113,10 @@ under the License.
     <ProjectReference Include="..\Org.Apache.REEF.Client\Org.Apache.REEF.Client.csproj">
       <Project>{5094C35B-4FDB-4322-AC05-45D684501CBF}</Project>
       <Name>Org.Apache.REEF.Client</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Org.Apache.REEF.Examples.HelloREEF\Org.Apache.REEF.Examples.HelloREEF.csproj">
+      <Project>{0FF8CEE9-B0B6-4A14-9A52-44441BE048FE}</Project>
+      <Name>Org.Apache.REEF.Examples.HelloREEF</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

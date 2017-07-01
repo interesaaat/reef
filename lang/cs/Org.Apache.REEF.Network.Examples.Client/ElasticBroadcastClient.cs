@@ -30,8 +30,9 @@ using Org.Apache.REEF.Client.Local;
 using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Examples.GroupCommunication.BroadcastReduceDriverAndTasks;
+using Org.Apache.REEF.Network.Examples.Elastic.Broadcast;
 
-namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
+namespace Org.Apache.REEF.Network.Examples.Client
 {
     public class ElasticBroadcastClient
     {
@@ -43,7 +44,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         {
             const int numIterations = 10;
             const string driverId = "BroadcastDriver";
-            const string groupName = "BroadcastReduceGroup";
+            const string subscription = "Broadcast";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
@@ -69,14 +70,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 
             IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
-                .BindStringNamedParam<ElasticServiceConfigurationOptions.SubscriptionName>(groupName)
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.SubscriptionName>(subscription)
                 .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(BroadcastReduceDriver), numTasks, "BroadcastReduceDriver", runPlatform);
+            TestRun(merged, typeof(ElasticBroadcastDriver), numTasks, "ElasticBroadcastDriver", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)
