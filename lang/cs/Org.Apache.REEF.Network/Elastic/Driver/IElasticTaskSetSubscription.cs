@@ -18,6 +18,7 @@
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Driver.Evaluator;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -49,7 +50,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
  
         ElasticOperator GetRootOperator { get; }
 
-        int GetNextTaskContextId();
+        int GetNextTaskContextId(IAllocatedEvaluator evaluator = null);
+
+        int GetNextTaskId(IActiveContext context = null);
 
         bool DoneWithContexts { get; }
 
@@ -60,7 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// The CommunicationGroupDriver must have called Build() before adding tasks to the group.
         /// </summary>
         /// <param name="taskId">The id of the task to add</param>
-        void AddTask(string taskId);
+        void AddTask(string taskId, IConfiguration partialConfiguration, IActiveContext context);
 
         bool IsMasterTaskContext(IActiveContext activeContext);
 
@@ -70,6 +73,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
         /// <returns>The Task Configuration for this communication group</returns>
-        IConfiguration GetElasticTaskConfiguration(string taskId);
+        IConfiguration GetElasticTaskConfiguration { get; }
     }
 }

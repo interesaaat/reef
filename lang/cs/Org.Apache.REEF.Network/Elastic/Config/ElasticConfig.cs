@@ -21,8 +21,13 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 {
     public class ElasticConfig
     {
-        [NamedParameter("Number of retry when seding messages")]
+        [NamedParameter(Documentation = "Number of retry when a failure accurs", DefaultValue = "1")]
         public class NumRetry : Name<int>
+        {
+        }
+
+        [NamedParameter("Number of iterations")]
+        public class NumIterations : Name<int>
         {
         }
 

@@ -71,7 +71,9 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Elastic\Broadcast\ElasticBroadcastDriver.cs" />
+    <Compile Include="Elastic\Logical\ElasticLogicalBroadcastReduceDriver.cs" />
+    <Compile Include="Elastic\Logical\ElasticLogicalBroadcastDriver.cs" />
+    <Compile Include="Elastic\Logical\HelloTask.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\BroadcastReduceDriver.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\MasterTask.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\SlaveTask.cs" />

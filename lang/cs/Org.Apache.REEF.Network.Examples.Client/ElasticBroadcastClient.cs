@@ -19,7 +19,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using Org.Apache.REEF.Driver;
-using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Interface;
@@ -29,8 +28,7 @@ using Org.Apache.REEF.Client.API;
 using Org.Apache.REEF.Client.Local;
 using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Examples.GroupCommunication.BroadcastReduceDriverAndTasks;
-using Org.Apache.REEF.Network.Examples.Elastic.Broadcast;
+using Org.Apache.REEF.Network.Examples.Elastic.Logical;
 
 namespace Org.Apache.REEF.Network.Examples.Client
 {
@@ -54,8 +52,8 @@ namespace Org.Apache.REEF.Network.Examples.Client
                     .Set(DriverConfiguration.OnContextActive, GenericType<ElasticBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<ElasticConfig.NumRetry, int>(
-                    GenericType<ElasticConfig.NumRetry>.Class,
+                .BindNamedParameter<ElasticConfig.NumIterations, int>(
+                    GenericType<ElasticConfig.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
                     GenericType<ElasticConfig.NumEvaluators>.Class,

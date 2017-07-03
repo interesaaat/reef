@@ -19,11 +19,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
-using System.Threading;
-using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Common.Io;
 using Org.Apache.REEF.Common.Services;
-using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Group.Config;
@@ -40,8 +37,6 @@ using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Group.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
 using Org.Apache.REEF.Network.Elastic.Config;
-using System.Linq;
-using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -133,7 +128,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 var subscription = new ElasticTaskSetSubscription(
                     subscriptionName,
                     _configSerializer,
-                    numTasks);
+                    numTasks, null, this);
                 _subscriptions[subscriptionName] = subscription;
                 return subscription;
             }
@@ -203,20 +198,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="taskId">The id of the task Configuration to generate</param>
         /// <returns>The Group Communication task configuration with communication group and
         /// operator configuration set.</returns>
-        public IConfiguration GetElasticTaskConfiguration(string taskId)
+        public IConfiguration GetElasticTaskConfiguration(IConfiguration subscriptionsConf)
         {
             var confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
-            foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
-            {
-                var taskConf = sub.GetElasticTaskConfiguration(taskId);
-                if (taskConf != null)
-                {
-                    confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedGroupConfigs, string>(
-                        GenericType<GroupCommConfigurationOptions.SerializedGroupConfigs>.Class,
-                        _configSerializer.ToString(taskConf));
-                }
-            }
+            confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedGroupConfigs, string>(
+                GenericType<GroupCommConfigurationOptions.SerializedGroupConfigs>.Class,
+                _configSerializer.ToString(subscriptionsConf));
 
             return confBuilder.Build();
         }

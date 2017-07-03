@@ -41,9 +41,8 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Examples.HelloREEF;
 
-namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
+namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
     public class ElasticBroadcastDriver : 
         IObserver<IAllocatedEvaluator>, 
@@ -55,7 +54,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
 
         private readonly int _numEvaluators;
-        private readonly int _numRetry;
 
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
@@ -67,14 +65,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         [Inject]
         private ElasticBroadcastDriver(
             [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
-            [Parameter(typeof(ElasticConfig.NumRetry))] int numRetry,
             [Parameter(typeof(ElasticConfig.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticConfig.PortRange))] int portRange,
             ElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
             _numEvaluators = numEvaluators;
-            _numRetry = numRetry;
             _service = service;
             _evaluatorRequestor = evaluatorRequestor;
 
@@ -121,8 +117,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id = _subscription.GetNextTaskContextId();
-            string identifier = Utils.GetTaskContextName(_subscription.GetSubscriptionName, id);
+            int id = _subscription.GetNextTaskContextId(allocatedEvaluator);
+            string identifier = Utils.BuildContextName(_subscription.GetSubscriptionName, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -135,8 +131,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
         public void OnNext(IActiveContext activeContext)
         {
             bool isMaster = _subscription.IsMasterTaskContext(activeContext);
-            string taskId = Utils.BuildTaskId(_subscription.GetSubscriptionName, Utils.GetContextNum(activeContext));
-                           
+            int id = _subscription.GetNextTaskId(activeContext);
+            string taskId = Utils.BuildTaskId(_subscription.GetSubscriptionName, id);
+
             IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
@@ -145,13 +142,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Broadcast
                 .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
                     GenericType<ElasticConfig.NumEvaluators>.Class,
                     _numEvaluators.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<ElasticConfig.NumRetry, int>(
-                    GenericType<ElasticConfig.NumRetry>.Class,
-                    _numRetry.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticConfig.IsMasterTask, bool>(
                     GenericType<ElasticConfig.IsMasterTask>.Class,
                     isMaster.ToString(CultureInfo.InvariantCulture))
                 .Build();
+
+            _subscription.AddTask(taskId, partialTaskConf, activeContext);
         }
 
         public void OnNext(IFailedEvaluator value)

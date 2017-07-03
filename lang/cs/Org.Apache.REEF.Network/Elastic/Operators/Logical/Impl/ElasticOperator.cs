@@ -31,15 +31,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     public abstract class ElasticOperator : FailureResponse
     {
         // For the moment we consider only linear sequences of operators (no branching for e.g., joins)
-        protected ElasticOperator _next;
-        protected ElasticOperator _prev;
+        protected ElasticOperator _next = null;
+        protected ElasticOperator _prev = null;
 
         protected PolicyLevel _policy;
         protected ITopology _topology;
 
-        protected bool _finalized;
+        protected bool _finalized = false;
 
-        protected string _masterTaskId;
+        protected string _masterTaskId = null;
         protected IElasticTaskSetSubscription _subscription;
 
         public void AddTask(string taskId)
@@ -65,9 +65,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        protected string GetMasterTaskId
+        {
+            get
+            {
+                return _masterTaskId;
+            }
+        }
+
         protected void SetMasterTaskId(string taskId)
         {
-            _masterTaskId = taskId;    
+            _masterTaskId = taskId;
         }
 
         protected IElasticTaskSetSubscription GetSubscription
@@ -83,6 +91,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     return _prev.GetSubscription;
                 }
                 return _subscription;
+            }
+        }
+
+        public void GetElasticTaskConfiguration(ref ICsConfigurationBuilder confBuilder)
+        {
+            if (_next != null)
+            {
+                _next.GetElasticTaskConfiguration(ref confBuilder);
             }
         }
 
@@ -112,33 +128,30 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        private ElasticOperator Broadcast<T>(string senderTaskId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel, params IConfiguration[] configurations)
-        {
-            throw new NotImplementedException();
-        }
-
         public ElasticOperator Broadcast(string senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
-            _next = new ElasticBroadcast(senderTaskId, this, topologyType, policyLevel);
+            _next = new Broadcast(senderTaskId, this, topologyType, policyLevel);
             return _next;
         }
 
         public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
-            return Broadcast(_masterTaskId, topologyType, policyLevel, configurations);
+            return Broadcast(GetMasterTaskId, topologyType, policyLevel, configurations);
         }
 
-        public void GetElasticTaskConfiguration(out ICsConfigurationBuilder confBuilder)
+        public ElasticOperator Reduce(string receiverTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
-            throw new NotImplementedException();
+            _next = new Broadcast(receiverTaskId, this, topologyType, policyLevel);
+            return _next;
+        }
+
+        public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
+        {
+            _next = new Broadcast(GetMasterTaskId, this, topologyType, policyLevel);
+            return _next;
         }
 
         public ElasticOperator Iterate<T>(Delegate condition, ElasticOperator prev, params IConfiguration[] configurations)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ElasticOperator Reduce<T>(string receiverTaskId, ElasticOperator prev, TopologyTypes topologyType, params IConfiguration[] configurations)
         {
             throw new NotImplementedException();
         }

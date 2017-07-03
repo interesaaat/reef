@@ -15,24 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Operators.Logical;
-using Org.Apache.REEF.Tang.Formats;
-using Org.Apache.REEF.Tang.Util;
+using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Config
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
-    public sealed class ReduceFunctionConfiguration<T, V> : ConfigurationModuleBuilder
+    /// <summary>
+    /// The class used to aggregate messages sent by ReduceSenders.
+    /// </summary>
+    /// <typeparam name="T">The message type.</typeparam>
+    public interface IReduceFunction<T, V>
     {
         /// <summary>
-        /// RequiredImpl for Reduced Function. Client needs to set implementation for this paramter
+        /// Reduce the IEnumerable of messages into one message.
         /// </summary>
-        public static readonly RequiredImpl<IReduceFunction<T, V>> ReduceFunction = new RequiredImpl<IReduceFunction<T, V>>();
-        
+        /// <param name="elements">The messages to reduce</param>
+        /// <returns>The reduced message</returns>
+        T Merge(IEnumerable<V> elements);
+
         /// <summary>
-        /// Configuration Module for Reduced Function
+        /// Reduce the IEnumerable of messages into one message.
         /// </summary>
-        public static ConfigurationModule Conf = new ReduceFunctionConfiguration<T, V>()
-            .BindImplementation(GenericType<IReduceFunction<T, V>>.Class, ReduceFunction)
-            .Build();
+        /// <param name="elements">The messages to reduce</param>
+        /// <returns>The reduced message</returns>
+        T Reduce(IEnumerable<T> elements);
     }
 }

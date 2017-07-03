@@ -24,15 +24,15 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    class ElasticBroadcast : ElasticOperator
+    class Broadcast : ElasticOperator
     {
         private const string _operator = "broadcast";
         private string _senderId;
     
-        public ElasticBroadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel)
+        public Broadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel)
         {
             _prev = prev;
-            _topology = topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology() : (ITopology)new TreeTopology();
+            _topology = topologyType == TopologyTypes.Flat ? (ITopology)new EmptyTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
         }
 
@@ -49,6 +49,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             get
             {
                 return _senderId == null;
+            }
+        }
+
+        protected new string GetMasterTaskId
+        {
+            get
+            {
+                return _senderId;
             }
         }
 
