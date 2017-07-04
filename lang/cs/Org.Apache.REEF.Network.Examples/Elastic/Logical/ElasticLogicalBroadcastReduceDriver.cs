@@ -129,40 +129,40 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id = _subscription.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextName(_subscription.GetSubscriptionName, id);
+           ////// int id = _tas.GetNextTaskContextId(allocatedEvaluator);
+           //// //string identifier = Utils.BuildContextName(_subscription.GetSubscriptionName, id);
 
-            IConfiguration contextConf = ContextConfiguration.ConfigurationModule
-                .Set(ContextConfiguration.Identifier, identifier)
-                .Build();
-            IConfiguration serviceConf = _service.GetServiceConfiguration();
-            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
-            allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
+           //// IConfiguration contextConf = ContextConfiguration.ConfigurationModule
+           ////     .Set(ContextConfiguration.Identifier, identifier)
+           ////     .Build();
+           //// IConfiguration serviceConf = _service.GetServiceConfiguration();
+           //// serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
+           //// allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
         }
 
         public void OnNext(IActiveContext activeContext)
         {
-            bool isMaster = _subscription.IsMasterTaskContext(activeContext);
-            int id = _subscription.GetNextTaskId(activeContext);
-            string taskId = Utils.BuildTaskId(_subscription.GetSubscriptionName, id);
+            ////bool isMaster = _subscription.IsMasterTaskContext(activeContext);
+            ////int id = _subscription.GetNextTaskId(activeContext);
+            ////string taskId = Utils.BuildTaskId(_subscription.GetSubscriptionName, id);
 
-            IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                TaskConfiguration.ConfigurationModule
-                    .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<HelloTask>.Class)
-                    .Build())
-                .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
-                    GenericType<ElasticConfig.NumEvaluators>.Class,
-                    _numEvaluators.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<ElasticConfig.NumIterations, int>(
-                    GenericType<ElasticConfig.NumIterations>.Class,
-                    _numIterations.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<ElasticConfig.IsMasterTask, bool>(
-                    GenericType<ElasticConfig.IsMasterTask>.Class,
-                    isMaster.ToString(CultureInfo.InvariantCulture))
-                .Build();
+            ////IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
+            ////    TaskConfiguration.ConfigurationModule
+            ////        .Set(TaskConfiguration.Identifier, taskId)
+            ////        .Set(TaskConfiguration.Task, GenericType<HelloTask>.Class)
+            ////        .Build())
+            ////    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
+            ////        GenericType<ElasticConfig.NumEvaluators>.Class,
+            ////        _numEvaluators.ToString(CultureInfo.InvariantCulture))
+            ////    .BindNamedParameter<ElasticConfig.NumIterations, int>(
+            ////        GenericType<ElasticConfig.NumIterations>.Class,
+            ////        _numIterations.ToString(CultureInfo.InvariantCulture))
+            ////    .BindNamedParameter<ElasticConfig.IsMasterTask, bool>(
+            ////        GenericType<ElasticConfig.IsMasterTask>.Class,
+            ////        isMaster.ToString(CultureInfo.InvariantCulture))
+            ////    .Build();
 
-            _subscription.AddTask(taskId, partialTaskConf, activeContext);
+            ////_subscription.AddTask(taskId, partialTaskConf, activeContext);
         }
 
         public void OnNext(IFailedEvaluator value)

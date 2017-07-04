@@ -30,11 +30,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     class Empty : ElasticOperator
     {
-        public Empty(IElasticTaskSetSubscription subscription)
+        public Empty(IElasticTaskSetSubscription subscription) : base(subscription)
         {
             _policy = PolicyLevel.Ignore;
             _topology = new EmptyTopology();
-            _subscription = subscription;
+            _id = GetSubscription.GetNextOperatorId();
         }
 
         public override void OnStopAndRecompute()

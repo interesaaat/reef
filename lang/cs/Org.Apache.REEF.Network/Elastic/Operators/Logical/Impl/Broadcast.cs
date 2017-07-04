@@ -29,11 +29,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private const string _operator = "broadcast";
         private string _senderId;
     
-        public Broadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel)
+        public Broadcast(string senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel) : base(null)
         {
             _prev = prev;
             _topology = topologyType == TopologyTypes.Flat ? (ITopology)new EmptyTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
+            _id = GetSubscription.GetNextOperatorId();
         }
 
         public string GetSenderTaskId

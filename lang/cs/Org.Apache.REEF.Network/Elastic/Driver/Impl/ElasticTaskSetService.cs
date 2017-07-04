@@ -128,7 +128,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 var subscription = new ElasticTaskSetSubscription(
                     subscriptionName,
                     _configSerializer,
-                    numTasks, null, this);
+                    numTasks, this);
                 _subscriptions[subscriptionName] = subscription;
                 return subscription;
             }

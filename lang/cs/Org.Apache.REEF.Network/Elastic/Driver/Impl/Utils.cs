@@ -23,13 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <returns>The context number associated with the active context id</returns>
         public static int GetContextNum(IActiveContext activeContext)
         {
-            string[] parts = activeContext.Id.Split('-');
-            if (parts.Length != 3)
-            {
-                throw new ArgumentException("Invalid id in active context");
-            }
-
-            return int.Parse(parts[2], CultureInfo.InvariantCulture);
+            return GetIdNum(activeContext.Id);
         }
 
         /// <summary>
@@ -39,42 +33,33 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <returns>The context number associated with the active context id</returns>
         public static int GetTaskNum(string taskId)
         {
-            string[] parts = taskId.Split('-');
-            if (parts.Length != 2)
+            return GetIdNum(taskId);
+        }
+
+        private static int GetIdNum(string identifer)
+        {
+            string[] parts = identifer.Split('-');
+            if (parts.Length != 3)
             {
                 throw new ArgumentException("Invalid id in active context");
             }
 
-            return int.Parse(parts[1], CultureInfo.InvariantCulture);
+            return int.Parse(parts[2], CultureInfo.InvariantCulture);
         }
 
         public static string BuildContextName(string subscriptionName, int contextNum)
         {
-            return string.Format(CultureInfo.InvariantCulture, "TaskContext-{0}-{1}", subscriptionName, contextNum);
+            return BuildIdentifier("Context", subscriptionName, contextNum);
         }
 
         public static string BuildTaskId(string subscriptionName, int id)
         {
-            return string.Format(CultureInfo.InvariantCulture, "{0}-{1}", subscriptionName, id);
+            return BuildIdentifier("Task", subscriptionName, id);
         }
 
-        /// <summary>
-        /// Returns the TaskIdentifier from the Configuration.
-        /// </summary>
-        /// <param name="taskConfiguration">The Configuration object</param>
-        /// <returns>The TaskIdentifier for the given Configuration</returns>
-        public static bool GetIsMasterTask(IConfiguration taskConfiguration)
+        private static string BuildIdentifier(string first, string second, int third)
         {
-            try
-            {
-                IInjector injector = TangFactory.GetTang().NewInjector(taskConfiguration);
-                return injector.GetNamedInstance<ElasticConfig.IsMasterTask, bool>(
-                    GenericType<ElasticConfig.IsMasterTask>.Class);
-            }
-            catch (InjectionException)
-            {
-                throw;
-            }
+            return string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}", first, second, third);
         }
     }
 }

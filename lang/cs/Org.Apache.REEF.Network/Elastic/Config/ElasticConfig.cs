@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Tang.Annotations;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
@@ -33,11 +34,6 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 
         [NamedParameter("Number of Evaluators")]
         public class NumEvaluators : Name<int>
-        {
-        }
-
-        [NamedParameter("Is Master Task")]
-        public class IsMasterTask : Name<bool>
         {
         }
 

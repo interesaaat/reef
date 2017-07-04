@@ -24,6 +24,7 @@ using Org.Apache.REEF.Network.Utilities;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Driver.Evaluator;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -32,7 +33,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// </summary>
     public interface ITaskSetManager
     {
+        void AddTaskSetSubscription(IElasticTaskSetSubscription subscription);
+
+        int GetNextTaskContextId(IAllocatedEvaluator evaluator = null);
+
+        string GetSubscriptionsId { get; }
+
         int GetNextTaskId(IActiveContext context = null);
+
+        bool IsMasterTaskContext(IActiveContext activeContext);
 
         int NumTasks { get; }
 
@@ -45,11 +54,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="partialTaskConfig">The partial task configuration containing Task
         /// identifier and Task class</param>
         /// <param name="activeContext">The Active Context to run the Task on</param>
-        void AddTask(int taskId, IConfiguration partialTaskConfig, IActiveContext activeContext);
+        void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext);
 
-        bool InitComplete(int numAddedTasks);
+        bool StartSubmitTasks { get; }
 
-        void StartTasks(IConfiguration subscriptionTaskConfiguration);
+        void SubmitTasks();
 
         void OnTaskCompleted(int taskId);
 

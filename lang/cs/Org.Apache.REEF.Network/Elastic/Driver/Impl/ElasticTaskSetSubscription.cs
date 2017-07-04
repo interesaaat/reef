@@ -16,13 +16,11 @@
 // under the License.
 
 using System;
-using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Formats;
-using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
@@ -43,19 +41,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticTaskSetSubscription));
 
         private readonly string _subscriptionName;
-        private int _tasksAdded;
-        private int _contextsAdded;
-        private int _numContexts;
         private bool _finalized;
         private readonly AvroConfigurationSerializer _confSerializer;
         private readonly IElasticTaskSetService _elasticService;
+        private readonly int _numTasks;
+        private int _tasksAdded;
 
         private readonly TaskSetManager _taskSet;
         private TaskSetStatus _status;
-        private readonly IElasticTaskSetSubscription _prev;
-        private readonly Dictionary<string, IElasticTaskSetSubscription> _next;
         private ElasticOperator _root;
+        private int _numOperators;
+
         private readonly object _statusLock = new object();
+        private readonly object _tasksLock = new object();
 
         /// <summary>
         /// Create a new CommunicationGroupDriver.
@@ -69,36 +67,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
             int numTasks,
-            IElasticTaskSetSubscription prev = null,
             IElasticTaskSetService elasticService = null)
         {
             _confSerializer = confSerializer;
             _subscriptionName = subscriptionName;
-            _tasksAdded = 0;
-            _numContexts = numTasks;
-            _contextsAdded = 0;
             _finalized = false;
+            _numTasks = numTasks;
+            _tasksAdded = 0;
             _status = TaskSetStatus.Init;
-            _prev = prev;
             _root = new Empty(this);
             _elasticService = elasticService;
 
             _taskSet = new TaskSetManager(numTasks);
-            _next = new Dictionary<string, IElasticTaskSetSubscription>();
-        }
-
-        public IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptiontName, IElasticTaskSetSubscription prev, int numTasks = -1)
-        {
-            if (_next.ContainsKey(subscriptiontName))
-            {
-                throw new ArgumentException(
-                       "Subscription Name already present");
-            }
-
-            var next = new ElasticTaskSetSubscription(subscriptiontName, _confSerializer, numTasks < 0 ? _taskSet.NumTasks : numTasks, this);
-            _next[subscriptiontName] = next;
-
-            return next;
+            _tasksLock = new TaskSetManager(numTasks);
         }
 
         public string GetSubscriptionName
@@ -109,7 +90,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void AddTask(string taskId, IConfiguration partialConfiguration, IActiveContext context)
+        public int GetNextOperatorId()
+        {
+            return Interlocked.Increment(ref _numOperators);
+        }
+
+        public bool AddTask(string taskId)
         {
             if (!_finalized)
             {
@@ -117,75 +103,39 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     "CommunicationGroupDriver must call Build() before adding tasks to the group.");
             }
 
-            Interlocked.Increment(ref _tasksAdded);
+            lock (_tasksLock)
+            {
+                if (_numTasks >= _tasksAdded)
+                {
+                    return false;
+                }
+
+                _tasksAdded++;
+            }
 
             GetRootOperator.AddTask(taskId);
 
-            int id = Utils.GetTaskNum(taskId);
-
-            _taskSet.AddTask(id - 1, partialConfiguration, context);
-
-            if (DoneWithTasks)
-            {
-                _taskSet.StartTasks(GetElasticService.GetElasticTaskConfiguration(GetElasticTaskConfiguration));
-            }
-        }
-
-        public int GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
-        {
-            if (!_finalized || DoneWithContexts)
-            {
-                throw new IllegalStateException(
-                    "CommunicationGroupDriver must call Build() before adding tasks to the group.");
-            }
-
-            return Interlocked.Increment(ref _contextsAdded);
-        }
-
-        public int GetNextTaskId(IActiveContext context = null)
-        {
-            if (!_finalized || context == null)
-            {
-                throw new IllegalStateException(
-                    "CommunicationGroupDriver must call Build() before adding tasks to the group.");
-            }
-            return Utils.GetContextNum(context);
-        }
-
-        public int GetTaskId
-        {
-            get
-            {
-                if (!_finalized)
-                {
-                    throw new IllegalStateException(
-                        "CommunicationGroupDriver must call Build() before adding tasks to the group.");
-                }
-
-                return _tasksAdded;
-            }
-        }
-
-        public bool DoneWithContexts
-        {
-            get
-            {
-                return _contextsAdded == _numContexts && _status == TaskSetStatus.Init;
-            }
-        }
-
-        public bool DoneWithTasks
-        {
-            get
-            {
-                return _status == TaskSetStatus.Init && _taskSet.InitComplete(_tasksAdded);
-            }
+            return true;
         }
 
         public bool IsMasterTaskContext(IActiveContext activeContext)
         {
+            if (!_finalized)
+            {
+                throw new IllegalStateException(
+                    "CommunicationGroupDriver must call Build() before adding tasks to the group.");
+            }
+
             int id = Utils.GetContextNum(activeContext);
             return id == 1;
+        }
+
+        public IElasticTaskSetService GetService
+        {
+            get
+            {
+                return _elasticService;
+            }
         }
 
         /// <summary>
@@ -194,40 +144,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// </summary>
         /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
         /// <returns>The Task Configuration for this communication group</returns>
-        public IConfiguration GetElasticTaskConfiguration
+        public void GetElasticTaskConfiguration(ref ICsConfigurationBuilder builder)
         {
-            get
-            {
-                var confBuilder = TangFactory.GetTang().NewConfigurationBuilder()
-                    .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
+            builder = builder
+                 .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
                         GenericType<GroupCommConfigurationOptions.DriverId>.Class,
-                        GetElasticService.GetDriverId)
+                        _elasticService.GetDriverId)
                     .BindNamedParameter<GroupCommConfigurationOptions.CommunicationGroupName, string>(
                         GenericType<GroupCommConfigurationOptions.CommunicationGroupName>.Class,
                         _subscriptionName);
 
-                GetRootOperator.GetElasticTaskConfiguration(ref confBuilder);
-
-                return confBuilder.Build();
-            }
-        }
-
-        public IElasticTaskSetService GetElasticService
-        {
-            get
-            {
-                if (_elasticService == null)
-                {
-                    if (_prev == null)
-                    {
-                        throw new IllegalStateException("Elastic Service not defined");
-                    }
-
-                    return _prev.GetElasticService;
-                }
-
-                return _elasticService;
-            }
+                GetRootOperator.GetElasticTaskConfiguration(ref builder);
         }
 
         public ElasticOperator GetRootOperator
@@ -247,10 +174,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             _finalized = true;
 
-            foreach (var next in _next.Values)
-            {
-                next.Build();
-            }
             return this;
         }
 

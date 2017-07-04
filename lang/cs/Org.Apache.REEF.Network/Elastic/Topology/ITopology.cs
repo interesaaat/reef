@@ -27,6 +27,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology
     {
         IConfiguration GetTaskConfiguration(string taskId);
 
-        void AddTask(string taskId);
+        bool AddTask(string taskId);
     }
 }

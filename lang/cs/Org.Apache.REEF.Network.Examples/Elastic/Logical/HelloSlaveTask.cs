@@ -16,25 +16,32 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Common.Tasks;
+using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Network.Elastic.Config;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
-    class EmptyTopology : ITopology
+    /// <summary>
+    /// A Task that merely prints a greeting and exits.
+    /// </summary>
+    public sealed class HelloSlaveTask : ITask
     {
-        public EmptyTopology()
+        [Inject]
+        private HelloSlaveTask()
         {
         }
 
-        public bool AddTask(string taskId)
+        public void Dispose()
         {
-            return true;
+            Console.WriteLine("Disposed.");
         }
 
-        public IConfiguration GetTaskConfiguration(string taskId)
+        public byte[] Call(byte[] memento)
         {
-            throw new NotImplementedException();
+            Console.WriteLine("Hello, REEF from Slave!");
+
+            return null;
         }
     }
 }

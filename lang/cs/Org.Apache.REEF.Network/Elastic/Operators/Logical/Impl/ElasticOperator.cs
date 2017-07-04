@@ -41,8 +41,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected string _masterTaskId = null;
         protected IElasticTaskSetSubscription _subscription;
+        protected int _id;
 
-        public void AddTask(string taskId)
+        public ElasticOperator(IElasticTaskSetSubscription subscription)
+        {
+            _subscription = subscription;
+        }
+
+        public bool AddTask(string taskId)
         {
             if (!IsMasterTaskId)
             {
@@ -55,6 +61,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 _next.AddTask(taskId);
             }
+
+            return true;
         }
 
         protected bool IsMasterTaskId
@@ -88,8 +96,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         throw new IllegalStateException("The reference to the parent subscription is lost");
                     }
+
                     return _prev.GetSubscription;
                 }
+
                 return _subscription;
             }
         }

@@ -61,6 +61,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         private readonly IElasticTaskSetService _service;
         private readonly IElasticTaskSetSubscription _subscription;
+        private readonly ITaskSetManager _taskManager;
 
         [Inject]
         private ElasticBroadcastDriver(
@@ -91,6 +92,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             IElasticTaskSetSubscription subscription = _service.DefaultElasticTaskSetSubscription;
 
+            System.Threading.Thread.Sleep(40000);
+
             ElasticOperator pipeline = subscription.GetRootOperator;
 
             // Create and build the pipeline
@@ -101,6 +104,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             // Build the subscription
             _subscription = subscription.Build();
+
+            // Create the task manager
+            _taskManager = new TaskSetManager(_numEvaluators);
+
+            // Register the subscription to the task manager
+            _taskManager.AddTaskSetSubscription(_subscription);
         }
 
         public void OnNext(IDriverStarted value)
@@ -117,37 +126,52 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id = _subscription.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextName(_subscription.GetSubscriptionName, id);
+            int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
+            string identifier = Utils.BuildContextName(_taskManager.GetSubscriptionsId, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
                 .Build();
             IConfiguration serviceConf = _service.GetServiceConfiguration();
+
             serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
             allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
         }
 
         public void OnNext(IActiveContext activeContext)
         {
-            bool isMaster = _subscription.IsMasterTaskContext(activeContext);
-            int id = _subscription.GetNextTaskId(activeContext);
-            string taskId = Utils.BuildTaskId(_subscription.GetSubscriptionName, id);
+            bool isMaster = _taskManager.IsMasterTaskContext(activeContext);
+            int id = _taskManager.GetNextTaskId(activeContext);
+            string taskId = Utils.BuildTaskId(_taskManager.GetSubscriptionsId, id);
 
-            IConfiguration partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                TaskConfiguration.ConfigurationModule
-                    .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<HelloTask>.Class)
-                    .Build())
-                .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
-                    GenericType<ElasticConfig.NumEvaluators>.Class,
-                    _numEvaluators.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<ElasticConfig.IsMasterTask, bool>(
-                    GenericType<ElasticConfig.IsMasterTask>.Class,
-                    isMaster.ToString(CultureInfo.InvariantCulture))
-                .Build();
+            IConfiguration partialTaskConf;
 
-            _subscription.AddTask(taskId, partialTaskConf, activeContext);
+            if (isMaster)
+            {
+                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
+                    TaskConfiguration.ConfigurationModule
+                        .Set(TaskConfiguration.Identifier, taskId)
+                        .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
+                        .Build())
+                    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
+                        GenericType<ElasticConfig.NumEvaluators>.Class,
+                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
+                    .Build();
+            }
+            else
+            {
+                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
+                    TaskConfiguration.ConfigurationModule
+                        .Set(TaskConfiguration.Identifier, taskId)
+                        .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
+                        .Build())
+                    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
+                        GenericType<ElasticConfig.NumEvaluators>.Class,
+                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
+                    .Build();
+            }
+
+            _taskManager.AddTask(taskId, partialTaskConf, activeContext);
         }
 
         public void OnNext(IFailedEvaluator value)

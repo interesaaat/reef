@@ -20,11 +20,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using Org.Apache.REEF.Driver.Context;
-using Org.Apache.REEF.Network.Utilities;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Driver.Evaluator;
+using Org.Apache.REEF.Tang.Implementations.Tang;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -37,8 +39,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly object _lock;
 
+        private int _contextsAdded;
+        private int _tasksAdded;
+        private readonly int _numTasks;
+
         private readonly List<Tuple<IConfiguration, IActiveContext>> _taskConfs;
-        private readonly List<Tuple<int, TaskSetStatus>> _taskStatus; 
+        private readonly List<Tuple<int, TaskSetStatus>> _taskStatus;
+        private readonly List<HashSet<string>> _taskToSubsMapper;
+
+        private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions; 
 
         /// <summary>
         /// Create new TaskStarter.
@@ -52,8 +61,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             _lock = new object();
 
+            _contextsAdded = 0;
+            _tasksAdded = 0;
+            _numTasks = numTasks;
+
             _taskConfs = new List<Tuple<IConfiguration, IActiveContext>>(numTasks);
             _taskStatus = new List<Tuple<int, TaskSetStatus>>(numTasks);
+
+            _taskToSubsMapper = new List<HashSet<string>>(numTasks);
+
+            _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 
             for (int i = 0; i < numTasks; i++)
             {
@@ -62,16 +79,44 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        public void AddTaskSetSubscription(IElasticTaskSetSubscription subscription)
+        {
+            _subscriptions.Add(subscription.GetSubscriptionName, subscription);
+        }
+
+        public int GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
+        {
+            if (_contextsAdded > _numTasks)
+            {
+                throw new IllegalStateException("Trying to schedule too many contextes");
+            }
+
+            return Interlocked.Increment(ref _contextsAdded);
+        }
+
+        public string GetSubscriptionsId
+        {
+            get
+            {
+                return _subscriptions.Keys.Aggregate((current, next) => current + "+" + next);
+            }
+        }
+
         public int GetNextTaskId(IActiveContext context = null)
         {
             return Utils.GetContextNum(context);
+        }
+
+        public bool IsMasterTaskContext(IActiveContext activeContext)
+        {
+            return _subscriptions.Values.Any(sub => sub.IsMasterTaskContext(activeContext) == true);
         }
 
         public int NumTasks
         {
             get
             {
-                return _taskStatus.Capacity;
+                return _numTasks;
             }
         }
 
@@ -84,46 +129,63 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="partialTaskConfig">The partial task configuration containing Task
         /// identifier and Task class</param>
         /// <param name="activeContext">The Active Context to run the Task on</param>
-        public void AddTask(int taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
+        public void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
         {
-            if (_taskConfs[taskId] != null)
+            int id = Utils.GetTaskNum(taskId) - 1;
+
+            if (_taskConfs[id] != null)
             {
                 throw new ArgumentException(
                     "Task Id already registered with TaskSet");
             }
 
-            lock (_lock)
-            {
-                _taskConfs[taskId] = new Tuple<IConfiguration, IActiveContext>(partialTaskConfig, activeContext);
+            Interlocked.Increment(ref _tasksAdded);
 
-                _taskStatus[taskId] = new Tuple<int, TaskSetStatus>(0, TaskSetStatus.Init);
+            _taskConfs[id] = new Tuple<IConfiguration, IActiveContext>(partialTaskConfig, activeContext);
+
+            _taskStatus[id] = new Tuple<int, TaskSetStatus>(0, TaskSetStatus.Init);
+
+            foreach (var sub in _subscriptions)
+            {
+                if (sub.Value.AddTask(taskId))
+                {
+                    _taskToSubsMapper[id].Add(sub.Key);
+                }
+            }
+
+            if (StartSubmitTasks)
+            {
+                SubmitTasks();
             }
         }
 
-        public bool InitComplete(int numAddedTasks)
+        public bool StartSubmitTasks
         {
-            return numAddedTasks == _taskStatus.Capacity;
+            get
+            {
+                return _tasksAdded == _numTasks;
+            }
         }
 
         /// <summary>
         /// Starts the Master Task followed by the Slave Tasks.
         /// </summary>
-        public void StartTasks(IConfiguration subscriptionTaskConfiguration)
+        public void SubmitTasks()
         {
-            try
+            for (int i = 0; i < _numTasks; i++)
             {
-                _taskConfs.Single(tuple => Utils.GetIsMasterTask(tuple.Item1));
-            }
-            catch (InvalidOperationException)
-            {
-                LOGGER.Log(Level.Error, "There must be exactly one master task. The driver has been misconfigured.");
-                throw;
-            }
+                var subs = _taskToSubsMapper[i];
+                ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
-            foreach (Tuple<IConfiguration, IActiveContext> confTuple in _taskConfs)
-            {
-                IConfiguration mergedTaskConf = Configurations.Merge(confTuple.Item1, subscriptionTaskConfiguration);
-                confTuple.Item2.SubmitTask(mergedTaskConf);
+                foreach (var sub in subs)
+                {
+                    _subscriptions[sub].GetElasticTaskConfiguration(ref confBuilder);
+                }
+
+                IConfiguration subscriptionsConfiguration = confBuilder.Build();
+                IConfiguration serviceConfiguration = _subscriptions.Values.First().GetService.GetElasticTaskConfiguration(subscriptionsConfiguration);
+                IConfiguration mergedTaskConf = Configurations.Merge(_taskConfs[i].Item1, serviceConfiguration);
+                _taskConfs[i].Item2.SubmitTask(mergedTaskConf);
             }
         }
 

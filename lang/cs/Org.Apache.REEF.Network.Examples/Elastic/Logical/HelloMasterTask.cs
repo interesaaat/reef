@@ -25,15 +25,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
     /// <summary>
     /// A Task that merely prints a greeting and exits.
     /// </summary>
-    public sealed class HelloTask : ITask
+    public sealed class HelloMasterTask : ITask
     {
-        private readonly bool _isMasterTask;
-
         [Inject]
-        private HelloTask(
-            [Parameter(typeof(ElasticConfig.IsMasterTask))] bool isMasterTask)
+        private HelloMasterTask()
         {
-            _isMasterTask = isMasterTask;
         }
 
         public void Dispose()
@@ -43,15 +39,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public byte[] Call(byte[] memento)
         {
-            if (_isMasterTask)
-            {
-                Console.WriteLine("Hello, REEF from Master!");
-            }
-            else
-            {
-                Console.WriteLine("Hello, REEF from Slave!");
-            }
-           
+            Console.WriteLine("Hello, REEF from Master!");
+
             return null;
         }
     }

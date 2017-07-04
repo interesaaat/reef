@@ -29,14 +29,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// </summary>
     public interface IElasticTaskSetSubscription
     {
-        /// <summary>
-        /// Create a new CommunicationGroup with the given name and number of tasks/operators. 
-        /// </summary>
-        /// <param name="taskSetName">The new group name</param>
-        /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, IElasticTaskSetSubscription prev, int numTasks);
-
         string GetSubscriptionName { get; }
+
+        int GetNextOperatorId();
 
         /// <summary>
         /// Finalizes the CommunicationGroupDriver.
@@ -45,27 +40,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <returns>The same finalized CommunicationGroupDriver</returns>
         IElasticTaskSetSubscription Build();
-
-        IElasticTaskSetService GetElasticService { get; }
  
         ElasticOperator GetRootOperator { get; }
-
-        int GetNextTaskContextId(IAllocatedEvaluator evaluator = null);
-
-        int GetNextTaskId(IActiveContext context = null);
-
-        bool DoneWithContexts { get; }
-
-        bool DoneWithTasks { get; }
 
         /// <summary>
         /// Add a task to the communication group.
         /// The CommunicationGroupDriver must have called Build() before adding tasks to the group.
         /// </summary>
         /// <param name="taskId">The id of the task to add</param>
-        void AddTask(string taskId, IConfiguration partialConfiguration, IActiveContext context);
+        bool AddTask(string taskId);
 
         bool IsMasterTaskContext(IActiveContext activeContext);
+
+        IElasticTaskSetService GetService { get; }
 
         /// <summary>
         /// Get the Task Configuration for this communication group. 
@@ -73,6 +60,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
         /// <returns>The Task Configuration for this communication group</returns>
-        IConfiguration GetElasticTaskConfiguration { get; }
+        void GetElasticTaskConfiguration(ref ICsConfigurationBuilder builder);
     }
 }
