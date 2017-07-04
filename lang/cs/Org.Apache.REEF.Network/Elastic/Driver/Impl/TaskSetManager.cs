@@ -76,6 +76,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 _taskConfs.Add(null);
                 _taskStatus.Add(null);
+                _taskToSubsMapper.Add(new HashSet<string>());
             }
         }
 

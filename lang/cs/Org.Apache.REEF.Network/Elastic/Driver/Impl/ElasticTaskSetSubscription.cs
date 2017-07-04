@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             lock (_tasksLock)
             {
-                if (_numTasks >= _tasksAdded)
+                if (_tasksAdded >= _numTasks)
                 {
                     return false;
                 }

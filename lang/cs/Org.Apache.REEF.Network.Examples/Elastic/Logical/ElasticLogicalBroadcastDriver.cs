@@ -92,8 +92,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             IElasticTaskSetSubscription subscription = _service.DefaultElasticTaskSetSubscription;
 
-            System.Threading.Thread.Sleep(40000);
-
             ElasticOperator pipeline = subscription.GetRootOperator;
 
             // Create and build the pipeline

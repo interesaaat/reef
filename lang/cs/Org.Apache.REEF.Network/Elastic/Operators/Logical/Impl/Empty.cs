@@ -30,6 +30,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     class Empty : ElasticOperator
     {
+        private const string _operator = "empty";
+
         public Empty(IElasticTaskSetSubscription subscription) : base(subscription)
         {
             _policy = PolicyLevel.Ignore;
