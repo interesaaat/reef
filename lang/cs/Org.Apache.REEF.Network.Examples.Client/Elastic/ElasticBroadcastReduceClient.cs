@@ -30,26 +30,26 @@ using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Examples.Elastic.Logical;
 
-namespace Org.Apache.REEF.Network.Examples.Client
+namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
-    public class ElasticBroadcastClient
+    public class ElasticBroadcastReduceClient
     {
         const string Local = "local";
         const string Yarn = "yarn";
         const string DefaultRuntimeFolder = "REEF_LOCAL_RUNTIME";
 
-        public void RunElasticBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
+        public void RunBroadcastReduce(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
             const int numIterations = 10;
-            const string driverId = "BroadcastDriver";
-            const string subscription = "Broadcast";
+            const string driverId = "ElasticBroadcastReduceDriver";
+            const string subscription = "BroadcastReduce";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
-                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticBroadcastReduceDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<ElasticConfig.NumIterations, int>(
@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticBroadcastDriver), numTasks, "ElasticBroadcastDriver", runPlatform);
+            TestRun(merged, typeof(ElasticBroadcastReduceDriver), numTasks, "ElasticBroadcastReduceDriver", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)

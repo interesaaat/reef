@@ -24,49 +24,49 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    class Broadcast : ElasticOperator
+    class Reduce : ElasticOperator
     {
-        private const string _operator = "broadcast";
-        private int _senderId;
+        private const string _operator = "reduce";
+        private int _receiverId;
     
-        public Broadcast(int senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel) : base(null)
+        public Reduce(int receiverId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel) : base(null)
         {
-            _senderId = senderId;
+            _receiverId = receiverId;
             _prev = prev;
             _topology = topologyType == TopologyTypes.Flat ? (ITopology)new EmptyTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
             _id = GetSubscription.GetNextOperatorId();
         }
 
-        public int GetSenderTaskId
+        public int GetReceiverTaskId
         {
             get
             {
-                return _senderId;
+                return _receiverId;
             }
         }
 
-        protected int GenerateSenderTaskId()
+        private int GenerateReceiverTaskId()
         {
-            _senderId = 1;
-            return _senderId;
+            _receiverId = 1;
+            return _receiverId;
         }
 
         protected new int GenerateMasterTaskId()
         {
-            return GenerateSenderTaskId();
+            return GenerateReceiverTaskId();
         }
 
         protected new bool IsMasterTaskId(int taskId)
         {
-            return _senderId == taskId;
+            return _receiverId == taskId;
         }
 
         protected new int GetMasterTaskId
         {
             get
             {
-                return _senderId;
+                return _receiverId;
             }
         }
 

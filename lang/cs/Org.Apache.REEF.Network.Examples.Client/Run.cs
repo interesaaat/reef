@@ -17,6 +17,8 @@
 
 using System;
 using Org.Apache.REEF.Network.Examples.GroupCommunication;
+using Org.Apache.REEF.Network.Examples.Elastic.Logical;
+using Org.Apache.REEF.Network.Examples.Client.Elastic;
 
 namespace Org.Apache.REEF.Network.Examples.Client
 {
@@ -29,7 +31,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 9;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "RunElasticBroadcast";
+            string testToRun = "ElasticBroadcastReduceDriver";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -76,9 +78,9 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
             }
 
-            if (testToRun.Equals("RunBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
+            if (testToRun.Equals("ElasticBroadcastReduceDriver".ToLower()) || testToRun.Equals("all"))
             {
-                new BroadcastAndReduceClient().RunBroadcastAndReduce(runOnYarn, numNodes, startPort, portRange);
+                new ElasticBroadcastReduceClient().RunBroadcastReduce(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticRunBroadcast completed!!!");
             }
 

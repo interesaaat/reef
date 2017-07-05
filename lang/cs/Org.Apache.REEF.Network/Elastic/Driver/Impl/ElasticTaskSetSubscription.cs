@@ -113,7 +113,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _tasksAdded++;
             }
 
-            GetRootOperator.AddTask(taskId);
+            int id = Utils.GetTaskNum(taskId);
+
+            GetRootOperator.AddTask(id);
 
             return true;
         }

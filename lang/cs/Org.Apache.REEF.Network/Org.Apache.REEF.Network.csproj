@@ -73,6 +73,7 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\IElasticOperator.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetService.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\Reduce.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\Broadcast.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperator.cs" />
     <Compile Include="Elastic\Operators\Logical\IReduceFunction.cs" />

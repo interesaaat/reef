@@ -39,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected bool _finalized = false;
 
-        protected string _masterTaskId = null;
+        protected int _masterTaskId = 0;
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
@@ -48,13 +48,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _subscription = subscription;
         }
 
-        public bool AddTask(string taskId)
+        public bool AddTask(int taskId)
         {
-            if (!IsMasterTaskId)
-            {
-                SetMasterTaskId(taskId);
-            }
-
             _topology.AddTask(taskId);
 
             if (_next != null)
@@ -65,25 +60,28 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return true;
         }
 
-        protected bool IsMasterTaskId
+        protected int GenerateMasterTaskId()
         {
-            get
-            {
-                return _masterTaskId == null;
-            }
+            _masterTaskId = 1;
+            return _masterTaskId;
         }
 
-        protected string GetMasterTaskId
+        protected bool IsMasterTaskId(int id)
+        {
+           return _masterTaskId == id;
+        }
+
+        protected int GetMasterTaskId
         {
             get
             {
+                if (_masterTaskId < 1)
+                {
+                    throw new IllegalStateException("Master Task Id not set");
+                }
+
                 return _masterTaskId;
             }
-        }
-
-        protected void SetMasterTaskId(string taskId)
-        {
-            _masterTaskId = taskId;
         }
 
         protected IElasticTaskSetSubscription GetSubscription
@@ -138,7 +136,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public ElasticOperator Broadcast(string senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
             _next = new Broadcast(senderTaskId, this, topologyType, policyLevel);
             return _next;
@@ -146,18 +144,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
-            return Broadcast(GetMasterTaskId, topologyType, policyLevel, configurations);
+            return Broadcast(GenerateMasterTaskId(), topologyType, policyLevel, configurations);
         }
 
-        public ElasticOperator Reduce(string receiverTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
+        public ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
-            _next = new Broadcast(receiverTaskId, this, topologyType, policyLevel);
+            _next = new Reduce(receiverTaskId, this, topologyType, policyLevel);
             return _next;
         }
 
         public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, PolicyLevel policyLevel = PolicyLevel.Ignore, params IConfiguration[] configurations)
         {
-            _next = new Broadcast(GetMasterTaskId, this, topologyType, policyLevel);
+            _next = new Reduce(GenerateMasterTaskId(), this, topologyType, policyLevel);
             return _next;
         }
 

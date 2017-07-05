@@ -27,12 +27,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         {
         }
 
-        public bool AddTask(string taskId)
+        public bool AddTask(int taskId)
         {
             return true;
         }
 
-        public IConfiguration GetTaskConfiguration(string taskId)
+        public IConfiguration GetTaskConfiguration(int taskId)
         {
             throw new NotImplementedException();
         }

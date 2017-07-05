@@ -48,7 +48,8 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="BroadcastAndReduceClient.cs" />
-    <Compile Include="ElasticBroadcastClient.cs" />
+    <Compile Include="Elastic\ElasticBroadcastReduceClient.cs" />
+    <Compile Include="Elastic\ElasticBroadcastClient.cs" />
     <Compile Include="PipelineBroadcastAndReduceClient.cs" />
     <Compile Include="Run.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
