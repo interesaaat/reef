@@ -35,13 +35,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     {
         void AddTaskSetSubscription(IElasticTaskSetSubscription subscription);
 
+        bool HasMoreContextToAdd { get; }
+
         int GetNextTaskContextId(IAllocatedEvaluator evaluator = null);
 
         string GetSubscriptionsId { get; }
 
         int GetNextTaskId(IActiveContext context = null);
 
-        bool IsMasterTaskContext(IActiveContext activeContext);
+        IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext);
 
         int NumTasks { get; }
 

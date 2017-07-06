@@ -15,14 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.Policy
+using System;
+using Org.Apache.REEF.Network.Group.Operators;
+using Org.Apache.REEF.Tang.Interface;
+
+namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
-    public enum PolicyLevel
+    class ForestTopology : ITopology
     {
-        Ignore,
+        public ForestTopology()
+        {
+        }
 
-        StopAndResubmit,
+        public bool AddTask(int taskId)
+        {
+            return true;
+        }
 
-        StopAndRecompute
+        public IConfiguration GetTaskConfiguration(int taskId)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

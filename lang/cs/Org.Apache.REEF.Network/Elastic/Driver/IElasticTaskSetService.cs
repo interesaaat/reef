@@ -37,14 +37,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="taskSetName">The new group name</param>
         /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string taskSetName, int numTasks);
+        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptionName, int numTasks);
 
         /// <summary>
         /// remove a communication group
         /// Throw ArgumentException if the group does not exist
         /// </summary>
         /// <param name="groupName"></param>
-        void RemoveElasticTaskSetSubscription(string taskSetName);
+        void RemoveElasticTaskSetSubscription(string subscriptionName);
 
         IEnumerator<IElasticTaskSetSubscription> GetSubscriptions { get; }
 

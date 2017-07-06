@@ -23,7 +23,6 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -85,6 +84,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _subscriptions.Add(subscription.GetSubscriptionName, subscription);
         }
 
+        public bool HasMoreContextToAdd
+        {
+            get
+            {
+                return _contextsAdded < _numTasks;
+            }
+        }
+
         public int GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
         {
             if (_contextsAdded > _numTasks)
@@ -108,9 +115,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return Utils.GetContextNum(context);
         }
 
-        public bool IsMasterTaskContext(IActiveContext activeContext)
+        public IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext)
         {
-            return _subscriptions.Values.Any(sub => sub.IsMasterTaskContext(activeContext) == true);
+            return _subscriptions.Values
+                .Where(sub => sub.IsMasterTaskContext(activeContext));
         }
 
         public int NumTasks

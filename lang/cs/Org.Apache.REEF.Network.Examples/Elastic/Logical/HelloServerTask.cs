@@ -15,16 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.TaskSet
+using System;
+using Org.Apache.REEF.Common.Tasks;
+using Org.Apache.REEF.Tang.Annotations;
+
+namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
-    public enum TaskSetStatus
+    /// <summary>
+    /// A Task that merely prints a greeting and exits.
+    /// </summary>
+    public sealed class HelloServerTask : ITask
     {
-        Init,
+        [Inject]
+        private HelloServerTask()
+        {
+        }
 
-        Running,
+        public void Dispose()
+        {
+            Console.WriteLine("Disposed.");
+        }
 
-        Recovery,
+        public byte[] Call(byte[] memento)
+        {
+            Console.WriteLine("Hello, REEF from Server!");
 
-        Finished
+            return null;
+        }
     }
 }

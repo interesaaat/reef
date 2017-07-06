@@ -18,7 +18,6 @@
 using System;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Config;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {

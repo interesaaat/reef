@@ -16,9 +16,8 @@
 // under the License.
 
 using System;
-using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
+using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
@@ -39,19 +38,21 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
-    public class ElasticBroadcastDriver : 
+    public class ElasticIterateBroadcastReduceDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
         IObserver<IFailedEvaluator>, 
         IObserver<IFailedTask>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastReduceDriver));
 
         private readonly int _numEvaluators;
+        private readonly int _numIterations;
 
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
@@ -62,13 +63,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticBroadcastDriver(
+        private ElasticIterateBroadcastReduceDriver(
+            [Parameter(typeof(ElasticConfig.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticConfig.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticConfig.PortRange))] int portRange,
             ElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
+            _numIterations = numIterations;
             _numEvaluators = numEvaluators;
             _service = service;
             _evaluatorRequestor = evaluatorRequestor;
@@ -84,18 +87,36 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                 .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
+            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int, int>.Conf
+                .Set(ReduceFunctionConfiguration<int, int>.ReduceFunction, GenericType<SumFunction>.Class)
+                .Build();
+
             IConfiguration dataConverterConfig = PipelineDataConverterConfiguration<int>.Conf
                 .Set(PipelineDataConverterConfiguration<int>.DataConverter, GenericType<DefaultPipelineDataConverter<int>>.Class)
                 .Build();
+
+            IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
+                .BindNamedParameter<ElasticConfig.NumIterations, int>(GenericType<ElasticConfig.NumIterations>.Class,
+                    numIterations.ToString(CultureInfo.InvariantCulture))
+               .Build();
 
             IElasticTaskSetSubscription subscription = _service.DefaultElasticTaskSetSubscription;
 
             ElasticOperator pipeline = subscription.GetRootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast(TopologyTypes.Tree,
+            pipeline.Iterate(TopologyTypes.Tree,
                         PolicyLevel.Ignore,
                         CheckpointLevel.None,
+                        iteratorConfig)
+                    .Broadcast(TopologyTypes.Tree,
+                        PolicyLevel.Ignore,
+                        CheckpointLevel.None,
+                        dataConverterConfig)
+                    .Reduce(TopologyTypes.Flat,
+                        PolicyLevel.Ignore,
+                        CheckpointLevel.None,
+                        reduceFunctionConfig,
                         dataConverterConfig)
                     .Build();
 
@@ -116,7 +137,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("BroadcastEvaluator")
+                .SetEvaluatorBatchId("IterateBroadcastReduceEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }

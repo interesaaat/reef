@@ -24,10 +24,10 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using System.Threading;
 using Org.Apache.REEF.Driver.Context;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -103,17 +103,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     "CommunicationGroupDriver must call Build() before adding tasks to the group.");
             }
 
+            int id = Utils.GetTaskNum(taskId);
+
             lock (_tasksLock)
             {
-                if (_tasksAdded >= _numTasks)
+                if (_tasksAdded >= _numTasks || (_numTasks == 1 && !GetRootOperator.IsAnyMasterTaskId(id)))
                 {
                     return false;
                 }
 
                 _tasksAdded++;
             }
-
-            int id = Utils.GetTaskNum(taskId);
 
             GetRootOperator.AddTask(id);
 

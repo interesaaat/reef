@@ -40,7 +40,6 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
         public void RunElasticBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 10;
             const string driverId = "ElasticBroadcastDriver";
             const string subscription = "Broadcast";
 
@@ -52,9 +51,6 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnContextActive, GenericType<ElasticBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<ElasticConfig.NumIterations, int>(
-                    GenericType<ElasticConfig.NumIterations>.Class,
-                    numIterations.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
                     GenericType<ElasticConfig.NumEvaluators>.Class,
                     numTasks.ToString(CultureInfo.InvariantCulture))

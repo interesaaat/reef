@@ -35,7 +35,6 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Group.Driver.Impl;
-using Org.Apache.REEF.Network.Elastic.Driver.TaskSet;
 using Org.Apache.REEF.Network.Elastic.Config;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl

@@ -37,18 +37,18 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("tree width")]
-        public class FanOut : Name<int>
+        [NamedParameter("Number of Servers")]
+        public class NumServers : Name<int>
+        {
+        }
+
+        [NamedParameter("Number of Workes")]
+        public class NumWorkers : Name<int>
         {
         }
 
         [NamedParameter("integer id of the evaluator")]
         public class EvaluatorId : Name<string>
-        {
-        }
-
-        [NamedParameter(Documentation = "Size of the array", DefaultValue = "6")]
-        public class ArraySize : Name<int>
         {
         }
 
@@ -59,6 +59,16 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 
         [NamedParameter(Documentation = "Port Range count for TcpPortProvider", DefaultValue = "1000")]
         public class PortRange : Name<int>
+        {
+        }
+
+        [NamedParameter("tree width")]
+        public class FanOut : Name<int>
+        {
+        }
+
+        [NamedParameter(Documentation = "Size of the array", DefaultValue = "6")]
+        public class ArraySize : Name<int>
         {
         }
 

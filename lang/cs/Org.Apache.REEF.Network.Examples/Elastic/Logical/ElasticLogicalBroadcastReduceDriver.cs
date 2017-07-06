@@ -16,7 +16,6 @@
 // under the License.
 
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using Org.Apache.REEF.Driver;
@@ -35,11 +34,9 @@ using Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
-using Org.Apache.REEF.Network.Elastic.Driver.Policy;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
 
@@ -102,9 +99,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree,
                         PolicyLevel.Ignore,
+                        CheckpointLevel.None,
                         dataConverterConfig)
                     .Reduce(TopologyTypes.Flat,
                         PolicyLevel.Ignore,
+                        CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)
                     .Build();
@@ -147,7 +146,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public void OnNext(IActiveContext activeContext)
         {
-            bool isMaster = _taskManager.IsMasterTaskContext(activeContext);
+            bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
             int id = _taskManager.GetNextTaskId(activeContext);
             string taskId = Utils.BuildTaskId(_taskManager.GetSubscriptionsId, id);
 
@@ -172,9 +171,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
                         .Build())
-                    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
-                        GenericType<ElasticConfig.NumEvaluators>.Class,
-                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
                     .Build();
             }
 

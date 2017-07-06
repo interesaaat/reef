@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 9;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "ElasticBroadcastReduceDriver";
+            string testToRun = "ElasticParameterServer";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -78,16 +78,28 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
             }
 
-            if (testToRun.Equals("ElasticBroadcastReduceDriver".ToLower()) || testToRun.Equals("all"))
-            {
-                new ElasticBroadcastReduceClient().RunBroadcastReduce(runOnYarn, numNodes, startPort, portRange);
-                Console.WriteLine("ElasticRunBroadcast completed!!!");
-            }
-
             if (testToRun.Equals("RunElasticBroadcast".ToLower()) || testToRun.Equals("all"))
             {
                 new ElasticBroadcastClient().RunElasticBroadcast(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticRunBroadcast completed!!!");
+            }
+
+            if (testToRun.Equals("ElasticBroadcastReduce".ToLower()) || testToRun.Equals("all"))
+            {
+                new ElasticBroadcastReduceClient().RunBroadcastReduce(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticRunBroadcastReduce completed!!!");
+            }
+
+            if (testToRun.Equals("ElasticIterateBroadcastReduce".ToLower()) || testToRun.Equals("all"))
+            {
+                new ElasticIterateBroadcastReduceClient().RunIterateBroadcastReduce(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticIterateBroadcastReduce completed!!!");
+            }
+
+            if (testToRun.Equals("ElasticParameterServer".ToLower()) || testToRun.Equals("all"))
+            {
+                new ElasticParameterServerClient().RunParameterServer(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticIterateBroadcastReduce completed!!!");
             }
         }
     }

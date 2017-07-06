@@ -24,51 +24,18 @@ using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    class Reduce : ElasticOperator
+    class Iterate : ElasticOperator
     {
-        private const string _operator = "reduce";
-        private int _receiverId;
+        private const string _operator = "iterate";
     
-        public Reduce(int receiverId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
+        public Iterate(int masterTaskId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
         {
-            _receiverId = receiverId;
+            _masterTaskId = masterTaskId;
             _prev = prev;
             _topology = topologyType == TopologyTypes.Flat ? (ITopology)new EmptyTopology() : (ITopology)new TreeTopology();
             _policy = policyLevel;
             _checkpointLevel = checkpointLevel;
             _id = GetSubscription.GetNextOperatorId();
-        }
-
-        public int GetReceiverTaskId
-        {
-            get
-            {
-                return _receiverId;
-            }
-        }
-
-        private int GenerateReceiverTaskId()
-        {
-            _receiverId = 1;
-            return _receiverId;
-        }
-
-        protected new int GenerateMasterTaskId()
-        {
-            return GenerateReceiverTaskId();
-        }
-
-        protected new bool IsMasterTaskId(int taskId)
-        {
-            return _receiverId == taskId;
-        }
-
-        protected new int GetMasterTaskId
-        {
-            get
-            {
-                return _receiverId;
-            }
         }
 
         public override void OnStopAndRecompute()

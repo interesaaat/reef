@@ -23,7 +23,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <returns>The context number associated with the active context id</returns>
         public static int GetContextNum(IActiveContext activeContext)
         {
-            return GetIdNum(activeContext.Id);
+            return int.Parse(GetValue(2, activeContext.Id), CultureInfo.InvariantCulture);
+        }
+
+        public static string GetContextSubscriptions(IActiveContext activeContext)
+        {
+            return GetValue(1, activeContext.Id);
         }
 
         /// <summary>
@@ -33,18 +38,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <returns>The context number associated with the active context id</returns>
         public static int GetTaskNum(string taskId)
         {
-            return GetIdNum(taskId);
+            return int.Parse(GetValue(2, taskId), CultureInfo.InvariantCulture);
         }
 
-        private static int GetIdNum(string identifer)
+        private static string GetValue(int value, string identifer)
         {
             string[] parts = identifer.Split('-');
-            if (parts.Length != 3)
+            if (parts.Length != 3 || value < 0 || value > 2)
             {
                 throw new ArgumentException("Invalid id in active context");
             }
 
-            return int.Parse(parts[2], CultureInfo.InvariantCulture);
+            return parts[value];
         }
 
         public static string BuildContextName(string subscriptionName, int contextNum)
