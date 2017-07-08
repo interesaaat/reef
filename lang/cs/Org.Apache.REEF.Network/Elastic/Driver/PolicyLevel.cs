@@ -17,12 +17,23 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
-    public enum PolicyLevel
+    public enum FailureState
     {
-        Ignore,
+        Continue,
 
-        StopAndResubmit,
+        ContinueAndReconfigure,
 
-        StopAndRecompute
+        ContinueAndReschedule,
+
+        StopAndReschedule
+    }
+
+    public enum FailureStateEvent
+    {
+        Reconfigure,
+
+        Reschedule,
+
+        Stop
     }
 }

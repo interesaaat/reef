@@ -109,33 +109,35 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
+            System.Threading.Thread.Sleep(40000);
+
             // Subscriptions
             IElasticTaskSetSubscription subscription = _service.NewElasticTaskSetSubscription("servers", 3);
 
             ElasticOperator pipeline = subscription.GetRootOperator;
 
             pipeline.Iterate(1, TopologyTypes.Forest,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         iteratorConfig)
                      .Broadcast(1, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Build();
 
             _serversSubscription = subscription.Build();
 
-            subscription = _service.NewElasticTaskSetSubscription("server A", 1);
+            subscription = _service.NewElasticTaskSetSubscription("server A", 7);
 
             pipeline = subscription.GetRootOperator;
 
             pipeline.Broadcast(1, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Reduce(1, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)
@@ -143,16 +145,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             _serverA = subscription.Build();
 
-            subscription = _service.NewElasticTaskSetSubscription("server B", 1);
+            subscription = _service.NewElasticTaskSetSubscription("server B", 7);
 
             pipeline = subscription.GetRootOperator;
 
             pipeline.Broadcast(2, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         dataConverterConfig)
                      .Reduce(2, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)
@@ -160,16 +162,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             _serverB = subscription.Build();
 
-            subscription = _service.NewElasticTaskSetSubscription("server C", 1);
+            subscription = _service.NewElasticTaskSetSubscription("server C", 7);
 
             pipeline = subscription.GetRootOperator;
 
             pipeline.Broadcast(3, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Reduce(3, TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)

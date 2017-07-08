@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private const string _operator = "iterate";
     
-        public Iterate(int masterTaskId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
+        public Iterate(int masterTaskId, ElasticOperator prev, TopologyTypes topologyType, FailureState policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
         {
             _masterTaskId = masterTaskId;
             _prev = prev;

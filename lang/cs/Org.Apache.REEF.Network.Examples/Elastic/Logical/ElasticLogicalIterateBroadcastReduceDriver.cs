@@ -106,15 +106,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             // Create and build the pipeline
             pipeline.Iterate(TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         iteratorConfig)
                     .Broadcast(TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Reduce(TopologyTypes.Flat,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)

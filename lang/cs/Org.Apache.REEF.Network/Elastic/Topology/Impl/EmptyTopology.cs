@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         {
         }
 
-        public bool AddTask(int taskId)
+        public bool AddTask(string taskId)
         {
             return true;
         }

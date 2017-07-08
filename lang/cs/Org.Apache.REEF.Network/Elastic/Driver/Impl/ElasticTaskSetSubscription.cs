@@ -16,7 +16,6 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Exceptions;
@@ -27,7 +26,6 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using System.Threading;
 using Org.Apache.REEF.Driver.Context;
-using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -48,7 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _tasksAdded;
 
         private readonly TaskSetManager _taskSet;
-        private TaskSetStatus _status;
+        ////private TaskSetStatus _status;
         private ElasticOperator _root;
         private int _numOperators;
 
@@ -67,14 +65,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
             int numTasks,
-            IElasticTaskSetService elasticService = null)
+            IElasticTaskSetService elasticService)
         {
             _confSerializer = confSerializer;
             _subscriptionName = subscriptionName;
             _finalized = false;
             _numTasks = numTasks;
             _tasksAdded = 0;
-            _status = TaskSetStatus.Init;
             _root = new Empty(this);
             _elasticService = elasticService;
 
@@ -103,11 +100,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     "CommunicationGroupDriver must call Build() before adding tasks to the group.");
             }
 
-            int id = Utils.GetTaskNum(taskId);
-
             lock (_tasksLock)
             {
-                if (_tasksAdded >= _numTasks || (_numTasks == 1 && !GetRootOperator.IsAnyMasterTaskId(id)))
+                if (_tasksAdded >= _numTasks)
                 {
                     return false;
                 }
@@ -115,7 +110,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _tasksAdded++;
             }
 
-            GetRootOperator.AddTask(id);
+            GetRootOperator.AddTask(taskId);
 
             return true;
         }
@@ -149,12 +144,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void GetElasticTaskConfiguration(ref ICsConfigurationBuilder builder)
         {
             builder = builder
-                 .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
-                        GenericType<GroupCommConfigurationOptions.DriverId>.Class,
-                        _elasticService.GetDriverId)
-                    .BindNamedParameter<GroupCommConfigurationOptions.CommunicationGroupName, string>(
-                        GenericType<GroupCommConfigurationOptions.CommunicationGroupName>.Class,
-                        _subscriptionName);
+                .BindSetEntry<GroupCommConfigurationOptions.CommunicationGroupNames, string>(
+                    GenericType<GroupCommConfigurationOptions.CommunicationGroupNames>.Class,
+                    _subscriptionName);
 
                 GetRootOperator.GetElasticTaskConfiguration(ref builder);
         }
@@ -179,23 +171,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public override void OnNext(IFailedEvaluator value)
-        {
-            lock (_statusLock)
-            {
-                if (_status == TaskSetStatus.Running)
-                {
-                    _status = TaskSetStatus.Running;
-                }
-            }
-        }
-
         public override void OnNext(IFailedTask value)
         {
-            lock (_statusLock)
-            {
-                _status = TaskSetStatus.Running;
-            }
         }
 
         public override void OnStopAndResubmit()

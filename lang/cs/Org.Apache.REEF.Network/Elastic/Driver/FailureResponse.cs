@@ -21,10 +21,8 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
-    public abstract class FailureResponse : IObserver<IFailedEvaluator>, IObserver<IFailedTask>
+    public abstract class FailureResponse : IObserver<IFailedTask>
     {
-        public abstract void OnNext(IFailedEvaluator value);
-
         public abstract void OnNext(IFailedTask value);
 
         public abstract void OnStopAndResubmit();

@@ -66,7 +66,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="taskId">The id of the task Configuration to generate</param>
         /// <returns>The Group Communication task configuration with communication group and
         /// operator configuration set.</returns>
-        IConfiguration GetElasticTaskConfiguration(IConfiguration subscriptionsConf);
+        IConfiguration GetElasticTaskConfiguration(ICsConfigurationBuilder subscriptionsConf);
 
         string GetDriverId { get; }
     }

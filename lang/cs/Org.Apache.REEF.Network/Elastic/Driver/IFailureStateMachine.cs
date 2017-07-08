@@ -15,26 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Tang.Interface;
-
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Elastic.Driver
 {
-    class FlatTopology : ITopology
+    public interface IFailureStateMachine
     {
-        public FlatTopology()
-        {
-        }
+        void AddDependencies(int deps);
 
-        public bool AddTask(string taskId)
-        {
-            return true;
-        }
+        void RemoveDependencies(int deps);
 
-        public IConfiguration GetTaskConfiguration(int taskId)
-        {
-            throw new NotImplementedException();
-        }
+        void SetThreashold(FailureState level1, FailureState level2, float threshold);
     }
 }

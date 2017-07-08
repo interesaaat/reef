@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private const string _operator = "reduce";
         private int _receiverId;
     
-        public Reduce(int receiverId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
+        public Reduce(int receiverId, ElasticOperator prev, TopologyTypes topologyType, FailureState policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
         {
             _receiverId = receiverId;
             _prev = prev;

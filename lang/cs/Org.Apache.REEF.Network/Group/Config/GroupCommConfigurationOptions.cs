@@ -27,6 +27,11 @@ namespace Org.Apache.REEF.Network.Group.Config
         {
         }
 
+        [NamedParameter("Name of the communication groups")]
+        public class CommunicationGroupNames : Name<ISet<string>>
+        {
+        }
+
         [NamedParameter("Name of the Group Communication operator")]
         public class OperatorName : Name<string>
         {

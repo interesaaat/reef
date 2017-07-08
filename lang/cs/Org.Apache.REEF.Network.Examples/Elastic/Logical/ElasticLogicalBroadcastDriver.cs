@@ -94,7 +94,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree,
-                        PolicyLevel.Ignore,
+                        FailureState.Continue,
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Build();

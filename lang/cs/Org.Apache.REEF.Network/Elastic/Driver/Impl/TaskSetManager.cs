@@ -26,6 +26,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Tang.Implementations.Tang;
+using Org.Apache.REEF.Network.Group.Config;
+using Org.Apache.REEF.Tang.Util;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -191,8 +193,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     _subscriptions[sub].GetElasticTaskConfiguration(ref confBuilder);
                 }
 
-                IConfiguration subscriptionsConfiguration = confBuilder.Build();
-                IConfiguration serviceConfiguration = _subscriptions.Values.First().GetService.GetElasticTaskConfiguration(subscriptionsConfiguration);
+                IConfiguration serviceConfiguration = _subscriptions.Values.First().GetService.GetElasticTaskConfiguration(confBuilder);
                 IConfiguration mergedTaskConf = Configurations.Merge(_taskConfs[i].Item1, serviceConfiguration);
                 _taskConfs[i].Item2.SubmitTask(mergedTaskConf);
             }

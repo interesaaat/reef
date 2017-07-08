@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public Empty(IElasticTaskSetSubscription subscription) : base(subscription)
         {
-            _policy = PolicyLevel.Ignore;
+            _policy = FailureState.Continue;
             _topology = new EmptyTopology();
             _id = GetSubscription.GetNextOperatorId();
         }

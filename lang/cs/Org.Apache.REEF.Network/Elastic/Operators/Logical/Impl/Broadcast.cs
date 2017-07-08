@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private const string _operator = "broadcast";
         private int _senderId;
     
-        public Broadcast(int senderId, ElasticOperator prev, TopologyTypes topologyType, PolicyLevel policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
+        public Broadcast(int senderId, ElasticOperator prev, TopologyTypes topologyType, FailureState policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
         {
             _senderId = senderId;
             _prev = prev;

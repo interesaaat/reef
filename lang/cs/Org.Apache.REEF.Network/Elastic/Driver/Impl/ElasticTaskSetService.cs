@@ -54,7 +54,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly string _defaultSubscriptionName;
 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
-        private TaskSetStatus _status;
+        ////private TaskSetStatus _status;
         private readonly AvroConfigurationSerializer _configSerializer;
         private readonly object _subsLock = new object();
         private readonly object _statusLock = new object();
@@ -76,7 +76,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _driverId = driverId;
             _numEvaluators = numEvaluators;
             _defaultSubscriptionName = defaultSubscriptionName;
-            _status = TaskSetStatus.Init;
 
             _configSerializer = configSerializer;
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
@@ -197,13 +196,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="taskId">The id of the task Configuration to generate</param>
         /// <returns>The Group Communication task configuration with communication group and
         /// operator configuration set.</returns>
-        public IConfiguration GetElasticTaskConfiguration(IConfiguration subscriptionsConf)
+        public IConfiguration GetElasticTaskConfiguration(ICsConfigurationBuilder subscriptionsConf)
         {
+            var partialConf = subscriptionsConf
+                .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
+                    GenericType<GroupCommConfigurationOptions.DriverId>.Class,
+                    GetDriverId)
+                .Build();
             var confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
             confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedGroupConfigs, string>(
                 GenericType<GroupCommConfigurationOptions.SerializedGroupConfigs>.Class,
-                _configSerializer.ToString(subscriptionsConf));
+                _configSerializer.ToString(partialConf));
 
             return confBuilder.Build();
         }
@@ -216,23 +220,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public override void OnNext(IFailedEvaluator value)
-        {
-            lock (_statusLock)
-            {
-                if (_status == TaskSetStatus.Running)
-                {
-                    _status = TaskSetStatus.Running;
-                }
-            }
-        }
-
         public override void OnNext(IFailedTask value)
         {
-            lock (_statusLock)
-            {
-                _status = TaskSetStatus.Running;
-            }
         }
 
         public override void OnStopAndResubmit()
