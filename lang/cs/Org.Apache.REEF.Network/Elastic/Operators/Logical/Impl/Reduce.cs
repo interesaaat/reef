@@ -21,6 +21,7 @@ using Org.Apache.REEF.Network.Elastic.Topology;
 using System;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -28,15 +29,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private const string _operator = "reduce";
         private int _receiverId;
-    
-        public Reduce(int receiverId, ElasticOperator prev, TopologyTypes topologyType, FailureState policyLevel, CheckpointLevel checkpointLevel, params IConfiguration[] configurations) : base(null)
+
+        public Reduce(
+            int receiverId,
+            ElasticOperator prev,
+            TopologyTypes topologyType,
+            IFailureStateMachine failureMachine,
+            CheckpointLevel checkpointLevel,
+            params IConfiguration[] configurations) : base(
+                null, 
+                prev, 
+                topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology() : (ITopology)new TreeTopology(), 
+                failureMachine,
+                checkpointLevel)
         {
             _receiverId = receiverId;
-            _prev = prev;
-            _topology = topologyType == TopologyTypes.Flat ? (ITopology)new EmptyTopology() : (ITopology)new TreeTopology();
-            _policy = policyLevel;
-            _checkpointLevel = checkpointLevel;
-            _id = GetSubscription.GetNextOperatorId();
         }
 
         public int GetReceiverTaskId

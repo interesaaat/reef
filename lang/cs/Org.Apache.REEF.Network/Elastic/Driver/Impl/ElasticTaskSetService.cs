@@ -21,7 +21,6 @@ using System.Globalization;
 using System.Net;
 using Org.Apache.REEF.Common.Io;
 using Org.Apache.REEF.Common.Services;
-using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Network.Group.Task.Impl;
@@ -36,6 +35,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Group.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -54,7 +55,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly string _defaultSubscriptionName;
 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
-        ////private TaskSetStatus _status;
+        private readonly IFailureStateMachine _failureMachine;
         private readonly AvroConfigurationSerializer _configSerializer;
         private readonly object _subsLock = new object();
         private readonly object _statusLock = new object();
@@ -77,6 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _numEvaluators = numEvaluators;
             _defaultSubscriptionName = defaultSubscriptionName;
 
+            _failureMachine = new DefaultFailureStateMachine();
             _configSerializer = configSerializer;
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 

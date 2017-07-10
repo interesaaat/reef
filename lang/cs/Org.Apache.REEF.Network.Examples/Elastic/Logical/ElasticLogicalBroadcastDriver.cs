@@ -39,6 +39,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
@@ -94,8 +95,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree,
-                        FailureState.Continue,
-                        CheckpointLevel.None,
                         dataConverterConfig)
                     .Build();
 

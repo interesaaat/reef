@@ -15,26 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Driver.Task;
-using System;
-
-namespace Org.Apache.REEF.Network.Elastic.Driver
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public abstract class FailureResponse : IObserver<IFailedTask>
+    public enum FailureState
     {
-        public abstract void OnNext(IFailedTask value);
+        Continue,
 
-        public abstract void OnStopAndResubmit();
+        ContinueAndReconfigure,
 
-        public abstract void OnStopAndRecompute();
-       
-        public void OnCompleted()
-        {
-        }
+        ContinueAndReschedule,
 
-        public void OnError(Exception error)
-        {
-        }
+        StopAndReschedule
+    }
+
+    public enum FailureStateEvent
+    {
+        Reconfigure,
+
+        Reschedule,
+
+        Stop
     }
 }

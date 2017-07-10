@@ -16,14 +16,15 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Exceptions;
-using System.Globalization;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -33,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected ElasticOperator _next = null;
         protected ElasticOperator _prev = null;
 
-        protected FailureState _policy;
+        protected IFailureStateMachine _failureMachine;
         protected CheckpointLevel _checkpointLevel;
         protected ITopology _topology;
 
@@ -43,9 +44,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
-        public ElasticOperator(IElasticTaskSetSubscription subscription)
+        public ElasticOperator(
+            IElasticTaskSetSubscription subscription,
+            ElasticOperator prev,
+            ITopology topology,
+            IFailureStateMachine failureMachine,
+            CheckpointLevel level = CheckpointLevel.None)
         {
             _subscription = subscription;
+            _prev = prev;
+            _id = _subscription.GetNextOperatorId();
+            _topology = topology;
+            _failureMachine = failureMachine;
+            _checkpointLevel = level;
         }
 
         public bool AddTask(string taskId)
@@ -151,52 +162,57 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, FailureState policyLevel = FailureState.Continue, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new Broadcast(senderTaskId, this, topologyType, policyLevel, checkpointLevel, configurations);
+            _next = new Broadcast(senderTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone, checkpointLevel, configurations);
             return _next;
         }
 
-        public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, FailureState policyLevel = FailureState.Continue, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Broadcast(GenerateMasterTaskId(), topologyType, policyLevel, checkpointLevel, configurations);
+            return Broadcast(GenerateMasterTaskId(), topologyType, failureMachine ?? _failureMachine.Clone, checkpointLevel, configurations);
+        }
+
+        public ElasticOperator Broadcast(TopologyTypes topologyType, params IConfiguration[] configurations)
+        {
+            return Broadcast(GenerateMasterTaskId(), topologyType, _failureMachine.Clone, CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Broadcast(int senderTaskId, params IConfiguration[] configurations)
         {
-            return Broadcast(senderTaskId, TopologyTypes.Flat, FailureState.Continue, CheckpointLevel.None, configurations);
+            return Broadcast(senderTaskId, TopologyTypes.Flat, new DefaultFailureStateMachine(), CheckpointLevel.None, configurations);
         }
 
-        public ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType = TopologyTypes.Flat, FailureState policyLevel = FailureState.Continue, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new Reduce(receiverTaskId, this, topologyType, policyLevel, checkpointLevel, configurations);
+            _next = new Reduce(receiverTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, FailureState policyLevel = FailureState.Continue, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Reduce(GenerateMasterTaskId(), topologyType, policyLevel, checkpointLevel, configurations);
+            return Reduce(GenerateMasterTaskId(), topologyType, failureMachine ?? _failureMachine.Clone, checkpointLevel, configurations);
         }
 
         public ElasticOperator Reduce(int receiverTaskId, params IConfiguration[] configurations)
         {
-            return Reduce(receiverTaskId, TopologyTypes.Flat, FailureState.Continue, CheckpointLevel.None, configurations);
+            return Reduce(receiverTaskId, TopologyTypes.Flat, _failureMachine.Clone, CheckpointLevel.None, configurations);
         }
 
-        public ElasticOperator Iterate(int masterTaskId, TopologyTypes topologyType = TopologyTypes.Flat, FailureState policyLevel = FailureState.Continue, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Iterate(int masterTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new Iterate(masterTaskId, this, topologyType, policyLevel, checkpointLevel, configurations);
+            _next = new Iterate(masterTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public ElasticOperator Iterate(TopologyTypes topologyType = TopologyTypes.Flat, FailureState policyLevel = FailureState.Continue, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Iterate(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Iterate(GenerateMasterTaskId(), topologyType, policyLevel, checkpointLevel, configurations);
+            return Iterate(GenerateMasterTaskId(), topologyType, failureMachine ?? _failureMachine.Clone, checkpointLevel, configurations);
         }
 
         public ElasticOperator Iterate(int masterTaskId, params IConfiguration[] configurations)
         {
-            return Iterate(masterTaskId, TopologyTypes.Flat, FailureState.Continue, CheckpointLevel.None, configurations);
+            return Iterate(masterTaskId, TopologyTypes.Flat, _failureMachine.Clone, CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Scatter(string senderTaskId, ElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat)

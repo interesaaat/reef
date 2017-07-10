@@ -26,6 +26,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using System.Threading;
 using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -46,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _tasksAdded;
 
         private readonly TaskSetManager _taskSet;
-        ////private TaskSetStatus _status;
+        private IFailureStateMachine _failureMachine;
         private ElasticOperator _root;
         private int _numOperators;
 
@@ -61,22 +63,24 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="numTasks">The number of tasks each operator will use</param>
         /// <param name="fanOut"></param>
         /// <param name="confSerializer">Used to serialize task configuration</param>
-        public ElasticTaskSetSubscription(
+        internal ElasticTaskSetSubscription(
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
             int numTasks,
-            IElasticTaskSetService elasticService)
+            IElasticTaskSetService elasticService,
+            IFailureStateMachine failureMachine = null)
         {
             _confSerializer = confSerializer;
             _subscriptionName = subscriptionName;
             _finalized = false;
             _numTasks = numTasks;
             _tasksAdded = 0;
-            _root = new Empty(this);
             _elasticService = elasticService;
+            _failureMachine = failureMachine ?? new DefaultFailureStateMachine();
+            _root = new Empty(this, _failureMachine.Clone);
 
             _taskSet = new TaskSetManager(numTasks);
-            _tasksLock = new TaskSetManager(numTasks);
+            _tasksLock = new object();
         }
 
         public string GetSubscriptionName

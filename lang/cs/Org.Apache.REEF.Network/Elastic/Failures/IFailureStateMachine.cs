@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     public interface IFailureStateMachine
     {
@@ -23,6 +23,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         void RemoveDependencies(int deps);
 
-        void SetThreashold(FailureState level1, FailureState level2, float threshold);
+        IFailureStateMachine Clone { get; }
     }
 }

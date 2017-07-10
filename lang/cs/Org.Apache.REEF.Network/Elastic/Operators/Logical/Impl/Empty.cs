@@ -18,6 +18,9 @@
 using System;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -25,11 +28,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private const string _operator = "empty";
 
-        public Empty(IElasticTaskSetSubscription subscription) : base(subscription)
+        public Empty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
+            base(subscription, null, new EmptyTopology(), filureMachine)
         {
-            _policy = FailureState.Continue;
-            _topology = new EmptyTopology();
-            _id = GetSubscription.GetNextOperatorId();
         }
 
         public override void OnStopAndRecompute()

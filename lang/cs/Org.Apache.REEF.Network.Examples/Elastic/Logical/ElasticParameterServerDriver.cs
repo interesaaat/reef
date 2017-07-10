@@ -40,6 +40,7 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
@@ -109,21 +110,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
-            System.Threading.Thread.Sleep(40000);
-
             // Subscriptions
             IElasticTaskSetSubscription subscription = _service.NewElasticTaskSetSubscription("servers", 3);
 
             ElasticOperator pipeline = subscription.GetRootOperator;
 
             pipeline.Iterate(1, TopologyTypes.Forest,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                     .Broadcast(1, TopologyTypes.Tree,
-                        FailureState.Continue,
-                        CheckpointLevel.None,
-                        dataConverterConfig)
+                    .Broadcast(1, TopologyTypes.Tree)
                     .Build();
 
             _serversSubscription = subscription.Build();
@@ -133,11 +129,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             pipeline = subscription.GetRootOperator;
 
             pipeline.Broadcast(1, TopologyTypes.Tree,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Reduce(1, TopologyTypes.Tree,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)
@@ -150,11 +146,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             pipeline = subscription.GetRootOperator;
 
             pipeline.Broadcast(2, TopologyTypes.Tree,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)
                      .Reduce(2, TopologyTypes.Tree,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)
@@ -167,11 +163,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             pipeline = subscription.GetRootOperator;
 
             pipeline.Broadcast(3, TopologyTypes.Tree,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)
                     .Reduce(3, TopologyTypes.Tree,
-                        FailureState.Continue,
+                        new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)

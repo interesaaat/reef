@@ -18,6 +18,7 @@
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Interface;
 using System;
 using System.Collections.Generic;
