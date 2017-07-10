@@ -41,6 +41,7 @@ using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
@@ -291,14 +292,18 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             }
         }
 
-        public void OnNext(IFailedEvaluator value)
+        public void OnNext(IFailedEvaluator failedEvaluator)
         {
-            throw new NotImplementedException();
+            _serversTaskManager.OnEvaluatorFailure(failedEvaluator);
+
+            _workersTaskManager.OnEvaluatorFailure(failedEvaluator);
         }
 
-        public void OnNext(IFailedTask value)
+        public void OnNext(IFailedTask failedTask)
         {
-            throw new NotImplementedException();
+            _serversTaskManager.OnTaskFailure(failedTask);
+
+            _workersTaskManager.OnTaskFailure(failedTask);
         }
 
         public void OnCompleted()

@@ -31,11 +31,25 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         private object _statusLock;
 
-        private readonly SortedDictionary<float, FailureState> transitionMap = new SortedDictionary<float, FailureState>()
+        private readonly SortedDictionary<FailureState, FailureState> transitionMapUp = new SortedDictionary<FailureState, FailureState>()
         {
-            { 0.01F, FailureState.ContinueAndReconfigure },
-            { 0.02F, FailureState.ContinueAndReschedule },
-            { 0.03F, FailureState.StopAndReschedule }
+            { FailureState.Continue, FailureState.ContinueAndReconfigure },
+            { FailureState.ContinueAndReconfigure, FailureState.ContinueAndReschedule },
+            { FailureState.ContinueAndReschedule, FailureState.StopAndReschedule }
+        };
+
+        private readonly SortedDictionary<FailureState, FailureState> transitionMapDown = new SortedDictionary<FailureState, FailureState>()
+        {
+            { FailureState.ContinueAndReconfigure, FailureState.Continue },
+            { FailureState.ContinueAndReschedule, FailureState.ContinueAndReconfigure },
+            { FailureState.StopAndReschedule, FailureState.ContinueAndReschedule }
+        };
+
+        private readonly SortedDictionary<FailureState, float> transitionWeights = new SortedDictionary<FailureState, float>()
+        {
+            { FailureState.ContinueAndReconfigure, 0.99F },
+            { FailureState.ContinueAndReschedule, 0.99F },
+            { FailureState.StopAndReschedule, 0.99F }
         };
 
         public DefaultFailureStateMachine()
@@ -56,7 +70,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
                 if (_currentState != FailureState.Continue)
                 {
-                    _currentState = transitionMap.CeilingEntry(_currentFailures / _numDependencise).Value;
+                    while (_currentFailures / _numDependencise < transitionWeights[_currentState])
+                    {
+                        _currentState = transitionMapDown[_currentState];
+                    }
                 }
             }
         }
@@ -70,7 +87,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
                 if (_currentState != FailureState.StopAndReschedule)
                 {
-                    _currentState = transitionMap.FloorEntry(_currentFailures / _numDependencise).Value;
+                    while (_currentFailures / _numDependencise > transitionWeights[transitionMapUp[_currentState]])
+                    {
+                        _currentState = transitionMapUp[_currentState];
+                    }
                 }
             }
         }
@@ -82,49 +102,47 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 throw new ArgumentException("Cannot change the threshould for Continue state");
             }
 
-            if (threshold == 0.0F)
+            transitionWeights[level] = threshold;
+
+            CheckConsistency();
+        }
+
+        public void SetThreasholds(params Tuple<FailureState, float>[] weights)
+        {
+            if (weights.Any(weight => weight.Item1 == FailureState.Continue))
             {
-                throw new ArgumentException("Threshold have to me greater than 0");
+                throw new ArgumentException("Cannot change the threshould for Continue state");
             }
 
-            float accum = 0;
-            float delta = 0;
-            bool changed = false;
-            var old = transitionMap;
-
-            foreach (float key in transitionMap.Keys)
+            foreach (Tuple<FailureState, float> weight in weights)
             {
-                if (transitionMap[key] == level)
-                {
-                    lock (_statusLock)
-                    {
-                        transitionMap.Remove(key);
-                        accum += threshold;
-                        delta = accum - key;
-                        transitionMap.Add(accum, level);
-                        changed = true;
-                    }
-                }
-                else
-                {
-                    if (changed)
-                    {
-                        lock (_statusLock)
-                        {
-                            if (key + delta > 1)
-                            {
-                                throw new IllegalStateException(string.Format(CultureInfo.InvariantCulture, "Threashold for state {0} bigger than 1", transitionMap[key]));
-                            }
+                transitionWeights[weight.Item1] = weight.Item2;
+            }
 
-                            transitionMap.Add(key + delta, transitionMap[key]);
-                            transitionMap.Remove(key);
-                        }
-                    }
-                    else
-                    {
-                        accum += key;
-                    }
+            CheckConsistency();
+        }
+
+        private void CheckConsistency()
+        {
+            var state = FailureState.ContinueAndReconfigure;
+            float prevWeight = transitionWeights[state];
+            state = transitionMapUp[state];
+            float nextWeight = transitionWeights[state];
+
+            while (nextWeight >= 0)
+            {
+                if (nextWeight < prevWeight)
+                {
+                    throw new IllegalStateException("State " + transitionMapDown[state] + " weight is bigger than state " + state);
                 }
+
+                prevWeight = nextWeight;
+                if (state == FailureState.StopAndReschedule)
+                {
+                    return;
+                }
+                state = transitionMapUp[state];
+                transitionWeights.TryGetValue(state, out nextWeight);
             }
         }
 
@@ -133,80 +151,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             get
             {
                 var newMachine = new DefaultFailureStateMachine();
-                foreach (float key in transitionMap.Keys)
+                foreach (FailureState state in transitionWeights.Keys)
                 {
-                    newMachine.SetThreashold(transitionMap[key], key);
+                    newMachine.SetThreashold(state, transitionWeights[state]);
                 }
 
                 return newMachine;
             }
-        }
-    }
-
-    public static class SortedDictionaryExtensions
-    {
-        private static Tuple<int, int> GetPossibleIndices<TKey, TValue>(SortedDictionary<TKey, TValue> dictionary, TKey key, bool strictlyDifferent, out List<TKey> list)
-        {
-            list = dictionary.Keys.ToList();
-            int index = list.BinarySearch(key, dictionary.Comparer);
-            if (index >= 0)
-            {
-                // exists
-                if (strictlyDifferent)
-                {
-                    return Tuple.Create(index - 1, index + 1);
-                }
-                else
-                {
-                    return Tuple.Create(index, index);
-                }
-            }
-            else
-            {
-                // doesn't exist
-                int indexOfBiggerNeighbour = ~index; // bitwise complement of the return value
-
-                if (indexOfBiggerNeighbour == list.Count)
-                {
-                    // bigger than all elements
-                    return Tuple.Create(list.Count - 1, list.Count);
-                }
-                else if (indexOfBiggerNeighbour == 0)
-                {
-                    // smaller than all elements
-                    return Tuple.Create(-1, 0);
-                }
-                else
-                {
-                    // Between 2 elements
-                    int indexOfSmallerNeighbour = indexOfBiggerNeighbour - 1;
-                    return Tuple.Create(indexOfSmallerNeighbour, indexOfBiggerNeighbour);
-                }
-            }
-        }
-
-        public static KeyValuePair<TKey, TValue> FloorEntry<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            var indices = GetPossibleIndices(dictionary, key, false, out List<TKey> list);
-            if (indices.Item1 < 0)
-            {
-                return default(KeyValuePair<TKey, TValue>);
-            }
-
-            var newKey = list[indices.Item1];
-            return new KeyValuePair<TKey, TValue>(newKey, dictionary[newKey]);
-        }
-
-        public static KeyValuePair<TKey, TValue> CeilingEntry<TKey, TValue>(this SortedDictionary<TKey, TValue> dictionary, TKey key)
-        {
-            var indices = GetPossibleIndices(dictionary, key, false, out List<TKey> list);
-            if (indices.Item2 == list.Count)
-            {
-                return default(KeyValuePair<TKey, TValue>);
-            }
-
-            var newKey = list[indices.Item2];
-            return new KeyValuePair<TKey, TValue>(newKey, dictionary[newKey]);
         }
     }
 }

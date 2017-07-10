@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
@@ -29,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// Used to create Communication Groups for Group Communication Operators.
     /// Also manages configuration for Group Communication tasks/services.
     /// </summary>
-    public interface IElasticTaskSetService
+    public interface IElasticTaskSetService : IFailureResponse
     {
         IElasticTaskSetSubscription DefaultElasticTaskSetSubscription { get; }
 

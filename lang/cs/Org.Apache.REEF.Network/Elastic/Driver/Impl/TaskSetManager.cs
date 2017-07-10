@@ -28,6 +28,7 @@ using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Util;
+using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -39,16 +40,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(TaskSetManager));
 
         private readonly object _lock;
+        private bool _finalized;
 
         private int _contextsAdded;
         private int _tasksAdded;
         private readonly int _numTasks;
 
         private readonly List<Tuple<IConfiguration, IActiveContext>> _taskConfs;
-        private readonly List<Tuple<int, TaskSetStatus>> _taskStatus;
+        private readonly List<Tuple<int, TaskStatus>> _taskStatus;
         private readonly List<HashSet<string>> _taskToSubsMapper;
 
-        private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions; 
+        private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
 
         /// <summary>
         /// Create new TaskStarter.
@@ -61,13 +63,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public TaskSetManager(int numTasks)
         {
             _lock = new object();
+            _finalized = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
             _numTasks = numTasks;
 
             _taskConfs = new List<Tuple<IConfiguration, IActiveContext>>(numTasks);
-            _taskStatus = new List<Tuple<int, TaskSetStatus>>(numTasks);
+            _taskStatus = new List<Tuple<int, TaskStatus>>(numTasks);
 
             _taskToSubsMapper = new List<HashSet<string>>(numTasks);
 
@@ -83,6 +86,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void AddTaskSetSubscription(IElasticTaskSetSubscription subscription)
         {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("Cannot add subscription to an already built TaskManager");
+            }
+
             _subscriptions.Add(subscription.GetSubscriptionName, subscription);
         }
 
@@ -108,6 +116,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             get
             {
+                if (_finalized == true)
+                {
+                    throw new IllegalStateException("Subscription cannot be built more than once");
+                }
+
                 return _subscriptions.Keys.Aggregate((current, next) => current + "+" + next);
             }
         }
@@ -154,7 +167,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             _taskConfs[id] = new Tuple<IConfiguration, IActiveContext>(partialTaskConfig, activeContext);
 
-            _taskStatus[id] = new Tuple<int, TaskSetStatus>(0, TaskSetStatus.Init);
+            _taskStatus[id] = new Tuple<int, TaskStatus>(0, TaskStatus.Init);
 
             foreach (var sub in _subscriptions)
             {
@@ -196,17 +209,70 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 IConfiguration serviceConfiguration = _subscriptions.Values.First().GetService.GetElasticTaskConfiguration(confBuilder);
                 IConfiguration mergedTaskConf = Configurations.Merge(_taskConfs[i].Item1, serviceConfiguration);
                 _taskConfs[i].Item2.SubmitTask(mergedTaskConf);
+                _taskStatus[i] = new Tuple<int, TaskStatus>(_taskStatus[i].Item1, TaskStatus.Submitted);
             }
         }
 
-        public void OnTaskCompleted(int taskId)
+        public void Build()
+        {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("TaskManager cannot be built more than once");
+            }
+
+            _finalized = true;
+        }
+
+        public void onTaskRunning(IRunningTask task)
+        {
+            if (BelongsTo(task.Id))
+            {
+                var id = Utils.GetTaskNum(task.Id) - 1;
+
+                lock (_lock)
+                {
+                    if (_taskStatus[id].Item2 <= TaskStatus.Submitted)
+                    {
+                        _taskStatus[id] = new Tuple<int, TaskStatus>(_taskStatus[id].Item1, TaskStatus.Running);
+                    }
+                }
+            }
+        }
+
+        public void OnTaskCompleted(ICompletedTask taskId)
         {
             throw new NotImplementedException();
         }
 
-        public void OnTaskFailure(int taskId)
+        public void OnTaskFailure(IFailedTask task)
+        {
+            if (BelongsTo(task.Id))
+            {
+                var id = Utils.GetTaskNum(task.Id) - 1;
+
+                lock (_lock)
+                {
+                    if (_taskStatus[id].Item2 < TaskStatus.Failed)
+                    {
+                        _taskStatus[id] = new Tuple<int, TaskStatus>(_taskStatus[id].Item1, TaskStatus.Failed);
+                    }
+                }
+
+                foreach (string sub in _taskToSubsMapper[id])
+                {
+                    var remediation = _subscriptions[sub].OnTaskFailure(task);
+                }
+            }
+        }
+
+        public void OnEvaluatorFailure(IFailedEvaluator taskId)
         {
             throw new NotImplementedException();
+        }
+
+        private bool BelongsTo(string id)
+        {
+            return Utils.GetTaskSubscriptions(id) == GetSubscriptionsId;
         }
     }
 }

@@ -32,15 +32,5 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             base(subscription, null, new EmptyTopology(), filureMachine)
         {
         }
-
-        public override void OnStopAndRecompute()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void OnStopAndResubmit()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

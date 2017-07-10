@@ -39,7 +39,6 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
@@ -47,6 +46,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
+        IObserver<IRunningTask>,
         IObserver<IFailedEvaluator>, 
         IObserver<IFailedTask>
     {
@@ -167,14 +167,19 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             _taskManager.AddTask(taskId, partialTaskConf, activeContext);
         }
 
-        public void OnNext(IFailedEvaluator value)
+        public void OnNext(IRunningTask value)
         {
-            throw new NotImplementedException();
+            _taskManager.onTaskRunning(value);
         }
 
-        public void OnNext(IFailedTask value)
+        public void OnNext(IFailedEvaluator failedEvaluator)
         {
-            throw new NotImplementedException();
+            _taskManager.OnEvaluatorFailure(failedEvaluator);
+        }
+
+        public void OnNext(IFailedTask failedTask)
+        {
+            _taskManager.OnTaskFailure(failedTask);
         }
 
         public void OnCompleted()

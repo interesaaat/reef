@@ -77,15 +77,5 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 return _senderId;
             }
         }
-
-        public override void OnStopAndRecompute()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void OnStopAndResubmit()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

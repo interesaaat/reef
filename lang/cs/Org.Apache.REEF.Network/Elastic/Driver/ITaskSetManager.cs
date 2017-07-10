@@ -25,6 +25,7 @@ using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Driver.Evaluator;
+using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -62,8 +63,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         void SubmitTasks();
 
-        void OnTaskCompleted(int taskId);
+        void Build();
 
-        void OnTaskFailure(int taskId);
+        void onTaskRunning(IRunningTask info);
+
+        void OnTaskCompleted(ICompletedTask task);
+
+        void OnTaskFailure(IFailedTask task);
+
+        void OnEvaluatorFailure(IFailedEvaluator task);
     }
 }

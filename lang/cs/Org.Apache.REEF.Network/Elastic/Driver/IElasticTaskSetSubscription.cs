@@ -18,6 +18,8 @@
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -26,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// All operators in the same Communication Group run on the the 
     /// same set of tasks.
     /// </summary>
-    public interface IElasticTaskSetSubscription
+    public interface IElasticTaskSetSubscription : IFailureResponse
     {
         string GetSubscriptionName { get; }
 

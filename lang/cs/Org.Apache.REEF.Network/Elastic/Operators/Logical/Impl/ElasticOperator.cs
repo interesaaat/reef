@@ -28,7 +28,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    public abstract class ElasticOperator : FailureResponse
+    public abstract class ElasticOperator : IFailureResponse
     {
         // For the moment we consider only linear sequences of operators (no branching for e.g., joins)
         protected ElasticOperator _next = null;
@@ -53,7 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _subscription = subscription;
             _prev = prev;
-            _id = _subscription.GetNextOperatorId();
+            _id = GetSubscription.GetNextOperatorId();
             _topology = topology;
             _failureMachine = failureMachine;
             _checkpointLevel = level;
@@ -220,9 +220,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public override void OnNext(IFailedTask value)
+        public FailureStateEvent OnTaskFailure(IFailedTask task)
         {
-            _next.OnNext(value);
+            return FailureStateEvent.Continue;
+        }
+
+        public void OnContinueAndReconfigure()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnContinueAndReschedule()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnStopAndReschedule()
+        {
+            throw new NotImplementedException();
         }
     }
 }

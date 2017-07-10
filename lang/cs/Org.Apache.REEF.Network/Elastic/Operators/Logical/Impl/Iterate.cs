@@ -44,15 +44,5 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _masterTaskId = masterTaskId;
         }
-
-        public override void OnStopAndRecompute()
-        {
-            throw new NotImplementedException();
-        }
-
-        public override void OnStopAndResubmit()
-        {
-            throw new NotImplementedException();
-        }
     }
 }

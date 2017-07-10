@@ -31,6 +31,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return GetValue(1, activeContext.Id);
         }
 
+        public static string GetTaskSubscriptions(string taskId)
+        {
+            return GetValue(1, taskId);
+        }
+
         /// <summary>
         /// Gets the context number associated with the Active Context id.
         /// </summary>

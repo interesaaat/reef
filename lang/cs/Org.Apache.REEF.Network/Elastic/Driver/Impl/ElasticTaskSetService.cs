@@ -37,6 +37,7 @@ using Org.Apache.REEF.Network.Group.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Driver.Evaluator;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -44,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// Used to create Communication Groups for Group Communication Operators on the Reef driver.
     /// Also manages configuration for Group Communication tasks/services.
     /// </summary>
-    public sealed class ElasticTaskSetService : FailureResponse, IElasticTaskSetService
+    public sealed class ElasticTaskSetService : IElasticTaskSetService
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(ElasticTaskSetService));
 
@@ -222,16 +223,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public override void OnNext(IFailedTask value)
+        public void OnNext(IFailedEvaluator value)
         {
         }
 
-        public override void OnStopAndResubmit()
+        public FailureStateEvent OnTaskFailure(IFailedTask value)
+        {
+            return FailureStateEvent.Continue;
+        }
+
+        public void OnContinueAndReconfigure()
         {
             throw new NotImplementedException();
         }
 
-        public override void OnStopAndRecompute()
+        public void OnContinueAndReschedule()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnStopAndReschedule()
         {
             throw new NotImplementedException();
         }

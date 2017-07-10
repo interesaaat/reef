@@ -40,6 +40,7 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 {
@@ -117,6 +118,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);
+
+            _taskManager.Build();
         }
 
         public void OnNext(IDriverStarted value)
@@ -178,14 +181,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             _taskManager.AddTask(taskId, partialTaskConf, activeContext);
         }
 
-        public void OnNext(IFailedEvaluator value)
+        public void OnNext(IFailedEvaluator failedEvaluator)
         {
-            throw new NotImplementedException();
+            _taskManager.OnEvaluatorFailure(failedEvaluator);
         }
 
-        public void OnNext(IFailedTask value)
+        public void OnNext(IFailedTask failedTask)
         {
-            throw new NotImplementedException();
+            _taskManager.OnTaskFailure(failedTask);
         }
 
         public void OnCompleted()

@@ -30,6 +30,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
     public enum FailureStateEvent
     {
+        Continue,
+
         Reconfigure,
 
         Reschedule,

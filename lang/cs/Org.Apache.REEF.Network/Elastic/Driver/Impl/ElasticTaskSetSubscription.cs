@@ -36,7 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// All operators in the same Communication Group run on the the 
     /// same set of tasks.
     /// </summary>
-    public sealed class ElasticTaskSetSubscription : FailureResponse, IElasticTaskSetSubscription
+    public sealed class ElasticTaskSetSubscription : IElasticTaskSetSubscription
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticTaskSetSubscription));
 
@@ -175,16 +175,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public override void OnNext(IFailedTask value)
+        public FailureStateEvent OnTaskFailure(IFailedTask task)
         {
+            ////task.Reason;
+            return FailureStateEvent.Continue;
         }
 
-        public override void OnStopAndResubmit()
+        public void OnContinueAndReconfigure()
         {
             throw new NotImplementedException();
         }
 
-        public override void OnStopAndRecompute()
+        public void OnContinueAndReschedule()
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnStopAndReschedule()
         {
             throw new NotImplementedException();
         }

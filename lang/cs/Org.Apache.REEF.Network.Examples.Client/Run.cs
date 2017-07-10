@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 9;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "RunElasticBroadcast";
+            string testToRun = "all";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -62,21 +62,21 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 }
             }
 
-            if (testToRun.Equals("RunPipelineBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
-            {
-                int arraySize = GroupTestConstants.ArrayLength;
-                int chunkSize = GroupTestConstants.ChunkSize;
+            ////if (testToRun.Equals("RunPipelineBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
+            ////{
+            ////    int arraySize = GroupTestConstants.ArrayLength;
+            ////    int chunkSize = GroupTestConstants.ChunkSize;
 
-                if (args.Length > 5)
-                {
-                    arraySize = int.Parse(args[5]);
-                    chunkSize = int.Parse(args[6]);
-                }
+            ////    if (args.Length > 5)
+            ////    {
+            ////        arraySize = int.Parse(args[5]);
+            ////        chunkSize = int.Parse(args[6]);
+            ////    }
 
-                new PipelineBroadcastAndReduceClient().RunPipelineBroadcastAndReduce(runOnYarn, numNodes, startPort,
-                    portRange, arraySize, chunkSize);
-                Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
-            }
+            ////    new PipelineBroadcastAndReduceClient().RunPipelineBroadcastAndReduce(runOnYarn, numNodes, startPort,
+            ////        portRange, arraySize, chunkSize);
+            ////    Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
+            ////}
 
             if (testToRun.Equals("RunElasticBroadcast".ToLower()) || testToRun.Equals("all"))
             {
@@ -99,7 +99,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             if (testToRun.Equals("ElasticParameterServer".ToLower()) || testToRun.Equals("all"))
             {
                 new ElasticParameterServerClient().RunParameterServer(runOnYarn, numNodes, startPort, portRange);
-                Console.WriteLine("ElasticIterateBroadcastReduce completed!!!");
+                Console.WriteLine("ElasticParameterServer completed!!!");
             }
         }
     }
