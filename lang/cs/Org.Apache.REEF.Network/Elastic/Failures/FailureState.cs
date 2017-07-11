@@ -28,14 +28,14 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         StopAndReschedule
     }
 
-    public enum FailureStateEvent
+    public enum FailureStateEvent: int
     {
-        Continue,
+        Continue = 1,
 
-        Reconfigure,
+        Reconfigure = 2,
 
-        Reschedule,
+        Reschedule = 3,
 
-        Stop
+        Stop = 4
     }
 }

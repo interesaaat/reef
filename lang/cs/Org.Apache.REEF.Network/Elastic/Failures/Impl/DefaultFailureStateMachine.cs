@@ -61,12 +61,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             _statusLock = new object();
         }
 
-        public void AddDependencies(int deps)
+        public void AddDataPoints(int points)
         {
             lock (_statusLock)
             {
-                _numDependencise += deps;
-                _currentFailures -= deps;
+                _numDependencise += points;
+                _currentFailures -= points;
 
                 if (_currentState != FailureState.Continue)
                 {
@@ -78,12 +78,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
         }
 
-        public void RemoveDependencies(int deps)
+        public void RemoveDataPoints(int points)
         {
             lock (_statusLock)
             {
-                _numDependencise -= deps;
-                _currentFailures += deps;
+                _numDependencise -= points;
+                _currentFailures += points;
 
                 if (_currentState != FailureState.StopAndReschedule)
                 {

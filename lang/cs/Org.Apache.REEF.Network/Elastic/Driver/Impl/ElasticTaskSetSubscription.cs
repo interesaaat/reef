@@ -177,7 +177,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public FailureStateEvent OnTaskFailure(IFailedTask task)
         {
-            ////task.Reason;
+            var action = GetRootOperator.OnTaskFailure(task);
+
+            // Failure have to be propagated up to the server
             return FailureStateEvent.Continue;
         }
 

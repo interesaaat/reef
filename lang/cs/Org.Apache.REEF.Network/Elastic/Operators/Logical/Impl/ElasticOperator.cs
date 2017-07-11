@@ -222,7 +222,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public FailureStateEvent OnTaskFailure(IFailedTask task)
         {
-            return FailureStateEvent.Continue;
+            int lostDataPoints = _topology.RemoveTask(task.Id);
+
+            _failureMachine.RemoveDataPoints(lostDataPoints);
+
         }
 
         public void OnContinueAndReconfigure()

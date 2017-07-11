@@ -29,6 +29,7 @@ using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -46,10 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _tasksAdded;
         private readonly int _numTasks;
 
-        private readonly List<Tuple<IConfiguration, IActiveContext>> _taskConfs;
-        private readonly List<Tuple<int, TaskStatus>> _taskStatus;
-        private readonly List<HashSet<string>> _taskToSubsMapper;
-
+        private readonly List<TaskInfo> _taskInfos; 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
 
         /// <summary>
@@ -69,18 +67,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _tasksAdded = 0;
             _numTasks = numTasks;
 
-            _taskConfs = new List<Tuple<IConfiguration, IActiveContext>>(numTasks);
-            _taskStatus = new List<Tuple<int, TaskStatus>>(numTasks);
-
-            _taskToSubsMapper = new List<HashSet<string>>(numTasks);
-
+            _taskInfos = new List<TaskInfo>(numTasks);
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 
             for (int i = 0; i < numTasks; i++)
             {
-                _taskConfs.Add(null);
-                _taskStatus.Add(null);
-                _taskToSubsMapper.Add(new HashSet<string>());
+                _taskInfos.Add(null);
             }
         }
 
@@ -157,25 +149,24 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             int id = Utils.GetTaskNum(taskId) - 1;
 
-            if (_taskConfs[id] != null)
+            if (_taskInfos[id] != null)
             {
                 throw new ArgumentException(
                     "Task Id already registered with TaskSet");
             }
 
             Interlocked.Increment(ref _tasksAdded);
-
-            _taskConfs[id] = new Tuple<IConfiguration, IActiveContext>(partialTaskConfig, activeContext);
-
-            _taskStatus[id] = new Tuple<int, TaskStatus>(0, TaskStatus.Init);
+            var subList = new List<IElasticTaskSetSubscription>();
 
             foreach (var sub in _subscriptions)
             {
                 if (sub.Value.AddTask(taskId))
                 {
-                    _taskToSubsMapper[id].Add(sub.Key);
+                    subList.Add(sub.Value);
                 }
             }
+
+            _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, TaskStatus.Init, subList);
 
             if (StartSubmitTasks)
             {
@@ -198,18 +189,20 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             for (int i = 0; i < _numTasks; i++)
             {
-                var subs = _taskToSubsMapper[i];
+                var subs = _taskInfos[i].Subscriptions;
                 ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
                 foreach (var sub in subs)
                 {
-                    _subscriptions[sub].GetElasticTaskConfiguration(ref confBuilder);
+                    sub.GetElasticTaskConfiguration(ref confBuilder);
                 }
 
                 IConfiguration serviceConfiguration = _subscriptions.Values.First().GetService.GetElasticTaskConfiguration(confBuilder);
-                IConfiguration mergedTaskConf = Configurations.Merge(_taskConfs[i].Item1, serviceConfiguration);
-                _taskConfs[i].Item2.SubmitTask(mergedTaskConf);
-                _taskStatus[i] = new Tuple<int, TaskStatus>(_taskStatus[i].Item1, TaskStatus.Submitted);
+                IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[i].TaskConfiguration, serviceConfiguration);
+
+                _taskInfos[i].ActiveContext.SubmitTask(mergedTaskConf);
+
+                _taskInfos[i].TaskStatus = TaskStatus.Submitted;
             }
         }
 
@@ -231,9 +224,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 lock (_lock)
                 {
-                    if (_taskStatus[id].Item2 <= TaskStatus.Submitted)
+                    if (_taskInfos[id].TaskStatus <= TaskStatus.Submitted)
                     {
-                        _taskStatus[id] = new Tuple<int, TaskStatus>(_taskStatus[id].Item1, TaskStatus.Running);
+                        _taskInfos[id].TaskStatus = TaskStatus.Running;
+                        _taskInfos[id].TaskRunner = task;
                     }
                 }
             }
@@ -252,20 +246,21 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 lock (_lock)
                 {
-                    if (_taskStatus[id].Item2 < TaskStatus.Failed)
+                    if (_taskInfos[id].TaskStatus < TaskStatus.Failed)
                     {
-                        _taskStatus[id] = new Tuple<int, TaskStatus>(_taskStatus[id].Item1, TaskStatus.Failed);
+                        _taskInfos[id].TaskStatus = TaskStatus.Failed;
                     }
                 }
 
-                foreach (string sub in _taskToSubsMapper[id])
-                {
-                    var remediation = _subscriptions[sub].OnTaskFailure(task);
-                }
+                var action = _taskInfos[id].Subscriptions
+                    .Select(sub => sub.OnTaskFailure(task))
+                    .Aggregate((action1, action2) => (FailureStateEvent)Math.Max((int)action1, (int)action2));
+
+                // Some mechanism implementing the action
             }
         }
 
-        public void OnEvaluatorFailure(IFailedEvaluator taskId)
+        public void OnEvaluatorFailure(IFailedEvaluator evaluator)
         {
             throw new NotImplementedException();
         }

@@ -61,6 +61,8 @@ under the License.
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfigurationMinusMessage.cs" />
+    <Compile Include="Elastic\Driver\Impl\TaskInfo.cs" />
+    <Compile Include="Elastic\Failures\Impl\OperatorException.cs" />
     <Compile Include="Elastic\Operators\Logical\CheckpointLevel.cs" />
     <Compile Include="Elastic\Failures\FailureState.cs" />
     <Compile Include="Elastic\Failures\Impl\DefaultFailureStateMachine.cs" />

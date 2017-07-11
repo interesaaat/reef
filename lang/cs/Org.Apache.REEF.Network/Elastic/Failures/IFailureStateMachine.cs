@@ -19,9 +19,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     public interface IFailureStateMachine
     {
-        void AddDependencies(int deps);
+        void AddDataPoints(int points);
 
-        void RemoveDependencies(int deps);
+        void RemoveDataPoints(int points);
 
         IFailureStateMachine Clone { get; }
     }

@@ -32,6 +32,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             return true;
         }
 
+        public int RemoveTask(string taskId)
+        {
+            return 1;
+        }
+
         public IConfiguration GetTaskConfiguration(int taskId)
         {
             throw new NotImplementedException();

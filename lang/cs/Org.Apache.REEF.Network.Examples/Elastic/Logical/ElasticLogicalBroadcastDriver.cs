@@ -113,7 +113,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(_numEvaluators)
                 .SetMegabytes(512)
-                .SetCores(1)
+                .SetCores(8)
                 .SetRackName("WonderlandRack")
                 .SetEvaluatorBatchId("BroadcastEvaluator")
                 .Build();
