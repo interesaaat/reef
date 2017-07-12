@@ -73,13 +73,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             [Parameter(typeof(ElasticServiceConfigurationOptions.SubscriptionName))] string defaultSubscriptionName,
             [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
             AvroConfigurationSerializer configSerializer,
-            INameServer nameServer)
+            INameServer nameServer,
+            IFailureStateMachine defaultFailureStateMachine)
         {
             _driverId = driverId;
             _numEvaluators = numEvaluators;
             _defaultSubscriptionName = defaultSubscriptionName;
 
-            _failureMachine = new DefaultFailureStateMachine();
+            _failureMachine = defaultFailureStateMachine;
             _configSerializer = configSerializer;
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 

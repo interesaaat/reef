@@ -17,19 +17,21 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public enum FailureState
+    public enum FailureState : int
     {
-        Continue,
+        Continue = 1,
 
-        ContinueAndReconfigure,
+        ContinueAndReconfigure = 2,
 
-        ContinueAndReschedule,
+        ContinueAndReschedule = 3,
 
-        StopAndReschedule
+        StopAndReschedule = 4
     }
 
-    public enum FailureStateEvent: int
+    public enum FailureStateEvent : int
     {
+        None = 0,
+
         Continue = 1,
 
         Reconfigure = 2,

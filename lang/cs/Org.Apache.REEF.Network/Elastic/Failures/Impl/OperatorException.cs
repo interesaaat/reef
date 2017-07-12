@@ -26,6 +26,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     [Serializable]
     public sealed class OperatorException : Exception
     {
+        private int _id;
+
+        public int OperatorId { get; }
+
         /// <summary>
         /// Constructor. A serializable exception object that represents a task application error.
         /// All the application related error should be captured in this type of exception.
@@ -34,6 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public OperatorException(string message, int id)
             : base(GetMessagePrefix(id) + message)
         {
+            _id = id;
         }
 
         /// <summary>
@@ -44,6 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public OperatorException(string message, int id, Exception innerException)
             : base(GetMessagePrefix(id) + message, innerException)
         {
+            _id = id;
         }
 
         public OperatorException(SerializationInfo info, StreamingContext context)

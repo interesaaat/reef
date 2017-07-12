@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using System;
 using System.Collections.Generic;
@@ -52,6 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             { FailureState.StopAndReschedule, 0.99F }
         };
 
+        [Inject]
         public DefaultFailureStateMachine()
         {
             _numDependencise = 0;
@@ -61,7 +63,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             _statusLock = new object();
         }
 
-        public void AddDataPoints(int points)
+        public FailureState State 
+        {
+            get
+            {
+                return _currentState;
+            }
+        }
+
+        public FailureState AddDataPoints(int points)
         {
             lock (_statusLock)
             {
@@ -75,13 +85,16 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                         _currentState = transitionMapDown[_currentState];
                     }
                 }
+
+                return _currentState;
             }
         }
 
-        public void RemoveDataPoints(int points)
+        public FailureState RemoveDataPoints(int points)
         {
             lock (_statusLock)
             {
+                var current = _currentState;
                 _numDependencise -= points;
                 _currentFailures += points;
 
@@ -92,6 +105,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                         _currentState = transitionMapUp[_currentState];
                     }
                 }
+
+                return _currentState;
             }
         }
 

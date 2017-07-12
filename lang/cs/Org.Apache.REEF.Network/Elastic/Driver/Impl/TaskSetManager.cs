@@ -30,6 +30,7 @@ using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -252,11 +253,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     }
                 }
 
-                var action = _taskInfos[id].Subscriptions
-                    .Select(sub => sub.OnTaskFailure(task))
-                    .Aggregate((action1, action2) => (FailureStateEvent)Math.Max((int)action1, (int)action2));
+                if (task.AsError() is OperatorException)
+                {
+                    foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
+                    {
+                        sub.OnTaskFailure(task);
+                    }
 
-                // Some mechanism implementing the action
+                    // _service.GenerateActionOnFailure
+
+                    // Some mechanism implementing the action
+                }
             }
         }
 

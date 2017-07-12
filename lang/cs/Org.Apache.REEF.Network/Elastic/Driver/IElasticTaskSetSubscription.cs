@@ -44,6 +44,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
  
         ElasticOperator GetRootOperator { get; }
 
+        int IteratorId { get; set; }
+
         /// <summary>
         /// Add a task to the communication group.
         /// The CommunicationGroupDriver must have called Build() before adding tasks to the group.

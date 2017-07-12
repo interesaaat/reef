@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticConfig.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticConfig.PortRange))] int portRange,
-            ElasticTaskSetService service,
+            IElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
             _numEvaluators = numEvaluators;
@@ -113,7 +113,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(_numEvaluators)
                 .SetMegabytes(512)
-                .SetCores(8)
+                .SetCores(1)
                 .SetRackName("WonderlandRack")
                 .SetEvaluatorBatchId("BroadcastEvaluator")
                 .Build();

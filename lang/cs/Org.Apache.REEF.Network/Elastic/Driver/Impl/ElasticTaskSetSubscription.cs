@@ -42,18 +42,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly string _subscriptionName;
         private bool _finalized;
+        private FailureState _failureState;
         private readonly AvroConfigurationSerializer _confSerializer;
         private readonly IElasticTaskSetService _elasticService;
         private readonly int _numTasks;
         private int _tasksAdded;
 
-        private readonly TaskSetManager _taskSet;
-        private IFailureStateMachine _failureMachine;
+        private IFailureStateMachine _defaultFailureMachine;
         private ElasticOperator _root;
         private int _numOperators;
 
-        private readonly object _statusLock = new object();
-        private readonly object _tasksLock = new object();
+        // This is used for fault-tolerancy. Failures over an iterative pipeline of operators
+        // have to be propagated through all operators.
+        private int _iteratorId;
+
+        private readonly object _tasksLock;
+        private readonly object _statusLock;
 
         /// <summary>
         /// Create a new CommunicationGroupDriver.
@@ -76,10 +80,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _numTasks = numTasks;
             _tasksAdded = 0;
             _elasticService = elasticService;
-            _failureMachine = failureMachine ?? new DefaultFailureStateMachine();
-            _root = new Empty(this, _failureMachine.Clone);
+            _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
+            _root = new Empty(this, _defaultFailureMachine.Clone);
 
-            _taskSet = new TaskSetManager(numTasks);
+            _iteratorId = -1;
+
             _tasksLock = new object();
         }
 
@@ -175,12 +180,36 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public FailureStateEvent OnTaskFailure(IFailedTask task)
+        public int IteratorId
         {
-            var action = GetRootOperator.OnTaskFailure(task);
+            get
+            {
+                return _iteratorId;
+            }
+            set
+            {
+                _iteratorId = value;
+            }
+        }
 
-            // Failure have to be propagated up to the server
-            return FailureStateEvent.Continue;
+        public FailureState OnTaskFailure(IFailedTask task)
+        {
+            var status = GetRootOperator.OnTaskFailure(task);
+
+            lock (_statusLock)
+            {
+                if (status < _failureState)
+                {
+                    throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
+                }
+
+                _failureState = status;
+            }
+
+            // Failure have to be propagated up to the service
+            GetService.OnTaskFailure(task);
+
+            return _failureState;
         }
 
         public void OnContinueAndReconfigure()

@@ -86,5 +86,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        internal int NumRetry
+        {
+            get
+            {
+                return _numRetry;
+            }
+
+            set
+            {
+                _numRetry = value;
+            }
+        }
     }
 }

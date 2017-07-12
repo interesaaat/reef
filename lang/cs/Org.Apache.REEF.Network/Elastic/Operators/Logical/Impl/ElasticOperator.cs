@@ -220,12 +220,33 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public FailureStateEvent OnTaskFailure(IFailedTask task)
+        public FailureState OnTaskFailure(IFailedTask task)
         {
-            int lostDataPoints = _topology.RemoveTask(task.Id);
+            var exception = task.AsError() as OperatorException;
 
-            _failureMachine.RemoveDataPoints(lostDataPoints);
+            if (GetSubscription.IteratorId > 0 || exception.OperatorId == _id)
+            {
+                int lostDataPoints = _topology.RemoveTask(task.Id);
+                FailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);
 
+                if (_next != null)
+                {
+                    result = (FailureState)Math.Max((int)result, (int)_next.OnTaskFailure(task));
+                }
+
+                return result;
+            }
+            else
+            {
+                if (_next != null)
+                {
+                    return _next.OnTaskFailure(task);
+                }
+                else
+                {
+                    return _failureMachine.State;
+                }
+            }
         }
 
         public void OnContinueAndReconfigure()

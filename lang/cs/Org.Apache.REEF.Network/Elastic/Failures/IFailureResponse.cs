@@ -23,7 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     public interface IFailureResponse
     {
-        FailureStateEvent OnTaskFailure(IFailedTask task);
+        FailureState OnTaskFailure(IFailedTask task);
 
         void OnContinueAndReconfigure();
 
