@@ -47,6 +47,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
+        IObserver<ICompletedTask>,
         IObserver<IFailedEvaluator>, 
         IObserver<IFailedTask>
     {
@@ -89,9 +90,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                 .Set(PipelineDataConverterConfiguration<int>.DataConverter, GenericType<DefaultPipelineDataConverter<int>>.Class)
                 .Build();
 
-            IElasticTaskSetSubscription subscription = _service.DefaultElasticTaskSetSubscription;
+            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
 
-            ElasticOperator pipeline = subscription.GetRootOperator;
+            ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree,
@@ -102,10 +103,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             _subscription = subscription.Build();
 
             // Create the task manager
-            _taskManager = new TaskSetManager(_numEvaluators);
+            _taskManager = new DefaultTaskSetManager(_numEvaluators);
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);
+
+            // Build the task set manager
+            _taskManager.Build();
         }
 
         public void OnNext(IDriverStarted value)
@@ -123,7 +127,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
             int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextName(_taskManager.GetSubscriptionsId, id);
+            string identifier = Utils.BuildContextName(_taskManager.SubscriptionsId, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -138,7 +142,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         {
             bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
             int id = _taskManager.GetNextTaskId(activeContext);
-            string taskId = Utils.BuildTaskId(_taskManager.GetSubscriptionsId, id);
+            string taskId = Utils.BuildTaskId(_taskManager.SubscriptionsId, id);
 
             IConfiguration partialTaskConf;
 
@@ -169,7 +173,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public void OnNext(IRunningTask value)
         {
-            _taskManager.onTaskRunning(value);
+            _taskManager.OnTaskRunning(value);
         }
 
         public void OnNext(IFailedEvaluator failedEvaluator)
@@ -180,6 +184,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         public void OnNext(IFailedTask failedTask)
         {
             _taskManager.OnTaskFailure(failedTask);
+        }
+
+        public void OnNext(ICompletedTask value)
+        {
+            _taskManager.OnTaskCompleted(value);
         }
 
         public void OnCompleted()

@@ -94,9 +94,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                 .Set(PipelineDataConverterConfiguration<int>.DataConverter, GenericType<DefaultPipelineDataConverter<int>>.Class)
                 .Build();
 
-            IElasticTaskSetSubscription subscription = _service.DefaultElasticTaskSetSubscription;
+            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
 
-            ElasticOperator pipeline = subscription.GetRootOperator;
+            ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree,
@@ -114,11 +114,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             _subscription = subscription.Build();
 
             // Create the task manager
-            _taskManager = new TaskSetManager(_numEvaluators);
+            _taskManager = new DefaultTaskSetManager(_numEvaluators);
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);
 
+            // Build the task set manager
             _taskManager.Build();
         }
 
@@ -137,7 +138,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
             int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextName(_taskManager.GetSubscriptionsId, id);
+            string identifier = Utils.BuildContextName(_taskManager.SubscriptionsId, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -152,7 +153,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         {
             bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
             int id = _taskManager.GetNextTaskId(activeContext);
-            string taskId = Utils.BuildTaskId(_taskManager.GetSubscriptionsId, id);
+            string taskId = Utils.BuildTaskId(_taskManager.SubscriptionsId, id);
 
             IConfiguration partialTaskConf;
 

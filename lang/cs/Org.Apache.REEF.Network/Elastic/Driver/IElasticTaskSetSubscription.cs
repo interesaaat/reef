@@ -24,45 +24,30 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
-    /// Used to configure Group Communication operators in Reef driver.
-    /// All operators in the same Communication Group run on the the 
-    /// same set of tasks.
+    /// Used to configure (Group Communication) operators in REEF driver.
+    /// All operators in the same Subscription share similar semantics
+    /// and behaviour under failures.
     /// </summary>
     public interface IElasticTaskSetSubscription : IFailureResponse
     {
-        string GetSubscriptionName { get; }
+        string SubscriptionName { get; }
 
-        int GetNextOperatorId();
-
-        /// <summary>
-        /// Finalizes the CommunicationGroupDriver.
-        /// After the CommunicationGroupDriver has been finalized, no more operators may
-        /// be added to the group.
-        /// </summary>
-        /// <returns>The same finalized CommunicationGroupDriver</returns>
-        IElasticTaskSetSubscription Build();
- 
-        ElasticOperator GetRootOperator { get; }
+        ElasticOperator RootOperator { get; }
 
         int IteratorId { get; set; }
 
-        /// <summary>
-        /// Add a task to the communication group.
-        /// The CommunicationGroupDriver must have called Build() before adding tasks to the group.
-        /// </summary>
-        /// <param name="taskId">The id of the task to add</param>
+        IFailureState FailureState { get; }
+
+        IElasticTaskSetService Service { get; }
+
+        int GetNextOperatorId();
+
+        IElasticTaskSetSubscription Build();
+
         bool AddTask(string taskId);
 
         bool IsMasterTaskContext(IActiveContext activeContext);
 
-        IElasticTaskSetService GetService { get; }
-
-        /// <summary>
-        /// Get the Task Configuration for this communication group. 
-        /// Must be called only after all tasks have been added to the CommunicationGroupDriver.
-        /// </summary>
-        /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
-        /// <returns>The Task Configuration for this communication group</returns>
-        void GetElasticTaskConfiguration(ref ICsConfigurationBuilder builder);
+        void GetTaskConfiguration(ref ICsConfigurationBuilder builder);
     }
 }

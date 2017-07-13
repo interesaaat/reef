@@ -15,20 +15,38 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
+using System;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    [DefaultImplementation(typeof(DefaultFailureStateMachine))]
-    public interface IFailureStateMachine
+    public class DefaultFailureState : IFailureState
     {
-        IFailureState AddDataPoints(int points);
+        public DefaultFailureState()
+        {
+            FailureState = (int)DefaultFailureStates.Continue;
+        }
 
-        IFailureState RemoveDataPoints(int points);
+        public DefaultFailureState(int state)
+        {
+            FailureState = state;
+        }
 
-        IFailureStateMachine Clone { get; }
+        public int FailureState { get; set; }
 
-        IFailureState State { get; }
+        public IFailureState Merge(IFailureState that)
+        {
+            return new DefaultFailureState(Math.Max(FailureState, that.FailureState));
+        }
+    }
+
+    public enum DefaultFailureStates : int
+    {
+        Continue = 1,
+
+        ContinueAndReconfigure = 2,
+
+        ContinueAndReschedule = 3,
+
+        StopAndReschedule = 4
     }
 }

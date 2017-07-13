@@ -28,29 +28,29 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     {
         private int _numDependencise;
         private int _currentFailures;
-        private FailureState _currentState;
+        private DefaultFailureState _currentState;
 
         private object _statusLock;
 
-        private readonly SortedDictionary<FailureState, FailureState> transitionMapUp = new SortedDictionary<FailureState, FailureState>()
+        private readonly SortedDictionary<DefaultFailureStates, DefaultFailureStates> transitionMapUp = new SortedDictionary<DefaultFailureStates, DefaultFailureStates>()
         {
-            { FailureState.Continue, FailureState.ContinueAndReconfigure },
-            { FailureState.ContinueAndReconfigure, FailureState.ContinueAndReschedule },
-            { FailureState.ContinueAndReschedule, FailureState.StopAndReschedule }
+            { DefaultFailureStates.Continue, DefaultFailureStates.ContinueAndReconfigure },
+            { DefaultFailureStates.ContinueAndReconfigure, DefaultFailureStates.ContinueAndReschedule },
+            { DefaultFailureStates.ContinueAndReschedule, DefaultFailureStates.StopAndReschedule }
         };
 
-        private readonly SortedDictionary<FailureState, FailureState> transitionMapDown = new SortedDictionary<FailureState, FailureState>()
+        private readonly SortedDictionary<DefaultFailureStates, DefaultFailureStates> transitionMapDown = new SortedDictionary<DefaultFailureStates, DefaultFailureStates>()
         {
-            { FailureState.ContinueAndReconfigure, FailureState.Continue },
-            { FailureState.ContinueAndReschedule, FailureState.ContinueAndReconfigure },
-            { FailureState.StopAndReschedule, FailureState.ContinueAndReschedule }
+            { DefaultFailureStates.ContinueAndReconfigure, DefaultFailureStates.Continue },
+            { DefaultFailureStates.ContinueAndReschedule, DefaultFailureStates.ContinueAndReconfigure },
+            { DefaultFailureStates.StopAndReschedule, DefaultFailureStates.ContinueAndReschedule }
         };
 
-        private readonly SortedDictionary<FailureState, float> transitionWeights = new SortedDictionary<FailureState, float>()
+        private readonly IDictionary<DefaultFailureStates, float> transitionWeights = new Dictionary<DefaultFailureStates, float>()
         {
-            { FailureState.ContinueAndReconfigure, 0.99F },
-            { FailureState.ContinueAndReschedule, 0.99F },
-            { FailureState.StopAndReschedule, 0.99F }
+            { DefaultFailureStates.ContinueAndReconfigure, 0.99F },
+            { DefaultFailureStates.ContinueAndReschedule, 0.99F },
+            { DefaultFailureStates.StopAndReschedule, 0.99F }
         };
 
         [Inject]
@@ -58,12 +58,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             _numDependencise = 0;
             _currentFailures = 0;
-            _currentState = FailureState.Continue;
+            _currentState = new DefaultFailureState();
 
             _statusLock = new object();
         }
 
-        public FailureState State 
+        public IFailureState State 
         {
             get
             {
@@ -71,18 +71,18 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
         }
 
-        public FailureState AddDataPoints(int points)
+        public IFailureState AddDataPoints(int points)
         {
             lock (_statusLock)
             {
                 _numDependencise += points;
                 _currentFailures -= points;
 
-                if (_currentState != FailureState.Continue)
+                if (_currentState.FailureState != (int)DefaultFailureStates.Continue)
                 {
-                    while (_currentFailures / _numDependencise < transitionWeights[_currentState])
+                    while (_currentFailures / _numDependencise < transitionWeights[(DefaultFailureStates)_currentState.FailureState])
                     {
-                        _currentState = transitionMapDown[_currentState];
+                        _currentState.FailureState = (int)transitionMapDown[(DefaultFailureStates)_currentState.FailureState];
                     }
                 }
 
@@ -90,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
         }
 
-        public FailureState RemoveDataPoints(int points)
+        public IFailureState RemoveDataPoints(int points)
         {
             lock (_statusLock)
             {
@@ -98,11 +98,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 _numDependencise -= points;
                 _currentFailures += points;
 
-                if (_currentState != FailureState.StopAndReschedule)
+                if (_currentState.FailureState != (int)DefaultFailureStates.StopAndReschedule)
                 {
-                    while (_currentFailures / _numDependencise > transitionWeights[transitionMapUp[_currentState]])
+                    while (_currentFailures / _numDependencise > transitionWeights[transitionMapUp[(DefaultFailureStates)_currentState.FailureState]])
                     {
-                        _currentState = transitionMapUp[_currentState];
+                        _currentState.FailureState = (int)transitionMapUp[(DefaultFailureStates)_currentState.FailureState];
                     }
                 }
 
@@ -110,28 +110,38 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
         }
 
-        public void SetThreashold(FailureState level, float threshold)
+        public void SetThreashold(IFailureState level, float threshold)
         {
-            if (level == FailureState.Continue)
+            if (!(level is DefaultFailureState))
+            {
+                throw new ArgumentException(level.GetType() + " is not DefaultFailureStateMachine");
+            }
+
+            if (level.FailureState == (int)DefaultFailureStates.Continue)
             {
                 throw new ArgumentException("Cannot change the threshould for Continue state");
             }
 
-            transitionWeights[level] = threshold;
+            transitionWeights[(DefaultFailureStates)level.FailureState] = threshold;
 
             CheckConsistency();
         }
 
-        public void SetThreasholds(params Tuple<FailureState, float>[] weights)
+        public void SetThreasholds(params Tuple<IFailureState, float>[] weights)
         {
-            if (weights.Any(weight => weight.Item1 == FailureState.Continue))
+            if (!weights.All(weight => weight.Item1 is DefaultFailureState))
+            {
+                throw new ArgumentException("Input is not of type DefaultFailureStateMachine");
+            }
+
+            if (weights.Any(weight => weight.Item1.FailureState == (int)DefaultFailureStates.Continue))
             {
                 throw new ArgumentException("Cannot change the threshould for Continue state");
             }
 
-            foreach (Tuple<FailureState, float> weight in weights)
+            foreach (Tuple<IFailureState, float> weight in weights)
             {
-                transitionWeights[weight.Item1] = weight.Item2;
+                transitionWeights[(DefaultFailureStates)weight.Item1.FailureState] = weight.Item2;
             }
 
             CheckConsistency();
@@ -139,7 +149,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         private void CheckConsistency()
         {
-            var state = FailureState.ContinueAndReconfigure;
+            var state = DefaultFailureStates.ContinueAndReconfigure;
             float prevWeight = transitionWeights[state];
             state = transitionMapUp[state];
             float nextWeight = transitionWeights[state];
@@ -152,7 +162,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 }
 
                 prevWeight = nextWeight;
-                if (state == FailureState.StopAndReschedule)
+                if (state == DefaultFailureStates.StopAndReschedule)
                 {
                     return;
                 }
@@ -166,9 +176,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             get
             {
                 var newMachine = new DefaultFailureStateMachine();
-                foreach (FailureState state in transitionWeights.Keys)
+
+                foreach (DefaultFailureStates state in transitionWeights.Keys)
                 {
-                    newMachine.SetThreashold(state, transitionWeights[state]);
+                    newMachine.SetThreashold(new DefaultFailureState((int)state), transitionWeights[state]);
                 }
 
                 return newMachine;

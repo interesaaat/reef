@@ -15,20 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
-using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     public interface IFailureResponse
     {
-        FailureState OnTaskFailure(IFailedTask task);
+        IFailureState OnTaskFailure(IFailedTask info);
 
-        void OnContinueAndReconfigure();
-
-        void OnContinueAndReschedule();
-
-        void OnStopAndReschedule();
+        void EventDispatcher(IFailureEvent @event);
     }
 }

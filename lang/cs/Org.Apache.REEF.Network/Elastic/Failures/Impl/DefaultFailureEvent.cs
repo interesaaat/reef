@@ -15,20 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
+using System;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    [DefaultImplementation(typeof(DefaultFailureStateMachine))]
-    public interface IFailureStateMachine
+    public class DefaultFailureEvent : IFailureEvent
     {
-        IFailureState AddDataPoints(int points);
+        public DefaultFailureEvent()
+        {
+            FailureEvent = (int)DefaultFailureStateEvents.Continue;
+        }
 
-        IFailureState RemoveDataPoints(int points);
+        public DefaultFailureEvent(int @event)
+        {
+            FailureEvent = @event;
+        }
 
-        IFailureStateMachine Clone { get; }
+        public int FailureEvent { get; set; }
+    }
 
-        IFailureState State { get; }
+    public enum DefaultFailureStateEvents : int
+    {
+        Continue = 1,
+
+        Reconfigure = 2,
+
+        Reschedule = 3,
+
+        Stop = 4
     }
 }

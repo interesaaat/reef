@@ -31,15 +31,16 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     /// <summary>
     /// Helper class to start Group Communication tasks.
     /// </summary>
-    public sealed class TaskSetManager : ITaskSetManager
+    public sealed class DefaultTaskSetManager : ITaskSetManager, IDefaultFailureEventResponse
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(TaskSetManager));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetManager));
 
         private readonly object _lock;
         private bool _finalized;
@@ -47,6 +48,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _contextsAdded;
         private int _tasksAdded;
         private readonly int _numTasks;
+        private int _tasksFailed;
+        private float _failRatio;
 
         private readonly List<TaskInfo> _taskInfos; 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
@@ -59,7 +62,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="groupCommDriver">The IGroupCommuDriver for the Group Communication tasks</param>
         /// <param name="numTasks">The number of Tasks that need to be added before
         /// the Tasks will be started. </param>
-        public TaskSetManager(int numTasks)
+        public DefaultTaskSetManager(int numTasks, float failRatio = 0.5F)
         {
             _lock = new object();
             _finalized = false;
@@ -67,6 +70,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _contextsAdded = 0;
             _tasksAdded = 0;
             _numTasks = numTasks;
+            _failRatio = failRatio;
+            _tasksFailed = 0;
 
             _taskInfos = new List<TaskInfo>(numTasks);
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
@@ -84,7 +89,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 throw new IllegalStateException("Cannot add subscription to an already built TaskManager");
             }
 
-            _subscriptions.Add(subscription.GetSubscriptionName, subscription);
+            _subscriptions.Add(subscription.SubscriptionName, subscription);
         }
 
         public bool HasMoreContextToAdd
@@ -105,13 +110,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return Interlocked.Increment(ref _contextsAdded);
         }
 
-        public string GetSubscriptionsId
+        public string SubscriptionsId
         {
             get
             {
-                if (_finalized == true)
+                if (_finalized != true)
                 {
-                    throw new IllegalStateException("Subscription cannot be built more than once");
+                    throw new IllegalStateException("Task set have to be built before getting its subscriptions");
                 }
 
                 return _subscriptions.Keys.Aggregate((current, next) => current + "+" + next);
@@ -125,8 +130,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext)
         {
-            return _subscriptions.Values
-                .Where(sub => sub.IsMasterTaskContext(activeContext));
+            return _subscriptions.Values.Where(sub => sub.IsMasterTaskContext(activeContext));
         }
 
         public int NumTasks
@@ -195,10 +199,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 foreach (var sub in subs)
                 {
-                    sub.GetElasticTaskConfiguration(ref confBuilder);
+                    sub.GetTaskConfiguration(ref confBuilder);
                 }
 
-                IConfiguration serviceConfiguration = _subscriptions.Values.First().GetService.GetElasticTaskConfiguration(confBuilder);
+                IConfiguration serviceConfiguration = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
                 IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[i].TaskConfiguration, serviceConfiguration);
 
                 _taskInfos[i].ActiveContext.SubmitTask(mergedTaskConf);
@@ -217,7 +221,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _finalized = true;
         }
 
-        public void onTaskRunning(IRunningTask task)
+        public void OnTaskRunning(IRunningTask task)
         {
             if (BelongsTo(task.Id))
             {
@@ -234,16 +238,33 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void OnTaskCompleted(ICompletedTask taskId)
+        public void OnTaskCompleted(ICompletedTask taskInfo)
+        {
+            var id = Utils.GetTaskNum(taskInfo.Id) - 1;
+
+            lock (_lock)
+            {
+                _taskInfos[id].TaskStatus = TaskStatus.Completed;
+            }
+        }
+
+        public void EventDispatcher(IFailureEvent @event)
         {
             throw new NotImplementedException();
         }
 
-        public void OnTaskFailure(IFailedTask task)
+        public IFailureState OnTaskFailure(IFailedTask info)
         {
-            if (BelongsTo(task.Id))
+            if (BelongsTo(info.Id))
             {
-                var id = Utils.GetTaskNum(task.Id) - 1;
+                var id = Utils.GetTaskNum(info.Id) - 1;
+                Interlocked.Decrement(ref _tasksFailed);
+
+                if (_tasksFailed / _numTasks > _failRatio)
+                {
+                    OnFail();
+                    return new Fail();
+                }
 
                 lock (_lock)
                 {
@@ -253,18 +274,33 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     }
                 }
 
-                if (task.AsError() is OperatorException)
+                if (info.AsError() is OperatorException)
                 {
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
-                        sub.OnTaskFailure(task);
+                        sub.OnTaskFailure(info);
                     }
 
-                    // _service.GenerateActionOnFailure
+                    IFailureState state = _subscriptions.First(pairs => true).Value.Service.OnTaskFailure(info);
 
-                    // Some mechanism implementing the action
+                    if (state.FailureState > (int)DefaultFailureStates.Continue)
+                    {
+                        switch ((DefaultFailureStateEvents)state.FailureState)
+                        {
+                            case DefaultFailureStateEvents.Reconfigure:
+                                OnReconfigure(null);
+                                break;
+                            case DefaultFailureStateEvents.Reschedule:
+                                OnReschedule(null);
+                                break;
+                            case DefaultFailureStateEvents.Stop:
+                                OnStop(null);
+                                break;
+                        }
+                    }
                 }
             }
+            return null;
         }
 
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
@@ -272,9 +308,29 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
+        public void OnReconfigure(IReconfigure info)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnReschedule(IReschedule info)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnStop(IStop info)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnFail()
+        {
+            throw new NotImplementedException();
+        }
+
         private bool BelongsTo(string id)
         {
-            return Utils.GetTaskSubscriptions(id) == GetSubscriptionsId;
+            return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
         }
     }
 }

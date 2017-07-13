@@ -15,20 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
+using System;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    [DefaultImplementation(typeof(DefaultFailureStateMachine))]
-    public interface IFailureStateMachine
+    public class Fail : IFailureState
     {
-        IFailureState AddDataPoints(int points);
+        public Fail()
+        {
+        }
 
-        IFailureState RemoveDataPoints(int points);
+        public int FailureState
+        {
+            get
+            {
+                return -1;
+            }
+            set
+            {
+            }
+        }
 
-        IFailureStateMachine Clone { get; }
-
-        IFailureState State { get; }
+        public IFailureState Merge(IFailureState that)
+        {
+            return this;
+        }
     }
 }

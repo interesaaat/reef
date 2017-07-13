@@ -25,50 +25,20 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
-    /// Used to create Communication Groups for Group Communication Operators.
-    /// Also manages configuration for Group Communication tasks/services.
+    /// Used to create Subscriptions for fault tolerant Task Sets.
+    /// Also manages configuration for Group Communication operators/services.
     /// </summary>
-    [DefaultImplementation(typeof(ElasticTaskSetService))]
+    [DefaultImplementation(typeof(DefaultTaskSetService))]
     public interface IElasticTaskSetService : IFailureResponse
     {
-        IElasticTaskSetSubscription DefaultElasticTaskSetSubscription { get; }
+        IElasticTaskSetSubscription DefaultTaskSetSubscription { get; }
 
-        /// <summary>
-        /// Create a new CommunicationGroup with the given name and number of tasks/operators. 
-        /// </summary>
-        /// <param name="taskSetName">The new group name</param>
-        /// <returns>The new task set subscription</returns>
-        IElasticTaskSetSubscription NewElasticTaskSetSubscription(string subscriptionName, int numTasks);
+        IElasticTaskSetSubscription NewTaskSetSubscription(string subscriptionName, int numTasks, IFailureStateMachine failureMachine = null);
 
-        /// <summary>
-        /// remove a communication group
-        /// Throw ArgumentException if the group does not exist
-        /// </summary>
-        /// <param name="groupName"></param>
-        void RemoveElasticTaskSetSubscription(string subscriptionName);
+        void RemoveTaskSetSubscription(string subscriptionName);
 
-        IEnumerator<IElasticTaskSetSubscription> GetSubscriptions { get; }
-
-        /// <summary>
-        /// Get the service configuration required for running Group Communication on Reef tasks.
-        /// </summary>
-        /// <returns>The service configuration for the Reef tasks</returns>
         IConfiguration GetServiceConfiguration();
 
-        /// <summary>
-        /// Get the configuration for a particular task.  
-        ///
-        /// The task may belong to many Communication Groups, so each one is serialized
-        /// in the configuration as a SerializedGroupConfig.
-        ///
-        /// The user must merge their part of task configuration (task id, task class)
-        /// with this returned Group Communication task configuration.
-        /// </summary>
-        /// <param name="taskId">The id of the task Configuration to generate</param>
-        /// <returns>The Group Communication task configuration with communication group and
-        /// operator configuration set.</returns>
-        IConfiguration GetElasticTaskConfiguration(ICsConfigurationBuilder subscriptionsConf);
-
-        string GetDriverId { get; }
+        IConfiguration GetTaskConfiguration(ICsConfigurationBuilder subscriptionsConf);
     }
 }

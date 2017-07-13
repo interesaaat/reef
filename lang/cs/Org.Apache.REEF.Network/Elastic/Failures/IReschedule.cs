@@ -15,20 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
+using System;
+using Org.Apache.REEF.Common;
+using Org.Apache.REEF.Utilities;
+using System.Collections.Generic;
+using Org.Apache.REEF.Driver.Task;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Driver.Context
 {
-    [DefaultImplementation(typeof(DefaultFailureStateMachine))]
-    public interface IFailureStateMachine
+    public interface IReschedule : IDisposable
     {
-        IFailureState AddDataPoints(int points);
+        Optional<IActiveContext> ActiveContext { get; }
 
-        IFailureState RemoveDataPoints(int points);
+        IList<IFailedContext> FailedContexts { get; }
 
-        IFailureStateMachine Clone { get; }
-
-        IFailureState State { get; }
+        Optional<IFailedTask> FailedTask { get; }
     }
 }

@@ -22,13 +22,15 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Driver.Context;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    public abstract class ElasticOperator : IFailureResponse
+    public abstract class ElasticOperator : 
+        IFailureResponse,
+        IDefaultFailureEventResponse
     {
         // For the moment we consider only linear sequences of operators (no branching for e.g., joins)
         protected ElasticOperator _next = null;
@@ -157,7 +159,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public void EnsurePolicy(FailureState level)
+        public void EnsurePolicy(IFailureStateMachine level)
         {
             throw new NotImplementedException();
         }
@@ -220,18 +222,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public FailureState OnTaskFailure(IFailedTask task)
+        public IFailureState OnTaskFailure(IFailedTask task)
         {
             var exception = task.AsError() as OperatorException;
 
             if (GetSubscription.IteratorId > 0 || exception.OperatorId == _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
-                FailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);
+                IFailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);
 
                 if (_next != null)
                 {
-                    result = (FailureState)Math.Max((int)result, (int)_next.OnTaskFailure(task));
+                    result = result.Merge(_next.OnTaskFailure(task));
                 }
 
                 return result;
@@ -249,17 +251,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public void OnContinueAndReconfigure()
+        public void EventDispatcher(IFailureEvent @event)
         {
             throw new NotImplementedException();
         }
 
-        public void OnContinueAndReschedule()
+        public void OnReconfigure(IReconfigure info)
         {
             throw new NotImplementedException();
         }
 
-        public void OnStopAndReschedule()
+        public void OnReschedule(IReschedule info)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void OnStop(IStop info)
         {
             throw new NotImplementedException();
         }

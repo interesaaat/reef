@@ -26,13 +26,12 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    /// <summary>
-    /// Helper class to start Group Communication tasks.
-    /// </summary>
-    public interface ITaskSetManager
+    public interface ITaskSetManager : IFailureResponse
     {
         void AddTaskSetSubscription(IElasticTaskSetSubscription subscription);
 
@@ -40,37 +39,28 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         int GetNextTaskContextId(IAllocatedEvaluator evaluator = null);
 
-        string GetSubscriptionsId { get; }
+        string SubscriptionsId { get; }
 
         int GetNextTaskId(IActiveContext context = null);
+
+        void Build();
 
         IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext);
 
         int NumTasks { get; }
 
-        /// <summary>
-        /// Queues the task into the TaskStarter.
-        /// 
-        /// Once the correct number of tasks have been queued, the final Configuration
-        /// will be generated and run on the given Active Context.
-        /// </summary>
-        /// <param name="partialTaskConfig">The partial task configuration containing Task
-        /// identifier and Task class</param>
-        /// <param name="activeContext">The Active Context to run the Task on</param>
         void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext);
 
         bool StartSubmitTasks { get; }
 
         void SubmitTasks();
 
-        void Build();
-
-        void onTaskRunning(IRunningTask info);
+        void OnTaskRunning(IRunningTask info);
 
         void OnTaskCompleted(ICompletedTask task);
 
-        void OnTaskFailure(IFailedTask task);
-
         void OnEvaluatorFailure(IFailedEvaluator task);
+
+        void OnFail();
     }
 }

@@ -15,29 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Driver.Context;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public enum FailureState : int
+    public interface IDefaultFailureEventResponse
     {
-        Continue = 1,
+        void OnReconfigure(IReconfigure info);
 
-        ContinueAndReconfigure = 2,
+        void OnReschedule(IReschedule info);
 
-        ContinueAndReschedule = 3,
-
-        StopAndReschedule = 4
-    }
-
-    public enum FailureStateEvent : int
-    {
-        None = 0,
-
-        Continue = 1,
-
-        Reconfigure = 2,
-
-        Reschedule = 3,
-
-        Stop = 4
+        void OnStop(IStop info);
     }
 }

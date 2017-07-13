@@ -31,20 +31,18 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    /// <summary>
-    /// Used to configure Group Communication operators in Reef driver.
-    /// All operators in the same Communication Group run on the the 
-    /// same set of tasks.
-    /// </summary>
-    public sealed class ElasticTaskSetSubscription : IElasticTaskSetSubscription
+    public sealed class DefaultTaskSetSubscription : 
+        IElasticTaskSetSubscription,
+        IDefaultFailureEventResponse
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticTaskSetSubscription));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
         private readonly string _subscriptionName;
         private bool _finalized;
-        private FailureState _failureState;
+        private IFailureState _failureState;
         private readonly AvroConfigurationSerializer _confSerializer;
         private readonly IElasticTaskSetService _elasticService;
+
         private readonly int _numTasks;
         private int _tasksAdded;
 
@@ -67,7 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="numTasks">The number of tasks each operator will use</param>
         /// <param name="fanOut"></param>
         /// <param name="confSerializer">Used to serialize task configuration</param>
-        internal ElasticTaskSetSubscription(
+        internal DefaultTaskSetSubscription(
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
             int numTasks,
@@ -81,14 +79,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _tasksAdded = 0;
             _elasticService = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
+            _failureState = new DefaultFailureState();
             _root = new Empty(this, _defaultFailureMachine.Clone);
 
             _iteratorId = -1;
 
             _tasksLock = new object();
+            _statusLock = new object();
         }
 
-        public string GetSubscriptionName
+        public string SubscriptionName
         {
             get
             {
@@ -119,7 +119,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _tasksAdded++;
             }
 
-            GetRootOperator.AddTask(taskId);
+            RootOperator.AddTask(taskId);
 
             return true;
         }
@@ -136,7 +136,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return id == 1;
         }
 
-        public IElasticTaskSetService GetService
+        public IElasticTaskSetService Service
         {
             get
             {
@@ -150,17 +150,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// </summary>
         /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
         /// <returns>The Task Configuration for this communication group</returns>
-        public void GetElasticTaskConfiguration(ref ICsConfigurationBuilder builder)
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder builder)
         {
             builder = builder
                 .BindSetEntry<GroupCommConfigurationOptions.CommunicationGroupNames, string>(
                     GenericType<GroupCommConfigurationOptions.CommunicationGroupNames>.Class,
                     _subscriptionName);
 
-                GetRootOperator.GetElasticTaskConfiguration(ref builder);
+                RootOperator.GetElasticTaskConfiguration(ref builder);
         }
 
-        public ElasticOperator GetRootOperator
+        public ElasticOperator RootOperator
         {
             get
             {
@@ -168,8 +168,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-       public IElasticTaskSetSubscription Build()
-       {
+        public IElasticTaskSetSubscription Build()
+        {
             if (_finalized == true)
             {
                 throw new IllegalStateException("Subscription cannot be built more than once");
@@ -192,37 +192,50 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public FailureState OnTaskFailure(IFailedTask task)
+        public IFailureState FailureState
         {
-            var status = GetRootOperator.OnTaskFailure(task);
+            get
+            {
+                return _failureState;
+            }
+        }
+
+        public void EventDispatcher(IFailureEvent @event)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IFailureState OnTaskFailure(IFailedTask task)
+        {
+            var status = RootOperator.OnTaskFailure(task);
 
             lock (_statusLock)
             {
-                if (status < _failureState)
+                if (status.FailureState < _failureState.FailureState)
                 {
                     throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
                 }
 
-                _failureState = status;
+                _failureState.FailureState = status.FailureState;
             }
 
             // Failure have to be propagated up to the service
-            GetService.OnTaskFailure(task);
+            Service.OnTaskFailure(task);
 
             return _failureState;
         }
 
-        public void OnContinueAndReconfigure()
+        public void OnReconfigure(IReconfigure info)
         {
             throw new NotImplementedException();
         }
 
-        public void OnContinueAndReschedule()
+        public void OnReschedule(IReschedule info)
         {
             throw new NotImplementedException();
         }
 
-        public void OnStopAndReschedule()
+        public void OnStop(IStop info)
         {
             throw new NotImplementedException();
         }

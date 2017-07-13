@@ -112,9 +112,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                .Build();
 
             // Subscriptions
-            IElasticTaskSetSubscription subscription = _service.NewElasticTaskSetSubscription("servers", 3);
+            IElasticTaskSetSubscription subscription = _service.NewTaskSetSubscription("servers", 3);
 
-            ElasticOperator pipeline = subscription.GetRootOperator;
+            ElasticOperator pipeline = subscription.RootOperator;
 
             pipeline.Iterate(1, TopologyTypes.Forest,
                         new DefaultFailureStateMachine(),
@@ -125,9 +125,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             _serversSubscription = subscription.Build();
 
-            subscription = _service.NewElasticTaskSetSubscription("server A", 7);
+            subscription = _service.NewTaskSetSubscription("server A", 7);
 
-            pipeline = subscription.GetRootOperator;
+            pipeline = subscription.RootOperator;
 
             pipeline.Broadcast(1, TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
@@ -142,9 +142,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             _serverA = subscription.Build();
 
-            subscription = _service.NewElasticTaskSetSubscription("server B", 7);
+            subscription = _service.NewTaskSetSubscription("server B", 7);
 
-            pipeline = subscription.GetRootOperator;
+            pipeline = subscription.RootOperator;
 
             pipeline.Broadcast(2, TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
@@ -159,9 +159,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
             _serverB = subscription.Build();
 
-            subscription = _service.NewElasticTaskSetSubscription("server C", 7);
+            subscription = _service.NewTaskSetSubscription("server C", 7);
 
-            pipeline = subscription.GetRootOperator;
+            pipeline = subscription.RootOperator;
 
             pipeline.Broadcast(3, TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
@@ -177,7 +177,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             _serverC = subscription.Build();
 
             // Create the servers task manager
-            _serversTaskManager = new TaskSetManager(3);
+            _serversTaskManager = new DefaultTaskSetManager(3);
 
             // Register the subscriptions to the server task manager
             _serversTaskManager.AddTaskSetSubscription(_serversSubscription);
@@ -186,12 +186,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             _serversTaskManager.AddTaskSetSubscription(_serverC);
 
             // Create the workers task manager
-            _workersTaskManager = new TaskSetManager(6);
+            _workersTaskManager = new DefaultTaskSetManager(6);
 
             // Register the subscriptions to the workers task manager
             _workersTaskManager.AddTaskSetSubscription(_serverA);
             _workersTaskManager.AddTaskSetSubscription(_serverB);
             _workersTaskManager.AddTaskSetSubscription(_serverC);
+
+            // Build the task set managers
+            _serversTaskManager.Build();
+            _workersTaskManager.Build();
         }
 
         public void OnNext(IDriverStarted value)
@@ -214,12 +218,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             if (_serversTaskManager.HasMoreContextToAdd)
             {
                 id = _serversTaskManager.GetNextTaskContextId(allocatedEvaluator);
-                identifier = Utils.BuildContextName(_serversTaskManager.GetSubscriptionsId, id);
+                identifier = Utils.BuildContextName(_serversTaskManager.SubscriptionsId, id);
             }
             else if (_workersTaskManager.HasMoreContextToAdd)
             {
                 id = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
-                identifier = Utils.BuildContextName(_workersTaskManager.GetSubscriptionsId, id);
+                identifier = Utils.BuildContextName(_workersTaskManager.SubscriptionsId, id);
             }
             else
             {
@@ -241,15 +245,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             string taskId;
             IConfiguration partialTaskConf;
 
-            bool isServerContext = _serversTaskManager.GetSubscriptionsId == Utils.GetContextSubscriptions(activeContext);
+            bool isServerContext = _serversTaskManager.SubscriptionsId == Utils.GetContextSubscriptions(activeContext);
 
             if (isServerContext)
             {
                 id = _serversTaskManager.GetNextTaskId(activeContext);
-                taskId = Utils.BuildTaskId(_serversTaskManager.GetSubscriptionsId, id);
+                taskId = Utils.BuildTaskId(_serversTaskManager.SubscriptionsId, id);
                 var servers = _serversTaskManager.IsMasterTaskContext(activeContext);
 
-                if (servers.Any(subs => subs.GetSubscriptionName == "servers"))
+                if (servers.Any(subs => subs.SubscriptionName == "servers"))
                 {
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                        TaskConfiguration.ConfigurationModule
@@ -279,7 +283,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
             else
             {
                 id = _workersTaskManager.GetNextTaskId(activeContext);
-                taskId = Utils.BuildTaskId(_workersTaskManager.GetSubscriptionsId, id);
+                taskId = Utils.BuildTaskId(_workersTaskManager.SubscriptionsId, id);
 
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule

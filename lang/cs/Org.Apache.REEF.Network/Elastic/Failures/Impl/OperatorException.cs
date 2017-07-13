@@ -24,11 +24,17 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// A serializable exception that represents a task application error.
     /// </summary>
     [Serializable]
-    public sealed class OperatorException : Exception
+    public class OperatorException : Exception
     {
         private int _id;
 
-        public int OperatorId { get; }
+        public int OperatorId
+        {
+            get
+            {
+                return _id;
+            }
+        }
 
         /// <summary>
         /// Constructor. A serializable exception object that represents a task application error.
