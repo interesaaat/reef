@@ -21,7 +21,7 @@ using Org.Apache.REEF.Tang.Interface;
 namespace Org.Apache.REEF.Network.Elastic.Topology
 {
     /// <summary>
-    /// Represents a topology graph for IGroupCommOperators.
+    /// Represents a topology graph for Elastic Group Communication Operators.
     /// </summary>
     public interface ITopology
     {

@@ -21,8 +21,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
     /// Group Communication operator used to receive a sublist of messages sent
     /// from the IScatterSender.
     /// </summary>
-    /// <typeparam name="T">The message type</typeparam>
-    public interface IElasticScatter<T>
+    public interface IElasticScatter
     {
     }
 }

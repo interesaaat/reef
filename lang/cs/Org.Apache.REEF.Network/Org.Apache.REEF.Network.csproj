@@ -53,8 +53,6 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Elastic\Config\CodecConfiguration.cs" />
-    <Compile Include="Elastic\Config\CodecToStreamingCodecConfiguration.cs" />
     <Compile Include="Elastic\Config\ElasticConfig.cs" />
     <Compile Include="Elastic\Config\GroupCommConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />
@@ -72,7 +70,7 @@ under the License.
     <Compile Include="Elastic\Failures\IReconfigure.cs" />
     <Compile Include="Elastic\Failures\IReschedule.cs" />
     <Compile Include="Elastic\Failures\IStop.cs" />
-    <Compile Include="Elastic\Operators\Logical\CheckpointLevel.cs" />
+    <Compile Include="Elastic\Failures\CheckpointLevel.cs" />
     <Compile Include="Elastic\Failures\Impl\DefaultFailureStateMachine.cs" />
     <Compile Include="Elastic\Driver\Impl\DefaultTaskSetManager.cs" />
     <Compile Include="Elastic\Driver\Impl\Utils.cs" />
@@ -85,15 +83,17 @@ under the License.
     <Compile Include="Elastic\Operators\Functions.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetService.cs" />
-    <Compile Include="Elastic\Operators\Logical\Impl\Iterate.cs" />
-    <Compile Include="Elastic\Operators\Logical\Impl\Reduce.cs" />
-    <Compile Include="Elastic\Operators\Logical\Impl\Broadcast.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperatorWithDefaultDispatcher.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultIterate.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultReduce.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultBroadcast.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperator.cs" />
+    <Compile Include="Elastic\Operators\Logical\IElasticEmpty.cs" />
     <Compile Include="Elastic\Operators\Logical\IReduceFunction.cs" />
     <Compile Include="Elastic\Operators\Physical\IReceiver.cs" />
     <Compile Include="Elastic\Operators\Physical\ISender.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticIterator.cs" />
-    <Compile Include="Elastic\Operators\Logical\Impl\Empty.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultEmpty.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticBroadcast.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticReduce.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticScatter.cs" />

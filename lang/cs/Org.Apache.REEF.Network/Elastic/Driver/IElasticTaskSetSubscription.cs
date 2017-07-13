@@ -46,6 +46,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         bool AddTask(string taskId);
 
+        bool ScheduleSubscription { get; }
+
         bool IsMasterTaskContext(IActiveContext activeContext);
 
         void GetTaskConfiguration(ref ICsConfigurationBuilder builder);

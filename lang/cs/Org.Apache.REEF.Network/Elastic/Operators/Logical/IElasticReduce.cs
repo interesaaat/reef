@@ -20,8 +20,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
     /// <summary>
     /// Group Communication Operator used to send messages to be reduced by the ReduceReceiver.
     /// </summary>
-    /// <typeparam name="T">The message type</typeparam>
-    public interface IElasticReduce<T>
+    public interface IElasticReduce
     {
     }
 }

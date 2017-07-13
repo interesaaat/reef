@@ -17,6 +17,9 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Base interface defining both the possible failure states and the current status
+    /// </summary>
     public interface IFailureState
     {
         int FailureState { get; set; }

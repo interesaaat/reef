@@ -16,8 +16,6 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Network.Examples.GroupCommunication;
-using Org.Apache.REEF.Network.Examples.Elastic.Logical;
 using Org.Apache.REEF.Network.Examples.Client.Elastic;
 
 namespace Org.Apache.REEF.Network.Examples.Client

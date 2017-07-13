@@ -20,6 +20,10 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Where the decision is made on what to do when a failure happen.
+    /// A decision is made based on how many data points are lost.
+    /// </summary>
     [DefaultImplementation(typeof(DefaultFailureStateMachine))]
     public interface IFailureStateMachine
     {

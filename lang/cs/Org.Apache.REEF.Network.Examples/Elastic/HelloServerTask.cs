@@ -15,14 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
+using System;
+using Org.Apache.REEF.Common.Tasks;
+using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
+namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Operator used for managing logical iterations (not physical iterations over data).
+    /// A Server Task that merely prints a greeting and exits.
     /// </summary>
-    public interface IElasticIterator
+    public sealed class HelloServerTask : ITask
     {
+        [Inject]
+        private HelloServerTask()
+        {
+        }
+
+        public void Dispose()
+        {
+            Console.WriteLine("Disposed.");
+        }
+
+        public byte[] Call(byte[] memento)
+        {
+            Console.WriteLine("Hello, REEF from Server!");
+
+            return null;
+        }
     }
 }

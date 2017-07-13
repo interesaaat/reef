@@ -19,15 +19,15 @@ using System;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
+namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// A Task that merely prints a greeting and exits.
+    /// A Slave Task that merely prints a greeting and exits.
     /// </summary>
-    public sealed class HelloServerTask : ITask
+    public sealed class HelloSlaveTask : ITask
     {
         [Inject]
-        private HelloServerTask()
+        private HelloSlaveTask()
         {
         }
 
@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public byte[] Call(byte[] memento)
         {
-            Console.WriteLine("Hello, REEF from Server!");
+            Console.WriteLine("Hello, REEF from Slave!");
 
             return null;
         }

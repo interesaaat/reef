@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
@@ -23,6 +22,9 @@ using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
+    /// <summary>
+    /// Wraps all the info required to proper manager a task life cicle.
+    /// </summary>
     internal sealed class TaskInfo
     {
         private readonly IConfiguration _configuration;
@@ -32,12 +34,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly IList<IElasticTaskSetSubscription> _subscriptions;
         private IRunningTask _taskRunner;
 
-        /// <summary>
-        /// Construct a TaskInfo that wraps task state, task configuration, and active context for submitting the task 
-        /// </summary>
-        /// <param name="taskState"></param>
-        /// <param name="config"></param>
-        /// <param name="context"></param>
         internal TaskInfo(IConfiguration config, IActiveContext context, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
         {
             _configuration = config;

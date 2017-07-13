@@ -61,20 +61,5 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         public class PortRange : Name<int>
         {
         }
-
-        [NamedParameter("tree width")]
-        public class FanOut : Name<int>
-        {
-        }
-
-        [NamedParameter(Documentation = "Size of the array", DefaultValue = "6")]
-        public class ArraySize : Name<int>
-        {
-        }
-
-        [NamedParameter(Documentation = "Task Id for broadcast message sender", DefaultValue = "BSenderTask")]
-        public class BroadcastSenderId : Name<int>
-        {
-        }
     }
 }

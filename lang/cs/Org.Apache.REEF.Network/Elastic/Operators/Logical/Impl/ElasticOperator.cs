@@ -24,13 +24,16 @@ using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Driver.Context;
 
+/// <summary>
+/// Basic implementation for logical operators.
+/// Each operator is part of a subscription and requires a topology, a failure
+/// state machine and a checkpoint policy.
+/// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     public abstract class ElasticOperator : 
-        IFailureResponse,
-        IDefaultFailureEventResponse
+        IFailureResponse
     {
         // For the moment we consider only linear sequences of operators (no branching for e.g., joins)
         protected ElasticOperator _next = null;
@@ -99,19 +102,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _masterTaskId == id;
         }
 
-        protected int GetMasterTaskId
-        {
-            get
-            {
-                if (_masterTaskId < 1)
-                {
-                    throw new IllegalStateException("Master Task Id not set");
-                }
-
-                return _masterTaskId;
-            }
-        }
-
         protected IElasticTaskSetSubscription GetSubscription
         {
             get
@@ -154,21 +144,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return this;
         }
 
-        protected void Reset()
+        public void ChangePolicy(IFailureStateMachine level)
         {
             throw new NotImplementedException();
         }
 
-        public void EnsurePolicy(IFailureStateMachine level)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
-        {
-            _next = new Broadcast(senderTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone, checkpointLevel, configurations);
-            return _next;
-        }
+        public abstract ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
         public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
@@ -182,14 +163,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Broadcast(int senderTaskId, params IConfiguration[] configurations)
         {
-            return Broadcast(senderTaskId, TopologyTypes.Flat, new DefaultFailureStateMachine(), CheckpointLevel.None, configurations);
+            return Broadcast(senderTaskId, TopologyTypes.Flat, _failureMachine.Clone, CheckpointLevel.None, configurations);
         }
 
-        public ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
-        {
-            _next = new Reduce(receiverTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
-            return _next;
-        }
+        public abstract ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
         public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
@@ -201,11 +178,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return Reduce(receiverTaskId, TopologyTypes.Flat, _failureMachine.Clone, CheckpointLevel.None, configurations);
         }
 
-        public ElasticOperator Iterate(int masterTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
-        {
-            _next = new Iterate(masterTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
-            return _next;
-        }
+        public abstract ElasticOperator Iterate(int masterTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
         public ElasticOperator Iterate(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
@@ -251,24 +224,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public void EventDispatcher(IFailureEvent @event)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnReconfigure(IReconfigure info)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnReschedule(IReschedule info)
-        {
-            throw new NotImplementedException();
-        }
-
-        public void OnStop(IStop info)
-        {
-            throw new NotImplementedException();
-        }
+        public abstract void EventDispatcher(IFailureEvent @event);
     }
 }

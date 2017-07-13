@@ -26,19 +26,15 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Tang.Implementations.Tang;
-using Org.Apache.REEF.Network.Group.Config;
-using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    /// <summary>
-    /// Helper class to start Group Communication tasks.
-    /// </summary>
-    public sealed class DefaultTaskSetManager : ITaskSetManager, IDefaultFailureEventResponse
+    public sealed class DefaultTaskSetManager : 
+        ITaskSetManager, 
+        IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetManager));
 
@@ -54,14 +50,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly List<TaskInfo> _taskInfos; 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
 
-        /// <summary>
-        /// Create new TaskStarter.
-        /// After adding the correct number of tasks to the TaskStarter, the
-        /// Tasks will be started on their given active context.
-        /// </summary>
-        /// <param name="groupCommDriver">The IGroupCommuDriver for the Group Communication tasks</param>
-        /// <param name="numTasks">The number of Tasks that need to be added before
-        /// the Tasks will be started. </param>
         public DefaultTaskSetManager(int numTasks, float failRatio = 0.5F)
         {
             _lock = new object();
@@ -141,15 +129,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        /// <summary>
-        /// Queues the task into the TaskStarter.
-        /// 
-        /// Once the correct number of tasks have been queued, the final Configuration
-        /// will be generated and run on the given Active Context.
-        /// </summary>
-        /// <param name="partialTaskConfig">The partial task configuration containing Task
-        /// identifier and Task class</param>
-        /// <param name="activeContext">The Active Context to run the Task on</param>
         public void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
         {
             int id = Utils.GetTaskNum(taskId) - 1;
@@ -183,13 +162,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             get
             {
-                return _tasksAdded == _numTasks;
+                var canI = _subscriptions.All(sub => sub.Value.ScheduleSubscription == true);
+
+                return _tasksAdded == _numTasks && canI;
             }
         }
 
-        /// <summary>
-        /// Starts the Master Task followed by the Slave Tasks.
-        /// </summary>
         public void SubmitTasks()
         {
             for (int i = 0; i < _numTasks; i++)
@@ -248,11 +226,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void EventDispatcher(IFailureEvent @event)
-        {
-            throw new NotImplementedException();
-        }
-
         public IFailureState OnTaskFailure(IFailedTask info)
         {
             if (BelongsTo(info.Id))
@@ -288,13 +261,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         switch ((DefaultFailureStateEvents)state.FailureState)
                         {
                             case DefaultFailureStateEvents.Reconfigure:
-                                OnReconfigure(null);
+                                IReconfigure reconfigureEvent = null;
+                                EventDispatcher(reconfigureEvent);
                                 break;
                             case DefaultFailureStateEvents.Reschedule:
-                                OnReschedule(null);
+                                IReschedule rescheduleEvent = null;
+                                EventDispatcher(rescheduleEvent);
                                 break;
                             case DefaultFailureStateEvents.Stop:
-                                OnStop(null);
+                                IStop stopEvent = null;
+                                EventDispatcher(stopEvent);
                                 break;
                         }
                     }
@@ -308,17 +284,38 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
-        public void OnReconfigure(IReconfigure info)
+        public void EventDispatcher(IFailureEvent @event)
+        {
+            foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            {
+                sub.EventDispatcher(@event);
+            }
+
+            switch ((DefaultFailureStateEvents)@event.FailureEvent)
+            {
+                case DefaultFailureStateEvents.Reconfigure:
+                    OnReconfigure(@event as IReconfigure);
+                    break;
+                case DefaultFailureStateEvents.Reschedule:
+                    OnReschedule(@event as IReschedule);
+                    break;
+                case DefaultFailureStateEvents.Stop:
+                    OnStop(@event as IStop);
+                    break;
+            }
+        }
+
+        public void OnReconfigure(IReconfigure reconfigureEvent)
         {
             throw new NotImplementedException();
         }
 
-        public void OnReschedule(IReschedule info)
+        public void OnReschedule(IReschedule rescheduleEvent)
         {
             throw new NotImplementedException();
         }
 
-        public void OnStop(IStop info)
+        public void OnStop(IStop stopEvent)
         {
             throw new NotImplementedException();
         }

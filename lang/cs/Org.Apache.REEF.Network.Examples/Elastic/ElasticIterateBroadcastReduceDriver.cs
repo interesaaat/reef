@@ -39,20 +39,22 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
-using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
-namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
+namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class ElasticParameterServerDriver : 
+    /// <summary>
+    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
+    /// </summary>
+    public class ElasticIterateBroadcastReduceDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
         IObserver<IFailedEvaluator>, 
         IObserver<IFailedTask>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticParameterServerDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastReduceDriver));
 
         private readonly int _numEvaluators;
         private readonly int _numIterations;
@@ -62,19 +64,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
         private readonly IElasticTaskSetService _service;
-
-        IElasticTaskSetSubscription _serversSubscription;
-
-        IElasticTaskSetSubscription _serverA;
-        IElasticTaskSetSubscription _serverB;
-        IElasticTaskSetSubscription _serverC;
-
-        private readonly ITaskSetManager _serversTaskManager;
-
-        private readonly ITaskSetManager _workersTaskManager;
+        private readonly IElasticTaskSetSubscription _subscription;
+        private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticParameterServerDriver(
+        private ElasticIterateBroadcastReduceDriver(
             [Parameter(typeof(ElasticConfig.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticConfig.StartingPort))] int startingPort,
@@ -111,91 +105,37 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
-            // Subscriptions
-            IElasticTaskSetSubscription subscription = _service.NewTaskSetSubscription("servers", 3);
+            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
 
             ElasticOperator pipeline = subscription.RootOperator;
 
-            pipeline.Iterate(1, TopologyTypes.Forest,
+            // Create and build the pipeline
+            pipeline.Iterate(TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast(1, TopologyTypes.Tree)
-                    .Build();
-
-            _serversSubscription = subscription.Build();
-
-            subscription = _service.NewTaskSetSubscription("server A", 7);
-
-            pipeline = subscription.RootOperator;
-
-            pipeline.Broadcast(1, TopologyTypes.Tree,
+                    .Broadcast(TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)
-                    .Reduce(1, TopologyTypes.Tree,
+                    .Reduce(TopologyTypes.Flat,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig,
                         dataConverterConfig)
                     .Build();
 
-            _serverA = subscription.Build();
+            // Build the subscription
+            _subscription = subscription.Build();
 
-            subscription = _service.NewTaskSetSubscription("server B", 7);
+            // Create the task manager
+            _taskManager = new DefaultTaskSetManager(_numEvaluators);
 
-            pipeline = subscription.RootOperator;
+            // Register the subscription to the task manager
+            _taskManager.AddTaskSetSubscription(_subscription);
 
-            pipeline.Broadcast(2, TopologyTypes.Tree,
-                        new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        dataConverterConfig)
-                     .Reduce(2, TopologyTypes.Tree,
-                        new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        reduceFunctionConfig,
-                        dataConverterConfig)
-                    .Build();
-
-            _serverB = subscription.Build();
-
-            subscription = _service.NewTaskSetSubscription("server C", 7);
-
-            pipeline = subscription.RootOperator;
-
-            pipeline.Broadcast(3, TopologyTypes.Tree,
-                        new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        dataConverterConfig)
-                    .Reduce(3, TopologyTypes.Tree,
-                        new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        reduceFunctionConfig,
-                        dataConverterConfig)
-                    .Build();
-
-            _serverC = subscription.Build();
-
-            // Create the servers task manager
-            _serversTaskManager = new DefaultTaskSetManager(3);
-
-            // Register the subscriptions to the server task manager
-            _serversTaskManager.AddTaskSetSubscription(_serversSubscription);
-            _serversTaskManager.AddTaskSetSubscription(_serverA);
-            _serversTaskManager.AddTaskSetSubscription(_serverB);
-            _serversTaskManager.AddTaskSetSubscription(_serverC);
-
-            // Create the workers task manager
-            _workersTaskManager = new DefaultTaskSetManager(6);
-
-            // Register the subscriptions to the workers task manager
-            _workersTaskManager.AddTaskSetSubscription(_serverA);
-            _workersTaskManager.AddTaskSetSubscription(_serverB);
-            _workersTaskManager.AddTaskSetSubscription(_serverC);
-
-            // Build the task set managers
-            _serversTaskManager.Build();
-            _workersTaskManager.Build();
+            // Build the task set manager
+            _taskManager.Build();
         }
 
         public void OnNext(IDriverStarted value)
@@ -205,30 +145,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("ParameterServer")
+                .SetEvaluatorBatchId("IterateBroadcastReduceEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id;
-            string identifier = null;
-
-            if (_serversTaskManager.HasMoreContextToAdd)
-            {
-                id = _serversTaskManager.GetNextTaskContextId(allocatedEvaluator);
-                identifier = Utils.BuildContextName(_serversTaskManager.SubscriptionsId, id);
-            }
-            else if (_workersTaskManager.HasMoreContextToAdd)
-            {
-                id = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
-                identifier = Utils.BuildContextName(_workersTaskManager.SubscriptionsId, id);
-            }
-            else
-            {
-                throw new IllegalStateException("Initializing a number of contexes different than configured");
-            }
+            int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
+            string identifier = Utils.BuildContextId(_taskManager.SubscriptionsId, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -241,73 +166,45 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
 
         public void OnNext(IActiveContext activeContext)
         {
-            int id;
-            string taskId;
+            bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
+            int id = _taskManager.GetNextTaskId(activeContext);
+            string taskId = Utils.BuildTaskId(_taskManager.SubscriptionsId, id);
+
             IConfiguration partialTaskConf;
 
-            bool isServerContext = _serversTaskManager.SubscriptionsId == Utils.GetContextSubscriptions(activeContext);
-
-            if (isServerContext)
+            if (isMaster)
             {
-                id = _serversTaskManager.GetNextTaskId(activeContext);
-                taskId = Utils.BuildTaskId(_serversTaskManager.SubscriptionsId, id);
-                var servers = _serversTaskManager.IsMasterTaskContext(activeContext);
-
-                if (servers.Any(subs => subs.SubscriptionName == "servers"))
-                {
-                    partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                       TaskConfiguration.ConfigurationModule
-                           .Set(TaskConfiguration.Identifier, taskId)
-                           .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
-                           .Build())
-                       .BindNamedParameter<ElasticConfig.NumServers, int>(
-                           GenericType<ElasticConfig.NumServers>.Class,
-                           3.ToString(CultureInfo.InvariantCulture))
-                       .BindNamedParameter<ElasticConfig.NumWorkers, int>(
-                           GenericType<ElasticConfig.NumWorkers>.Class,
-                           6.ToString(CultureInfo.InvariantCulture))
-                       .Build();
-                }
-                else
-                {
-                    partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                      TaskConfiguration.ConfigurationModule
-                          .Set(TaskConfiguration.Identifier, taskId)
-                          .Set(TaskConfiguration.Task, GenericType<HelloServerTask>.Class)
-                          .Build())
-                      .Build();
-                }
-
-                _serversTaskManager.AddTask(taskId, partialTaskConf, activeContext);
+                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
+                    TaskConfiguration.ConfigurationModule
+                        .Set(TaskConfiguration.Identifier, taskId)
+                        .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
+                        .Build())
+                    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
+                        GenericType<ElasticConfig.NumEvaluators>.Class,
+                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
+                    .Build();
             }
             else
             {
-                id = _workersTaskManager.GetNextTaskId(activeContext);
-                taskId = Utils.BuildTaskId(_workersTaskManager.SubscriptionsId, id);
-
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
                         .Build())
                     .Build();
-
-                _workersTaskManager.AddTask(taskId, partialTaskConf, activeContext);
             }
+
+            _taskManager.AddTask(taskId, partialTaskConf, activeContext);
         }
 
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
-            _serversTaskManager.OnEvaluatorFailure(failedEvaluator);
-
-            _workersTaskManager.OnEvaluatorFailure(failedEvaluator);
+            _taskManager.OnEvaluatorFailure(failedEvaluator);
         }
 
         public void OnNext(IFailedTask failedTask)
         {
-            _serversTaskManager.OnTaskFailure(failedTask);
-
-            _workersTaskManager.OnTaskFailure(failedTask);
+            _taskManager.OnTaskFailure(failedTask);
         }
 
         public void OnCompleted()

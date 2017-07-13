@@ -21,7 +21,7 @@ using System.Runtime.Serialization;
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
-    /// A serializable exception that represents a task application error.
+    /// A serializable exception that represents a task operator error.
     /// </summary>
     [Serializable]
     public class OperatorException : Exception
@@ -37,9 +37,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Constructor. A serializable exception object that represents a task application error.
-        /// All the application related error should be captured in this type of exception.
-        /// When driver receives this type of exception, the system is not going to recover. 
+        /// Constructor. A serializable exception object that represents a task operator error.
+        /// All the operator related errors should be captured in this type of exception. 
+        /// <param name="message">The exception message</param>
+        /// <param name="id">The id of the operator where the exception is triggered</param>
         /// </summary>
         public OperatorException(string message, int id)
             : base(GetMessagePrefix(id) + message)
@@ -48,10 +49,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Constructor. A serializable exception object that represents a task application error and wraps an inner exception
+        /// Constructor. A serializable exception object that represents a task operator error and wraps an inner exception
         /// </summary>
-        /// <param name="message"></param>
-        /// <param name="innerException"></param>
+        /// <param name="message">The exception message</param>
+        /// <param name="id">The id of the operator where the exception is triggered</param>
+        /// <param name="innerException">Inner exception</param>
         public OperatorException(string message, int id, Exception innerException)
             : base(GetMessagePrefix(id) + message, innerException)
         {

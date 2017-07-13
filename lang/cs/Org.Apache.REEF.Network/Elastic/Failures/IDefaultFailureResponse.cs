@@ -19,12 +19,16 @@ using Org.Apache.REEF.Driver.Context;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Default failures response interface. 
+    /// Mechanisms implementing failure responses must extend this interface.
+    /// </summary>
     public interface IDefaultFailureEventResponse
     {
-        void OnReconfigure(IReconfigure info);
+        void OnReconfigure(IReconfigure reconfigureEvent);
 
-        void OnReschedule(IReschedule info);
+        void OnReschedule(IReschedule rescheduleEvent);
 
-        void OnStop(IStop info);
+        void OnStop(IStop stopEvent);
     }
 }

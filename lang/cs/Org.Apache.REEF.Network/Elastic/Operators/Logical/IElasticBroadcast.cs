@@ -20,8 +20,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
     /// <summary>
     /// Group Communication operator used to receive and reduce messages.
     /// </summary>
-    /// <typeparam name="T">The message type</typeparam>
-    public interface IElasticBroadcast<T>
+    public interface IElasticBroadcast
     {
     }
 }

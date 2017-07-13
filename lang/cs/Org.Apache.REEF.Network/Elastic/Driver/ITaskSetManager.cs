@@ -31,6 +31,10 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
+    /// <summary>
+    /// Class defining how group of tasks sharing similar scheduling semantics are managed.
+    /// TaskSets subscribe to Subscriptions in order to define tasks logic.
+    /// </summary>
     public interface ITaskSetManager : IFailureResponse
     {
         void AddTaskSetSubscription(IElasticTaskSetSubscription subscription);

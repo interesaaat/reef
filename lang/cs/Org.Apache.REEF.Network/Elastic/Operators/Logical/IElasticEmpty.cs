@@ -15,32 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Tang.Annotations;
-
-namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
+namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
-    /// <summary>
-    /// A Task that merely prints a greeting and exits.
-    /// </summary>
-    public sealed class HelloMasterTask : ITask
+    public interface IElasticEmpty
     {
-        [Inject]
-        private HelloMasterTask()
-        {
-        }
-
-        public void Dispose()
-        {
-            Console.WriteLine("Disposed.");
-        }
-
-        public byte[] Call(byte[] memento)
-        {
-            Console.WriteLine("Hello, REEF from Master!");
-
-            return null;
-        }
     }
 }

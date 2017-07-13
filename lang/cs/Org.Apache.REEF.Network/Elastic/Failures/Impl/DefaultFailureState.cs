@@ -17,6 +17,10 @@
 
 using System;
 
+/// <summary>
+/// The default implementation for IFailureState.
+/// This events are generated based on the default failure states.
+/// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     public class DefaultFailureState : IFailureState

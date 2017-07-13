@@ -19,7 +19,7 @@ using Org.Apache.REEF.Network.Group.Pipelining;
 using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Util;
 
-namespace Org.Apache.REEF.Network.Group.Config
+namespace Org.Apache.REEF.Network.Elastic.Config
 {
     public sealed class PipelineDataConverterConfiguration<T> : ConfigurationModuleBuilder
     {

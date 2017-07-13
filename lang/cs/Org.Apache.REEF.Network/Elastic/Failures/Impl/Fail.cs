@@ -15,10 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
+    /// <summary>
+    /// The failure state where the system fails.
+    /// </summary>
     public class Fail : IFailureState
     {
         public Fail()

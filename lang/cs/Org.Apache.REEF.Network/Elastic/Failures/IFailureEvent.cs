@@ -15,9 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public interface IFailureEvent
+    public interface IFailureEvent : IDisposable
     {
         int FailureEvent { get; set; }
     }

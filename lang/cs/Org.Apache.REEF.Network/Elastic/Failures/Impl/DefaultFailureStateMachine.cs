@@ -22,6 +22,10 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
+/// <summary>
+/// The default implementation of the failure state machine.
+/// This implementation works only with default failure states.
+/// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     public class DefaultFailureStateMachine : IFailureStateMachine

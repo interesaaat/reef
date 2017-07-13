@@ -15,15 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Common;
 using Org.Apache.REEF.Utilities;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Driver.Context;
 
-namespace Org.Apache.REEF.Driver.Context
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public interface IReschedule : IDisposable
+    /// <summary>
+    /// Reschedule task event.
+    /// </summary>
+    public interface IReschedule : IFailureEvent
     {
         Optional<IActiveContext> ActiveContext { get; }
 

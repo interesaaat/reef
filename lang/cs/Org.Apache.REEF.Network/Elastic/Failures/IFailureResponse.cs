@@ -19,6 +19,9 @@ using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Used to propagate failures through operators, subscriptions and the service.
+    /// </summary>
     public interface IFailureResponse
     {
         IFailureState OnTaskFailure(IFailedTask info);

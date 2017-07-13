@@ -42,8 +42,11 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
-namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
+namespace Org.Apache.REEF.Network.Examples.Elastic
 {
+    /// <summary>
+    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
+    /// </summary>
     public class ElasticBroadcastReduceDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
@@ -138,7 +141,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic.Logical
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
             int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextName(_taskManager.SubscriptionsId, id);
+            string identifier = Utils.BuildContextId(_taskManager.SubscriptionsId, id);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)

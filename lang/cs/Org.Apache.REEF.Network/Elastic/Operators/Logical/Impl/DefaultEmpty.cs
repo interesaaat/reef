@@ -15,20 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    class Empty : ElasticOperator
+    /// <summary>
+    /// Empty operator implementing the default failure logic. To use only as root.
+    /// </summary>
+    class DefaultEmpty : ElasticOperatorWithDefaultDispatcher
     {
         private const string _operator = "empty";
 
-        public Empty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
+        public DefaultEmpty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
             base(subscription, null, new EmptyTopology(), filureMachine)
         {
         }

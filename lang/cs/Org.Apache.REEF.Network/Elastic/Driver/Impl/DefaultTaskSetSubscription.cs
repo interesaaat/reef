@@ -57,14 +57,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly object _tasksLock;
         private readonly object _statusLock;
 
-        /// <summary>
-        /// Create a new CommunicationGroupDriver.
-        /// </summary>
-        /// <param name="groupName">The communication group name</param>
-        /// <param name="driverId">Identifier of the Reef driver</param>
-        /// <param name="numTasks">The number of tasks each operator will use</param>
-        /// <param name="fanOut"></param>
-        /// <param name="confSerializer">Used to serialize task configuration</param>
         internal DefaultTaskSetSubscription(
             string subscriptionName,
             AvroConfigurationSerializer confSerializer,
@@ -80,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _elasticService = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
             _failureState = new DefaultFailureState();
-            _root = new Empty(this, _defaultFailureMachine.Clone);
+            _root = new DefaultEmpty(this, _defaultFailureMachine.Clone);
 
             _iteratorId = -1;
 
@@ -124,12 +116,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return true;
         }
 
+        // For the moment this method will always return true.
+        // In the future we  may implement different policies for 
+        // triggering the scheduling of the tasks.
+        public bool ScheduleSubscription
+        {
+            get
+            {
+                return true;
+            }
+        }
+
         public bool IsMasterTaskContext(IActiveContext activeContext)
         {
             if (!_finalized)
             {
                 throw new IllegalStateException(
-                    "CommunicationGroupDriver must call Build() before adding tasks to the group.");
+                    "Driver must call Build() before checking IsMasterTaskContext.");
             }
 
             int id = Utils.GetContextNum(activeContext);
@@ -144,12 +147,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        /// <summary>
-        /// Get the Task Configuration for this communication group. 
-        /// Must be called only after all tasks have been added to the CommunicationGroupDriver.
-        /// </summary>
-        /// <param name="taskId">The task id of the task that belongs to this Communication Group</param>
-        /// <returns>The Task Configuration for this communication group</returns>
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder)
         {
             builder = builder
@@ -200,15 +197,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void EventDispatcher(IFailureEvent @event)
-        {
-            throw new NotImplementedException();
-        }
-
         public IFailureState OnTaskFailure(IFailedTask task)
         {
+            // Failure have to be propagated down to the operators
             var status = RootOperator.OnTaskFailure(task);
 
+            // Update the current subscription status
             lock (_statusLock)
             {
                 if (status.FailureState < _failureState.FailureState)
@@ -223,6 +217,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             Service.OnTaskFailure(task);
 
             return _failureState;
+        }
+
+        public void EventDispatcher(IFailureEvent @event)
+        {
+            RootOperator.EventDispatcher(@event);
+
+            switch ((DefaultFailureStateEvents)@event.FailureEvent)
+            {
+                case DefaultFailureStateEvents.Reconfigure:
+                    OnReconfigure(@event as IReconfigure);
+                    break;
+                case DefaultFailureStateEvents.Reschedule:
+                    OnReschedule(@event as IReschedule);
+                    break;
+                case DefaultFailureStateEvents.Stop:
+                    OnStop(@event as IStop);
+                    break;
+            }
+
+            Service.EventDispatcher(@event);
         }
 
         public void OnReconfigure(IReconfigure info)

@@ -18,24 +18,25 @@
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
-using System;
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    class Reduce : ElasticOperator
+    /// <summary>
+    /// Broadcast operator implementation.
+    /// </summary>
+    class DefaultBroadcast : ElasticOperatorWithDefaultDispatcher, IElasticBroadcast
     {
-        private const string _operator = "reduce";
-        private int _receiverId;
-
-        public Reduce(
-            int receiverId,
-            ElasticOperator prev,
-            TopologyTypes topologyType,
-            IFailureStateMachine failureMachine,
-            CheckpointLevel checkpointLevel,
+        private const string _operator = "broadcast";
+        private int _senderId;
+    
+        public DefaultBroadcast(
+            int senderId, 
+            ElasticOperator prev, 
+            TopologyTypes topologyType, 
+            IFailureStateMachine failureMachine, 
+            CheckpointLevel checkpointLevel, 
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 
@@ -43,39 +44,31 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 failureMachine,
                 checkpointLevel)
         {
-            _receiverId = receiverId;
+            _senderId = senderId;
         }
 
-        public int GetReceiverTaskId
+        public int GetSenderTaskId
         {
             get
             {
-                return _receiverId;
+                return _senderId;
             }
         }
 
-        private int GenerateReceiverTaskId()
+        protected int GenerateSenderTaskId()
         {
-            _receiverId = 1;
-            return _receiverId;
+            _senderId = 1;
+            return _senderId;
         }
 
         protected new int GenerateMasterTaskId()
         {
-            return GenerateReceiverTaskId();
+            return GenerateSenderTaskId();
         }
 
         protected new bool IsMasterTaskId(int taskId)
         {
-            return _receiverId == taskId;
-        }
-
-        protected new int GetMasterTaskId
-        {
-            get
-            {
-                return _receiverId;
-            }
+            return _senderId == taskId;
         }
     }
 }

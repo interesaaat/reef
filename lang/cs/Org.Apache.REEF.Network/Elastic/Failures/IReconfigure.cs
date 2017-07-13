@@ -15,15 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Common;
-using Org.Apache.REEF.Utilities;
-using System.Collections.Generic;
-using Org.Apache.REEF.Driver.Task;
-
-namespace Org.Apache.REEF.Driver.Context
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public interface IReconfigure : IDisposable
+    /// <summary>
+    /// Reconfigure the execution to work with fewer tasks
+    /// </summary>
+    public interface IReconfigure : IFailureEvent
     {
     }
 }

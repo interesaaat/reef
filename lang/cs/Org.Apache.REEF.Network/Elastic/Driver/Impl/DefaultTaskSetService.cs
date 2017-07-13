@@ -18,7 +18,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Net;
 using Org.Apache.REEF.Common.Io;
 using Org.Apache.REEF.Common.Services;
@@ -42,10 +41,6 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    /// <summary>
-    /// Used to create Communication Groups for Group Communication Operators on the Reef driver.
-    /// Also manages configuration for Group Communication tasks/services.
-    /// </summary>
     public sealed class DefaultTaskSetService : 
         IElasticTaskSetService,
         IDefaultFailureEventResponse

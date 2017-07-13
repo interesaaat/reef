@@ -28,7 +28,7 @@ using Org.Apache.REEF.Client.API;
 using Org.Apache.REEF.Client.Local;
 using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Examples.Elastic.Logical;
+using Org.Apache.REEF.Network.Examples.Elastic;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {

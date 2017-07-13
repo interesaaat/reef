@@ -15,8 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
+/// <summary>
+/// The default implementation of the failure events.
+/// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     public class DefaultFailureEvent : IFailureEvent
@@ -32,6 +33,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         public int FailureEvent { get; set; }
+
+        public void Dispose()
+        {
+        }
     }
 
     public enum DefaultFailureStateEvents : int

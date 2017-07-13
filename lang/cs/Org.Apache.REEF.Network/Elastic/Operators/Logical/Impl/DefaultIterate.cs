@@ -19,17 +19,20 @@ using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using System;
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using System.Collections;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    class Iterate : ElasticOperator
+    /// <summary>
+    /// Iterate operator implementation.
+    /// </summary>
+    class DefaultIterate : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
         private const string _operator = "iterate";
     
-        public Iterate(
+        public DefaultIterate(
             int masterTaskId,
             ElasticOperator prev,
             TopologyTypes topologyType,
