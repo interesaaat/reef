@@ -52,9 +52,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         private readonly IDictionary<DefaultFailureStates, float> transitionWeights = new Dictionary<DefaultFailureStates, float>()
         {
-            { DefaultFailureStates.ContinueAndReconfigure, 0.99F },
-            { DefaultFailureStates.ContinueAndReschedule, 0.99F },
-            { DefaultFailureStates.StopAndReschedule, 0.99F }
+            { DefaultFailureStates.ContinueAndReconfigure, 0.10F },
+            { DefaultFailureStates.ContinueAndReschedule, 0.20F },
+            { DefaultFailureStates.StopAndReschedule, 0.30F }
         };
 
         [Inject]
@@ -79,14 +79,22 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             lock (_statusLock)
             {
-                _numDependencise += points;
-                _currentFailures -= points;
-
-                if (_currentState.FailureState != (int)DefaultFailureStates.Continue)
+                if (_currentFailures == 0)
                 {
-                    while (_currentFailures / _numDependencise < transitionWeights[(DefaultFailureStates)_currentState.FailureState])
+                    _numDependencise += points;
+                }
+                else
+                {
+                    _currentFailures -= points;
+
+                    if (_currentState.FailureState != (int)DefaultFailureStates.Continue)
                     {
-                        _currentState.FailureState = (int)transitionMapDown[(DefaultFailureStates)_currentState.FailureState];
+                        float currentRate = _currentFailures / _numDependencise;
+
+                        while (currentRate < transitionWeights[(DefaultFailureStates)_currentState.FailureState])
+                        {
+                            _currentState.FailureState = (int)transitionMapDown[(DefaultFailureStates)_currentState.FailureState];
+                        }
                     }
                 }
 
@@ -98,13 +106,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             lock (_statusLock)
             {
-                var current = _currentState;
-                _numDependencise -= points;
                 _currentFailures += points;
 
                 if (_currentState.FailureState != (int)DefaultFailureStates.StopAndReschedule)
                 {
-                    while (_currentFailures / _numDependencise > transitionWeights[transitionMapUp[(DefaultFailureStates)_currentState.FailureState]])
+                    float currentRate = (float)_currentFailures / _numDependencise;
+
+                    while (currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)_currentState.FailureState]])
                     {
                         _currentState.FailureState = (int)transitionMapUp[(DefaultFailureStates)_currentState.FailureState];
                     }

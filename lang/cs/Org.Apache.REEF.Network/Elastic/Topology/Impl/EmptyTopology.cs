@@ -34,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         public int RemoveTask(string taskId)
         {
-            return 1;
+            return 0;
         }
 
         public IConfiguration GetTaskConfiguration(int taskId)

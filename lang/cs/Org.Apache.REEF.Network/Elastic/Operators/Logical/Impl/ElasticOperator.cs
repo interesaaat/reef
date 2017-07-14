@@ -68,6 +68,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _topology.AddTask(taskId);
 
+            // The assumption is that only one data point is added for each task
+            _failureMachine.AddDataPoints(1);
+
             if (_next != null)
             {
                 _next.AddTask(taskId);
@@ -199,7 +202,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             var exception = task.AsError() as OperatorException;
 
-            if (GetSubscription.IteratorId > 0 || exception.OperatorId == _id)
+            if (GetSubscription.IteratorId > 0 || exception.OperatorId <= _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
                 IFailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);

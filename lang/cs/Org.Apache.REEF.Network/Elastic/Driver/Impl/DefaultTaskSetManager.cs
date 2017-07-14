@@ -284,14 +284,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (info.AsError() is OperatorException)
                 {
+                    IFailureState currentState = new DefaultFailureState();
+
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
-                        sub.OnTaskFailure(info);
+                        currentState = currentState.Merge(sub.OnTaskFailure(info));
                     }
 
                     lock (_statusLock)
                     {
-                        _failureState = _subscriptions.First(pairs => true).Value.Service.OnTaskFailure(info);
+                        _failureState = currentState;
                     }
 
                     if (_failureState.FailureState > (int)DefaultFailureStates.Continue)
