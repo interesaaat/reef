@@ -24,16 +24,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// A serializable exception that represents a task operator error.
     /// </summary>
     [Serializable]
-    public class OperatorException : Exception
+    public class OperatorException : Exception, ISerializable
     {
-        private int _id;
+        public readonly int _id;
 
-        public int OperatorId
+        public int OperatorId 
         {
-            get
-            {
-                return _id;
-            }
+            get { return _id;  }
         }
 
         /// <summary>
@@ -63,6 +60,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public OperatorException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
+            _id = info.GetInt32("id");
+        }
+        public new void GetObjectData(SerializationInfo info, StreamingContext context)
+        {
+            base.GetObjectData(info, context);
+            info.AddValue("id", _id, typeof(int));
         }
 
         private static string GetMessagePrefix(int id)
