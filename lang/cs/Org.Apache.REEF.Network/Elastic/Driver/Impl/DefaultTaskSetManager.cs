@@ -38,31 +38,39 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetManager));
 
-        private readonly object _lock;
         private bool _finalized;
 
         private int _contextsAdded;
         private int _tasksAdded;
-        private readonly int _numTasks;
+        private int _tasksRunning;
         private int _tasksFailed;
+        private readonly int _numTasks;
         private float _failRatio;
 
         private readonly List<TaskInfo> _taskInfos; 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
+        private IFailureState _failureState;
+
+        private readonly object _taskLock;
+        private readonly object _statusLock;
 
         public DefaultTaskSetManager(int numTasks, float failRatio = 0.5F)
         {
-            _lock = new object();
             _finalized = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
+            _tasksRunning = 0;
+            _tasksFailed = 0;
             _numTasks = numTasks;
             _failRatio = failRatio;
-            _tasksFailed = 0;
 
             _taskInfos = new List<TaskInfo>(numTasks);
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
+            _failureState = new DefaultFailureState();
+
+            _taskLock = new object();
+            _statusLock = new object();
 
             for (int i = 0; i < numTasks; i++)
             {
@@ -203,9 +211,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (BelongsTo(task.Id))
             {
+                Interlocked.Increment(ref _tasksRunning);
                 var id = Utils.GetTaskNum(task.Id) - 1;
 
-                lock (_lock)
+                lock (_taskLock)
                 {
                     if (_taskInfos[id].TaskStatus <= TaskStatus.Submitted)
                     {
@@ -220,9 +229,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (BelongsTo(taskInfo.Id))
             {
+                Interlocked.Decrement(ref _tasksRunning);
                 var id = Utils.GetTaskNum(taskInfo.Id) - 1;
 
-                lock (_lock)
+                lock (_taskLock)
                 {
                     _taskInfos[id].TaskStatus = TaskStatus.Completed;
                     _taskInfos[id].TaskRunner.Dispose();
@@ -230,11 +240,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        // Task set is done when we have no more tasks running and the failure state is
+        // not stop and reschedule
         public bool Done
         {
             get
             {
-                return _taskInfos.Any(info => info.TaskStatus != TaskStatus.Completed);
+                return _tasksRunning == 0
+                    && !_taskInfos.Any(info => info.TaskStatus < TaskStatus.Failed)
+                    && (DefaultFailureStates)_failureState.FailureState < DefaultFailureStates.StopAndReschedule;
             }
         }
 
@@ -242,7 +256,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             foreach (var info in _taskInfos)
             {
-                info.ActiveContext.Dispose();
+                 info.ActiveContext.Dispose();
             }
         }
 
@@ -251,7 +265,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (BelongsTo(info.Id))
             {
                 var id = Utils.GetTaskNum(info.Id) - 1;
-                Interlocked.Decrement(ref _tasksFailed);
+                Interlocked.Decrement(ref _tasksRunning);
+                Interlocked.Increment(ref _tasksFailed);
 
                 if (_tasksFailed / _numTasks > _failRatio)
                 {
@@ -259,7 +274,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     return new Fail();
                 }
 
-                lock (_lock)
+                lock (_taskLock)
                 {
                     if (_taskInfos[id].TaskStatus < TaskStatus.Failed)
                     {
@@ -274,11 +289,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         sub.OnTaskFailure(info);
                     }
 
-                    IFailureState state = _subscriptions.First(pairs => true).Value.Service.OnTaskFailure(info);
-
-                    if (state.FailureState > (int)DefaultFailureStates.Continue)
+                    lock (_statusLock)
                     {
-                        switch ((DefaultFailureStateEvents)state.FailureState)
+                        _failureState = _subscriptions.First(pairs => true).Value.Service.OnTaskFailure(info);
+                    }
+
+                    if (_failureState.FailureState > (int)DefaultFailureStates.Continue)
+                    {
+                        switch ((DefaultFailureStateEvents)_failureState.FailureState)
                         {
                             case DefaultFailureStateEvents.Reconfigure:
                                 IReconfigure reconfigureEvent = null;
