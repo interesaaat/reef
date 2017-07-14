@@ -218,11 +218,31 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskCompleted(ICompletedTask taskInfo)
         {
-            var id = Utils.GetTaskNum(taskInfo.Id) - 1;
-
-            lock (_lock)
+            if (BelongsTo(taskInfo.Id))
             {
-                _taskInfos[id].TaskStatus = TaskStatus.Completed;
+                var id = Utils.GetTaskNum(taskInfo.Id) - 1;
+
+                lock (_lock)
+                {
+                    _taskInfos[id].TaskStatus = TaskStatus.Completed;
+                    _taskInfos[id].TaskRunner.Dispose();
+                }
+            }
+        }
+
+        public bool Done
+        {
+            get
+            {
+                return _taskInfos.Any(info => info.TaskStatus != TaskStatus.Completed);
+            }
+        }
+
+        public void Dispose()
+        {
+            foreach (var info in _taskInfos)
+            {
+                info.ActiveContext.Dispose();
             }
         }
 

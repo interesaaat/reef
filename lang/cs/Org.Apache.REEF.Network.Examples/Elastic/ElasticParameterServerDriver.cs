@@ -52,7 +52,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
-        IObserver<IFailedEvaluator>, 
+        IObserver<IRunningTask>,
+        IObserver<ICompletedTask>,
+        IObserver<IFailedEvaluator>,
         IObserver<IFailedTask>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticParameterServerDriver));
@@ -296,6 +298,30 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     .Build();
 
                 _workersTaskManager.AddTask(taskId, partialTaskConf, activeContext);
+            }
+        }
+
+        public void OnNext(IRunningTask value)
+        {
+            _serversTaskManager.OnTaskRunning(value);
+
+            _workersTaskManager.OnTaskRunning(value);
+        }
+
+        public void OnNext(ICompletedTask value)
+        {
+            _serversTaskManager.OnTaskCompleted(value);
+
+            _workersTaskManager.OnTaskCompleted(value);
+
+            if (_serversTaskManager.Done)
+            {
+                _serversTaskManager.Dispose();
+            }
+
+            if (_workersTaskManager.Done)
+            {
+                _workersTaskManager.Dispose();
             }
         }
 

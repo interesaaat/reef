@@ -178,6 +178,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _taskManager.OnTaskRunning(value);
         }
 
+        public void OnNext(ICompletedTask value)
+        {
+            _taskManager.OnTaskCompleted(value);
+
+            if (_taskManager.Done)
+            {
+                _taskManager.Dispose();
+            }
+        }
+
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
@@ -186,11 +196,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IFailedTask failedTask)
         {
             _taskManager.OnTaskFailure(failedTask);
-        }
-
-        public void OnNext(ICompletedTask value)
-        {
-            _taskManager.OnTaskCompleted(value);
         }
 
         public void OnCompleted()

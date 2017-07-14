@@ -63,6 +63,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         void OnTaskCompleted(ICompletedTask task);
 
+        bool Done { get; }
+
+        void Dispose();
+
         void OnEvaluatorFailure(IFailedEvaluator task);
 
         void OnFail();

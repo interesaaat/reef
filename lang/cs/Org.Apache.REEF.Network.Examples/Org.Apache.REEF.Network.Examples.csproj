@@ -76,6 +76,7 @@ under the License.
     <Compile Include="Elastic\ElasticBroadcastReduceDriver.cs" />
     <Compile Include="Elastic\ElasticBroadcastDriver.cs" />
     <Compile Include="Elastic\HelloServerTask.cs" />
+    <Compile Include="Elastic\HelloDieSlaveTask.cs" />
     <Compile Include="Elastic\HelloSlaveTask.cs" />
     <Compile Include="Elastic\HelloMasterTask.cs" />
     <Compile Include="GroupCommunication\BroadcastReduceDriverAndTasks\BroadcastReduceDriver.cs" />
