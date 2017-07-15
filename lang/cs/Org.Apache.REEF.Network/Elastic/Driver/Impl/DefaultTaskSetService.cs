@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         IElasticTaskSetService,
         IDefaultFailureEventResponse
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetService));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetService));
 
         private readonly string _driverId;
         private readonly int _numEvaluators;
@@ -204,22 +204,33 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void EventDispatcher(IFailureEvent @event)
         {
-            throw new NotImplementedException();
+            switch ((DefaultFailureStateEvents)@event.FailureEvent)
+            {
+                case DefaultFailureStateEvents.Reconfigure:
+                    OnReconfigure(@event as IReconfigure);
+                    break;
+                case DefaultFailureStateEvents.Reschedule:
+                    OnReschedule(@event as IReschedule);
+                    break;
+                case DefaultFailureStateEvents.Stop:
+                    OnStop(@event as IStop);
+                    break;
+            }
         }
 
         public void OnReconfigure(IReconfigure info)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Reconfiguring the service");
         }
 
-        public void OnReschedule(IReschedule info)
+        public void OnReschedule(IReschedule rescheduleEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to reschedule a task");
         }
 
-        public void OnStop(IStop info)
+        public void OnStop(IStop stopEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
         }
     }
 }

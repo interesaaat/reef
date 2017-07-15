@@ -337,6 +337,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serversTaskManager.OnTaskFailure(failedTask);
 
             _workersTaskManager.OnTaskFailure(failedTask);
+
+            if (_serversTaskManager.Done)
+            {
+                _serversTaskManager.Dispose();
+            }
+
+            if (_workersTaskManager.Done)
+            {
+                _workersTaskManager.Dispose();
+            }
         }
 
         public void OnCompleted()

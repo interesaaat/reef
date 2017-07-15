@@ -16,36 +16,40 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using System.Collections.Generic;
+using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Utilities;
 
-namespace Org.Apache.REEF.Network.Examples.Elastic
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
-    /// A Slave Task that merely prints a greeting and exits.
+    /// Reconfigure the execution to work with fewer tasks
     /// </summary>
-    public sealed class HelloDieSlaveTask : ITask
+    public class RescheduleEvent : IReschedule
     {
-        [Inject]
-        private HelloDieSlaveTask()
+        public int FailureEvent
         {
+            get { return (int)DefaultFailureStateEvents.Reschedule; }
+        }
+
+        public Optional<IActiveContext> ActiveContext
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public IList<IFailedContext> FailedContexts
+        {
+            get { throw new NotImplementedException(); }
+        }
+
+        public Optional<IFailedTask> FailedTask
+        {
+            get { throw new NotImplementedException(); }
         }
 
         public void Dispose()
         {
-            Console.WriteLine("Disposed.");
-        }
-
-        public byte[] Call(byte[] memento)
-        {
-            System.Threading.Thread.Sleep(new Random().Next(5) * 1000);
-
-            Console.WriteLine("Hello, REEF from Slave!");
-
-            Console.WriteLine("I die. Bye.");
-
-            throw new OperatorException("Die", 1);
         }
     }
 }

@@ -38,6 +38,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public byte[] Call(byte[] memento)
         {
+            System.Threading.Thread.Sleep(new Random().Next(5) * 1000);
+
             Console.WriteLine("Hello, REEF from Slave!");
 
             return null;

@@ -241,17 +241,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReconfigure(IReconfigure info)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Reconfiguring subscription " + _subscriptionName);
         }
 
-        public void OnReschedule(IReschedule info)
+        public void OnReschedule(IReschedule rescheduleEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + _subscriptionName);
         }
 
-        public void OnStop(IStop info)
+        public void OnStop(IStop stopEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to stop subscription" + _subscriptionName + " and reschedule a task");
         }
     }
 }

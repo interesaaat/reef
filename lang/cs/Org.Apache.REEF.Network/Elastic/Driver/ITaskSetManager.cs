@@ -67,6 +67,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         void Dispose();
 
+        void KillAll();
+
         void OnEvaluatorFailure(IFailedEvaluator task);
 
         void OnFail();

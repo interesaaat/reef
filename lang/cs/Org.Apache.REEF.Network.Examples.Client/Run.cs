@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 9;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "all";
+            string testToRun = "RunElasticBroadcast";
             testToRun = testToRun.ToLower();
 
             if (args != null)

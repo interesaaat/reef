@@ -62,7 +62,10 @@ under the License.
     <Compile Include="Elastic\Driver\Impl\TaskInfo.cs" />
     <Compile Include="Elastic\Failures\IFailureEvent.cs" />
     <Compile Include="Elastic\Failures\IFailureState.cs" />
-    <Compile Include="Elastic\Failures\Impl\Fail.cs" />
+    <Compile Include="Elastic\Failures\Impl\StopEvent.cs" />
+    <Compile Include="Elastic\Failures\Impl\RescheduleEvent.cs" />
+    <Compile Include="Elastic\Failures\Impl\ReconfigureEvent.cs" />
+    <Compile Include="Elastic\Failures\Impl\FailState.cs" />
     <Compile Include="Elastic\Failures\Impl\DefaultFailureEvent.cs" />
     <Compile Include="Elastic\Failures\Impl\DefaultFailureState.cs" />
     <Compile Include="Elastic\Failures\Impl\OperatorException.cs" />

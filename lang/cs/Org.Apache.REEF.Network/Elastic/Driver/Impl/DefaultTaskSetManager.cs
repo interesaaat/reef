@@ -260,6 +260,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        public void KillAll()
+        {
+            foreach (var info in _taskInfos)
+            {
+                info.TaskRunner.Dispose();
+            }
+        }
+
         public IFailureState OnTaskFailure(IFailedTask info)
         {
             if (BelongsTo(info.Id))
@@ -270,8 +278,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (_tasksFailed / _numTasks > _failRatio)
                 {
+                    LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
                     OnFail();
-                    return new Fail();
+                    return new FailState();
                 }
 
                 lock (_taskLock)
@@ -301,15 +310,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         switch ((DefaultFailureStateEvents)_failureState.FailureState)
                         {
                             case DefaultFailureStateEvents.Reconfigure:
-                                IReconfigure reconfigureEvent = null;
+                                LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reconfiguration event");
+                                IReconfigure reconfigureEvent = new ReconfigureEvent();
                                 EventDispatcher(reconfigureEvent);
                                 break;
                             case DefaultFailureStateEvents.Reschedule:
-                                IReschedule rescheduleEvent = null;
+                                LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reschedule event");
+                                IReschedule rescheduleEvent = new RescheduleEvent();
                                 EventDispatcher(rescheduleEvent);
                                 break;
                             case DefaultFailureStateEvents.Stop:
-                                IStop stopEvent = null;
+                                LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a stop event");
+                                IStop stopEvent = new StopEvent();
                                 EventDispatcher(stopEvent);
                                 break;
                         }
@@ -345,24 +357,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void OnReconfigure(IReconfigure reconfigureEvent)
+        public void OnReconfigure(IReconfigure info)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
         }
 
         public void OnReschedule(IReschedule rescheduleEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to reschedule a task");
         }
 
         public void OnStop(IStop stopEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
         }
 
         public void OnFail()
         {
-            throw new NotImplementedException();
+            KillAll();
+            Dispose();
         }
 
         private bool BelongsTo(string id)

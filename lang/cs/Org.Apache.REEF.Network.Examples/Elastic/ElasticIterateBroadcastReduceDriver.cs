@@ -222,6 +222,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IFailedTask failedTask)
         {
             _taskManager.OnTaskFailure(failedTask);
+
+            if (_taskManager.Done)
+            {
+                _taskManager.Dispose();
+            }
         }
 
         public void OnCompleted()

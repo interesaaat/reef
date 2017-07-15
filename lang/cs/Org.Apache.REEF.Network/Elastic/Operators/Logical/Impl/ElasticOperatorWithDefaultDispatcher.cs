@@ -23,6 +23,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -31,6 +32,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     abstract class ElasticOperatorWithDefaultDispatcher : ElasticOperator, IDefaultFailureEventResponse
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticOperatorWithDefaultDispatcher));
+
         public ElasticOperatorWithDefaultDispatcher(
             IElasticTaskSetSubscription subscription, 
             ElasticOperator prev, ITopology topology, 
@@ -81,17 +84,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public void OnReconfigure(IReconfigure reconfigureEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Reconfiguring operator");
         }
 
         public void OnReschedule(IReschedule rescheduleEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to reschedule a task with operator");
         }
 
         public void OnStop(IStop stopEvent)
         {
-            throw new NotImplementedException();
+            LOGGER.Log(Level.Info, "Going to stop operator and reschedule a task");
         }
     }
 }

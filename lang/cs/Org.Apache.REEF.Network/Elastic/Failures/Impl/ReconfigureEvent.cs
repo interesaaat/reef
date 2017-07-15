@@ -15,12 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    public interface IFailureEvent : IDisposable
+    /// <summary>
+    /// Reconfigure the execution to work with fewer tasks
+    /// </summary>
+    public class ReconfigureEvent : IReconfigure
     {
-        int FailureEvent { get; }
+        public int FailureEvent
+        {
+            get { return (int)DefaultFailureStateEvents.Reconfigure; }
+        }
+
+        public void Dispose()
+        {
+        }
     }
 }

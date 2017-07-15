@@ -108,14 +108,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             {
                 _currentFailures += points;
 
-                if (_currentState.FailureState != (int)DefaultFailureStates.StopAndReschedule)
-                {
-                    float currentRate = (float)_currentFailures / _numDependencise;
+                float currentRate = (float)_currentFailures / _numDependencise;
 
-                    while (currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)_currentState.FailureState]])
-                    {
-                        _currentState.FailureState = (int)transitionMapUp[(DefaultFailureStates)_currentState.FailureState];
-                    }
+                while (_currentState.FailureState != (int)DefaultFailureStates.StopAndReschedule && currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)_currentState.FailureState]])
+                {
+                    _currentState.FailureState = (int)transitionMapUp[(DefaultFailureStates)_currentState.FailureState];
                 }
 
                 return _currentState;
