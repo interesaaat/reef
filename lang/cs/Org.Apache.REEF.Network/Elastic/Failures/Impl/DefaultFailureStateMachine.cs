@@ -19,7 +19,6 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 
 /// <summary>
@@ -69,10 +68,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         public IFailureState State 
         {
-            get
-            {
-                return _currentState;
-            }
+            get { return _currentState; }
         }
 
         public IFailureState AddDataPoints(int points)
@@ -180,19 +176,30 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
         }
 
-        public IFailureStateMachine Clone
+        public IFailureStateMachine Clone()
         {
-            get
+            var newMachine = new DefaultFailureStateMachine();
+
+            foreach (DefaultFailureStates state in transitionWeights.Keys)
             {
-                var newMachine = new DefaultFailureStateMachine();
-
-                foreach (DefaultFailureStates state in transitionWeights.Keys)
-                {
-                    newMachine.SetThreashold(new DefaultFailureState((int)state), transitionWeights[state]);
-                }
-
-                return newMachine;
+                newMachine.SetThreashold(new DefaultFailureState((int)state), transitionWeights[state]);
             }
+
+            return newMachine;
+        }
+
+        public int NumOfDataPoints
+        {
+            get { return _numDependencise; }
+
+            set { _numDependencise = value; }
+        }
+
+        public int NumOfFailedDataPoints
+        {
+            get { return _currentFailures; }
+
+            set { _currentFailures = value; }
         }
     }
 }

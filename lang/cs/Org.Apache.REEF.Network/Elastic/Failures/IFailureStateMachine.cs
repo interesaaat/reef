@@ -31,8 +31,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         IFailureState RemoveDataPoints(int points);
 
-        IFailureStateMachine Clone { get; }
+        IFailureStateMachine Clone();
 
         IFailureState State { get; }
+
+        int NumOfDataPoints { get; set; }
+
+        int NumOfFailedDataPoints { get; set; }
     }
 }
