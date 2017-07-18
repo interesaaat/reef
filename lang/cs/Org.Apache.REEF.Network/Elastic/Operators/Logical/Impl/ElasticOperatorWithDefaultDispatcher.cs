@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultBroadcast(senderTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone, checkpointLevel, configurations);
+            _next = new DefaultBroadcast(senderTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
         }
 

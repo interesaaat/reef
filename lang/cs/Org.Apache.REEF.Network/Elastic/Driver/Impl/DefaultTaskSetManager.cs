@@ -185,7 +185,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 foreach (var sub in subs)
                 {
-                    sub.GetTaskConfiguration(ref confBuilder);
+                    sub.GetTaskConfiguration(ref confBuilder, i);
                 }
 
                 IConfiguration serviceConfiguration = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);

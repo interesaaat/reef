@@ -15,29 +15,35 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
+using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    class ForestTopology : ITopology
+    public sealed class ElasticServiceConfigurationOptions
     {
-        public ForestTopology()
+        [NamedParameter("Driver identifier")]
+        public class DriverId : Name<string>
         {
         }
 
-        public bool AddTask(string taskId)
+        [NamedParameter("Group name", defaultValue: "Subscription1")]
+        public class SubscriptionName : Name<string>
         {
-            return true;
         }
 
-        public int RemoveTask(string taskId)
+        [NamedParameter("Number of tasks", defaultValue: "5")]
+        public class NumberOfTasks : Name<int>
         {
-            return 1;
         }
 
-        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        [NamedParameter("Serialized communication group configuration")]
+        public class SerializedGroupConfigs : Name<ISet<string>>
+        {
+        }
+
+        [NamedParameter("Serialized operator configuration")]
+        public class SerializedOperatorConfigs : Name<ISet<string>>
         {
         }
     }

@@ -54,6 +54,7 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Elastic\Config\ElasticConfig.cs" />
+    <Compile Include="Elastic\Config\ElasticServiceConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\GroupCommConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
@@ -101,6 +102,7 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\IElasticReduce.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticScatter.cs" />
     <Compile Include="Elastic\Topology\Impl\EmptyTopology.cs" />
+    <Compile Include="Elastic\Topology\Impl\DataNode.cs" />
     <Compile Include="Elastic\Topology\Impl\TreeTopology.cs" />
     <Compile Include="Elastic\Topology\Impl\ForestTopology.cs" />
     <Compile Include="Elastic\Topology\Impl\FlatTopology.cs" />

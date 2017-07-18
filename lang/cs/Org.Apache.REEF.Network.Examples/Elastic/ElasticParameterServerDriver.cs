@@ -280,6 +280,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                           .Set(TaskConfiguration.Identifier, taskId)
                           .Set(TaskConfiguration.Task, GenericType<HelloServerTask>.Class)
                           .Build())
+                      .BindNamedParameter<ElasticConfig.NumWorkers, int>(
+                           GenericType<ElasticConfig.NumWorkers>.Class,
+                           6.ToString(CultureInfo.InvariantCulture))
                       .Build();
                 }
 

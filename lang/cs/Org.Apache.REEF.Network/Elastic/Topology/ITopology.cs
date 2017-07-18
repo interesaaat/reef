@@ -25,10 +25,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology
     /// </summary>
     public interface ITopology
     {
-        IConfiguration GetTaskConfiguration(int taskId);
-
         bool AddTask(string taskId);
 
+        // For the moments we don't propagate unreachable datapoints but only node failure
         int RemoveTask(string taskId);
+
+        void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId);
     }
 }

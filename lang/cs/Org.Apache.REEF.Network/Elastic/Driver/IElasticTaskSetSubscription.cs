@@ -50,6 +50,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         bool IsMasterTaskContext(IActiveContext activeContext);
 
-        void GetTaskConfiguration(ref ICsConfigurationBuilder builder);
+        void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);
     }
 }

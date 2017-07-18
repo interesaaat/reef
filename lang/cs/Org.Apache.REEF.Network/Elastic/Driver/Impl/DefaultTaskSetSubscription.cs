@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _elasticService = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
             _failureState = new DefaultFailureState();
-            _root = new DefaultEmpty(this, _defaultFailureMachine.Clone);
+            _root = new DefaultEmpty(this, _defaultFailureMachine.Clone());
 
             _iteratorId = -1;
 
@@ -147,14 +147,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void GetTaskConfiguration(ref ICsConfigurationBuilder builder)
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             builder = builder
                 .BindSetEntry<GroupCommConfigurationOptions.CommunicationGroupNames, string>(
                     GenericType<GroupCommConfigurationOptions.CommunicationGroupNames>.Class,
                     _subscriptionName);
 
-                RootOperator.GetElasticTaskConfiguration(ref builder);
+                RootOperator.GetElasticTaskConfiguration(ref builder, taskId);
         }
 
         public ElasticOperator RootOperator

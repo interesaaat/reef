@@ -20,20 +20,10 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    public sealed class ElasticServiceConfigurationOptions
+    public sealed class GroupCommConfigurationOptions
     {
         [NamedParameter("Driver identifier")]
         public class DriverId : Name<string>
-        {
-        }
-
-        [NamedParameter("Group name", defaultValue: "Subscription1")]
-        public class SubscriptionName : Name<string>
-        {
-        }
-
-        [NamedParameter("Number of tasks", defaultValue: "5")]
-        public class NumberOfTasks : Name<int>
         {
         }
 
@@ -42,8 +32,13 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Serialized operator configuration")]
-        public class SerializedOperatorConfigs : Name<ISet<string>>
+        [NamedParameter("Id of root task in operator topology")]
+        public class TopologyRootTaskId : Name<int>
+        {
+        }
+
+        [NamedParameter("Ids of child tasks in operator topology")]
+        public class TopologyChildTaskIds : Name<ISet<int>>
         {
         }
     }

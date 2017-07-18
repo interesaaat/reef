@@ -18,6 +18,7 @@
 using System;
 using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Tang.Implementations.Tang;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
@@ -37,9 +38,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             return 0;
         }
 
-        public IConfiguration GetTaskConfiguration(int taskId)
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
-            throw new NotImplementedException();
         }
     }
 }
