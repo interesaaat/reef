@@ -87,7 +87,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             }
         }
 
-        public bool AddTask(string taskId)
+        public int AddTask(string taskId)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -103,10 +103,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                     _nodes[id].FailState = DataNodeState.Reachable;
 
                     var children = _nodes[id].Children.GetEnumerator();
+                    int count = 1;
 
-                    AddReachable(children);
+                    AddReachable(children, ref count);
 
-                    return true;
+                    return count;
                 }
 
                 throw new ArgumentException("Task has already been added to the topology");
@@ -121,7 +122,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 AddChild(id);
             }
 
-            return true;
+            return 1;
         }
 
         public int RemoveTask(string taskId)
@@ -216,14 +217,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             _root = rootNode;
         }
 
-        private void AddReachable(IEnumerator<DataNode> children)
+        private void AddReachable(IEnumerator<DataNode> children, ref int count)
         {
             while (children.MoveNext())
             {
                 children.Current.FailState = DataNodeState.Reachable;
+                count++;
 
                 var nextChildren = children.Current.Children.GetEnumerator();
-                AddReachable(nextChildren);
+                AddReachable(nextChildren, ref count);
             }
         }
 
@@ -235,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 count++;
 
                 var nextChildren = children.Current.Children.GetEnumerator();
-                AddReachable(nextChildren);
+                RemoveReachable(nextChildren, ref count);
             }
         }
     }
