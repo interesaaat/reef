@@ -77,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             lock (_statusLock)
             {
-                if (_currentFailures == 0)
+                if (!_finalized)
                 {
                     _numDependencise += points;
                 }
