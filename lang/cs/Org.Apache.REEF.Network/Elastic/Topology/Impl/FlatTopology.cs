@@ -18,62 +18,33 @@
 using System;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
-using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
     class FlatTopology : ITopology
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(FlatTopology));
+
         private int _rootId;
+        private DataNode _root;
+        private bool _finalized;
 
         private readonly Dictionary<int, DataNode> _nodes;
-        private DataNode _root;
 
-        /// <summary>
-        /// Creates a new FlatTopology.
-        /// </summary>
-        /// <param name="operatorName">The operator name</param>
-        /// <param name="groupName">The name of the topology's CommunicationGroup</param>
-        /// <param name="rootId">The root Task identifier</param>
-        /// <param name="driverId">The driver identifier</param>
-        /// <param name="operatorSpec">The operator specification</param>
         public FlatTopology(int rootId)
         {
             _rootId = rootId;
+            _finalized = false;
 
             _nodes = new Dictionary<int, DataNode>();
         }
 
-        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
-        {
-            if (taskId == _rootId)
-            {
-                foreach (var tId in _nodes.Keys)
-                {
-                    if (!tId.Equals(_rootId))
-                    {
-                        confBuilder.BindSetEntry<GroupCommConfigurationOptions.TopologyChildTaskIds, int>(
-                            GenericType<GroupCommConfigurationOptions.TopologyChildTaskIds>.Class,
-                            tId.ToString(CultureInfo.InvariantCulture));
-                    }
-                }
-            }
-            else
-            {
-                confBuilder.BindNamedParameter<GroupCommConfigurationOptions.TopologyRootTaskId, int>(
-                        GenericType<GroupCommConfigurationOptions.TopologyRootTaskId>.Class,
-                        _rootId.ToString(CultureInfo.InvariantCulture));
-            }
-        }
-
-        /// <summary>
-        /// Adds a task to the topology graph.
-        /// </summary>
-        /// <param name="taskId">The identifier of the task to add</param>
         public bool AddTask(string taskId)
         {
             if (string.IsNullOrEmpty(taskId))
@@ -85,6 +56,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
             if (_nodes.ContainsKey(id))
             {
+                if (_nodes[id].FailState != DataNodeState.Reachable)
+                {
+                    _nodes[id].FailState = DataNodeState.Reachable;
+                    return true;
+                }
+
                 throw new ArgumentException("Task has already been added to the topology");
             }
 
@@ -99,10 +76,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             return true;
         }
 
-        /// <summary>
-        /// Adds a task to the topology graph.
-        /// </summary>
-        /// <param name="taskId">The identifier of the task to add</param>
         public int RemoveTask(string taskId)
         {
             if (string.IsNullOrEmpty(taskId))
@@ -119,14 +92,62 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
             DataNode node = _nodes[id];
 
-            if (node.FailState)
+            if (node.FailState == DataNodeState.Lost)
             {
                 return 0;
             }
 
-            node.FailState = true;
+            node.FailState = DataNodeState.Lost;
 
             return 1;
+        }
+
+        public void Build()
+        {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("Topology cannot be built more than once");
+            }
+
+            Log();
+
+            _finalized = true;
+        }
+
+        private void Log()
+        {
+            LOGGER.Log(Level.Info, _rootId + "\n");
+
+            var children = _root.Children.GetEnumerator();
+            string output = "";
+            while (children.MoveNext())
+            {
+                output += children.Current.TaskId + " ";
+            }
+
+            LOGGER.Log(Level.Info, output);
+        }
+
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        {
+            if (taskId == _rootId)
+            {
+                foreach (var tId in _root.Children)
+                {
+                    if (tId.TaskId != _rootId)
+                    {
+                        confBuilder.BindSetEntry<GroupCommConfigurationOptions.TopologyChildTaskIds, int>(
+                            GenericType<GroupCommConfigurationOptions.TopologyChildTaskIds>.Class,
+                            tId.TaskId.ToString(CultureInfo.InvariantCulture));
+                    }
+                }
+            }
+            else
+            {
+                confBuilder.BindNamedParameter<GroupCommConfigurationOptions.TopologyRootTaskId, int>(
+                        GenericType<GroupCommConfigurationOptions.TopologyRootTaskId>.Class,
+                        _rootId.ToString(CultureInfo.InvariantCulture));
+            }
         }
 
         private void SetRootNode(int rootId)

@@ -32,6 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         private int _numDependencise;
         private int _currentFailures;
         private DefaultFailureState _currentState;
+        private bool _finalized;
 
         private object _statusLock;
 
@@ -62,6 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             _numDependencise = 0;
             _currentFailures = 0;
             _currentState = new DefaultFailureState();
+            _finalized = false;
 
             _statusLock = new object();
         }
@@ -150,6 +152,18 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
 
             CheckConsistency();
+        }
+
+        public IFailureStateMachine Build()
+        {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("Failure state machine cannot be built more than once");
+            }
+
+            _finalized = true;
+
+            return this;
         }
 
         private void CheckConsistency()

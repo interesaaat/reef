@@ -108,10 +108,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     return false;
                 }
 
-                _tasksAdded++;
-            }
+                RootOperator.AddTask(taskId);
 
-            RootOperator.AddTask(taskId);
+                _tasksAdded++;
+
+                if(_tasksAdded == _numTasks)
+                {
+                    RootOperator.BuildState();
+                }
+            }
 
             return true;
         }

@@ -15,30 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
-
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Topology
 {
-    /// <summary>
-    /// Where the decision is made on what to do when a failure happen.
-    /// A decision is made based on how many data points are lost.
-    /// </summary>
-    [DefaultImplementation(typeof(DefaultFailureStateMachine))]
-    public interface IFailureStateMachine
+    public enum DataNodeState : int
     {
-        IFailureState AddDataPoints(int points);
+        Reachable = 1,
 
-        IFailureState RemoveDataPoints(int points);
+        Unreachable = 2,
 
-        IFailureStateMachine Clone();
-
-        IFailureStateMachine Build();
-
-        IFailureState State { get; }
-
-        int NumOfDataPoints { get; set; }
-
-        int NumOfFailedDataPoints { get; set; }
+        Lost = 3
     }
 }

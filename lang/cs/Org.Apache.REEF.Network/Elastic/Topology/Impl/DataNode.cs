@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         private DataNode _parent;
         private bool _isRoot;
-        private bool _isReachable;
+        private DataNodeState _state;
 
         private readonly List<DataNode> _children;
 
@@ -38,15 +38,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         {
             _taskId = taskId;
             _isRoot = isRoot;
-            _isReachable = true;
+            _state = DataNodeState.Reachable;
 
             _children = new List<DataNode>();
         }
 
-        public bool FailState
+        public DataNodeState FailState
         {
-            get { return _isReachable; }
-            set { _isReachable = value; }
+            get { return _state; }
+            set { _state = value; }
         }
 
         public DataNode Parent
@@ -60,14 +60,19 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             _children.Add(child);
         }
 
-        public int GetNumberOfChildren() 
+        public int TaskId
         {
-            return _children.Count;
+            get { return _taskId; }
         }
 
-        public IList<DataNode> GetChildren()
+        public int NumberOfChildren
         {
-            return _children;
+            get { return _children.Count; }
+        }
+
+        public IList<DataNode> Children
+        {
+            get { return _children; }
         } 
     }
 }

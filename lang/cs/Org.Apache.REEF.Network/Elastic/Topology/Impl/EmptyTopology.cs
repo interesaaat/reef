@@ -19,13 +19,17 @@ using System;
 using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Implementations.Tang;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
     class EmptyTopology : ITopology
     {
+        private bool _finalized;
+
         public EmptyTopology()
         {
+            _finalized = false;
         }
 
         public bool AddTask(string taskId)
@@ -36,6 +40,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         public int RemoveTask(string taskId)
         {
             return 0;
+        }
+
+        public void Build()
+        {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("Topology cannot be built more than once");
+            }
+
+            _finalized = true;
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)

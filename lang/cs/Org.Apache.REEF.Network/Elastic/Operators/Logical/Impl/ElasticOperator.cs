@@ -43,7 +43,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected CheckpointLevel _checkpointLevel;
         protected ITopology _topology;
 
-        protected bool _finalized = false;
+        protected bool _stateFinalized = false;
+        protected bool _operatorFinalized = false;
 
         protected int _masterTaskId = 0;
         protected IElasticTaskSetSubscription _subscription;
@@ -125,17 +126,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public void GetElasticTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
-            if (_next != null)
+            if (_operatorFinalized && _stateFinalized)
             {
-                _topology.GetTaskConfiguration(ref confBuilder, taskId);
+                if (_next != null)
+                {
+                    _topology.GetTaskConfiguration(ref confBuilder, taskId);
 
-                _next.GetElasticTaskConfiguration(ref confBuilder, taskId);
+                    _next.GetElasticTaskConfiguration(ref confBuilder, taskId);
+                }
+            }
+            else
+            {
+                throw new IllegalStateException("Operator need to be Build before getting tasks configuration");
             }
         }
 
         public ElasticOperator Build()
         {
-            if (_finalized == true)
+            if (_operatorFinalized == true)
             {
                 throw new IllegalStateException("Operator cannot be built more than once");
             }
@@ -145,7 +153,33 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _prev.Build();
             }
 
-            _finalized = true;
+            _operatorFinalized = true;
+
+            return this;
+        }
+
+        public ElasticOperator BuildState()
+        {
+            if (_stateFinalized == true)
+            {
+                throw new IllegalStateException("Operator cannot be built more than once");
+            }
+
+            if (_operatorFinalized != true)
+            {
+                throw new IllegalStateException("Operator need to be build before finalizing its state");
+            }
+
+            if (_prev != null)
+            {
+                _prev.BuildState();
+            }
+
+            _failureMachine.Build();
+            _topology.Build();
+
+            _operatorFinalized = true;
+
             return this;
         }
 

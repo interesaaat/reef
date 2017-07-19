@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 
-                topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(), 
+                topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), 
                 failureMachine,
                 checkpointLevel)
         {
