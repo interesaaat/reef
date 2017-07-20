@@ -16,7 +16,6 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Config;
@@ -24,14 +23,17 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Utilities.Logging;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
-    class TreeTopology : ITopology
+    public class TreeTopology : ITopology
     {
         private readonly int _rootId;
         private DataNode _root;
         private readonly int _degree;
+        private bool _sorted;
         private bool _finalized;
 
         private readonly IDictionary<int, DataNode> _nodes;
@@ -42,17 +44,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             bool sorted = false)
         {
             _rootId = rootId;
-
+            _sorted = sorted;
             _degree = degree;
 
-            if (sorted)
-            {
-                _nodes = new SortedDictionary<int, DataNode>();
-            }
-            else
-            {
-                _nodes = new Dictionary<int, DataNode>();
-            }
+            _nodes = new Dictionary<int, DataNode>();
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
@@ -87,14 +82,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             }
         }
 
-        public bool AddTask(string taskId)
+        public int AddTask(string taskId)
         {
             if (string.IsNullOrEmpty(taskId))
             {
                 throw new ArgumentNullException("taskId");
             }
 
-            var id = Utils.GetTaskNum(taskId) - 1;
+            var id = Utils.GetTaskNum(taskId);
 
             if (_nodes.ContainsKey(id))
             {
@@ -103,10 +98,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                     _nodes[id].FailState = DataNodeState.Reachable;
 
                     var children = _nodes[id].Children.GetEnumerator();
+                    int count = 1;
 
-                    AddReachable(children);
+                    AddReachable(children, ref count);
 
-                    return true;
+                    return count;
                 }
 
                 throw new ArgumentException("Task has already been added to the topology");
@@ -121,7 +117,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 AddChild(id);
             }
 
-            return true;
+            return 1;
         }
 
         public int RemoveTask(string taskId)
@@ -136,7 +132,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new IllegalStateException("Removing task from a not finalized topology");
             }
 
-            var id = Utils.GetTaskNum(taskId) - 1;
+            var id = Utils.GetTaskNum(taskId);
 
             if (!_nodes.ContainsKey(id))
             {
@@ -167,32 +163,45 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new IllegalStateException("Topology cannot be built more than once");
             }
 
-            IEnumerator<DataNode> iter = _nodes.Values.GetEnumerator();
-            BuildTree(_root, ref iter);
+            IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
+            Queue<DataNode> parents = new Queue<DataNode>();
+            parents.Enqueue(_root);
+            BuildTopology(ref parents, ref iter);
 
             _finalized = true;
         }
 
-        private void BuildTree(DataNode parent, ref IEnumerator<DataNode> iter)
+        public string LogTopologyState()
         {
-            int i = 0;
+            Queue<DataNode> current = new Queue<DataNode>();
+            Queue<DataNode> next;
+            current.Enqueue(_root);
+            string output = string.Empty;
 
-            while (i < _degree && iter.MoveNext())
+            while (current.Count != 0)
             {
-                parent.AddChild(iter.Current);
-                iter.Current.Parent = parent;
-                i++;
-            }
-
-            if (i == _degree)
-            {
-                var parentIter = parent.Children.GetEnumerator();
-
-                while (parentIter.MoveNext())
+                var iter = current.GetEnumerator();
+                next = new Queue<DataNode>();
+                while (iter.MoveNext())
                 {
-                    BuildTree(parentIter.Current, ref iter);
+                    var rep = "X";
+                    if (iter.Current.FailState == DataNodeState.Reachable)
+                    {
+                        rep = iter.Current.TaskId.ToString();
+                    }
+
+                    output += rep + " ";
+
+                    foreach (var item in iter.Current.Children)
+                    {
+                        next.Enqueue(item);
+                    }
                 }
+                output += "\n";
+                current = next;
             }
+
+            return output;
         }
 
         private DataNode GetTaskNode(int taskId)
@@ -216,14 +225,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             _root = rootNode;
         }
 
-        private void AddReachable(IEnumerator<DataNode> children)
+        private void AddReachable(IEnumerator<DataNode> children, ref int count)
         {
             while (children.MoveNext())
             {
                 children.Current.FailState = DataNodeState.Reachable;
+                count++;
 
                 var nextChildren = children.Current.Children.GetEnumerator();
-                AddReachable(nextChildren);
+                AddReachable(nextChildren, ref count);
             }
         }
 
@@ -235,7 +245,28 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 count++;
 
                 var nextChildren = children.Current.Children.GetEnumerator();
-                AddReachable(nextChildren);
+                RemoveReachable(nextChildren, ref count);
+            }
+        }
+
+        private void BuildTopology(ref Queue<DataNode> parents, ref IEnumerator<DataNode> iter)
+        {
+            int i = 0;
+            DataNode parent = parents.Dequeue();
+            while (i < _degree && iter.MoveNext())
+            {
+                if (iter.Current.TaskId != _rootId)
+                {
+                    parent.AddChild(iter.Current);
+                    iter.Current.Parent = parent;
+                    parents.Enqueue(iter.Current);
+                    i++;
+                }
+            }
+
+            if (i == _degree)
+            {
+                BuildTopology(ref parents, ref iter);
             }
         }
     }

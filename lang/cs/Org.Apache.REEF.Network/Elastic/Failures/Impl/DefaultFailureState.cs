@@ -43,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
     }
 
-    public enum DefaultFailureStates : int
+    public enum DefaultFailureStates
     {
         Continue = 1,
 

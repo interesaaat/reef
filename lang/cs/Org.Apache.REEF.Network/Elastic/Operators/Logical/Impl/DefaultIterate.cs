@@ -15,13 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
-using System;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using System.Collections;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -47,6 +44,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _masterTaskId = masterTaskId;
             GetSubscription.IteratorId = _id;
+        }
+
+        protected override string OperatorName
+        {
+            get { return _operator; }
         }
     }
 }

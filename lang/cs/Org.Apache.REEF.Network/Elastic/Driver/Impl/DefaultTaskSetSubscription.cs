@@ -112,7 +112,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 _tasksAdded++;
 
-                if(_tasksAdded == _numTasks)
+                if (_tasksAdded == _numTasks)
                 {
                     RootOperator.BuildState();
                 }

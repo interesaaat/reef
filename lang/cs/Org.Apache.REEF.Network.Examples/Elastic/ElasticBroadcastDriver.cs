@@ -22,7 +22,6 @@ using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Network.Group.Pipelining.Impl;
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -38,6 +37,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Network.Elastic.Topology;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -95,6 +95,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
 
             ElasticOperator pipeline = subscription.RootOperator;
+
+            System.Threading.Thread.Sleep(30000);
 
             // Create and build the pipeline
             pipeline.Broadcast(TopologyTypes.Tree, dataConverterConfig)
@@ -161,7 +163,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
             else
             {
-                if (id == 9 || id == 8 || id == 7)
+                if (id == 9 || id == 8)
                 {
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule

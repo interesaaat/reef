@@ -22,7 +22,6 @@ using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Network.Group.Pipelining.Impl;
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -41,6 +40,7 @@ using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Topology;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

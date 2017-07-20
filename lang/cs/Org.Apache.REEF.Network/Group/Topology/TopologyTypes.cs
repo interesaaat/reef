@@ -20,7 +20,6 @@ namespace Org.Apache.REEF.Network.Group.Topology
     public enum TopologyTypes
     {
         Flat = 0,
-        Tree = 1,
-        Forest = 2
+        Tree = 1
     }
 }

@@ -15,10 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
-using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
@@ -32,9 +29,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             _finalized = false;
         }
 
-        public bool AddTask(string taskId)
+        public int AddTask(string taskId)
         {
-            return true;
+            return 1;
         }
 
         public int RemoveTask(string taskId)
@@ -54,6 +51,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
+        }
+
+        public string LogTopologyState()
+        {
+            return "empty";
         }
     }
 }

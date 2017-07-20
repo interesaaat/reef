@@ -18,12 +18,11 @@
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
+using System.Globalization;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -43,9 +42,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
         }
 
-        public override ElasticOperator Broadcast(int senderTaskId, TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator Broadcast(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultBroadcast(senderTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultBroadcast(senderTaskId, this, topology ?? new FlatTopology(senderTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
         }
 
@@ -95,6 +94,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public void OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop operator and reschedule a task");
+        }
+
+        protected override void LogOperatorState()
+        {
+            string intro = string.Format(CultureInfo.InvariantCulture,
+               "State for Operator {0} in Subscription {1}:\n", GetSubscription.SubscriptionName, OperatorName);
+            string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}\n", _topology.LogTopologyState());
+            string failureMachineState = "Failure State: " + (DefaultFailureStates)_failureMachine.State.FailureState +
+                    "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;
+
+            LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
         }
     }
 }

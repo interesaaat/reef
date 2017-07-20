@@ -24,42 +24,46 @@ using System.Globalization;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
-    class FlatTopology : ITopology
+    public class FlatTopology : ITopology
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(FlatTopology));
 
         private int _rootId;
         private DataNode _root;
         private bool _finalized;
+        private bool _sorted;
 
         private readonly Dictionary<int, DataNode> _nodes;
 
-        public FlatTopology(int rootId)
+        public FlatTopology(int rootId, bool sorted = false)
         {
             _rootId = rootId;
             _finalized = false;
+            _sorted = sorted;
 
             _nodes = new Dictionary<int, DataNode>();
         }
 
-        public bool AddTask(string taskId)
+        public int AddTask(string taskId)
         {
             if (string.IsNullOrEmpty(taskId))
             {
                 throw new ArgumentNullException("taskId");
             }
 
-            var id = Utils.GetTaskNum(taskId) - 1;
+            var id = Utils.GetTaskNum(taskId);
 
             if (_nodes.ContainsKey(id))
             {
-                if (_nodes[id].FailState != DataNodeState.Reachable)
+                if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
                 {
                     _nodes[id].FailState = DataNodeState.Reachable;
-                    return true;
+
+                    return 1;
                 }
 
                 throw new ArgumentException("Task has already been added to the topology");
@@ -73,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             {
                 AddChild(id);
             }
-            return true;
+            return 1;
         }
 
         public int RemoveTask(string taskId)
@@ -83,7 +87,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new ArgumentNullException("taskId");
             }
 
-            var id = Utils.GetTaskNum(taskId) - 1;
+            var id = Utils.GetTaskNum(taskId);
 
             if (!_nodes.ContainsKey(id))
             {
@@ -109,23 +113,27 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new IllegalStateException("Topology cannot be built more than once");
             }
 
-            Log();
+            BuildTopology();
 
             _finalized = true;
         }
 
-        private void Log()
+        public string LogTopologyState()
         {
-            LOGGER.Log(Level.Info, _rootId + "\n");
-
             var children = _root.Children.GetEnumerator();
-            string output = "";
+            string output = _rootId + "\n";
             while (children.MoveNext())
             {
-                output += children.Current.TaskId + " ";
+                var rep = "X";
+                if (children.Current.FailState == DataNodeState.Reachable)
+                {
+                    rep = children.Current.TaskId.ToString();
+                }
+
+                output += rep + " ";
             }
 
-            LOGGER.Log(Level.Info, output);
+            return output;
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
@@ -150,28 +158,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             }
         }
 
+        private void BuildTopology()
+        {
+            IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
+
+            while (iter.MoveNext())
+            {
+                if (iter.Current.TaskId != _rootId)
+                {
+                    _root.AddChild(iter.Current);
+                }
+            }
+        }
+
         private void SetRootNode(int rootId)
         {
             DataNode rootNode = new DataNode(rootId, true);
             _root = rootNode;
-
-            foreach (DataNode childNode in _nodes.Values)
-            {
-                rootNode.AddChild(childNode);
-                childNode.Parent = rootNode;
-            }
         }
 
         private void AddChild(int childId)
         {
             DataNode childNode = new DataNode(childId, false);
             _nodes[childId] = childNode;
-
-            if (_root != null)
-            {
-                _root.AddChild(childNode);
-                childNode.Parent = _root;
-            }
         }
     }
 }

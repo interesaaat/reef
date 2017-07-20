@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Tang.Interface;
@@ -59,6 +58,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _receiverId = 1;
             return _receiverId;
+        }
+
+        protected override string OperatorName
+        {
+            get { return _operator; }
         }
 
         protected new int GenerateMasterTaskId()

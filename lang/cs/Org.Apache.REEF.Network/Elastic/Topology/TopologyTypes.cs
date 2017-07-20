@@ -15,25 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Tang.Interface;
-
 namespace Org.Apache.REEF.Network.Elastic.Topology
 {
-    /// <summary>
-    /// Represents a topology graph for Elastic Group Communication Operators.
-    /// </summary>
-    public interface ITopology
+    public enum TopologyTypes
     {
-        int AddTask(string taskId);
-
-        // For the moments we don't propagate unreachable datapoints but only node failures
-        int RemoveTask(string taskId);
-
-        void Build();
-
-        void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId);
-
-        string LogTopologyState();
+        Flat = 0,
+        Tree = 1,
+        Forest = 2
     }
 }

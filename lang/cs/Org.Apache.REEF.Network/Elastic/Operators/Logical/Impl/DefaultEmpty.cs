@@ -32,5 +32,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             base(subscription, null, new EmptyTopology(), filureMachine)
         {
         }
+
+        protected override void LogOperatorState()
+        {
+        }
     }
 }

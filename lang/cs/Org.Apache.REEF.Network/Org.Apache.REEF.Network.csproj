@@ -108,6 +108,7 @@ under the License.
     <Compile Include="Elastic\Topology\Impl\ForestTopology.cs" />
     <Compile Include="Elastic\Topology\Impl\FlatTopology.cs" />
     <Compile Include="Elastic\Topology\ITopology.cs" />
+    <Compile Include="Elastic\Topology\TopologyTypes.cs" />
     <Compile Include="Group\Config\CodecToStreamingCodecConfiguration.cs" />
     <Compile Include="Group\Config\StreamingCodecConfigurationMinusMessage.cs" />
     <Compile Include="Group\Driver\Impl\GeneralGroupCommunicationMessage.cs" />
