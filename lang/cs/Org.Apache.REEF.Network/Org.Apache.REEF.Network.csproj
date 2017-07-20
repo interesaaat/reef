@@ -53,7 +53,7 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Elastic\Config\ElasticConfig.cs" />
+    <Compile Include="Elastic\Config\OperatorsConfiguration.cs" />
     <Compile Include="Elastic\Config\ElasticServiceConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\GroupCommConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />

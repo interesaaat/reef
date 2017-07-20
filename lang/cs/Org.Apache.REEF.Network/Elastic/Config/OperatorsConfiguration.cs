@@ -20,45 +20,10 @@ using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    public class ElasticConfig
+    public class OperatorsConfiguration
     {
-        [NamedParameter(Documentation = "Number of retry when a failure accurs", DefaultValue = "1")]
-        public class NumRetry : Name<int>
-        {
-        }
-
         [NamedParameter("Number of iterations")]
         public class NumIterations : Name<int>
-        {
-        }
-
-        [NamedParameter("Number of Evaluators")]
-        public class NumEvaluators : Name<int>
-        {
-        }
-
-        [NamedParameter("Number of Servers")]
-        public class NumServers : Name<int>
-        {
-        }
-
-        [NamedParameter("Number of Workes")]
-        public class NumWorkers : Name<int>
-        {
-        }
-
-        [NamedParameter("integer id of the evaluator")]
-        public class EvaluatorId : Name<string>
-        {
-        }
-
-        [NamedParameter(Documentation = "Starting port for TcpPortProvider", DefaultValue = "8900")]
-        public class StartingPort : Name<int>
-        {
-        }
-
-        [NamedParameter(Documentation = "Port Range count for TcpPortProvider", DefaultValue = "1000")]
-        public class PortRange : Name<int>
         {
         }
     }

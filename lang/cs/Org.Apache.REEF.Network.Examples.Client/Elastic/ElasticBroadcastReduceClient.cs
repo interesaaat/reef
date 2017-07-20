@@ -51,20 +51,20 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnContextActive, GenericType<ElasticBroadcastReduceDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
-                    GenericType<ElasticConfig.NumEvaluators>.Class,
+                .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
+                    GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
                     numTasks.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<ElasticConfig.StartingPort, int>(
-                    GenericType<ElasticConfig.StartingPort>.Class,
+                .BindNamedParameter<ElasticServiceConfigurationOptions.StartingPort, int>(
+                    GenericType<ElasticServiceConfigurationOptions.StartingPort>.Class,
                     startingPortNo.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<ElasticConfig.PortRange, int>(
-                    GenericType<ElasticConfig.PortRange>.Class,
+                .BindNamedParameter<ElasticServiceConfigurationOptions.PortRange, int>(
+                    GenericType<ElasticServiceConfigurationOptions.PortRange>.Class,
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
-                .BindStringNamedParam<ElasticServiceConfigurationOptions.SubscriptionName>(subscription)
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultSubscriptionName>(subscription)
                 .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 

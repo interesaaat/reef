@@ -61,8 +61,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         [Inject]
         private DefaultTaskSetService(
             [Parameter(typeof(ElasticServiceConfigurationOptions.DriverId))] string driverId,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.SubscriptionName))] string defaultSubscriptionName,
-            [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.DefaultSubscriptionName))] string defaultSubscriptionName,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             AvroConfigurationSerializer configSerializer,
             INameServer nameServer,
             IFailureStateMachine defaultFailureStateMachine)
@@ -174,14 +174,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public IConfiguration GetTaskConfiguration(ICsConfigurationBuilder subscriptionsConf)
         {
             var partialConf = subscriptionsConf
-                .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
-                    GenericType<GroupCommConfigurationOptions.DriverId>.Class,
+                .BindNamedParameter<ElasticServiceConfigurationOptions.DriverId, string>(
+                    GenericType<ElasticServiceConfigurationOptions.DriverId>.Class,
                     DriverId)
                 .Build();
             var confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
-            confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedGroupConfigs, string>(
-                GenericType<GroupCommConfigurationOptions.SerializedGroupConfigs>.Class,
+            confBuilder.BindSetEntry<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs, string>(
+                GenericType<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs>.Class,
                 _configSerializer.ToString(partialConf));
 
             return confBuilder.Build();

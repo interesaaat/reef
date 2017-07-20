@@ -71,10 +71,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticIterateBroadcastReduceDriver(
-            [Parameter(typeof(ElasticConfig.NumIterations))] int numIterations,
-            [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
-            [Parameter(typeof(ElasticConfig.StartingPort))] int startingPort,
-            [Parameter(typeof(ElasticConfig.PortRange))] int portRange,
+            [Parameter(typeof(OperatorsConfiguration.NumIterations))] int numIterations,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
             IElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
@@ -103,7 +103,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<ElasticConfig.NumIterations, int>(GenericType<ElasticConfig.NumIterations>.Class,
+                .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(GenericType<OperatorsConfiguration.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
@@ -181,8 +181,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
                         .Build())
-                    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
-                        GenericType<ElasticConfig.NumEvaluators>.Class,
+                    .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
+                        GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
                         _numEvaluators.ToString(CultureInfo.InvariantCulture))
                     .Build();
             }

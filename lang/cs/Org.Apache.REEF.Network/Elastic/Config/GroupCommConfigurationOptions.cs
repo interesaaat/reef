@@ -22,13 +22,8 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 {
     public sealed class GroupCommConfigurationOptions
     {
-        [NamedParameter("Driver identifier")]
-        public class DriverId : Name<string>
-        {
-        }
-
-        [NamedParameter("Serialized communication group configuration")]
-        public class SerializedGroupConfigs : Name<ISet<string>>
+        [NamedParameter("Serialized operator configuration")]
+        public class SerializedOperatorConfigs : Name<ISet<string>>
         {
         }
 
@@ -39,6 +34,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 
         [NamedParameter("Ids of child tasks in operator topology")]
         public class TopologyChildTaskIds : Name<ISet<int>>
+        {
+        }
+
+        [NamedParameter("Name of the subscriptions")]
+        public class SubscriptionName : Name<string>
         {
         }
     }
