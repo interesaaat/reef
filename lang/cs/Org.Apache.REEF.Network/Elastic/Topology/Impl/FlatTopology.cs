@@ -25,6 +25,7 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
+using Org.Apache.REEF.Tang.Implementations.Tang;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
@@ -33,7 +34,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(FlatTopology));
 
         private int _rootId;
-        private DataNode _root;
         private bool _finalized;
         private bool _sorted;
 
@@ -69,14 +69,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new ArgumentException("Task has already been added to the topology");
             }
 
-            if (id == _rootId)
-            {
-                SetRootNode(_rootId);
-            }
-            else
-            {
-                AddChild(id);
-            }
+            DataNode node = new DataNode(id, false);
+            _nodes[id] = node;
+
             return 1;
         }
 
@@ -113,6 +108,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new IllegalStateException("Topology cannot be built more than once");
             }
 
+            if (!_nodes.ContainsKey(_rootId))
+            {
+                throw new IllegalStateException("Topology cannot be built becasue the root node is missing");
+            }
+
             BuildTopology();
 
             _finalized = true;
@@ -120,7 +120,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         public string LogTopologyState()
         {
-            var children = _root.Children.GetEnumerator();
+            var root = _nodes[_rootId];
+            var children = root.Children.GetEnumerator();
             string output = _rootId + "\n";
             while (children.MoveNext())
             {
@@ -140,7 +141,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         {
             if (taskId == _rootId)
             {
-                foreach (var tId in _root.Children)
+                var root = _nodes[_rootId];
+
+                foreach (var tId in root.Children)
                 {
                     if (tId.TaskId != _rootId)
                     {
@@ -161,26 +164,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         private void BuildTopology()
         {
             IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
+            var root = _nodes[_rootId];
 
             while (iter.MoveNext())
             {
                 if (iter.Current.TaskId != _rootId)
                 {
-                    _root.AddChild(iter.Current);
+                    root.AddChild(iter.Current);
                 }
             }
-        }
-
-        private void SetRootNode(int rootId)
-        {
-            DataNode rootNode = new DataNode(rootId, true);
-            _root = rootNode;
-        }
-
-        private void AddChild(int childId)
-        {
-            DataNode childNode = new DataNode(childId, false);
-            _nodes[childId] = childNode;
         }
     }
 }

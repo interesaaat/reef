@@ -18,6 +18,8 @@
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -34,6 +36,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         }
 
         protected override void LogOperatorState()
+        {
+        }
+
+        protected override void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
         }
     }

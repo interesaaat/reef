@@ -173,18 +173,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public IConfiguration GetTaskConfiguration(ICsConfigurationBuilder subscriptionsConf)
         {
-            var partialConf = subscriptionsConf
+            return subscriptionsConf
                 .BindNamedParameter<ElasticServiceConfigurationOptions.DriverId, string>(
                     GenericType<ElasticServiceConfigurationOptions.DriverId>.Class,
                     DriverId)
                 .Build();
-            var confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+        }
 
+        public void SerializeSubscriptionConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration subscriptionConfiguration)
+        {
             confBuilder.BindSetEntry<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs, string>(
                 GenericType<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs>.Class,
-                _configSerializer.ToString(partialConf));
+                _configSerializer.ToString(subscriptionConfiguration));
+        }
 
-            return confBuilder.Build();
+        public void SerializeOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration operatorConfiguration)
+        {
+            confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedOperatorConfigs, string>(
+                GenericType<GroupCommConfigurationOptions.SerializedOperatorConfigs>.Class,
+                _configSerializer.ToString(operatorConfiguration));
         }
 
         public IFailureState OnTaskFailure(IFailedTask value)

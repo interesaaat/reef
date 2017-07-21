@@ -43,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel)
         {
             _masterTaskId = masterTaskId;
-            GetSubscription.IteratorId = _id;
+            Subscription.IteratorId = _id;
         }
 
         protected override string OperatorName

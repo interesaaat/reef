@@ -22,6 +22,16 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 {
     public class OperatorsConfiguration
     {
+        [NamedParameter("Operator Name")]
+        public class OperatorType : Name<string>
+        {
+        }
+
+        [NamedParameter("Operator Id")]
+        public class OperatorId : Name<int>
+        {
+        }
+
         [NamedParameter("Number of iterations")]
         public class NumIterations : Name<int>
         {

@@ -99,7 +99,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected override void LogOperatorState()
         {
             string intro = string.Format(CultureInfo.InvariantCulture,
-               "State for Operator {0} in Subscription {1}:\n", GetSubscription.SubscriptionName, OperatorName);
+               "State for Operator {0} in Subscription {1}:\n", Subscription.SubscriptionName, OperatorName);
             string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}\n", _topology.LogTopologyState());
             string failureMachineState = "Failure State: " + (DefaultFailureStates)_failureMachine.State.FailureState +
                     "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;

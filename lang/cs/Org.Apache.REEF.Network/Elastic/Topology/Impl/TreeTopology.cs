@@ -23,7 +23,6 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
@@ -31,7 +30,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
     public class TreeTopology : ITopology
     {
         private readonly int _rootId;
-        private DataNode _root;
         private readonly int _degree;
         private bool _sorted;
         private bool _finalized;
@@ -53,6 +51,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
             DataNode selfTaskNode = GetTaskNode(taskId);
+
             if (selfTaskNode == null)
             {
                 throw new ArgumentException("Task has not been added to the topology");
@@ -108,14 +107,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new ArgumentException("Task has already been added to the topology");
             }
 
-            if (id == _rootId)
-            {
-                SetRootNode(_rootId);
-            }
-            else
-            {
-                AddChild(id);
-            }
+            DataNode node = new DataNode(id, true);
+            _nodes[id] = node;
 
             return 1;
         }
@@ -163,9 +156,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 throw new IllegalStateException("Topology cannot be built more than once");
             }
 
+            if (!_nodes.ContainsKey(_rootId))
+            {
+                throw new IllegalStateException("Topology cannot be built becasue the root node is missing");
+            }
+
             IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
             Queue<DataNode> parents = new Queue<DataNode>();
-            parents.Enqueue(_root);
+            var root = _nodes[_rootId];
+            parents.Enqueue(root);
             BuildTopology(ref parents, ref iter);
 
             _finalized = true;
@@ -175,7 +174,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         {
             Queue<DataNode> current = new Queue<DataNode>();
             Queue<DataNode> next;
-            current.Enqueue(_root);
+            var root = _nodes[_rootId];
+            current.Enqueue(root);
             string output = string.Empty;
 
             while (current.Count != 0)
@@ -210,19 +210,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
             {
                 return n;
             }
-            throw new ArgumentException("Cannot find task node in the nodes.");
-        }
-
-        private void AddChild(int childId)
-        {
-            DataNode childNode = new DataNode(childId, false);
-            _nodes[childId] = childNode;
-        }
-
-        private void SetRootNode(int rootId)
-        {
-            DataNode rootNode = new DataNode(rootId, true);
-            _root = rootNode;
+            throw new ArgumentException("Cannot find task node " + taskId + " in the nodes.");
         }
 
         private void AddReachable(IEnumerator<DataNode> children, ref int count)

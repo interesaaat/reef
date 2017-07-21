@@ -99,7 +99,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             System.Threading.Thread.Sleep(30000);
 
             // Create and build the pipeline
-            pipeline.Broadcast(TopologyTypes.Tree, dataConverterConfig)
+            pipeline.Broadcast(TopologyTypes.Flat, dataConverterConfig)
                     .Build();
 
             // Build the subscription
@@ -156,9 +156,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
                         .Build())
-                    .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
-                        GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
-                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
                     .Build();
             }
             else

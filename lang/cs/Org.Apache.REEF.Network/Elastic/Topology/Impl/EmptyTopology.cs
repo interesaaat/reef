@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Tang.Implementations.Tang;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {

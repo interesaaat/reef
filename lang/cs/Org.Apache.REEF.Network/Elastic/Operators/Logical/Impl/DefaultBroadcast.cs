@@ -22,6 +22,10 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using System;
 using System.Globalization;
+using Org.Apache.REEF.Tang.Implementations.Tang;
+using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Tang.Util;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
