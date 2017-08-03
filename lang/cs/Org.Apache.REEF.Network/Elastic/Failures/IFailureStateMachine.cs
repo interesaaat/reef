@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         void SetThreashold(IFailureState level, float threshold);
 
-        void SetThreasholds(params Tuple<IFailureState, float>[] weights);
+        void SetThreasholds(Tuple<IFailureState, float>[] weights);
 
         int NumOfDataPoints { get; set; }
 

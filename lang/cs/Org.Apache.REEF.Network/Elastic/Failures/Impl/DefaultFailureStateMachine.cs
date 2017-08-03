@@ -134,7 +134,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             CheckConsistency();
         }
 
-        public void SetThreasholds(params Tuple<IFailureState, float>[] weights)
+        public void SetThreasholds(Tuple<IFailureState, float>[] weights)
         {
             if (!weights.All(weight => weight.Item1 is DefaultFailureState))
             {
