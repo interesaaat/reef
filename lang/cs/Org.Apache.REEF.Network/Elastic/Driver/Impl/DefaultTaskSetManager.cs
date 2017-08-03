@@ -185,11 +185,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 foreach (var sub in subs)
                 {
-                    sub.GetTaskConfiguration(ref confBuilder, i);
+                    ICsConfigurationBuilder confSubBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+
+                    sub.GetTaskConfiguration(ref confSubBuilder, i + 1);
+
+                   _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSubBuilder.Build());
                 }
 
-                IConfiguration serviceConfiguration = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
-                IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[i].TaskConfiguration, serviceConfiguration);
+                IConfiguration serviceConf = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
+
+                IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[i].TaskConfiguration, serviceConf);
 
                 _taskInfos[i].ActiveContext.SubmitTask(mergedTaskConf);
 

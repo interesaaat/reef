@@ -22,13 +22,43 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 {
     public sealed class ElasticServiceConfigurationOptions
     {
+        [NamedParameter("Number of Evaluators")]
+        public class NumEvaluators : Name<int>
+        {
+        }
+
+        [NamedParameter("Number of Servers")]
+        public class NumServers : Name<int>
+        {
+        }
+
+        [NamedParameter("Number of Workes")]
+        public class NumWorkers : Name<int>
+        {
+        }
+
+        [NamedParameter(Documentation = "Number of retry when a failure accurs", DefaultValue = "1")]
+        public class NumRetry : Name<int>
+        {
+        }
+
+        [NamedParameter(Documentation = "Starting port for TcpPortProvider", DefaultValue = "8900")]
+        public class StartingPort : Name<int>
+        {
+        }
+
+        [NamedParameter(Documentation = "Port Range count for TcpPortProvider", DefaultValue = "1000")]
+        public class PortRange : Name<int>
+        {
+        }
+
         [NamedParameter("Driver identifier")]
         public class DriverId : Name<string>
         {
         }
 
-        [NamedParameter("Group name", defaultValue: "Subscription1")]
-        public class SubscriptionName : Name<string>
+        [NamedParameter("Default Group name", defaultValue: "Subscription1")]
+        public class DefaultSubscriptionName : Name<string>
         {
         }
 
@@ -37,13 +67,8 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Serialized communication group configuration")]
-        public class SerializedGroupConfigs : Name<ISet<string>>
-        {
-        }
-
-        [NamedParameter("Serialized operator configuration")]
-        public class SerializedOperatorConfigs : Name<ISet<string>>
+        [NamedParameter("Serialized subscrptions configuration")]
+        public class SerializedSubscriptionConfigs : Name<ISet<string>>
         {
         }
     }

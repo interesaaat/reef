@@ -22,7 +22,6 @@ using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Network.Group.Pipelining.Impl;
-using Org.Apache.REEF.Network.Group.Topology;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -38,6 +37,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Network.Elastic.Topology;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -67,9 +67,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticBroadcastDriver(
-            [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
-            [Parameter(typeof(ElasticConfig.StartingPort))] int startingPort,
-            [Parameter(typeof(ElasticConfig.PortRange))] int portRange,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
             IElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
@@ -96,8 +96,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             ElasticOperator pipeline = subscription.RootOperator;
 
+            System.Threading.Thread.Sleep(30000);
+
             // Create and build the pipeline
-            pipeline.Broadcast(TopologyTypes.Tree, dataConverterConfig)
+            pipeline.Broadcast(TopologyTypes.Flat, dataConverterConfig)
                     .Build();
 
             // Build the subscription
@@ -154,14 +156,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
                         .Build())
-                    .BindNamedParameter<ElasticConfig.NumEvaluators, int>(
-                        GenericType<ElasticConfig.NumEvaluators>.Class,
-                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
                     .Build();
             }
             else
             {
-                if (id == 9 || id == 8 || id == 7)
+                if (id == 9 || id == 8)
                 {
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule

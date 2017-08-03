@@ -40,5 +40,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IConfiguration GetServiceConfiguration();
 
         IConfiguration GetTaskConfiguration(ICsConfigurationBuilder subscriptionsConf);
+
+        void SerializeSubscriptionConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration subscriptionConfiguration);
+
+        void SerializeOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration operatorConfiguration);
     }
 }

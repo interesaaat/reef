@@ -15,9 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Group.Config;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
@@ -28,6 +26,7 @@ using System.Threading;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Config;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -112,7 +111,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 _tasksAdded++;
 
-                if(_tasksAdded == _numTasks)
+                if (_tasksAdded == _numTasks)
                 {
                     RootOperator.BuildState();
                 }
@@ -155,8 +154,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             builder = builder
-                .BindSetEntry<GroupCommConfigurationOptions.CommunicationGroupNames, string>(
-                    GenericType<GroupCommConfigurationOptions.CommunicationGroupNames>.Class,
+                .BindNamedParameter<GroupCommConfigurationOptions.SubscriptionName, string>(
+                    GenericType<GroupCommConfigurationOptions.SubscriptionName>.Class,
                     _subscriptionName);
 
                 RootOperator.GetElasticTaskConfiguration(ref builder, taskId);

@@ -61,8 +61,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         [Inject]
         private DefaultTaskSetService(
             [Parameter(typeof(ElasticServiceConfigurationOptions.DriverId))] string driverId,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.SubscriptionName))] string defaultSubscriptionName,
-            [Parameter(typeof(ElasticConfig.NumEvaluators))] int numEvaluators,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.DefaultSubscriptionName))] string defaultSubscriptionName,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             AvroConfigurationSerializer configSerializer,
             INameServer nameServer,
             IFailureStateMachine defaultFailureStateMachine)
@@ -173,18 +173,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public IConfiguration GetTaskConfiguration(ICsConfigurationBuilder subscriptionsConf)
         {
-            var partialConf = subscriptionsConf
-                .BindNamedParameter<GroupCommConfigurationOptions.DriverId, string>(
-                    GenericType<GroupCommConfigurationOptions.DriverId>.Class,
+            return subscriptionsConf
+                .BindNamedParameter<ElasticServiceConfigurationOptions.DriverId, string>(
+                    GenericType<ElasticServiceConfigurationOptions.DriverId>.Class,
                     DriverId)
                 .Build();
-            var confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+        }
 
-            confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedGroupConfigs, string>(
-                GenericType<GroupCommConfigurationOptions.SerializedGroupConfigs>.Class,
-                _configSerializer.ToString(partialConf));
+        public void SerializeSubscriptionConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration subscriptionConfiguration)
+        {
+            confBuilder.BindSetEntry<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs, string>(
+                GenericType<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs>.Class,
+                _configSerializer.ToString(subscriptionConfiguration));
+        }
 
-            return confBuilder.Build();
+        public void SerializeOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration operatorConfiguration)
+        {
+            confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedOperatorConfigs, string>(
+                GenericType<GroupCommConfigurationOptions.SerializedOperatorConfigs>.Class,
+                _configSerializer.ToString(operatorConfiguration));
         }
 
         public IFailureState OnTaskFailure(IFailedTask value)

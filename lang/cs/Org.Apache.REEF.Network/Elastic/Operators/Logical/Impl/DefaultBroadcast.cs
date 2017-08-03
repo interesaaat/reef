@@ -20,6 +20,12 @@ using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using System;
+using System.Globalization;
+using Org.Apache.REEF.Tang.Implementations.Tang;
+using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Tang.Util;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -34,13 +40,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public DefaultBroadcast(
             int senderId, 
             ElasticOperator prev, 
-            TopologyTypes topologyType, 
+            ITopology topology, 
             IFailureStateMachine failureMachine, 
             CheckpointLevel checkpointLevel, 
             params IConfiguration[] configurations) : base(
                 null, 
-                prev, 
-                topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), 
+                prev,
+                topology, 
                 failureMachine,
                 checkpointLevel)
         {
@@ -53,6 +59,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 return _senderId;
             }
+        }
+
+        protected override string OperatorName
+        {
+            get { return _operator; }
         }
 
         protected int GenerateSenderTaskId()

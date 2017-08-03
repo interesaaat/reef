@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology
@@ -33,5 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology
         void Build();
 
         void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId);
+
+        string LogTopologyState();
     }
 }

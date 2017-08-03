@@ -27,9 +27,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
         {
         }
 
-        public bool AddTask(string taskId)
+        public int AddTask(string taskId)
         {
-            return true;
+            return 1;
         }
 
         public int RemoveTask(string taskId)
@@ -43,6 +43,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
+        }
+
+        public string LogTopologyState()
+        {
+            return "forest";
         }
     }
 }

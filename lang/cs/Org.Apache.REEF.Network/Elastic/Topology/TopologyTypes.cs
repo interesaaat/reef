@@ -15,31 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
-using Org.Apache.REEF.Tang.Annotations;
-
-namespace Org.Apache.REEF.Network.Elastic.Config
+namespace Org.Apache.REEF.Network.Elastic.Topology
 {
-    public sealed class GroupCommConfigurationOptions
+    public enum TopologyTypes
     {
-        [NamedParameter("Serialized operator configuration")]
-        public class SerializedOperatorConfigs : Name<ISet<string>>
-        {
-        }
-
-        [NamedParameter("Id of root task in operator topology")]
-        public class TopologyRootTaskId : Name<int>
-        {
-        }
-
-        [NamedParameter("Ids of child tasks in operator topology")]
-        public class TopologyChildTaskIds : Name<ISet<int>>
-        {
-        }
-
-        [NamedParameter("Name of the subscriptions")]
-        public class SubscriptionName : Name<string>
-        {
-        }
+        Flat = 0,
+        Tree = 1,
+        Forest = 2
     }
 }
