@@ -53,9 +53,17 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Elastic\Clients\Impl\NetworkLayer.cs" />
+    <Compile Include="Elastic\Clients\Impl\DefaultCommunicationLayer.cs" />
+    <Compile Include="Elastic\Clients\Impl\DefaultTaskSetSubscription.cs" />
+    <Compile Include="Elastic\Clients\Impl\DefaultTaskSetService.cs" />
+    <Compile Include="Elastic\Clients\ICommunicationLayer.cs" />
+    <Compile Include="Elastic\Clients\Impl\GroupCommunicationMessage.cs" />
+    <Compile Include="Elastic\Clients\IRegistration.cs" />
+    <Compile Include="Elastic\Clients\ITracker.cs" />
     <Compile Include="Elastic\Config\OperatorsConfiguration.cs" />
     <Compile Include="Elastic\Config\ElasticServiceConfigurationOptions.cs" />
-    <Compile Include="Elastic\Config\GroupCommConfigurationOptions.cs" />
+    <Compile Include="Elastic\Config\GroupCommunicationConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfiguration.cs" />
@@ -84,6 +92,7 @@ under the License.
     <Compile Include="Elastic\Failures\IFailureStateMachine.cs" />
     <Compile Include="Elastic\Failures\IFailureResponse.cs" />
     <Compile Include="Elastic\Driver\ITaskSetManager.cs" />
+    <Compile Include="Elastic\Operators\Constants.cs" />
     <Compile Include="Elastic\Operators\Functions.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetService.cs" />
@@ -94,6 +103,9 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperator.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticEmpty.cs" />
     <Compile Include="Elastic\Operators\Logical\IReduceFunction.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticBroadcast.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultBroadcast.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IReceiver.cs" />
     <Compile Include="Elastic\Operators\Physical\ISender.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticIterator.cs" />
@@ -101,6 +113,8 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\IElasticBroadcast.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticReduce.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticScatter.cs" />
+    <Compile Include="Elastic\Clients\IElasticTaskSetService.cs" />
+    <Compile Include="Elastic\Clients\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Topology\DataNodeState.cs" />
     <Compile Include="Elastic\Topology\Impl\EmptyTopology.cs" />
     <Compile Include="Elastic\Topology\Impl\DataNode.cs" />
@@ -247,9 +261,7 @@ under the License.
       <Name>Org.Apache.REEF.Wake</Name>
     </ProjectReference>
   </ItemGroup>
-  <ItemGroup>
-    <Folder Include="Elastic\Operators\Physical\Impl\" />
-  </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
   <Import Project="$(PackagesDir)\StyleCop.MSBuild.$(StyleCopVersion)\build\StyleCop.MSBuild.Targets" Condition="Exists('$(PackagesDir)\StyleCop.MSBuild.$(StyleCopVersion)\build\StyleCop.MSBuild.Targets')" />

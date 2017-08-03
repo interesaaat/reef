@@ -69,11 +69,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         private readonly IElasticTaskSetService _service;
 
-        IElasticTaskSetSubscription _serversSubscription;
+        private readonly IElasticTaskSetSubscription _serversSubscription;
 
-        IElasticTaskSetSubscription _serverA;
-        IElasticTaskSetSubscription _serverB;
-        IElasticTaskSetSubscription _serverC;
+        private readonly IElasticTaskSetSubscription _serverA;
+        private readonly IElasticTaskSetSubscription _serverB;
+        private readonly IElasticTaskSetSubscription _serverC;
 
         private readonly ITaskSetManager _serversTaskManager;
 
@@ -126,7 +126,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast(1, new FlatTopology(1))
+                    .Broadcast<int>(1, new FlatTopology(1))
                     .Build();
 
             _serversSubscription = subscription.Build();
@@ -135,7 +135,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline = subscription.RootOperator;
 
-            pipeline.Broadcast(1, new TreeTopology(1, 2, true),
+            pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)
@@ -152,7 +152,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline = subscription.RootOperator;
 
-            pipeline.Broadcast(2, new TreeTopology(1, 2, true),
+            pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)
@@ -169,7 +169,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline = subscription.RootOperator;
 
-            pipeline.Broadcast(3, new TreeTopology(1, 2, true),
+            pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)

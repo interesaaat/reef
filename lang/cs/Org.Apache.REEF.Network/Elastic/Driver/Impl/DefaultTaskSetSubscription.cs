@@ -154,8 +154,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             builder = builder
-                .BindNamedParameter<GroupCommConfigurationOptions.SubscriptionName, string>(
-                    GenericType<GroupCommConfigurationOptions.SubscriptionName>.Class,
+                .BindNamedParameter<GroupCommunicationConfigurationOptions.SubscriptionName, string>(
+                    GenericType<GroupCommunicationConfigurationOptions.SubscriptionName>.Class,
                     _subscriptionName);
 
                 RootOperator.GetElasticTaskConfiguration(ref builder, taskId);

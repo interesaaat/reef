@@ -14,22 +14,15 @@
 // KIND, either express or implied.  See the License for the
 // specific language governing permissions and limitations
 // under the License.
-
-using System.Threading;
-
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
+namespace Org.Apache.REEF.Network.Elastic.Operators
 {
-    /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
-    /// </summary>
-    /// <typeparam name="T">The type of data being sent.</typeparam>
-    internal interface IReceiver<T>
+    public static class Constants
     {
-        /// <summary>
-        /// Receive a message from parent BroadcastSender.
-        /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        /// <returns>The incoming message</returns>
-        T Receive(CancellationTokenSource cancellationSource = null);
+        public const string Broadcast = "broadcast";
+        public const string Reduce = "reduce";
+        public const string Iterate = "iterate";
+        public const string Scatter = "scatter";
+        public const string Gather = "gather";
+        public const string Empty = "empty";
     }
 }

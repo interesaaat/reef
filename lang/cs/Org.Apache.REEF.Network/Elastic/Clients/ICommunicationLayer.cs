@@ -15,21 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Clients.Impl;
+using Org.Apache.REEF.Tang.Annotations;
+using System.Collections.Generic;
 using System.Threading;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
+namespace Org.Apache.REEF.Network.Elastic.Clients
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Contains an Operator's topology graph.
+    /// Used to send or receive messages to/from operators in the same
+    /// Communication Group.
     /// </summary>
-    /// <typeparam name="T">The type of data being sent.</typeparam>
-    internal interface IReceiver<T>
+    [DefaultImplementation(typeof(DefaultCommunicationLayer))]
+    public interface ICommunicationLayer : IRegistration
     {
         /// <summary>
-        /// Receive a message from parent BroadcastSender.
+        /// Sends the data to neighbours.
         /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        /// <returns>The incoming message</returns>
-        T Receive(CancellationTokenSource cancellationSource = null);
+        /// <param name="message">The data to send</param>
+        /// <param name="type">The message type</param>
+        void Send(object[] data);
+
+        IEnumerator<object> Receive(CancellationTokenSource cancellationSource);
     }
 }

@@ -27,6 +27,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
+        [NamedParameter("Type of the message")]
+        public class MessageType : Name<string>
+        {
+        }
+
         [NamedParameter("Operator Id")]
         public class OperatorId : Name<int>
         {

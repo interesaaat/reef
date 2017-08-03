@@ -116,7 +116,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast(TopologyTypes.Tree,
+                    .Broadcast<int>(TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         dataConverterConfig)

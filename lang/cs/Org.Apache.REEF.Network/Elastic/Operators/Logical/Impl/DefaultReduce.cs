@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultReduce : ElasticOperatorWithDefaultDispatcher, IElasticReduce
     {
-        private const string _operator = "reduce";
+        private const string _operator = Constants.Reduce;
         private int _receiverId;
 
         public DefaultReduce(
@@ -73,6 +73,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected new bool IsMasterTaskId(int taskId)
         {
             return _receiverId == taskId;
+        }
+
+        protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
+        {
         }
     }
 }

@@ -189,8 +189,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SerializeOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration operatorConfiguration)
         {
-            confBuilder.BindSetEntry<GroupCommConfigurationOptions.SerializedOperatorConfigs, string>(
-                GenericType<GroupCommConfigurationOptions.SerializedOperatorConfigs>.Class,
+            confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs, string>(
+                GenericType<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs>.Class,
                 _configSerializer.ToString(operatorConfiguration));
         }
 

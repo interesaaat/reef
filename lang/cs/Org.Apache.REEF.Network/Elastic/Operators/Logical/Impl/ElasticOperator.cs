@@ -201,23 +201,23 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public abstract ElasticOperator Broadcast(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator Broadcast<T>(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
-        public ElasticOperator Broadcast(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast<T>(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
             var senderId = GenerateMasterTaskId();
-            return Broadcast(senderId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Broadcast<T>(senderId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
-        public ElasticOperator Broadcast(TopologyTypes topologyType, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast<T>(TopologyTypes topologyType, params IConfiguration[] configurations)
         {
             var senderId = GenerateMasterTaskId();
-            return Broadcast(GenerateMasterTaskId(), topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(GenerateMasterTaskId(), topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
-        public ElasticOperator Broadcast(int senderTaskId, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast<T>(int senderTaskId, params IConfiguration[] configurations)
         {
-            return Broadcast(senderTaskId, new FlatTopology(senderTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(senderTaskId, new FlatTopology(senderTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public abstract ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
@@ -288,16 +288,28 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             _topology.GetTaskConfiguration(ref operatorBuilder, taskId);
 
+            PhysicalOperatorConfiguration(ref operatorBuilder);
+
             IConfiguration operatorConf = operatorBuilder
-                .BindNamedParameter<OperatorsConfiguration.OperatorType, string>(
-                    GenericType<OperatorsConfiguration.OperatorType>.Class,
-                    OperatorName)
                 .BindNamedParameter<OperatorsConfiguration.OperatorId, int>(
                     GenericType<OperatorsConfiguration.OperatorId>.Class,
                     _id.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             Subscription.Service.SerializeOperatorConfiguration(ref confBuilder, operatorConf);
+        }
+
+        protected abstract void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder);
+
+        protected static void SetMessageType(Type operatorType, ICsConfigurationBuilder confBuilder)
+        {
+            if (operatorType.IsGenericType)
+            {
+                var genericTypes = operatorType.GenericTypeArguments;
+                var msgType = genericTypes[0];
+                confBuilder.BindNamedParameter<OperatorsConfiguration.MessageType, string>(
+                    GenericType<OperatorsConfiguration.MessageType>.Class, msgType.AssemblyQualifiedName);
+            }
         }
 
         protected virtual void LogOperatorState()

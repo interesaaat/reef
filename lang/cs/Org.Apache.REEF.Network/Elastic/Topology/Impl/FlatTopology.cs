@@ -147,16 +147,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 {
                     if (tId.TaskId != _rootId)
                     {
-                        confBuilder.BindSetEntry<GroupCommConfigurationOptions.TopologyChildTaskIds, int>(
-                            GenericType<GroupCommConfigurationOptions.TopologyChildTaskIds>.Class,
+                        confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.TopologyChildTaskIds, int>(
+                            GenericType<GroupCommunicationConfigurationOptions.TopologyChildTaskIds>.Class,
                             tId.TaskId.ToString(CultureInfo.InvariantCulture));
                     }
                 }
             }
             else
             {
-                confBuilder.BindNamedParameter<GroupCommConfigurationOptions.TopologyRootTaskId, int>(
-                        GenericType<GroupCommConfigurationOptions.TopologyRootTaskId>.Class,
+                confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
+                        GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
                         _rootId.ToString(CultureInfo.InvariantCulture));
             }
         }

@@ -15,13 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Physical.Operators
+namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
     /// Group Communication Operator used to send messages to child Tasks.
     /// </summary>
-    /// <typeparam name="T">The message type</typeparam>
-    public interface ISender<T>
+    /// <typeparam name="T">The data type</typeparam>
+    internal interface ISender<T>
     {
         /// <summary>
         /// Send the data to all BroadcastReceivers.

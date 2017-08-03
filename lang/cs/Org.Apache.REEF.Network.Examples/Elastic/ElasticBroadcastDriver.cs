@@ -96,10 +96,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             ElasticOperator pipeline = subscription.RootOperator;
 
-            System.Threading.Thread.Sleep(30000);
-
             // Create and build the pipeline
-            pipeline.Broadcast(TopologyTypes.Flat, dataConverterConfig)
+            pipeline.Broadcast<int>(TopologyTypes.Flat, dataConverterConfig)
                     .Build();
 
             // Build the subscription
@@ -107,6 +105,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create the task manager
             _taskManager = new DefaultTaskSetManager(_numEvaluators);
+
+            System.Threading.Thread.Sleep(10000);
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);
@@ -154,7 +154,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
                         .Build())
                     .Build();
             }
@@ -165,7 +165,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<HelloDieSlaveTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
                         .Build())
                     .Build();
                 }

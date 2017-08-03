@@ -16,40 +16,36 @@
 // under the License.
 
 using System;
-using System.Diagnostics;
-using System.Linq;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Network.Group.Task;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Network.Examples.GroupCommunication;
+using Org.Apache.REEF.Network.Elastic.Clients;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     public class BroadcastMasterTask : ITask
     {
-        private readonly IGroupCommClient _groupCommClient;
-        private readonly ICommunicationGroupClient _commGroup;
-        private readonly IBroadcastSender<int> _broadcastSender;
+        private readonly IElasticTaskSetService _serviceClient;
+        //// private readonly IElasticTaskSetSubscription _subscriptionClient;
+        //// private readonly IBroadcastSender<int> _broadcastSender;
 
         [Inject]
         public BroadcastMasterTask(
-            IGroupCommClient groupCommClient)
+            IElasticTaskSetService serviceClient)
         {
-            _groupCommClient = groupCommClient;
+            _serviceClient = serviceClient;
 
-            _commGroup = groupCommClient.GetCommunicationGroup(GroupTestConstants.GroupName);
-            _broadcastSender = _commGroup.GetBroadcastSender<int>(GroupTestConstants.BroadcastOperatorName);
+           //// _subscriptionClient = _serviceClient.GetCommunicationGroup("Broadcast");
+           //// _broadcastSender = _serviceClient.GetBroadcastSender<int>(GroupTestConstants.BroadcastOperatorName);
         }
 
         public byte[] Call(byte[] memento)
         {
-            _groupCommClient.Initialize();
+            _serviceClient.Initialize();
 
             var number = new Random().Next();
 
-            _broadcastSender.Send(number);
+           //// _broadcastSender.Send(number);
 
             Console.WriteLine("Master has sent {0}", number);
 
@@ -58,7 +54,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void Dispose()
         {
-            _groupCommClient.Dispose();
+            _serviceClient.Dispose();
 
             Console.WriteLine("Disposed.");
         }

@@ -15,26 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Group.Topology;
-using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using System;
-using System.Globalization;
-using Org.Apache.REEF.Tang.Implementations.Tang;
-using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Util;
-using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
     /// Broadcast operator implementation.
     /// </summary>
-    class DefaultBroadcast : ElasticOperatorWithDefaultDispatcher, IElasticBroadcast
+    class DefaultBroadcast<T> : ElasticOperatorWithDefaultDispatcher, IElasticBroadcast
     {
-        private const string _operator = "broadcast";
+        private const string _operator = Constants.Broadcast;
         private int _senderId;
     
         public DefaultBroadcast(
@@ -80,6 +74,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected new bool IsMasterTaskId(int taskId)
         {
             return _senderId == taskId;
+        }
+
+        protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
+        {
+            confBuilder.BindImplementation(GenericType<IElasticOperator<T>>.Class, GenericType<Physical.Impl.DefaultBroadcast<T>>.Class);
+            SetMessageType(typeof(Physical.Impl.DefaultBroadcast<T>), confBuilder);
         }
     }
 }

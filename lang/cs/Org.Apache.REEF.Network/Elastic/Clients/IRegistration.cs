@@ -15,31 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
-using Org.Apache.REEF.Tang.Annotations;
+using System.Threading;
 
-namespace Org.Apache.REEF.Network.Elastic.Config
+namespace Org.Apache.REEF.Network.Elastic.Clients
 {
-    public sealed class GroupCommConfigurationOptions
+    public interface IRegistration
     {
-        [NamedParameter("Serialized operator configuration")]
-        public class SerializedOperatorConfigs : Name<ISet<string>>
-        {
-        }
-
-        [NamedParameter("Id of root task in operator topology")]
-        public class TopologyRootTaskId : Name<int>
-        {
-        }
-
-        [NamedParameter("Ids of child tasks in operator topology")]
-        public class TopologyChildTaskIds : Name<ISet<int>>
-        {
-        }
-
-        [NamedParameter("Name of the subscriptions")]
-        public class SubscriptionName : Name<string>
-        {
-        }
+        /// <summary>
+        /// Call each Operator to ensure all the nodes in the topology group has been registered
+        /// </summary>
+        void WaitingForRegistration(CancellationTokenSource cancellationSource);
     }
 }

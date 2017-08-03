@@ -15,21 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
 using System.Threading;
+using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Network.Elastic.Clients.Impl;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
+namespace Org.Apache.REEF.Network.Elastic.Clients
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Used by Tasks to fetch CommunicationGroupClients.
     /// </summary>
-    /// <typeparam name="T">The type of data being sent.</typeparam>
-    internal interface IReceiver<T>
+    [DefaultImplementation(typeof(DefaultTaskSetService))]
+    public interface IElasticTaskSetService : IDisposable
     {
         /// <summary>
-        /// Receive a message from parent BroadcastSender.
+        /// Gets the CommunicationGroupClient with the given group name.
         /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        /// <returns>The incoming message</returns>
-        T Receive(CancellationTokenSource cancellationSource = null);
+        /// <param name="groupName">The name of the CommunicationGroupClient</param>
+        /// <returns>The configured CommunicationGroupClient</returns>
+        IElasticTaskSetSubscription GetSubscription(string groupName);
+
+        /// <summary>
+        /// Initialization for group communications
+        /// </summary>
+        /// <param name="cancellationSource"></param>
+        void Initialize(CancellationTokenSource cancellationSource = null);
     }
 }

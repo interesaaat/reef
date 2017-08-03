@@ -69,14 +69,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                 parentId = parent.TaskId;
             }
 
-            confBuilder.BindNamedParameter<GroupCommConfigurationOptions.TopologyRootTaskId, int>(
-                    GenericType<GroupCommConfigurationOptions.TopologyRootTaskId>.Class,
+            confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
+                    GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
                     parentId.ToString(CultureInfo.InvariantCulture));
 
             foreach (DataNode childNode in selfTaskNode.Children)
             {
-                confBuilder.BindSetEntry<GroupCommConfigurationOptions.TopologyChildTaskIds, int>(
-                    GenericType<GroupCommConfigurationOptions.TopologyChildTaskIds>.Class,
+                confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.TopologyChildTaskIds, int>(
+                    GenericType<GroupCommunicationConfigurationOptions.TopologyChildTaskIds>.Class,
                     childNode.TaskId.ToString(CultureInfo.InvariantCulture));
             }
         }

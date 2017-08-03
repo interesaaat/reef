@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultIterate : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
-        private const string _operator = "iterate";
+        private const string _operator = Constants.Iterate;
     
         public DefaultIterate(
             int masterTaskId,
@@ -49,6 +49,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected override string OperatorName
         {
             get { return _operator; }
+        }
+
+        protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
+        {
         }
     }
 }
