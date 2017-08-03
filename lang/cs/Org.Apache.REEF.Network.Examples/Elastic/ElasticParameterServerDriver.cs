@@ -68,11 +68,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         private readonly IElasticTaskSetService _service;
 
-        IElasticTaskSetSubscription _serversSubscription;
+        private readonly IElasticTaskSetSubscription _serversSubscription;
 
-        IElasticTaskSetSubscription _serverA;
-        IElasticTaskSetSubscription _serverB;
-        IElasticTaskSetSubscription _serverC;
+        private readonly IElasticTaskSetSubscription _serverA;
+        private readonly IElasticTaskSetSubscription _serverB;
+        private readonly IElasticTaskSetSubscription _serverC;
 
         private readonly ITaskSetManager _serversTaskManager;
 
