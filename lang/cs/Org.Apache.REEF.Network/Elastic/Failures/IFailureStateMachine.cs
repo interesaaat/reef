@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -36,6 +37,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         IFailureStateMachine Build();
 
         IFailureState State { get; }
+
+        void SetThreashold(IFailureState level, float threshold);
+
+        void SetThreasholds(Tuple<IFailureState, float>[] weights);
 
         int NumOfDataPoints { get; set; }
 
