@@ -15,8 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Clients;
-
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>

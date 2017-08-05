@@ -17,9 +17,8 @@
 
 using System;
 using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Clients;
+using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

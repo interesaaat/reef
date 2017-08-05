@@ -17,7 +17,7 @@
 
 using System.Threading;
 
-namespace Org.Apache.REEF.Network.Elastic.Clients
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
     public interface IRegistration
     {

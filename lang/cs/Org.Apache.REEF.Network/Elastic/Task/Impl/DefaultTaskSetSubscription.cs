@@ -8,11 +8,10 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using System.Linq;
 
-namespace Org.Apache.REEF.Network.Elastic.Clients
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    public class DefaultTaskSetSubscription : IElasticTaskSetSubscription
+    internal class DefaultTaskSetSubscription : IElasticTaskSetSubscription
     {
         private readonly string _name;
         private readonly IDictionary<int, object> _operators;
@@ -85,11 +84,6 @@ namespace Org.Apache.REEF.Network.Elastic.Clients
         }
 
         public IScatterSender<T> GetScatterSender<T>(string operatorName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public ITracker CreateTracker()
         {
             throw new NotImplementedException();
         }

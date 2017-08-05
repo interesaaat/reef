@@ -151,8 +151,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public IConfiguration GetServiceConfiguration()
         {
             IConfiguration serviceConfig = ServiceConfiguration.ConfigurationModule
-                .Set(
-                    ServiceConfiguration.Services, 
+                .Set(ServiceConfiguration.Services, 
                     GenericType<StreamingNetworkService<GeneralGroupCommunicationMessage>>.Class)
                 .Build();
 

@@ -19,7 +19,7 @@ using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Network.Group.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Elastic.Clients
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
     ///  Used by Tasks to fetch Operators in the subscriptions configured by the driver.
@@ -31,11 +31,6 @@ namespace Org.Apache.REEF.Network.Elastic.Clients
         /// Returns the subscription name
         /// </summary>
         string SubscriptionName { get; }
-
-        /// <summary>
-        /// Returns a tracker object for this subscription
-        /// </summary>
-        ITracker CreateTracker();
 
         /// <summary>
         /// Gets the BroadcastSender with the given name and message type.

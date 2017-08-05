@@ -18,9 +18,9 @@
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities.Attributes;
-using Org.Apache.REEF.Network.Elastic.Clients;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System;
+using Org.Apache.REEF.Network.Elastic.Topology.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -30,7 +30,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <typeparam name="T">The type of message being sent.</typeparam>
     public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
     {
-        private readonly ICommunicationLayer _commLayer;
+        private readonly IOperatorTopology _topLayer;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -40,11 +40,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultBroadcast(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
-            ICommunicationLayer commLayer)
+            IOperatorTopology topLayer)
         {
             OperatorName = "broadcast";
             OperatorId = id;
-            _commLayer = commLayer;
+            _topLayer = topLayer;
         }
 
         /// <summary>
@@ -61,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
-            var objs = _commLayer.Receive(cancellationSource);
+            var objs = _topLayer.Receive(cancellationSource);
 
             objs.MoveNext();
             return (T)objs.Current;
@@ -69,12 +69,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void Send(T data)
         {
-            _commLayer.Send(new object[] { data });
+            _topLayer.Send(new object[] { data });
         }
 
         public void WaitingForRegistration(CancellationTokenSource cancellationSource)
         {
-            _commLayer.WaitingForRegistration(cancellationSource);
+            _topLayer.WaitingForRegistration(cancellationSource);
         }
     }
 }

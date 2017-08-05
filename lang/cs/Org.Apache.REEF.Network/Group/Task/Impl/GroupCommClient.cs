@@ -31,7 +31,7 @@ using Org.Apache.REEF.Wake.Remote.Impl;
 namespace Org.Apache.REEF.Network.Group.Task.Impl
 {
     /// <summary>
-    /// Used by Tasks to fetch CommunicationGroupClients.
+    /// Used by Tasks to fetch CommunicationGroupTask.
     /// Writable version
     /// </summary>
     public sealed class GroupCommClient : IGroupCommClient

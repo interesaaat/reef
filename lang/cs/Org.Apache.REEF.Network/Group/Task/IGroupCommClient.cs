@@ -23,7 +23,7 @@ using Org.Apache.REEF.Tang.Annotations;
 namespace Org.Apache.REEF.Network.Group.Task
 {
     /// <summary>
-    /// Used by Tasks to fetch CommunicationGroupClients.
+    /// Used by Tasks to fetch CommunicationGroupTask.
     /// </summary>
     [DefaultImplementation(typeof(GroupCommClient))]
     public interface IGroupCommClient : IDisposable

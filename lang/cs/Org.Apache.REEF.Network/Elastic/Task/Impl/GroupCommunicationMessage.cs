@@ -15,9 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
-namespace Org.Apache.REEF.Network.Elastic.Clients.Impl
+namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
     /// Messages sent by MPI Operators. This is the class inherited by 
@@ -34,36 +32,20 @@ namespace Org.Apache.REEF.Network.Elastic.Clients.Impl
         /// <param name="destination">The message destination</param>
         /// <param name="messageType">The type of the GC message</param>
         protected GroupCommunicationMessage(
-            string groupName,
-            string operatorName,
-            string source,
-            string destination,
-            Type messageType)
+            string subscriptionName,
+            int operatorId)
         {
-            GroupName = groupName;
-            OperatorName = operatorName;
-            Source = source;
-            Destination = destination;
+            SubscriptionName = subscriptionName;
+            OperatorId = operatorId;
         }
 
         /// <summary>
-        /// Returns the Communication Group name.
-        /// </summary>
-        internal string GroupName { get; private set; }
+        /// Returns the Subscription
+        internal string SubscriptionName { get; private set; }
 
         /// <summary>
-        /// Returns the MPI Operator name.
+        /// Returns the Operator id.
         /// </summary>
-        internal string OperatorName { get; private set; }
-
-        /// <summary>
-        /// Returns the source of the message.
-        /// </summary>
-        internal string Source { get; private set; }
-
-        /// <summary>
-        /// Returns the destination of the message.
-        /// </summary>
-        internal string Destination { get; private set; }
+        internal int OperatorId { get; private set; }
     }
 }

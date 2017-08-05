@@ -16,17 +16,34 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Task;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
+using Org.Apache.REEF.Network.Group.Driver.Impl;
+using Org.Apache.REEF.Tang.Annotations;
+using System.Collections.Generic;
+using System.Threading;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
+namespace Org.Apache.REEF.Network.Elastic.Topology.Task
 {
     /// <summary>
-    /// Group Communication operator used to receive and reduce messages.
+    /// Contains an Operator's topology graph.
+    /// Used to send or receive messages to/from operators in the same
+    /// Communication Group.
     /// </summary>
-    public interface IElasticOperator<T> : IRegistration
+    [DefaultImplementation(typeof(OperatorTopology))]
+    internal interface IOperatorTopology : IRegistration
     {
         /// <summary>
-        /// The operator name.
+        /// Sends the data to neighbours.
         /// </summary>
-        string OperatorName { get; }
+        /// <param name="message">The data to send</param>
+        /// <param name="type">The message type</param>
+        void Send(object[] data);
+
+        IEnumerator<object> Receive(CancellationTokenSource cancellationSource);
+
+        string SubscriptionName { get; }
+
+        int OperatorId { get; }
     }
 }

@@ -966,6 +966,7 @@ namespace Org.Apache.REEF.Tang.Implementations.InjectionPlan
             {
                 injector.BindAspect(old.aspect.CreateChildAspect());
             }
+
             return injector;
         }
 

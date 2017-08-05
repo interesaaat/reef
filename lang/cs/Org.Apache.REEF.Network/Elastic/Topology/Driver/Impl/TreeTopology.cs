@@ -21,7 +21,6 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Util;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
 using System.Linq;
 

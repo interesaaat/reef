@@ -15,28 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Clients.Impl;
-using Org.Apache.REEF.Tang.Annotations;
-using System.Collections.Generic;
-using System.Threading;
-
-namespace Org.Apache.REEF.Network.Elastic.Clients
+namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Contains an Operator's topology graph.
-    /// Used to send or receive messages to/from operators in the same
-    /// Communication Group.
+    /// Messages sent by MPI Operators. This is the class inherited by 
+    /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    [DefaultImplementation(typeof(DefaultCommunicationLayer))]
-    public interface ICommunicationLayer : IRegistration
+    public class DataMessage : GroupCommunicationMessage
     {
-        /// <summary>
-        /// Sends the data to neighbours.
-        /// </summary>
-        /// <param name="message">The data to send</param>
-        /// <param name="type">The message type</param>
-        void Send(object[] data);
+        public DataMessage(
+            string subscriptionName,
+            int operatorId,
+            object data) : base(subscriptionName, operatorId)
+        {
+            Data = data;
+        }
 
-        IEnumerator<object> Receive(CancellationTokenSource cancellationSource);
+        public DataMessage(
+           string subscriptionName,
+           int operatorId) : base(subscriptionName, operatorId)
+        {
+        }
+
+        internal object Data { get; set; }
     }
 }

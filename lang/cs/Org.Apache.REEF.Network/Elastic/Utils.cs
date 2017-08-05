@@ -1,18 +1,8 @@
 ﻿using Org.Apache.REEF.Driver.Context;
-using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Tang.Implementations.Tang;
-using Org.Apache.REEF.Tang.Interface;
-using Org.Apache.REEF.Tang.Util;
-using Org.Apache.REEF.Utilities.Logging;
 using System;
-using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
+namespace Org.Apache.REEF.Network.Elastic
 {
     /// <summary>
     /// Utility class.

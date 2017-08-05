@@ -18,12 +18,12 @@
 using System;
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Clients.Impl;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
-namespace Org.Apache.REEF.Network.Elastic.Clients
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    /// Used by Tasks to fetch CommunicationGroupClients.
+    /// Used by Tasks to fetch CommunicationGroupTask.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetService))]
     public interface IElasticTaskSetService : IDisposable

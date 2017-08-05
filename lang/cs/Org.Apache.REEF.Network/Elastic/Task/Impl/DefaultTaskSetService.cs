@@ -26,17 +26,18 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Group.Driver.Impl;
+using Org.Apache.REEF.Tang.Util;
 
-namespace Org.Apache.REEF.Network.Elastic.Clients.Impl
+namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Used by Tasks to fetch Subscription clients.
+    /// Used by Tasks to fetch Subscription Task.
     /// </summary>
-    public sealed class DefaultTaskSetService : IElasticTaskSetService
+    internal sealed class DefaultTaskSetService : IElasticTaskSetService
     {
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
 
-        private readonly INetworkService<GeneralGroupCommunicationMessage> _networkService;
+        private readonly INetworkService<GroupCommunicationMessage> _networkService;
 
         /// <summary>
         /// Shows if the object has been disposed.
@@ -55,18 +56,23 @@ namespace Org.Apache.REEF.Network.Elastic.Clients.Impl
         public DefaultTaskSetService(
             [Parameter(typeof(ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs))] ISet<string> subscriptionConfigs,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            StreamingNetworkService<GeneralGroupCommunicationMessage> networkService,
+            StreamingNetworkService<GroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
-            IInjector injector)
+            IInjector injector,
+            CommunicationLayer commLayer)
         {
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _networkService = networkService;
 
+            // Make sure that each subscription uses the same communication layer
+            injector.BindVolatileInstance(GenericType<CommunicationLayer>.Class, commLayer);
+
             foreach (string serializedGroupConfig in subscriptionConfigs)
             {
                 IConfiguration subscriptionConfig = configSerializer.FromString(serializedGroupConfig);
-                IInjector groupInjector = injector.ForkInjector(subscriptionConfig);
-                var subscriptionClient = groupInjector.GetInstance<IElasticTaskSetSubscription>();
+                IInjector subInjector = injector.ForkInjector(subscriptionConfig);
+                var subscriptionClient = subInjector.GetInstance<IElasticTaskSetSubscription>();
+
                 _subscriptions[subscriptionClient.SubscriptionName] = subscriptionClient;
             }
 
@@ -86,10 +92,10 @@ namespace Org.Apache.REEF.Network.Elastic.Clients.Impl
                     subscription.WaitingForRegistration(cancellationSource);
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Dispose();
-                throw;
+                throw e;
             }
         }
 

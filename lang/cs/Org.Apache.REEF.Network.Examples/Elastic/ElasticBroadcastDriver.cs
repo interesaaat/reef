@@ -38,6 +38,7 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Topology;
+using Org.Apache.REEF.Network.Elastic;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -165,7 +166,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
                         .Build())
                     .Build();
                 }
