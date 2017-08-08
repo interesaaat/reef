@@ -26,7 +26,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Create new CommunicationGroupMessage.
         /// </summary>
-        /// <param name="groupName">The name of the communication group</param>
         /// <param name="operatorName">The name of the MPI operator</param>
         /// <param name="source">The message source</param>
         /// <param name="destination">The message destination</param>

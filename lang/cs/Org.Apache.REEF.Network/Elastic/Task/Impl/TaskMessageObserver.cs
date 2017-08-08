@@ -48,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Registers a node associated with the Task.
         /// </summary>
-        public void RegisterNodeObserver(OperatorTopology observer)
+        public void RegisterNodeObserver<T>(OperatorTopology<T> observer)
         {
             _observers.Add(NodeObserverIdentifier.FromObserver(observer), observer);
         }

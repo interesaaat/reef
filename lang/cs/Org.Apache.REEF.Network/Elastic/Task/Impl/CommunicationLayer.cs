@@ -28,6 +28,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Threading;
 using System.Runtime.Remoting;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
+using Org.Apache.REEF.Tang.Implementations.InjectionPlan;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -42,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _timeout;
         private readonly int _retryCount;
         private readonly int _sleepTime;
-        private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
+        private readonly IInjectionFuture<StreamingNetworkService<GroupCommunicationMessage>> _networkService;
         private readonly IIdentifierFactory _idFactory;
 
         private readonly ConcurrentDictionary<string, TaskMessageObserver> _taskMessageObservers =
@@ -62,7 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryCount,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
-            StreamingNetworkService<GroupCommunicationMessage> networkService,
+            IInjectionFuture<StreamingNetworkService<GroupCommunicationMessage>> networkService,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -77,10 +78,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// If the <see cref="TaskMessageObserver"/> has already been initialized, it will return
         /// the existing one.
         /// </summary>
-        public void RegisterOperatorTopologyForTask(string taskSourceId, OperatorTopology topLayer)
+        public void RegisterOperatorTopologyForTask<T>(string taskSourceId, OperatorTopology<T> topLayer)
         {
             // Add a TaskMessage observer for each upstream/downstream source.
-            var taskObserver = _taskMessageObservers.GetOrAdd(taskSourceId, new TaskMessageObserver(_networkService));
+            var taskObserver = _taskMessageObservers.GetOrAdd(taskSourceId, new TaskMessageObserver(_networkService.Get()));
             taskObserver.RegisterNodeObserver(topLayer);
         }
 
@@ -99,13 +100,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 throw new ArgumentException("Message destination cannot be null or empty");
             }
-            if (message.GetType() == typeof(DataMessage) && ((DataMessage)message).Data == null)
-            {
-                throw new ArgumentException("Message data cannot be null use a control message instead");
-            }
 
             IIdentifier destId = _idFactory.Create(destination);
-            var conn = _networkService.NewConnection(destId);
+            var conn = _networkService.Get().NewConnection(destId);
+
             conn.Open();
             conn.Write(message);
         }
@@ -136,6 +134,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 });
         }
 
+        internal bool IsAlive(string nodeIdentifier, CancellationTokenSource cancellationSource)
+        {
+            return _networkService.Get().NamingClient.Lookup(nodeIdentifier) != null;
+        }
+
         /// <summary>
         /// Checks if the identifier is registered with the Name Server.
         /// Throws exception if the operation fails more than the retry count.
@@ -158,7 +161,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
                     foreach (var identifier in identifiers)
                     {
-                        if (!foundList.Contains(identifier) && _networkService.NamingClient.Lookup(identifier) != null)
+                        if (!foundList.Contains(identifier) && _networkService.Get().NamingClient.Lookup(identifier) != null)
                         {
                             foundList.Add(identifier);
                             Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, find a dependent id {0} at loop {1}.", identifier, i);

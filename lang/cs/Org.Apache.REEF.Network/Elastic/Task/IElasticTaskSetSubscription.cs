@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Network.Group.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
@@ -33,20 +34,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         string SubscriptionName { get; }
 
         /// <summary>
-        /// Gets the BroadcastSender with the given name and message type.
+        /// Gets the Broadcast operator with the given id and message type.
         /// </summary>
         /// <typeparam name="T">The message type</typeparam>
         /// <param name="operatorName">The name of the Broadcast operator</param>
-        /// <returns>The BroadcastSender</returns>
-        IBroadcastSender<T> GetBroadcastSender<T>(string operatorName);
-
-        /// <summary>
-        /// Gets the BroadcastReceiver with the given name and message type.
-        /// </summary>
-        /// <typeparam name="T">The message type</typeparam>
-        /// <param name="operatorName">The name of the Broadcast operator</param>
-        /// <returns>The BroadcastReceiver</returns>
-        IBroadcastReceiver<T> GetBroadcastReceiver<T>(string operatorName);
+        /// <returns>The Broadcast operator</returns>
+        IElasticBroadcast<T> GetBroadcast<T>(int operatorId);
 
         /// <summary>
         /// Gets the ReduceSender with the given name and message type.

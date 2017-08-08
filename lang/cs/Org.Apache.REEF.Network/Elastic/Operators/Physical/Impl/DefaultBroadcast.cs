@@ -20,7 +20,9 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System;
-using Org.Apache.REEF.Network.Elastic.Topology.Task;
+using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -30,7 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <typeparam name="T">The type of message being sent.</typeparam>
     public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
     {
-        private readonly IOperatorTopology _topLayer;
+        private readonly OperatorTopology<T> _topLayer;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -40,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultBroadcast(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
-            IOperatorTopology topLayer)
+            OperatorTopology<T> topLayer)
         {
             OperatorName = "broadcast";
             OperatorId = id;
@@ -64,12 +66,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             var objs = _topLayer.Receive(cancellationSource);
 
             objs.MoveNext();
-            return (T)objs.Current;
+            return objs.Current;
         }
 
         public void Send(T data)
         {
-            _topLayer.Send(new object[] { data });
+            _topLayer.Send(new List<T> { data });
         }
 
         public void WaitingForRegistration(CancellationTokenSource cancellationSource)

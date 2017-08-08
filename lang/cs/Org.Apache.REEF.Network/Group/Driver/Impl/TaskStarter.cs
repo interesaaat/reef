@@ -83,6 +83,7 @@ namespace Org.Apache.REEF.Network.Group.Driver.Impl
 
                 if (Interlocked.Increment(ref _tasksAdded) == _numTasks)
                 {
+                    Thread.Sleep(30000);
                     StartTasks();
                 }
             }

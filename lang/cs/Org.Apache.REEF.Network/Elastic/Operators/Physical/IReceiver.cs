@@ -23,7 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of data being sent.</typeparam>
-    internal interface IReceiver<T>
+    public interface IReceiver<T>
     {
         /// <summary>
         /// Receive a message from parent BroadcastSender.

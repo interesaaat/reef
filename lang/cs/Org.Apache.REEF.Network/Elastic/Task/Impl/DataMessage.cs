@@ -21,12 +21,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    public class DataMessage : GroupCommunicationMessage
+    public class DataMessage<T> : GroupCommunicationMessage
     {
         public DataMessage(
             string subscriptionName,
             int operatorId,
-            object data) : base(subscriptionName, operatorId)
+            T data) : base(subscriptionName, operatorId)
         {
             Data = data;
         }
@@ -37,6 +37,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
         }
 
-        internal object Data { get; set; }
+        internal T Data { get; set; }
     }
 }

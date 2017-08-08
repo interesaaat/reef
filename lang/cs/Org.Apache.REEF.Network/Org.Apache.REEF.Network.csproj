@@ -55,6 +55,7 @@ under the License.
     </Compile>
     <Compile Include="Elastic\Task\Impl\DataMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />
+    <Compile Include="Elastic\Task\Impl\DataMessageStreamingCodec.cs" />
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
     <Compile Include="Elastic\Task\Impl\TaskMessageObserver.cs" />
     <Compile Include="Elastic\Topology\Task\Impl\OperatorTopology.cs" />
@@ -69,7 +70,6 @@ under the License.
     <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfiguration.cs" />
-    <Compile Include="Elastic\Config\StreamingCodecConfigurationMinusMessage.cs" />
     <Compile Include="Elastic\Driver\Impl\TaskInfo.cs" />
     <Compile Include="Elastic\Failures\IFailureEvent.cs" />
     <Compile Include="Elastic\Failures\IFailureState.cs" />

@@ -24,7 +24,7 @@ using System.Threading;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastMasterTask : ITask
+    public class BroadcastSlaveTask : ITask
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
@@ -33,7 +33,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
-        public BroadcastMasterTask(
+        public BroadcastSlaveTask(
             IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
@@ -47,11 +47,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public byte[] Call(byte[] memento)
         {
-            var number = new Random().Next();
+            var rec = _broadcastSender.Receive(_cancellationSource);
 
-            _broadcastSender.Send(number);
-
-            Console.WriteLine("Master has sent {0}", number);
+            Console.WriteLine("Slave has received {0}", rec);
 
             return null;
         }
@@ -59,6 +57,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void Dispose()
         {
             _serviceClient.Dispose();
+            _cancellationSource.Dispose();
 
             Console.WriteLine("Disposed.");
         }

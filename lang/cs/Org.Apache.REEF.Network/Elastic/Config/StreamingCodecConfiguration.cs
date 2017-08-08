@@ -15,8 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Group.Driver.Impl;
-using Org.Apache.REEF.Network.Group.Pipelining;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Wake.StreamingCodec;
@@ -40,12 +39,8 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         /// </summary>
         public static ConfigurationModule Conf = new StreamingCodecConfiguration<T>()
             .BindImplementation(GenericType<IStreamingCodec<T>>.Class, Codec)
-            .BindImplementation(GenericType<IStreamingCodec<PipelineMessage<T>>>.Class,
-                GenericType<StreamingPipelineMessageCodec<T>>.Class)
-            .BindImplementation(GenericType<IStreamingCodec<GroupCommunicationMessage<T>>>.Class,
-                GenericType<GroupCommunicationMessageStreamingCodec<T>>.Class)
-            .BindImplementation(GenericType<IStreamingCodec<GroupCommunicationMessage<PipelineMessage<T>>>>.Class,
-                GenericType<GroupCommunicationMessageStreamingCodec<PipelineMessage<T>>>.Class)
+            .BindImplementation(GenericType<IStreamingCodec<DataMessage<T>>>.Class,
+                GenericType<DataMessageStreamingCodec<T>>.Class)
             .Build();
     }
 }

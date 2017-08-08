@@ -25,7 +25,6 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Group.Driver.Impl;
 using Org.Apache.REEF.Tang.Util;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
@@ -58,14 +57,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
-            IInjector injector,
-            CommunicationLayer commLayer)
+            IInjector injector)
         {
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _networkService = networkService;
-
-            // Make sure that each subscription uses the same communication layer
-            injector.BindVolatileInstance(GenericType<CommunicationLayer>.Class, commLayer);
 
             foreach (string serializedGroupConfig in subscriptionConfigs)
             {

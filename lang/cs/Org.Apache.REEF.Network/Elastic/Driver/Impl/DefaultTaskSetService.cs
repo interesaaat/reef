@@ -34,8 +34,7 @@ using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Group.Driver.Impl;
-using Org.Apache.REEF.Network.Group.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -152,13 +151,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             IConfiguration serviceConfig = ServiceConfiguration.ConfigurationModule
                 .Set(ServiceConfiguration.Services, 
-                    GenericType<StreamingNetworkService<GeneralGroupCommunicationMessage>>.Class)
+                    GenericType<StreamingNetworkService<GroupCommunicationMessage>>.Class)
                 .Build();
 
             return TangFactory.GetTang().NewConfigurationBuilder(serviceConfig)
                 .BindImplementation(
-                    GenericType<IObserver<IRemoteMessage<NsMessage<GeneralGroupCommunicationMessage>>>>.Class,
-                    GenericType<GroupCommNetworkObserver>.Class)
+                    GenericType<IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>>.Class,
+                    GenericType<CommunicationLayer>.Class)
                 .BindNamedParameter<NamingConfigurationOptions.NameServerAddress, string>(
                     GenericType<NamingConfigurationOptions.NameServerAddress>.Class,
                     _nameServerAddr)

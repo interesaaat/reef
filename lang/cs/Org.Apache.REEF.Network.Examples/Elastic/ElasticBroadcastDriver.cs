@@ -166,7 +166,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
                         .Build())
                     .Build();
                 }
@@ -175,7 +175,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                         TaskConfiguration.ConfigurationModule
                             .Set(TaskConfiguration.Identifier, taskId)
-                            .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
+                            .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
                             .Build())
                         .Build();
                 }

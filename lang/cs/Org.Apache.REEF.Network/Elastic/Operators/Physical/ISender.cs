@@ -21,7 +21,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// Group Communication Operator used to send messages to child Tasks.
     /// </summary>
     /// <typeparam name="T">The data type</typeparam>
-    internal interface ISender<T>
+    public interface ISender<T>
     {
         /// <summary>
         /// Send the data to all BroadcastReceivers.

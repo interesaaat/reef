@@ -301,7 +301,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected abstract void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder);
 
-        protected static void SetMessageType(Type operatorType, ICsConfigurationBuilder confBuilder)
+        protected static void SetMessageType(Type operatorType, ref ICsConfigurationBuilder confBuilder)
         {
             if (operatorType.IsGenericType)
             {

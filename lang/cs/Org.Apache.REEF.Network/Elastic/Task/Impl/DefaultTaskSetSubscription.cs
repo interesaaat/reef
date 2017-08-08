@@ -58,14 +58,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
         }
 
-        public IBroadcastReceiver<T> GetBroadcastReceiver<T>(string operatorName)
+        public IElasticBroadcast<T> GetBroadcast<T>(int operatorId)
         {
-            throw new NotImplementedException();
-        }
+            _operators.TryGetValue(operatorId, out object output);
 
-        public IBroadcastSender<T> GetBroadcastSender<T>(string operatorName)
-        {
-            throw new NotImplementedException();
+            return output as IElasticBroadcast<T>;
         }
 
         public IReduceReceiver<T> GetReduceReceiver<T>(string operatorName)

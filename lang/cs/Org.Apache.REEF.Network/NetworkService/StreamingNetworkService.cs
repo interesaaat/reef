@@ -47,6 +47,25 @@ namespace Org.Apache.REEF.Network.NetworkService
         /// <summary>
         /// Create a new Writable NetworkService.
         /// </summary>
+        /// <param name="nameClient">The name client used to register Ids</param>
+        /// <param name="remoteManagerFactory">
+        /// Writable RemoteManagerFactory to create a Writable RemoteManager
+        /// </param>
+        /// <param name="codec">Codec for Network Service message</param>
+        /// <param name="localAddressProvider">The local address provider</param>
+        [Inject]
+        private StreamingNetworkService(
+            INameClient nameClient,
+            StreamingRemoteManagerFactory remoteManagerFactory,
+            NsMessageStreamingCodec<T> codec,
+            ILocalAddressProvider localAddressProvider)
+            : this(null, null, nameClient, remoteManagerFactory, codec, localAddressProvider)
+        {
+        }
+
+        /// <summary>
+        /// Create a new Writable NetworkService.
+        /// </summary>
         /// <param name="universalObserver">The observer to handle incoming messages</param>
         /// <param name="nameClient">The name client used to register Ids</param>
         /// <param name="remoteManagerFactory">

@@ -17,6 +17,7 @@
 
 using System;
 using Org.Apache.REEF.Network.Examples.Client.Elastic;
+using Org.Apache.REEF.Network.Examples.GroupCommunication;
 
 namespace Org.Apache.REEF.Network.Examples.Client
 {
@@ -26,7 +27,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
         {
             Console.WriteLine("start running client: " + DateTime.Now);
             bool runOnYarn = false;
-            int numNodes = 9;
+            int numNodes = 2;
             int startPort = 8900;
             int portRange = 1000;
             string testToRun = "RunElasticBroadcast";
@@ -60,21 +61,21 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 }
             }
 
-            ////if (testToRun.Equals("RunPipelineBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
-            ////{
-            ////    int arraySize = GroupTestConstants.ArrayLength;
-            ////    int chunkSize = GroupTestConstants.ChunkSize;
+            if (testToRun.Equals("RunPipelineBroadcastAndReduce".ToLower()) || testToRun.Equals("all"))
+            {
+                int arraySize = GroupTestConstants.ArrayLength;
+                int chunkSize = GroupTestConstants.ChunkSize;
 
-            ////    if (args.Length > 5)
-            ////    {
-            ////        arraySize = int.Parse(args[5]);
-            ////        chunkSize = int.Parse(args[6]);
-            ////    }
+                if (args.Length > 5)
+                {
+                    arraySize = int.Parse(args[5]);
+                    chunkSize = int.Parse(args[6]);
+                }
 
-            ////    new PipelineBroadcastAndReduceClient().RunPipelineBroadcastAndReduce(runOnYarn, numNodes, startPort,
-            ////        portRange, arraySize, chunkSize);
-            ////    Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
-            ////}
+                new PipelineBroadcastAndReduceClient().RunPipelineBroadcastAndReduce(runOnYarn, numNodes, startPort,
+                    portRange, arraySize, chunkSize);
+                Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
+            }
 
             if (testToRun.Equals("RunElasticBroadcast".ToLower()) || testToRun.Equals("all"))
             {

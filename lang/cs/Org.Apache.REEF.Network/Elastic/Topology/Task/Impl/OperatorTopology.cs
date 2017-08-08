@@ -29,14 +29,14 @@ using Org.Apache.REEF.Network.NetworkService;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
-    public class OperatorTopology : IOperatorTopology, IObserver<NsMessage<GroupCommunicationMessage>>
+    public class OperatorTopology<T> : IOperatorTopology<T>, IObserver<NsMessage<GroupCommunicationMessage>>
     {
         private readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
         private int _rootId;
         private string _taskId;
         CommunicationLayer _commLayer;
 
-        private BlockingCollection<object> _messageQueue;
+        private BlockingCollection<T> _messageQueue;
 
         [Inject]
         private OperatorTopology(
@@ -52,11 +52,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             _taskId = taskId;
             OperatorId = operatorId;
             _commLayer = commLayer;
-            _messageQueue = new BlockingCollection<object>();
+            _messageQueue = new BlockingCollection<T>();
 
-            if (_taskId != Utils.BuildTaskId(SubscriptionName, _rootId)) 
+            var rootTaskId = Utils.BuildTaskId(SubscriptionName, _rootId);
+
+            if (_taskId != rootTaskId) 
             {
-                _commLayer.RegisterOperatorTopologyForTask(Utils.BuildTaskId(SubscriptionName, _rootId), this);
+                _commLayer.RegisterOperatorTopologyForTask(rootTaskId, this);
             }
 
             foreach (var child in children)
@@ -72,14 +74,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         public int OperatorId { get; private set; }
 
-        public IEnumerator<object> Receive(CancellationTokenSource cancellationSource)
+        public IEnumerator<T> Receive(CancellationTokenSource cancellationSource)
         {
-            return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
+             return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        public void Send(object[] data)
+        public void Send(IList<T> data)
         {
-            var message = new DataMessage(SubscriptionName, OperatorId);
+            var message = new DataMessage<T>(SubscriptionName, OperatorId);
 
             foreach (var child in _children.Values)
             {
@@ -106,16 +108,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         public void OnNext(NsMessage<GroupCommunicationMessage> message)
         {
-            foreach (var data in message.Data)
+            foreach (var payload in message.Data)
             {
-                if (data.GetType() == typeof(DataMessage))
-                {
-                    var dataMessage = data as DataMessage;
+                Type t = payload.GetType();
+                Type r = typeof(DataMessage<T>);
 
-                    if (dataMessage.Data != null)
-                    {
-                        _messageQueue.Add(dataMessage.Data);
-                    }
+                if (t == r)
+                {
+                    var dataMessage = payload as DataMessage<T>;
+                    var data = dataMessage.Data;
+
+                     _messageQueue.Add(data);
                 }
             }
         }

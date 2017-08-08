@@ -30,17 +30,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task
     /// Used to send or receive messages to/from operators in the same
     /// Communication Group.
     /// </summary>
-    [DefaultImplementation(typeof(OperatorTopology))]
-    internal interface IOperatorTopology : IRegistration
+    internal interface IOperatorTopology<T> : IRegistration
     {
         /// <summary>
         /// Sends the data to neighbours.
         /// </summary>
         /// <param name="message">The data to send</param>
         /// <param name="type">The message type</param>
-        void Send(object[] data);
+        void Send(IList<T> data);
 
-        IEnumerator<object> Receive(CancellationTokenSource cancellationSource);
+        IEnumerator<T> Receive(CancellationTokenSource cancellationSource);
 
         string SubscriptionName { get; }
 
