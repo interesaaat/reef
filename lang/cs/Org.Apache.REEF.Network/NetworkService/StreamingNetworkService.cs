@@ -26,6 +26,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Wake.Remote.Impl;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.NetworkService
 {
@@ -121,6 +122,7 @@ namespace Org.Apache.REEF.Network.NetworkService
                 // Create and register incoming message handler
                 // TODO[REEF-419] This should use the TcpPortProvider mechanism
                 var anyEndpoint = new IPEndPoint(IPAddress.Any, 0);
+
                 _universalObserverDisposable = _remoteManager.RegisterObserver(anyEndpoint, universalObserver);
             }
             else

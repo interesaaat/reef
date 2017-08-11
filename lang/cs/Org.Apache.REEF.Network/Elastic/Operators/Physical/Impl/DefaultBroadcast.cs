@@ -23,6 +23,7 @@ using System;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -32,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <typeparam name="T">The type of message being sent.</typeparam>
     public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
     {
-        private readonly OperatorTopology<T> _topLayer;
+        private readonly BroadcastTopology _topology;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -42,11 +43,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultBroadcast(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
-            OperatorTopology<T> topLayer)
+            BroadcastTopology topology)
         {
             OperatorName = "broadcast";
             OperatorId = id;
-            _topLayer = topLayer;
+            _topology = topology;
         }
 
         /// <summary>
@@ -63,20 +64,29 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
-            var objs = _topLayer.Receive(cancellationSource);
+            var objs = _topology.Receive(cancellationSource);
 
             objs.MoveNext();
-            return objs.Current;
+            var message = objs.Current as DataMessage<T>;
+
+            return message.Data;
         }
 
         public void Send(T data)
         {
-            _topLayer.Send(new List<T> { data });
+            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
+
+            _topology.Send(new GroupCommunicationMessage[] { message });
         }
 
         public void WaitingForRegistration(CancellationTokenSource cancellationSource)
         {
-            _topLayer.WaitingForRegistration(cancellationSource);
+            _topology.WaitingForRegistration(cancellationSource);
+        }
+
+        public void Dispose()
+        {
+            _topology.Dispose();
         }
     }
 }

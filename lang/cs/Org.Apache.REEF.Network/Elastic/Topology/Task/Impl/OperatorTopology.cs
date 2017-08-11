@@ -29,66 +29,34 @@ using Org.Apache.REEF.Network.NetworkService;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
-    public class OperatorTopology<T> : IOperatorTopology<T>, IObserver<NsMessage<GroupCommunicationMessage>>
+    public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IDisposable
     {
-        private readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
-        private int _rootId;
-        private string _taskId;
-        CommunicationLayer _commLayer;
+        protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
+        protected int _rootId;
+        protected string _taskId;
+        internal CommunicationLayer _commLayer;
 
-        private BlockingCollection<T> _messageQueue;
+        protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
-        [Inject]
-        private OperatorTopology(
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
-            [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            [Parameter(typeof(OperatorsConfiguration.OperatorId))] int operatorId,
-            CommunicationLayer commLayer)
+        protected OperatorTopology()
         {
-            SubscriptionName = subscription;
-            _rootId = rootId;
-            _taskId = taskId;
-            OperatorId = operatorId;
-            _commLayer = commLayer;
-            _messageQueue = new BlockingCollection<T>();
-
-            var rootTaskId = Utils.BuildTaskId(SubscriptionName, _rootId);
-
-            if (_taskId != rootTaskId) 
-            {
-                _commLayer.RegisterOperatorTopologyForTask(rootTaskId, this);
-            }
-
-            foreach (var child in children)
-            {
-                var childTaskId = Utils.BuildTaskId(SubscriptionName, child);
-
-                _children.TryAdd(child, childTaskId);
-                _commLayer.RegisterOperatorTopologyForTask(childTaskId, this);
-            }
         }
 
-        public string SubscriptionName { get; private set; }
+        public string SubscriptionName { get; protected set; }
 
-        public int OperatorId { get; private set; }
+        public int OperatorId { get; protected set; }
 
-        public IEnumerator<T> Receive(CancellationTokenSource cancellationSource)
+        public IEnumerator<GroupCommunicationMessage> Receive(CancellationTokenSource cancellationSource)
         {
              return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        public void Send(IList<T> data)
+        public void Send(GroupCommunicationMessage[] messages)
         {
-            var message = new DataMessage<T>(SubscriptionName, OperatorId);
-
             foreach (var child in _children.Values)
             {
-                foreach (var datum in data)
+                foreach (var message in messages)
                 {
-                    message.Data = datum;
-
                     _commLayer.Send(child, message);
                 }
             }  
@@ -108,29 +76,30 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         public void OnNext(NsMessage<GroupCommunicationMessage> message)
         {
+            if (_messageQueue.IsAddingCompleted)
+            {
+                _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
+            }
+
             foreach (var payload in message.Data)
             {
-                Type t = payload.GetType();
-                Type r = typeof(DataMessage<T>);
-
-                if (t == r)
-                {
-                    var dataMessage = payload as DataMessage<T>;
-                    var data = dataMessage.Data;
-
-                     _messageQueue.Add(data);
-                }
+                _messageQueue.Add(payload);
             }
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            _messageQueue.CompleteAdding();
         }
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            _messageQueue.CompleteAdding();
+        }
+
+        public void Dispose()
+        {
+            _commLayer.Dispose();
         }
     }
 }

@@ -155,9 +155,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 .Build();
 
             return TangFactory.GetTang().NewConfigurationBuilder(serviceConfig)
-                .BindImplementation(
-                    GenericType<IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>>.Class,
-                    GenericType<CommunicationLayer>.Class)
                 .BindNamedParameter<NamingConfigurationOptions.NameServerAddress, string>(
                     GenericType<NamingConfigurationOptions.NameServerAddress>.Class,
                     _nameServerAddr)

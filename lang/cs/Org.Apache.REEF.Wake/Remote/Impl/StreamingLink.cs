@@ -202,7 +202,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
 
             try
             {
-                _client.GetStream().Close();
+                _client.GetStream().Dispose();
             }
             catch (InvalidOperationException)
             {
@@ -210,6 +210,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             }
 
             _client.Close();
+
             _disposed = true;
         }
 

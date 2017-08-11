@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             }
             if (!foundAPort)
             {
-                Exceptions.Throw(exception, "Could not find a port to listen on", LOGGER);
+               throw new Exception("Could not find a port to listen on");
             }
             LOGGER.Log(Level.Info,
                 string.Format("Listening on {0}", _listener.LocalEndpoint.ToString()));
@@ -131,16 +131,13 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
 
                 if (_serverTask != null)
                 {
-                    // Give the TransportServer Task 500ms to shut down, ignore any timeout errors
                     try
                     {
-                        CancellationTokenSource serverDisposeTimeout = new CancellationTokenSource(500);
-                        _serverTask.Wait(serverDisposeTimeout.Token);
                         _serverTask.Dispose();
                     }
                     catch (Exception e)
                     {
-                        Exceptions.Caught(e, Level.Warning, LOGGER);
+                        LOGGER.Log(Level.Warning, e.ToString());
                     }
                 }
             }
@@ -195,17 +192,21 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        T message = await link.ReadAsync(token);
-
-                        if (message == null)
+                        if (client.GetStream().DataAvailable)
                         {
-                            break;
-                        }
+                            T message = await link.ReadAsync(token);
 
-                        TransportEvent<T> transportEvent = new TransportEvent<T>(message, link);
-                        _remoteObserver.OnNext(transportEvent);
+                            if (message == null)
+                            {
+                                break;
+                            }
+
+                            TransportEvent<T> transportEvent = new TransportEvent<T>(message, link);
+                            _remoteObserver.OnNext(transportEvent);
+                        }
                     }
-                    LOGGER.Log(Level.Error,
+
+                    LOGGER.Log(Level.Warning,
                         "ProcessClient close the Link. IsCancellationRequested: " + token.IsCancellationRequested);
                 }
             }

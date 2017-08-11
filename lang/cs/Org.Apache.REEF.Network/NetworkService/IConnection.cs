@@ -34,5 +34,7 @@ namespace Org.Apache.REEF.Network.NetworkService
         /// </summary>
         /// <param name="obj">The message to send</param>
         void Write(T obj);
+
+        bool IsOpen { get; }
     }
 }

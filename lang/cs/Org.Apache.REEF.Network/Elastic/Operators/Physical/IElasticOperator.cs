@@ -16,13 +16,14 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Task;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
     /// Group Communication operator used to receive and reduce messages.
     /// </summary>
-    public interface IElasticOperator<T> : IRegistration
+    public interface IElasticOperator<T> : IRegistration, IDisposable
     {
         /// <summary>
         /// The operator name.

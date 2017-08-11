@@ -56,8 +56,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void Dispose()
         {
+            _cancellationSource.Cancel();
             _serviceClient.Dispose();
-            _cancellationSource.Dispose();
 
             Console.WriteLine("Disposed.");
         }

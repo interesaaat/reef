@@ -17,8 +17,8 @@
 
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Network.Group.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
@@ -26,7 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     ///  Used by Tasks to fetch Operators in the subscriptions configured by the driver.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetSubscription))]
-    public interface IElasticTaskSetSubscription : IRegistration
+    public interface IElasticTaskSetSubscription : IRegistration, IDisposable
     {
         /// <summary>
         /// Returns the subscription name

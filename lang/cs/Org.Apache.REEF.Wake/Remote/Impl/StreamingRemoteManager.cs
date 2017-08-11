@@ -303,7 +303,6 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
 
             public void OnCompleted()
             {
-                throw new NotImplementedException();
             }
         }
     }

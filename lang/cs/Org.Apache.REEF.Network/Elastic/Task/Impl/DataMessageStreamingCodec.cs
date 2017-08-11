@@ -89,10 +89,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
             var res = GenerateMetaDataDecoding(metadata);
-
+            var data = await _codec.ReadAsync(reader, token);
             string subscriptionString = res.Item1;
             int operatorId = res.Item2;
-            var data = await _codec.ReadAsync(reader, token);
 
             return new DataMessage<T>(subscriptionString, operatorId, data);
         }
@@ -135,6 +134,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             string subscriptionString = BytesToString(obj.Skip(offset).Take(subscriptionCount).ToArray());
             offset += subscriptionCount;
             int operatorInt = BitConverter.ToInt32(obj, offset);
+            offset += 4;
 
             return new Tuple<string, int>(subscriptionString, operatorInt);
         }

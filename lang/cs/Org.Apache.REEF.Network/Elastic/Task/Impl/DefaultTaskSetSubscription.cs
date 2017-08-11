@@ -84,5 +84,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         {
             throw new NotImplementedException();
         }
+
+        public void Dispose()
+        {
+            foreach (var op in _operators.Values)
+            {
+                var disposableOperator = op as IDisposable;
+                disposableOperator.Dispose();
+            }
+        }
     }
 }

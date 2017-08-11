@@ -40,8 +40,8 @@ namespace Org.Apache.REEF.Network.NetworkService
         private readonly IIdentifier _destId;
         private readonly INameClient _nameClient;
         private readonly IRemoteManager<NsMessage<T>> _remoteManager; 
-        private readonly Dictionary<IIdentifier, IConnection<T>> _connectionMap;
         private IObserver<NsMessage<T>> _remoteSender;
+        private bool _isOpen;
 
         /// <summary>
         /// Creates a new NsConnection between two hosts.
@@ -63,8 +63,11 @@ namespace Org.Apache.REEF.Network.NetworkService
             _destId = destId;
             _nameClient = nameClient;
             _remoteManager = remoteManager;
-            _connectionMap = connectionMap;
+            _isOpen = false;
+            IsOpen = _isOpen;
         }
+
+        public bool IsOpen { get; private set; }
 
         /// <summary>
         /// Opens the connection to the remote host.
@@ -129,7 +132,7 @@ namespace Org.Apache.REEF.Network.NetworkService
         /// </summary>
         public void Dispose()
         {
-            _connectionMap.Remove(_destId);
+            _remoteSender.OnCompleted();
         }
     }
 }

@@ -28,7 +28,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Threading;
 using System.Runtime.Remoting;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
-using Org.Apache.REEF.Tang.Implementations.InjectionPlan;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -36,24 +36,28 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Handles all incoming messages for this Task.
     /// Writable version
     /// </summary>
-    internal sealed class CommunicationLayer : IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
+    internal sealed class CommunicationLayer : 
+        IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
         private readonly int _timeout;
         private readonly int _retryCount;
         private readonly int _sleepTime;
-        private readonly IInjectionFuture<StreamingNetworkService<GroupCommunicationMessage>> _networkService;
+        private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
         private readonly IIdentifierFactory _idFactory;
 
-        private readonly ConcurrentDictionary<string, TaskMessageObserver> _taskMessageObservers =
-            new ConcurrentDictionary<string, TaskMessageObserver>();
+        private bool _disposed;
+
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>> _messageObservers =
+            new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>>();
 
         /// <summary>
         /// A ConcurrentDictionary is used here since there is no ConcurrentSet implementation in C#, and ConcurrentBag
         /// does not allow for us to check for the existence of an item. The byte is simply a placeholder.
         /// </summary>
-        private readonly ConcurrentDictionary<string, byte> _registeredNodes = new ConcurrentDictionary<string, byte>();
+        private readonly ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>> _registeredConnections = 
+            new ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>>();
 
         /// <summary>
         /// Creates a new GroupCommNetworkObserver.
@@ -63,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryCount,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
-            IInjectionFuture<StreamingNetworkService<GroupCommunicationMessage>> networkService,
+            StreamingNetworkService<GroupCommunicationMessage> networkService,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -71,6 +75,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _sleepTime = sleepTime;
             _networkService = networkService;
             _idFactory = idFactory;
+
+            _disposed = false;
+
+            _networkService.RemoteManager.RegisterObserver(this);
         }
 
         /// <summary>
@@ -78,11 +86,26 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// If the <see cref="TaskMessageObserver"/> has already been initialized, it will return
         /// the existing one.
         /// </summary>
-        public void RegisterOperatorTopologyForTask<T>(string taskSourceId, OperatorTopology<T> topLayer)
+        public void RegisterOperatorTopologyForTask(string taskSourceId, OperatorTopology operatorObserver)
         {
             // Add a TaskMessage observer for each upstream/downstream source.
-            var taskObserver = _taskMessageObservers.GetOrAdd(taskSourceId, new TaskMessageObserver(_networkService.Get()));
-            taskObserver.RegisterNodeObserver(topLayer);
+            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> taskObservers;
+            var id = NodeObserverIdentifier.FromObserver(operatorObserver);
+
+            _messageObservers.TryGetValue(taskSourceId, out taskObservers);
+
+            if (taskObservers == null)
+            {
+                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>();
+                _messageObservers.TryAdd(taskSourceId, taskObservers);
+            }
+
+            if (taskObservers.ContainsKey(id))
+            {
+                throw new IllegalStateException("Topology for id " + id + " already added among listeners");
+            }
+
+            taskObservers.TryAdd(id, operatorObserver);
         }
 
         /// <summary>
@@ -102,9 +125,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            var conn = _networkService.Get().NewConnection(destId);
 
-            conn.Open();
+            var conn = _registeredConnections.GetOrAdd(destId, _networkService.NewConnection(destId));
+
+            if (!conn.IsOpen)
+            {
+                conn.Open();
+            }
+
             conn.Write(message);
         }
 
@@ -120,23 +148,26 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var nsMessage = remoteMessage.Message;
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
-            if (!_taskMessageObservers.TryGetValue(gcMessageTaskSource, out TaskMessageObserver observer))
+            var id = NodeObserverIdentifier.FromMessage(gcm);
+
+            if (!_messageObservers.TryGetValue(gcMessageTaskSource, out ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> observers))
             {
                 throw new KeyNotFoundException("Unable to find registered NodeMessageObserver for source Task " +
                     gcMessageTaskSource + ".");
             }
 
-            _registeredNodes.GetOrAdd(gcMessageTaskSource,
-                id =>
-                {
-                    observer.OnNext(remoteMessage);
-                    return new byte();
-                });
+            if (!observers.TryGetValue(id, out OperatorTopology operatorObserver))
+            {
+                throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
+                    gcm.SubscriptionName + " operator " + gcm.OperatorId);
+            }
+
+            operatorObserver.OnNext(nsMessage);
         }
 
         internal bool IsAlive(string nodeIdentifier, CancellationTokenSource cancellationSource)
         {
-            return _networkService.Get().NamingClient.Lookup(nodeIdentifier) != null;
+            return _networkService.NamingClient.Lookup(nodeIdentifier) != null;
         }
 
         /// <summary>
@@ -161,7 +192,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
                     foreach (var identifier in identifiers)
                     {
-                        if (!foundList.Contains(identifier) && _networkService.Get().NamingClient.Lookup(identifier) != null)
+                        if (!foundList.Contains(identifier) && _networkService.NamingClient.Lookup(identifier) != null)
                         {
                             foundList.Add(identifier);
                             Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, find a dependent id {0} at loop {1}.", identifier, i);
@@ -189,10 +220,40 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void OnCompleted()
         {
+            foreach (var observers in _messageObservers.Values)
+            {
+                foreach (var observer in observers.Values)
+                {
+                    observer.OnCompleted();
+
+                    Console.WriteLine("Done");
+                }
+            }
+
+            _messageObservers.Clear();
         }
 
         public void Dispose()
         {
+            if (!_disposed)
+            {
+                foreach (var conn in _registeredConnections.Values)
+                {
+                    conn.Dispose();
+                }
+
+                foreach (var observers in _messageObservers.Values)
+                {
+                    foreach (var observer in observers.Values)
+                    {
+                        observer.OnCompleted();
+                    }
+                }
+
+                _disposed = true;
+
+                Logger.Log(Level.Info, "Disposed of group communication layer");
+            }
         }
     }
 }

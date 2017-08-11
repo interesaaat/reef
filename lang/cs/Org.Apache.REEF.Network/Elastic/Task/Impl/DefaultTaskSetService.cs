@@ -25,7 +25,6 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Tang.Util;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -37,11 +36,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
 
         private readonly INetworkService<GroupCommunicationMessage> _networkService;
-
-        /// <summary>
-        /// Shows if the object has been disposed.
-        /// </summary>
-        private int _disposed;
 
         /// <summary>
         /// Creates a new DefaultTaskSetService and registers the task ID with the Name Server.
@@ -118,11 +112,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         public void Dispose()
         {
-            if (Interlocked.Exchange(ref _disposed, 1) == 0)
+            foreach (var sub in _subscriptions.Values)
             {
-                _networkService.Unregister();
-                _networkService.Dispose();
+                sub.Dispose();
             }
+
+            _networkService.Unregister();
+            _networkService.Dispose();
         }
     }
 }
