@@ -26,20 +26,26 @@ using Org.Apache.REEF.Common.Tasks;
 using System.Runtime.Remoting;
 using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
+using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
-    public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IDisposable
+    public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IInitialize, IDisposable
     {
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
-        protected int _rootId;
+        protected string _rootId;
         protected string _taskId;
+        protected volatile bool _initialized;
         internal CommunicationLayer _commLayer;
+
+        private ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
         protected OperatorTopology()
         {
+            _initialized = false;
+            _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
         }
 
         public string SubscriptionName { get; protected set; }
@@ -51,27 +57,48 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
              return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        public void Send(GroupCommunicationMessage[] messages)
+        public void Send(List<GroupCommunicationMessage> messages)
         {
-            foreach (var child in _children.Values)
+            foreach (var message in messages)
             {
-                foreach (var message in messages)
-                {
-                    _commLayer.Send(child, message);
-                }
-            }  
+                _sendQueue.Enqueue(message);
+            }
+
+            if (_initialized)
+            {
+                Send();
+            }
         }
 
-        public void WaitingForRegistration(CancellationTokenSource cancellationSource)
+        public void Initialize(CancellationTokenSource cancellationSource)
         {
             try
             {
-                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
+                IList<string> idsToWait = new List<string>();
+
+                if (_rootId != _taskId)
+                {
+                    idsToWait.Add(_rootId);
+                }
+
+                if (_children.Count > 0)
+                {
+                    foreach (var child in _children.Values)
+                    {
+                        idsToWait.Add(child);
+                    }
+                }
+
+                _commLayer.WaitForTaskRegistration(idsToWait, cancellationSource);
             }
-            catch (RemotingException e)
+            catch (Exception e)
             {
                 throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
             }
+
+            _initialized = true;
+
+            Send();
         }
 
         public void OnNext(NsMessage<GroupCommunicationMessage> message)
@@ -84,6 +111,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             foreach (var payload in message.Data)
             {
                 _messageQueue.Add(payload);
+
+                if (_children.Count > 0)
+                {
+                    _sendQueue.Enqueue(payload);
+                }
+            }
+
+                if (_initialized)
+            {
+                Send();
             }
         }
 
@@ -99,7 +136,27 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         public void Dispose()
         {
+            while (_sendQueue.Count > 0)
+            {
+                // The topology is still trying to send messages, wait
+                Thread.Sleep(10);
+            }
+
             _commLayer.Dispose();
+        }
+
+        private void Send()
+        {
+            while (_sendQueue.Count > 0)
+            {
+                GroupCommunicationMessage message;
+                _sendQueue.TryPeek(out message);
+                foreach (var child in _children.Values)
+                {
+                    _commLayer.Send(child, message);
+                }
+                _sendQueue.TryDequeue(out message);
+            }
         }
     }
 }

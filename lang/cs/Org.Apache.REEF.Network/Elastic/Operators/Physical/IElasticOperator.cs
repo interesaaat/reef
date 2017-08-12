@@ -17,13 +17,14 @@
 
 using Org.Apache.REEF.Network.Elastic.Task;
 using System;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
     /// Group Communication operator used to receive and reduce messages.
     /// </summary>
-    public interface IElasticOperator<T> : IRegistration, IDisposable
+    public interface IElasticOperator<T> : IInitialize, IDisposable
     {
         /// <summary>
         /// The operator name.

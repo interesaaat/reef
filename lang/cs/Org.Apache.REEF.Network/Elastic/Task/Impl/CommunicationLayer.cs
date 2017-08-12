@@ -208,7 +208,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Thread.Sleep(_sleepTime);
                 }
 
-                var leftOver = string.Join(",", identifiers.Where(e => !foundList.Contains(e)));
+                var leftOver = foundList.Count == 0 ? string.Join(",", identifiers) : string.Join(",", identifiers.Where(e => !foundList.Contains(e)));
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {1}.", leftOver);
                 throw new RemotingException("Failed to find parent/children nodes");
             }
@@ -225,8 +225,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 foreach (var observer in observers.Values)
                 {
                     observer.OnCompleted();
-
-                    Console.WriteLine("Done");
                 }
             }
 
@@ -239,7 +237,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 foreach (var conn in _registeredConnections.Values)
                 {
-                    conn.Dispose();
+                    if (conn != null && conn.IsOpen)
+                    {
+                        conn.Dispose();
+                    }
                 }
 
                 foreach (var observers in _messageObservers.Values)

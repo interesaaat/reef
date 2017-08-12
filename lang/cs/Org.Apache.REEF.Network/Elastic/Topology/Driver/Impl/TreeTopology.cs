@@ -196,7 +196,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
                         next.Enqueue(item);
                     }
                 }
-                output += "\n";
+                if (next.Count > 0)
+                {
+                    output += "\n";
+                }
                 current = next;
             }
 

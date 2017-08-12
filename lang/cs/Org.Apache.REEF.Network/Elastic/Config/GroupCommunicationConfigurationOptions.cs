@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Timeout for receiving data", defaultValue: "50000")]
+        [NamedParameter("Timeout for receiving data", defaultValue: "60000")]
         public class Timeout : Name<int>
         {
         }
@@ -64,7 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         /// As we can use cancellation token to cancel the waiting for registration, setting this number higher should be OK.
         /// Current default sleep time is 2000ms. Default retry is 900. Total is 1800s, that is 30 min.
         /// </remarks>
-        [NamedParameter("Retry times to wait for nodes to be registered", defaultValue: "900")]
+        [NamedParameter("Retry times to wait for nodes to be registered", defaultValue: "10")]
         internal sealed class RetryCountWaitingForRegistration : Name<int>
         {
         }

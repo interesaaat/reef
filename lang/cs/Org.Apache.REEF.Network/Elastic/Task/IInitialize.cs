@@ -15,15 +15,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
 using System.Threading;
+using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    public interface IRegistration
+    public interface IInitialize
     {
         /// <summary>
-        /// Call each Operator to ensure all the nodes in the topology group has been registered
+        /// Initialization for group communications
         /// </summary>
-        void WaitingForRegistration(CancellationTokenSource cancellationSource);
+        /// <param name="cancellationSource"></param>
+        void Initialize(CancellationTokenSource cancellationSource = null);
     }
 }

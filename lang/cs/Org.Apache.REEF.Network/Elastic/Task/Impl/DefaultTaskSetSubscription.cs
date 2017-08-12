@@ -50,11 +50,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             get { return _name; }
         }
 
-        public void WaitingForRegistration(CancellationTokenSource cancellationSource)
+        public void Initialize(CancellationTokenSource cancellationSource)
         {
             foreach (var op in _operators.Values)
             {
-                ((IRegistration)op).WaitingForRegistration(cancellationSource);
+                ((IInitialize)op).Initialize(cancellationSource);
             }
         }
 

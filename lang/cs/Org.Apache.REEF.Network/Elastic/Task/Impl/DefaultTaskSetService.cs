@@ -34,6 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     internal sealed class DefaultTaskSetService : IElasticTaskSetService
     {
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
+        private readonly string _taskId;
 
         private readonly INetworkService<GroupCommunicationMessage> _networkService;
 
@@ -55,6 +56,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _networkService = networkService;
+            _taskId = taskId;
 
             foreach (string serializedGroupConfig in subscriptionConfigs)
             {
@@ -65,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 _subscriptions[subscriptionClient.SubscriptionName] = subscriptionClient;
             }
 
-            networkService.Register(new StringIdentifier(taskId));
+            _networkService.Register(new StringIdentifier(_taskId));
         }
 
         /// <summary>
@@ -74,17 +76,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="cancellationSource"></param>
         public void Initialize(CancellationTokenSource cancellationSource = null)
         {
-            try
+            foreach (var subscription in _subscriptions.Values)
             {
-                foreach (var subscription in _subscriptions.Values)
-                {
-                    subscription.WaitingForRegistration(cancellationSource);
-                }
-            }
-            catch (Exception e)
-            {
-                Dispose();
-                throw e;
+                subscription.Initialize(cancellationSource);
             }
         }
 

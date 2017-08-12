@@ -38,17 +38,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             CommunicationLayer commLayer) : base()
         {
             SubscriptionName = subscription;
-            _rootId = rootId;
+            _rootId = Utils.BuildTaskId(SubscriptionName, rootId);
             _taskId = taskId;
             OperatorId = operatorId;
             _commLayer = commLayer;
             _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
 
-            var rootTaskId = Utils.BuildTaskId(SubscriptionName, _rootId);
-
-            if (_taskId != rootTaskId)
+            if (_taskId != _rootId)
             {
-                _commLayer.RegisterOperatorTopologyForTask(rootTaskId, this);
+                _commLayer.RegisterOperatorTopologyForTask(_rootId, this);
             }
 
             foreach (var child in children)

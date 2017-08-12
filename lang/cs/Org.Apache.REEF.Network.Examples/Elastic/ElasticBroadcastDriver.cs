@@ -98,7 +98,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyTypes.Flat, dataConverterConfig)
+            pipeline.Broadcast<int>(TopologyTypes.Tree, dataConverterConfig)
                     .Build();
 
             // Build the subscription

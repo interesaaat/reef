@@ -316,7 +316,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             string intro = string.Format(CultureInfo.InvariantCulture,
                "State for Operator {0} in Subscription {1}:\n", Subscription.SubscriptionName, OperatorName);
-            string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}\n", _topology.LogTopologyState());
+            string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}", _topology.LogTopologyState());
             string failureMachineState = "Failure State: " + _failureMachine.State.FailureState +
                     "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;
 

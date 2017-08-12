@@ -76,12 +76,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
 
-            _topology.Send(new GroupCommunicationMessage[] { message });
+            _topology.Send(new List<GroupCommunicationMessage> { message });
         }
 
-        public void WaitingForRegistration(CancellationTokenSource cancellationSource)
+        public void Initialize(CancellationTokenSource cancellationSource)
         {
-            _topology.WaitingForRegistration(cancellationSource);
+            _topology.Initialize(cancellationSource);
         }
 
         public void Dispose()

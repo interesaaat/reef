@@ -26,7 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     /// Used by Tasks to fetch CommunicationGroupTask.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetService))]
-    public interface IElasticTaskSetService : IDisposable
+    public interface IElasticTaskSetService : IInitialize, IDisposable
     {
         /// <summary>
         /// Gets the CommunicationGroupClient with the given group name.
@@ -34,11 +34,5 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         /// <param name="groupName">The name of the CommunicationGroupClient</param>
         /// <returns>The configured CommunicationGroupClient</returns>
         IElasticTaskSetSubscription GetSubscription(string groupName);
-
-        /// <summary>
-        /// Initialization for group communications
-        /// </summary>
-        /// <param name="cancellationSource"></param>
-        void Initialize(CancellationTokenSource cancellationSource = null);
     }
 }
