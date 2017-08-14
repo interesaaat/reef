@@ -33,8 +33,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
     public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IInitialize, IDisposable
     {
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
-        protected string _rootId;
-        protected string _taskId;
+        protected readonly string _rootId;
+        protected readonly string _taskId;
         protected volatile bool _initialized;
         internal CommunicationLayer _commLayer;
 
@@ -42,10 +42,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
-        protected OperatorTopology()
+        protected OperatorTopology(string taskId, int rootId, string subscription)
         {
+            _taskId = taskId;
+            SubscriptionName = subscription;
             _initialized = false;
             _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
+
+            if (rootId >= 0)
+            {
+                _rootId = Utils.BuildTaskId(SubscriptionName, rootId);
+            }
         }
 
         public string SubscriptionName { get; protected set; }
@@ -76,7 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             {
                 IList<string> idsToWait = new List<string>();
 
-                if (_rootId != _taskId)
+                if (_rootId != null)
                 {
                     idsToWait.Add(_rootId);
                 }

@@ -209,7 +209,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
 
                 var leftOver = foundList.Count == 0 ? string.Join(",", identifiers) : string.Join(",", identifiers.Where(e => !foundList.Contains(e)));
-                Logger.Log(Level.Error, "Cannot find registered parent/children: {1}.", leftOver);
+                Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", leftOver);
                 throw new RemotingException("Failed to find parent/children nodes");
             }
         }
