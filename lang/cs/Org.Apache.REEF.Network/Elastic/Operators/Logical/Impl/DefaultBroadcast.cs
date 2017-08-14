@@ -30,24 +30,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private const string _operator = Constants.Broadcast;
         private int _senderId;
-    
+
         public DefaultBroadcast(
-            int senderId, 
-            ElasticOperator prev, 
-            ITopology topology, 
-            IFailureStateMachine failureMachine, 
-            CheckpointLevel checkpointLevel, 
+            int senderId,
+            ElasticOperator prev,
+            ITopology topology,
+            IFailureStateMachine failureMachine,
+            CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
-                null, 
+                null,
                 prev,
-                topology, 
+                topology,
                 failureMachine,
                 checkpointLevel)
         {
             _senderId = senderId;
         }
 
-        public int GetSenderTaskId
+        public int SenderTaskId
         {
             get
             {
@@ -60,20 +60,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             get { return _operator; }
         }
 
-        protected int GenerateSenderTaskId()
+        protected override int MasterTaskId
         {
-            _senderId = 1;
-            return _senderId;
-        }
-
-        protected new int GenerateMasterTaskId()
-        {
-            return GenerateSenderTaskId();
-        }
-
-        protected new bool IsMasterTaskId(int taskId)
-        {
-            return _senderId == taskId;
+            get { return SenderTaskId; }
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

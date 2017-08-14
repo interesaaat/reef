@@ -20,6 +20,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -33,6 +34,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public DefaultEmpty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
             base(subscription, null, new EmptyTopology(), filureMachine)
         {
+        }
+
+        internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
+        {
+            if (_operatorFinalized != true)
+            {
+                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
+            }
+
+            if (_next != null)
+            {
+                _next.GatherMasterIds(ref missingMasterTasks);
+            }
         }
 
         protected override void LogOperatorState()

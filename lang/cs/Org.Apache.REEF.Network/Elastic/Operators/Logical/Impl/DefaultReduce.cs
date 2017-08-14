@@ -46,7 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _receiverId = receiverId;
         }
 
-        public int GetReceiverTaskId
+        public int ReceiverTaskId
         {
             get
             {
@@ -65,14 +65,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             get { return _operator; }
         }
 
-        protected new int GenerateMasterTaskId()
+        protected override int MasterTaskId
         {
-            return GenerateReceiverTaskId();
-        }
-
-        protected new bool IsMasterTaskId(int taskId)
-        {
-            return _receiverId == taskId;
+            get { return ReceiverTaskId; }
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

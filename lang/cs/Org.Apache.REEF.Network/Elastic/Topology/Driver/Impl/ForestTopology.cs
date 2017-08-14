@@ -18,6 +18,7 @@
 using System;
 using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {

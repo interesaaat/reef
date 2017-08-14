@@ -27,6 +27,8 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
+using System;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -44,6 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly int _numTasks;
         private int _tasksAdded;
+        private HashSet<string> _missingMasterTasks;
 
         private IFailureStateMachine _defaultFailureMachine;
         private ElasticOperator _root;
@@ -68,6 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _finalized = false;
             _numTasks = numTasks;
             _tasksAdded = 0;
+            _missingMasterTasks = new HashSet<string>();
             _elasticService = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
             _failureState = new DefaultFailureState();
@@ -102,7 +106,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             lock (_tasksLock)
             {
-                if (_tasksAdded >= _numTasks)
+                // We don't add a task if eventually we end up by not adding the master task
+                if (_tasksAdded >= _numTasks || 
+                    (_tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId)))
                 {
                     return false;
                 }
@@ -110,6 +116,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 RootOperator.AddTask(taskId);
 
                 _tasksAdded++;
+
+                _missingMasterTasks.Remove(taskId);
 
                 if (_tasksAdded == _numTasks)
                 {
@@ -129,6 +137,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 return true;
             }
+        }
+
+        public bool OnRunningTask(string taskId)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool OnCompletedTask(string taskId)
+        {
+            throw new NotImplementedException();
         }
 
         public bool IsMasterTaskContext(IActiveContext activeContext)
@@ -175,6 +193,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 throw new IllegalStateException("Subscription cannot be built more than once");
             }
+
+            RootOperator.GatherMasterIds(ref _missingMasterTasks);
 
             _finalized = true;
 

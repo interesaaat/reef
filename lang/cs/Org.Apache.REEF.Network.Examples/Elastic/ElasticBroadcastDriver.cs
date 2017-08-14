@@ -93,6 +93,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(PipelineDataConverterConfiguration<int>.DataConverter, GenericType<DefaultPipelineDataConverter<int>>.Class)
                 .Build();
 
+            System.Threading.Thread.Sleep(10000);
+
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
 
             ElasticOperator pipeline = subscription.RootOperator;
@@ -106,8 +108,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create the task manager
             _taskManager = new DefaultTaskSetManager(_numEvaluators);
-
-            System.Threading.Thread.Sleep(10000);
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);

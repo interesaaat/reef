@@ -47,6 +47,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public byte[] Call(byte[] memento)
         {
+            _serviceClient.Initialize(_cancellationSource);
+
             var rec = _broadcastSender.Receive(_cancellationSource);
 
             Console.WriteLine("Slave has received {0}", rec);

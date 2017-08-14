@@ -48,6 +48,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         bool ScheduleSubscription { get; }
 
+        bool OnRunningTask(string taskId);
+
+        bool OnCompletedTask(string taskId);
+
         bool IsMasterTaskContext(IActiveContext activeContext);
 
         void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);

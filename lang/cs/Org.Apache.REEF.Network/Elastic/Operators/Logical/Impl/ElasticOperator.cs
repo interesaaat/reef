@@ -29,6 +29,7 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Util;
+using System.Collections.Generic;
 
 /// <summary>
 /// Basic implementation for logical operators.
@@ -52,7 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected bool _stateFinalized = false;
         protected bool _operatorFinalized = false;
 
-        protected int _masterTaskId = 0;
+        protected int _masterTaskId = 1;
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
@@ -86,35 +87,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return true;
         }
 
-        protected int GenerateMasterTaskId()
+        protected virtual int MasterTaskId
         {
-            _masterTaskId = 1;
-            return _masterTaskId;
+            get { return _masterTaskId; }
         }
 
         protected virtual string OperatorName
         {
             get { return string.Empty; }
-        }
-
-        public bool IsAnyMasterTaskId(int id)
-        {
-            if (IsMasterTaskId(id))
-            {
-                return true;
-            }
-            
-            if (_next != null)
-            {
-                return _next.IsAnyMasterTaskId(id);
-            }
-
-            return false;
-        }
-
-        protected bool IsMasterTaskId(int id)
-        {
-            return _masterTaskId == id;
         }
 
         protected IElasticTaskSetSubscription Subscription
@@ -196,6 +176,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return this;
         }
 
+        internal virtual void GatherMasterIds(ref HashSet<string> missingMasterTasks)
+        {
+            if (_operatorFinalized != true)
+            {
+                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
+            }
+
+            missingMasterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterTaskId));
+
+            if (_next != null)
+            {
+                _next.GatherMasterIds(ref missingMasterTasks);
+            }
+        }
+
         public void ChangePolicy(IFailureStateMachine level)
         {
             throw new NotImplementedException();
@@ -205,14 +200,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            var senderId = GenerateMasterTaskId();
-            return Broadcast<T>(senderId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Broadcast<T>(MasterTaskId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterTaskId) : (ITopology)new TreeTopology(MasterTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType, params IConfiguration[] configurations)
         {
-            var senderId = GenerateMasterTaskId();
-            return Broadcast<T>(GenerateMasterTaskId(), topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(senderId) : (ITopology)new TreeTopology(senderId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(MasterTaskId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterTaskId) : (ITopology)new TreeTopology(MasterTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Broadcast<T>(int senderTaskId, params IConfiguration[] configurations)
@@ -224,7 +217,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Reduce(GenerateMasterTaskId(), topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Reduce(MasterTaskId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Reduce(int receiverTaskId, params IConfiguration[] configurations)
@@ -236,7 +229,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Iterate(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Iterate(GenerateMasterTaskId(), topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Iterate(MasterTaskId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Iterate(int masterTaskId, params IConfiguration[] configurations)

@@ -21,6 +21,7 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
+using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -41,12 +42,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
             _broadcastSender = _subscriptionClient.GetBroadcast<int>(2);
-
-            _serviceClient.Initialize(_cancellationSource);
         }
 
         public byte[] Call(byte[] memento)
         {
+            _serviceClient.Initialize(_cancellationSource);
+
+            System.Threading.Thread.Sleep(10000);
             var number = new Random().Next();
 
             _broadcastSender.Send(number);
@@ -56,7 +58,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
-        public void Dispose()
+        public void Handle(IDriverMessage message)
+        {
+        }
+
+            public void Dispose()
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();
