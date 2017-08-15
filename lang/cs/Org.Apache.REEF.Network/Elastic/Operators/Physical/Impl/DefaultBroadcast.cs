@@ -79,9 +79,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Send(new List<GroupCommunicationMessage> { message });
         }
 
-        public void Initialize(CancellationTokenSource cancellationSource)
+        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            _topology.Initialize(cancellationSource);
+            _topology.WaitForTaskRegistration(cancellationSource);
         }
 
         public void Dispose()

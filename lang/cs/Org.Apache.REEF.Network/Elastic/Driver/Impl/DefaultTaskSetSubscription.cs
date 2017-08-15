@@ -139,16 +139,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public bool OnRunningTask(string taskId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public bool OnCompletedTask(string taskId)
-        {
-            throw new NotImplementedException();
-        }
-
         public bool IsMasterTaskContext(IActiveContext activeContext)
         {
             if (!_finalized)

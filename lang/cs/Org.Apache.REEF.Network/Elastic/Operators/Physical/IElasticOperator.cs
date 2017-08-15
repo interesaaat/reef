@@ -24,7 +24,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// <summary>
     /// Group Communication operator used to receive and reduce messages.
     /// </summary>
-    public interface IElasticOperator<T> : IInitialize, IDisposable
+    public interface IElasticOperator<T> : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
         /// The operator name.

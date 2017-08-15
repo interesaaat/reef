@@ -74,11 +74,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// This is to ensure all the nodes in the groups are registered before starting communications.
         /// </summary>
         /// <param name="cancellationSource"></param>
-        public void Initialize(CancellationTokenSource cancellationSource = null)
+        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
             foreach (var subscription in _subscriptions.Values)
             {
-                subscription.Initialize(cancellationSource);
+                subscription.WaitForTaskRegistration(cancellationSource);
             }
         }
 

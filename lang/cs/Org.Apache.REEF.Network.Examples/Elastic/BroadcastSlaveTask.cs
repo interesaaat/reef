@@ -41,13 +41,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
             _broadcastSender = _subscriptionClient.GetBroadcast<int>(2);
-
-            _serviceClient.Initialize(_cancellationSource);
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.Initialize(_cancellationSource);
+            _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
             var rec = _broadcastSender.Receive(_cancellationSource);
 

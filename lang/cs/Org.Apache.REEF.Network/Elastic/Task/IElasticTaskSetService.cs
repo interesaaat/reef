@@ -26,7 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     /// Used by Tasks to fetch CommunicationGroupTask.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetService))]
-    public interface IElasticTaskSetService : IInitialize, IDisposable
+    public interface IElasticTaskSetService : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
         /// Gets the CommunicationGroupClient with the given group name.

@@ -22,12 +22,12 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    public interface IInitialize
+    public interface IWaitForTaskRegistration
     {
         /// <summary>
         /// Initialization for group communications
         /// </summary>
         /// <param name="cancellationSource"></param>
-        void Initialize(CancellationTokenSource cancellationSource = null);
+        void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null);
     }
 }

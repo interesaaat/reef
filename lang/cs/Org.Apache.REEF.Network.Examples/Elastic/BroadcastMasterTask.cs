@@ -46,9 +46,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.Initialize(_cancellationSource);
+            _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            System.Threading.Thread.Sleep(10000);
             var number = new Random().Next();
 
             _broadcastSender.Send(number);

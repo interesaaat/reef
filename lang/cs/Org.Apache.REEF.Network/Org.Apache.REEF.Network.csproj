@@ -60,7 +60,7 @@ under the License.
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessageStreamingCodec.cs" />
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
-    <Compile Include="Elastic\Task\IInitialize.cs" />
+    <Compile Include="Elastic\Task\IWaitForTaskRegistration.cs" />
     <Compile Include="Elastic\Topology\Task\Impl\BroadcastTopology.cs" />
     <Compile Include="Elastic\Topology\Task\Impl\OperatorTopology.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetSubscription.cs" />

@@ -227,6 +227,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     {
                         _taskInfos[id].TaskStatus = TaskStatus.Running;
                         _taskInfos[id].TaskRunner = task;
+                        ////task.Send
                     }
                 }
             }
@@ -277,6 +278,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public IFailureState OnTaskFailure(IFailedTask info)
         {
+            Console.WriteLine("FAILURE RECEIVED!");
             if (BelongsTo(info.Id))
             {
                 var id = Utils.GetTaskNum(info.Id) - 1;

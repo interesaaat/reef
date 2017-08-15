@@ -30,7 +30,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
-    public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IInitialize, IDisposable
+    public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
     {
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
         protected readonly string _rootId;
@@ -77,26 +77,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             }
         }
 
-        public void Initialize(CancellationTokenSource cancellationSource)
+        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             try
             {
-                IList<string> idsToWait = new List<string>();
-
-                if (_rootId != null)
-                {
-                    idsToWait.Add(_rootId);
-                }
-
-                if (_children.Count > 0)
-                {
-                    foreach (var child in _children.Values)
-                    {
-                        idsToWait.Add(child);
-                    }
-                }
-
-                _commLayer.WaitForTaskRegistration(idsToWait, cancellationSource);
+                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
             }
             catch (Exception e)
             {

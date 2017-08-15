@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     ///  Used by Tasks to fetch Operators in the subscriptions configured by the driver.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetSubscription))]
-    public interface IElasticTaskSetSubscription : IInitialize, IDisposable
+    public interface IElasticTaskSetSubscription : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
         /// Returns the subscription name

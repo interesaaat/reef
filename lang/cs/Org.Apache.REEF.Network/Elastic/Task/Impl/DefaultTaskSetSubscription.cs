@@ -8,11 +8,14 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     internal class DefaultTaskSetSubscription : IElasticTaskSetSubscription
     {
+        private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
+
         private readonly string _name;
         private readonly IDictionary<int, object> _operators;
 
@@ -50,11 +53,19 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             get { return _name; }
         }
 
-        public void Initialize(CancellationTokenSource cancellationSource)
+        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            foreach (var op in _operators.Values)
+            try
             {
-                ((IInitialize)op).Initialize(cancellationSource);
+                foreach (var op in _operators.Values)
+                {
+                    ((IWaitForTaskRegistration)op).WaitForTaskRegistration(cancellationSource);
+                }
+            }
+            catch (OperationCanceledException e)
+            {
+                Logger.Log(Level.Error, "Subscription {0} failed during registration", SubscriptionName);
+                throw e;
             }
         }
 

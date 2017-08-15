@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
         {
             Console.WriteLine("start running client: " + DateTime.Now);
             bool runOnYarn = false;
-            int numNodes = 14;
+            int numNodes = 64;
             int startPort = 8900;
             int portRange = 1000;
             string testToRun = "RunElasticBroadcast";
