@@ -17,13 +17,13 @@
 
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Config;
-using System;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using System;
+using System.Collections;
+using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -31,9 +31,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
+    public sealed class DefaultEnumerableIterator<T> : IElasticIterator<T>
     {
-        private readonly BroadcastTopology _topology;
+        private readonly ElasticIteratorEnumerator<T> _inner;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -41,13 +41,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="id">The operator identifier</param>
         /// <param name="commLayer">The node's communication layer graph</param>
         [Inject]
-        private DefaultBroadcast(
+        private DefaultEnumerableIterator(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
-            BroadcastTopology topology)
+            IInjector injector)
         {
-            OperatorName = Constants.Broadcast;
+            OperatorName = Constants.Iterate;
             OperatorId = id;
-            _topology = topology;
+            switch (Type.GetTypeCode(typeof(T)))
+            {
+                case TypeCode.Int32:
+                    var subInjector = injector.ForkInjector();
+                    _inner = subInjector.GetInstance<ForLoopEnumerator>() as ElasticIteratorEnumerator<T>;
+                    break;
+                default:
+                    break;
+            }
         }
 
         /// <summary>
@@ -57,36 +65,33 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string OperatorName { get; private set; }
 
-        /// <summary>
-        /// Receive a message from neighbors broadcasters.
-        /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
-        /// <returns>The incoming data</returns>
-        public T Receive(CancellationTokenSource cancellationSource)
+        public T Current
         {
-            var objs = _topology.Receive(cancellationSource);
-
-            objs.MoveNext();
-            var message = objs.Current as DataMessage<T>;
-
-            return message.Data;
+            get { return _inner.Current; }
         }
 
-        public void Send(T data)
+        object IEnumerator.Current
         {
-            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
-
-            _topology.Send(new List<GroupCommunicationMessage> { message });
+            get { return _inner.Current; }
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            _topology.WaitForTaskRegistration(cancellationSource);
         }
 
         public void Dispose()
         {
-            _topology.Dispose();
+            _inner.Dispose();
+        }
+
+        public bool MoveNext()
+        {
+            return _inner.MoveNext();
+        }
+
+        public void Reset()
+        {
+            _inner.Reset();
         }
     }
 }

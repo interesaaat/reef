@@ -123,10 +123,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             ElasticOperator pipeline = subscription.RootOperator;
 
-            pipeline.Iterate(1, TopologyTypes.Forest,
-                        new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        iteratorConfig)
+            pipeline.Iterate(iteratorConfig)
                     .Broadcast<int>(1, new FlatTopology(1))
                     .Build();
 

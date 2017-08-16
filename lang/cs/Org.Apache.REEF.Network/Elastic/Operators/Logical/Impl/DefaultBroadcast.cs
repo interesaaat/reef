@@ -42,7 +42,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 prev,
                 topology,
                 failureMachine,
-                checkpointLevel)
+                checkpointLevel,
+                configurations)
         {
             _senderId = senderId;
         }

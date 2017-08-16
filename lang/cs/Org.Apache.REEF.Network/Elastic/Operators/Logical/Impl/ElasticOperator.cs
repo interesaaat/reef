@@ -30,6 +30,7 @@ using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
+using Org.Apache.REEF.Tang.Implementations.Configuration;
 
 /// <summary>
 /// Basic implementation for logical operators.
@@ -57,12 +58,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
+        protected IConfiguration[] _configurations;
+
         public ElasticOperator(
             IElasticTaskSetSubscription subscription,
             ElasticOperator prev,
             ITopology topology,
             IFailureStateMachine failureMachine,
-            CheckpointLevel level = CheckpointLevel.None)
+            CheckpointLevel level = CheckpointLevel.None,
+            params IConfiguration[] configurations)
         {
             _subscription = subscription;
             _prev = prev;
@@ -70,6 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _topology = topology;
             _failureMachine = failureMachine;
             _checkpointLevel = level;
+            _configurations = configurations;
         }
 
         public bool AddTask(string taskId)
@@ -225,16 +230,28 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return Reduce(receiverTaskId, TopologyTypes.Flat, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
-        public abstract ElasticOperator Iterate(int masterTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
+        public abstract ElasticOperator ConditionalIterate(int masterTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
-        public ElasticOperator Iterate(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public abstract ElasticOperator EnumerableIterate(IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+
+        public ElasticOperator Iterate(TopologyTypes topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Iterate(MasterTaskId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return ConditionalIterate(MasterTaskId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterTaskId) : (ITopology)new TreeTopology(MasterTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
-        public ElasticOperator Iterate(int masterTaskId, params IConfiguration[] configurations)
+        public ElasticOperator Iterate(int coordinatorTaskId, params IConfiguration[] configurations)
         {
-            return Iterate(masterTaskId, TopologyTypes.Flat, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return ConditionalIterate(coordinatorTaskId, new FlatTopology(coordinatorTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+        }
+
+        public ElasticOperator Iterate(IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        {
+            return EnumerableIterate(failureMachine, checkpointLevel, configurations);
+        }
+
+        public ElasticOperator Iterate(params IConfiguration[] configurations)
+        {
+            return EnumerableIterate(_failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Scatter(string senderTaskId, ElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat)
@@ -288,6 +305,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     GenericType<OperatorsConfiguration.OperatorId>.Class,
                     _id.ToString(CultureInfo.InvariantCulture))
                 .Build();
+
+            foreach (var conf in _configurations)
+            {
+                operatorConf = Configurations.Merge(operatorConf, conf);
+            }
 
             Subscription.Service.SerializeOperatorConfiguration(ref confBuilder, operatorConf);
         }

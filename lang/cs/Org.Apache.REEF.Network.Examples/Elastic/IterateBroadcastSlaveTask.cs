@@ -21,40 +21,52 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
+using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastSlaveTask : ITask
+    public class IterateBroadcastSlaveTask : ITask
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
+        private readonly IElasticIterator<int> _iterator;
         private readonly IElasticBroadcast<int> _broadcastReceiver;
 
         private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
-        public BroadcastSlaveTask(
+        public IterateBroadcastSlaveTask(
             IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
             _cancellationSource = new CancellationTokenSource();
 
-            _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
-            _broadcastReceiver = _subscriptionClient.GetBroadcast<int>(2);
+            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
+            _iterator = _subscriptionClient.GetIterator<int>(2);
+            _broadcastReceiver = _subscriptionClient.GetBroadcast<int>(3);
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            var rec = _broadcastReceiver.Receive(_cancellationSource);
+            while (_iterator.MoveNext())
+            {
+                var number = new Random().Next();
 
-            Console.WriteLine("Slave has received {0}", rec);
+                var rec = _broadcastReceiver.Receive(_cancellationSource);
+
+                Console.WriteLine("Slave has received {0} in iteration {1}", rec, _iterator.Current);
+            }
 
             return null;
         }
 
-        public void Dispose()
+        public void Handle(IDriverMessage message)
+        {
+        }
+
+            public void Dispose()
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();

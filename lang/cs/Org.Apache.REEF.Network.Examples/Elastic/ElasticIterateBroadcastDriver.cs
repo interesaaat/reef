@@ -16,8 +16,8 @@
 // under the License.
 
 using System;
-using System.Globalization;
 using System.Linq;
+using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
@@ -37,26 +37,30 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Network.Elastic.Operators;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Elastic;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of broadcasting using the elastic group communication service.
+    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticBroadcastDriver : 
+    public class ElasticIterateBroadcastDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
-        IObserver<IFailedEvaluator>, 
+        IObserver<IFailedEvaluator>,
         IObserver<IFailedTask>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastDriver));
 
         private readonly int _numEvaluators;
+        private readonly int _numIterations;
 
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
@@ -67,13 +71,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticBroadcastDriver(
+        private ElasticIterateBroadcastDriver(
+            [Parameter(typeof(OperatorsConfiguration.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
             IElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
+            _numIterations = numIterations;
             _numEvaluators = numEvaluators;
             _service = service;
             _evaluatorRequestor = evaluatorRequestor;
@@ -89,12 +95,22 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
+            IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
+                .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(GenericType<OperatorsConfiguration.NumIterations>.Class,
+                    numIterations.ToString(CultureInfo.InvariantCulture))
+               .Build();
+
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
 
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyTypes.Tree)
+            pipeline.Iterate(new DefaultFailureStateMachine(),
+                        CheckpointLevel.None,
+                        iteratorConfig)
+                    .Broadcast<int>(TopologyTypes.Tree,
+                        new DefaultFailureStateMachine(),
+                        CheckpointLevel.None)
                     .Build();
 
             // Build the subscription
@@ -117,7 +133,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("BroadcastEvaluator")
+                .SetEvaluatorBatchId("IterateBroadcastEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
@@ -149,8 +165,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<IterateBroadcastMasterTask>.Class)
                         .Build())
+                    .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
+                        GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
+                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
                     .Build();
             }
             else
@@ -158,7 +177,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<IterateBroadcastSlaveTask>.Class)
                         .Build())
                     .Build();
             }

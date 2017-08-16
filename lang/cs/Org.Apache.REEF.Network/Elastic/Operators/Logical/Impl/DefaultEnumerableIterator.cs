@@ -15,25 +15,41 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Config;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
-    /// Empty operator implementing the default failure logic. To use only as root.
+    /// Iterate operator implementation.
     /// </summary>
-    class DefaultEmpty : ElasticOperatorWithDefaultDispatcher
+    class DefaultEnumerableIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
-        private const string _operator = Constants.Empty;
-
-        public DefaultEmpty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
-            base(subscription, null, new EmptyTopology(), filureMachine)
+        private const string _operator = Constants.Iterate;
+    
+        public DefaultEnumerableIterator(
+            ElasticOperator prev,
+            IFailureStateMachine failureMachine,
+            CheckpointLevel checkpointLevel,
+            params IConfiguration[] configurations) : base(
+                null, 
+                prev, 
+                new EmptyTopology(), 
+                failureMachine,
+                checkpointLevel)
         {
+            Subscription.IteratorId = _id;
+        }
+
+        protected override string OperatorName
+        {
+            get { return _operator; }
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
@@ -49,16 +65,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        protected override void LogOperatorState()
-        {
-        }
-
-        protected override void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
-        {
-        }
-
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
+            confBuilder
+                .BindImplementation(GenericType<IElasticOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator<int>>.Class);
+            SetMessageType(typeof(IElasticOperator<int>), ref confBuilder);
         }
     }
 }

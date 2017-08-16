@@ -43,6 +43,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         IElasticBroadcast<T> GetBroadcast<T>(int operatorId);
 
         /// <summary>
+        /// Gets the Iterate operator with the given id and type.
+        /// </summary>
+        /// <typeparam name="T">The iterator type</typeparam>
+        /// <param name="operatorName">The name of the Iterate operator</param>
+        /// <returns>The Iterate operator</returns>
+        IElasticIterator<T> GetIterator<T>(int operatorId);
+
+        /// <summary>
         /// Gets the ReduceSender with the given name and message type.
         /// </summary>
         /// <typeparam name="T">The message type</typeparam>

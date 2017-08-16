@@ -76,6 +76,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             return output as IElasticBroadcast<T>;
         }
 
+        public IElasticIterator<T> GetIterator<T>(int operatorId)
+        {
+            _operators.TryGetValue(operatorId, out object output);
+
+            return output as IElasticIterator<T>;
+        }
+
         public IReduceReceiver<T> GetReduceReceiver<T>(string operatorName)
         {
             throw new NotImplementedException();

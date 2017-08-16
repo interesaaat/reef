@@ -16,33 +16,37 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
-using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Tang.Util;
+using System.Collections.Generic;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Topology;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
     /// Iterate operator implementation.
     /// </summary>
-    class DefaultIterate : ElasticOperatorWithDefaultDispatcher, IElasticIterator
+    class DefaultConditionalIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
         private const string _operator = Constants.Iterate;
     
-        public DefaultIterate(
-            int masterTaskId,
+        public DefaultConditionalIterator(
+            int coordinatortId,
             ElasticOperator prev,
-            TopologyTypes topologyType,
+            ITopology topology,
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
-                null, 
-                prev, 
-                topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(masterTaskId) : (ITopology)new TreeTopology(masterTaskId), 
+                null,
+                prev,
+                topology,
                 failureMachine,
                 checkpointLevel)
         {
-            _masterTaskId = masterTaskId;
+            _masterTaskId = coordinatortId;
             Subscription.IteratorId = _id;
         }
 
@@ -51,8 +55,23 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             get { return _operator; }
         }
 
+        internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
+        {
+            if (_operatorFinalized != true)
+            {
+                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
+            }
+
+            if (_next != null)
+            {
+                _next.GatherMasterIds(ref missingMasterTasks);
+            }
+        }
+
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
+            confBuilder.BindImplementation(GenericType<IElasticOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator<int>>.Class);
+            SetMessageType(typeof(Physical.Impl.DefaultEnumerableIterator<int>), ref confBuilder);
         }
     }
 }

@@ -56,6 +56,11 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultConditionalIterator.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticIterator.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultEnumerableIterator.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\ForLoopEnumerator.cs" />
+    <Compile Include="Elastic\Operators\Physical\ElasticIteratorEnumerator.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessageStreamingCodec.cs" />
@@ -101,7 +106,7 @@ under the License.
     <Compile Include="Elastic\Driver\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetService.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperatorWithDefaultDispatcher.cs" />
-    <Compile Include="Elastic\Operators\Logical\Impl\DefaultIterate.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultEnumerableIterator.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultReduce.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultBroadcast.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperator.cs" />

@@ -33,12 +33,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticOperatorWithDefaultDispatcher));
 
-        public ElasticOperatorWithDefaultDispatcher(
+        protected ElasticOperatorWithDefaultDispatcher(
             IElasticTaskSetSubscription subscription, 
             ElasticOperator prev, ITopology topology, 
             IFailureStateMachine failureMachine, 
-            CheckpointLevel level = CheckpointLevel.None) : 
-        base(subscription, prev, topology, failureMachine, level)
+            CheckpointLevel level = CheckpointLevel.None,
+            params IConfiguration[] configurations) : 
+        base(subscription, prev, topology, failureMachine, level, configurations)
         {
         }
 
@@ -54,9 +55,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override ElasticOperator Iterate(int masterTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        public override ElasticOperator ConditionalIterate(int coordinatorTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultIterate(masterTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
+            _next = new DefaultConditionalIterator(coordinatorTaskId, this, topology ?? new FlatTopology(coordinatorTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return _next;
+        }
+
+        public override ElasticOperator EnumerableIterate(IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        {
+            _next = new DefaultEnumerableIterator(this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
         }
 
