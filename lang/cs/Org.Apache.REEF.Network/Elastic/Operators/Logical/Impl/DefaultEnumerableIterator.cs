@@ -42,7 +42,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 prev, 
                 new EmptyTopology(), 
                 failureMachine,
-                checkpointLevel)
+                checkpointLevel,
+                configurations)
         {
             Subscription.IteratorId = _id;
         }
@@ -68,7 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
             confBuilder
-                .BindImplementation(GenericType<IElasticOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator<int>>.Class);
+                .BindImplementation(GenericType<IElasticOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator>.Class);
             SetMessageType(typeof(IElasticOperator<int>), ref confBuilder);
         }
     }

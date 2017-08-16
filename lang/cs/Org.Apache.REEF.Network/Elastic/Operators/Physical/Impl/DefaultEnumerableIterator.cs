@@ -31,9 +31,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultEnumerableIterator<T> : IElasticIterator<T>
+    public sealed class DefaultEnumerableIterator : IElasticIterator<int>
     {
-        private readonly ElasticIteratorEnumerator<T> _inner;
+        private readonly ElasticIteratorEnumerator<int> _inner;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -43,19 +43,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultEnumerableIterator(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
-            IInjector injector)
+            ForLoopEnumerator innerIterator)
         {
             OperatorName = Constants.Iterate;
             OperatorId = id;
-            switch (Type.GetTypeCode(typeof(T)))
-            {
-                case TypeCode.Int32:
-                    var subInjector = injector.ForkInjector();
-                    _inner = subInjector.GetInstance<ForLoopEnumerator>() as ElasticIteratorEnumerator<T>;
-                    break;
-                default:
-                    break;
-            }
+            _inner = innerIterator;
         }
 
         /// <summary>
@@ -65,7 +57,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string OperatorName { get; private set; }
 
-        public T Current
+        public int Current
         {
             get { return _inner.Current; }
         }

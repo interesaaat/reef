@@ -70,8 +70,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator<int>>.Class);
-            SetMessageType(typeof(Physical.Impl.DefaultEnumerableIterator<int>), ref confBuilder);
         }
     }
 }
