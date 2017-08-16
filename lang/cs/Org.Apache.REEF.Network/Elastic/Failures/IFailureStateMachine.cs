@@ -42,8 +42,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         void SetThreasholds(Tuple<IFailureState, float>[] weights);
 
-        int NumOfDataPoints { get; set; }
+        int NumOfDataPoints { get; }
 
-        int NumOfFailedDataPoints { get; set; }
+        int NumOfFailedDataPoints { get; }
     }
 }

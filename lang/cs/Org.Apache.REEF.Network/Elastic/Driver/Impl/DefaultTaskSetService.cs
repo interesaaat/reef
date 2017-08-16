@@ -30,7 +30,6 @@ using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
@@ -80,20 +79,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _nameServerPort = localEndpoint.Port;
         }
 
-        public IElasticTaskSetSubscription DefaultTaskSetSubscription
+        public IElasticTaskSetSubscription DefaultTaskSetSubscription()
         {
-            get
+            lock (_subsLock)
             {
-                lock (_subsLock)
-                {
-                    _subscriptions.TryGetValue(_defaultSubscriptionName, out IElasticTaskSetSubscription defaultSubscription);
+                _subscriptions.TryGetValue(_defaultSubscriptionName, out IElasticTaskSetSubscription defaultSubscription);
 
-                    if (defaultSubscription == null)
-                    {
-                        NewTaskSetSubscription(_defaultSubscriptionName, _numEvaluators, _defaultFailureMachine);
-                    }
-                    return _subscriptions[_defaultSubscriptionName];
+                if (defaultSubscription == null)
+                {
+                    NewTaskSetSubscription(_defaultSubscriptionName, _numEvaluators, _defaultFailureMachine);
                 }
+                return _subscriptions[_defaultSubscriptionName];
             }
         }
 
@@ -139,14 +135,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public string DriverId
-        {
-            get
-            {
-                return _driverId;
-            }
-        }
-
         public IConfiguration GetServiceConfiguration()
         {
             IConfiguration serviceConfig = ServiceConfiguration.ConfigurationModule
@@ -171,7 +159,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return subscriptionsConf
                 .BindNamedParameter<ElasticServiceConfigurationOptions.DriverId, string>(
                     GenericType<ElasticServiceConfigurationOptions.DriverId>.Class,
-                    DriverId)
+                    _driverId)
                 .Build();
         }
 
@@ -195,7 +183,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
                 {
-                    _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureState.FailureState);
+                    _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
                 }
 
                 return _failureState;

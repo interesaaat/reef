@@ -96,24 +96,18 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(ReduceFunctionConfiguration<int, int>.ReduceFunction, GenericType<SumFunction>.Class)
                 .Build();
 
-            IConfiguration dataConverterConfig = PipelineDataConverterConfiguration<int>.Conf
-                .Set(PipelineDataConverterConfiguration<int>.DataConverter, GenericType<DefaultPipelineDataConverter<int>>.Class)
-                .Build();
-
-            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
+            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
             pipeline.Broadcast<int>(TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        dataConverterConfig)
+                        CheckpointLevel.None)
                     .Reduce(TopologyTypes.Flat,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
-                        reduceFunctionConfig,
-                        dataConverterConfig)
+                        reduceFunctionConfig)
                     .Build();
 
             // Build the subscription
@@ -197,7 +191,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskCompleted(value);
 
-            if (_taskManager.Done)
+            if (_taskManager.Done())
             {
                 _taskManager.Dispose();
             }
@@ -212,7 +206,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskFailure(failedTask);
 
-            if (_taskManager.Done)
+            if (_taskManager.Done())
             {
                 _taskManager.Dispose();
             }

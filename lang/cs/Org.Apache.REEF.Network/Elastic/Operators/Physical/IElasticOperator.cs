@@ -30,5 +30,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// The operator name.
         /// </summary>
         string OperatorName { get; }
+
+        /// <summary>
+        /// The operator identifier.
+        /// </summary>
+        int OperatorId { get; }
     }
 }

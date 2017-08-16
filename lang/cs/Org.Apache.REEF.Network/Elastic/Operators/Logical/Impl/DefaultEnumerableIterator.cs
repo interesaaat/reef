@@ -31,8 +31,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultEnumerableIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
-        private const string _operator = Constants.Iterate;
-    
         public DefaultEnumerableIterator(
             ElasticOperator prev,
             IFailureStateMachine failureMachine,
@@ -45,12 +43,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel,
                 configurations)
         {
-            Subscription.IteratorId = _id;
-        }
-
-        protected override string OperatorName
-        {
-            get { return _operator; }
+            OperatorName = Constants.Iterate;
+            Subscription.IsIterative = true;
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)

@@ -27,7 +27,6 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
-using System;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
@@ -38,23 +37,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
-        private readonly string _subscriptionName;
         private bool _finalized;
-        private IFailureState _failureState;
         private readonly AvroConfigurationSerializer _confSerializer;
-        private readonly IElasticTaskSetService _elasticService;
 
         private readonly int _numTasks;
         private int _tasksAdded;
         private HashSet<string> _missingMasterTasks;
 
         private IFailureStateMachine _defaultFailureMachine;
-        private ElasticOperator _root;
         private int _numOperators;
-
-        // This is used for fault-tolerancy. Failures over an iterative pipeline of operators
-        // have to be propagated through all operators.
-        private int _iteratorId;
 
         private readonly object _tasksLock;
         private readonly object _statusLock;
@@ -67,29 +58,31 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             IFailureStateMachine failureMachine = null)
         {
             _confSerializer = confSerializer;
-            _subscriptionName = subscriptionName;
+            SubscriptionName = subscriptionName;
             _finalized = false;
             _numTasks = numTasks;
             _tasksAdded = 0;
             _missingMasterTasks = new HashSet<string>();
-            _elasticService = elasticService;
+            Service = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
-            _failureState = new DefaultFailureState();
-            _root = new DefaultEmpty(this, _defaultFailureMachine.Clone());
+            FailureStatus = new DefaultFailureState();
+            RootOperator = new DefaultEmpty(this, _defaultFailureMachine.Clone());
 
-            _iteratorId = -1;
+            IsIterative = false;
 
             _tasksLock = new object();
             _statusLock = new object();
         }
 
-        public string SubscriptionName
-        {
-            get
-            {
-                return _subscriptionName;
-            }
-        }
+        public string SubscriptionName { get; set; }
+
+        public ElasticOperator RootOperator { get; private set; }
+
+        public IElasticTaskSetService Service { get; private set; }
+
+        public bool IsIterative { get; set; }
+
+        public IFailureState FailureStatus { get; private set; }
 
         public int GetNextOperatorId()
         {
@@ -128,15 +121,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return true;
         }
 
-        // For the moment this method will always return true.
-        // In the future we  may implement different policies for 
-        // triggering the scheduling of the tasks.
-        public bool ScheduleSubscription
+        public bool ScheduleSubscription()
         {
-            get
-            {
-                return true;
-            }
+            return true;
         }
 
         public bool IsMasterTaskContext(IActiveContext activeContext)
@@ -151,30 +138,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return id == 1;
         }
 
-        public IElasticTaskSetService Service
-        {
-            get
-            {
-                return _elasticService;
-            }
-        }
-
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             builder = builder
                 .BindNamedParameter<GroupCommunicationConfigurationOptions.SubscriptionName, string>(
                     GenericType<GroupCommunicationConfigurationOptions.SubscriptionName>.Class,
-                    _subscriptionName);
+                    SubscriptionName);
 
                 RootOperator.GetElasticTaskConfiguration(ref builder, taskId);
-        }
-
-        public ElasticOperator RootOperator
-        {
-            get
-            {
-                return _root;
-            }
         }
 
         public IElasticTaskSetSubscription Build()
@@ -191,26 +162,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public int IteratorId
-        {
-            get
-            {
-                return _iteratorId;
-            }
-            set
-            {
-                _iteratorId = value;
-            }
-        }
-
-        public IFailureState FailureState
-        {
-            get
-            {
-                return _failureState;
-            }
-        }
-
         public IFailureState OnTaskFailure(IFailedTask task)
         {
             // Failure have to be propagated down to the operators
@@ -219,18 +170,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             // Update the current subscription status
             lock (_statusLock)
             {
-                if (status.FailureState < _failureState.FailureState)
+                if (status.FailureState < FailureStatus.FailureState)
                 {
                     throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
                 }
 
-                _failureState.FailureState = status.FailureState;
+                FailureStatus.FailureState = status.FailureState;
             }
 
             // Failure have to be propagated up to the service
             Service.OnTaskFailure(task);
 
-            return _failureState;
+            return FailureStatus;
         }
 
         public void EventDispatcher(IFailureEvent @event)
@@ -255,17 +206,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReconfigure(IReconfigure info)
         {
-            LOGGER.Log(Level.Info, "Reconfiguring subscription " + _subscriptionName);
+            LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
         }
 
         public void OnReschedule(IReschedule rescheduleEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + _subscriptionName);
+            LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
         }
 
         public void OnStop(IStop stopEvent)
         {
-            LOGGER.Log(Level.Info, "Going to stop subscription" + _subscriptionName + " and reschedule a task");
+            LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
         }
     }
 }

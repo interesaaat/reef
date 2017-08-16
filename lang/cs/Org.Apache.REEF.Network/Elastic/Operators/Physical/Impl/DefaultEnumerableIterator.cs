@@ -28,18 +28,17 @@ using Org.Apache.REEF.Tang.Interface;
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Default Group Communication Operator used to iterate over a fixed set of ints.
     /// </summary>
-    /// <typeparam name="T">The type of message being sent.</typeparam>
     public sealed class DefaultEnumerableIterator : IElasticIterator<int>
     {
         private readonly ElasticIteratorEnumerator<int> _inner;
 
         /// <summary>
-        /// Creates a new BroadcastReceiver.
+        /// Creates a new Enumerable Iterator.
         /// </summary>
         /// <param name="id">The operator identifier</param>
-        /// <param name="commLayer">The node's communication layer graph</param>
+        /// <param name="innerIterator">The inner eunmerator implemeting the iterator</param>
         [Inject]
         private DefaultEnumerableIterator(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
@@ -50,9 +49,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _inner = innerIterator;
         }
 
-        /// <summary>
-        /// Returns the operator identifier.
-        /// </summary>
         public int OperatorId { get; private set; }
 
         public string OperatorName { get; private set; }

@@ -29,7 +29,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Used by Tasks to fetch Subscription Task.
+    /// Used by Tasks to fetch Subscriptions.
     /// </summary>
     internal sealed class DefaultTaskSetService : IElasticTaskSetService
     {
@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Creates a new DefaultTaskSetService and registers the task ID with the Name Server.
         /// </summary>
-        /// <param name="groupConfigs">The set of serialized subscrptions configurations</param>
+        /// <param name="subscriptionConfigs">The set of serialized subscriptions configurations</param>
         /// <param name="taskId">The identifier for this task</param>
         /// <param name="networkService">The writable network service used to send messages</param>
         /// <param name="configSerializer">Used to deserialize service configuration</param>

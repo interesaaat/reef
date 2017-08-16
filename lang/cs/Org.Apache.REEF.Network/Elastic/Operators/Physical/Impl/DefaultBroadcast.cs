@@ -17,10 +17,7 @@
 
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Config;
-using System;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
@@ -39,7 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// Creates a new BroadcastReceiver.
         /// </summary>
         /// <param name="id">The operator identifier</param>
-        /// <param name="commLayer">The node's communication layer graph</param>
+        /// <param name="topology">The operator topology layer</param>
         [Inject]
         private DefaultBroadcast(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,

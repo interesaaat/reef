@@ -109,10 +109,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(ReduceFunctionConfiguration<int, int>.ReduceFunction, GenericType<SumFunction>.Class)
                 .Build();
 
-            IConfiguration dataConverterConfig = PipelineDataConverterConfiguration<int>.Conf
-                .Set(PipelineDataConverterConfiguration<int>.DataConverter, GenericType<DefaultPipelineDataConverter<int>>.Class)
-                .Build();
-
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(GenericType<OperatorsConfiguration.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
@@ -135,13 +131,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        dataConverterConfig)
+                        CheckpointLevel.None)
                     .Reduce(1, TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
-                        reduceFunctionConfig,
-                        dataConverterConfig)
+                        reduceFunctionConfig)
                     .Build();
 
             _serverA = subscription.Build();
@@ -152,13 +146,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        dataConverterConfig)
+                        CheckpointLevel.None)
                      .Reduce(2, TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
-                        reduceFunctionConfig,
-                        dataConverterConfig)
+                        reduceFunctionConfig)
                     .Build();
 
             _serverB = subscription.Build();
@@ -169,13 +161,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
-                        dataConverterConfig)
+                        CheckpointLevel.None)
                     .Reduce(3, TopologyTypes.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
-                        reduceFunctionConfig,
-                        dataConverterConfig)
+                        reduceFunctionConfig)
                     .Build();
 
             _serverC = subscription.Build();
@@ -219,12 +209,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             int id;
             string identifier = null;
 
-            if (_serversTaskManager.HasMoreContextToAdd)
+            if (_serversTaskManager.HasMoreContextToAdd())
             {
                 id = _serversTaskManager.GetNextTaskContextId(allocatedEvaluator);
                 identifier = Utils.BuildContextId(_serversTaskManager.SubscriptionsId, id);
             }
-            else if (_workersTaskManager.HasMoreContextToAdd)
+            else if (_workersTaskManager.HasMoreContextToAdd())
             {
                 id = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
                 identifier = Utils.BuildContextId(_workersTaskManager.SubscriptionsId, id);
@@ -316,12 +306,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _workersTaskManager.OnTaskCompleted(value);
 
-            if (_serversTaskManager.Done)
+            if (_serversTaskManager.Done())
             {
                 _serversTaskManager.Dispose();
             }
 
-            if (_workersTaskManager.Done)
+            if (_workersTaskManager.Done())
             {
                 _workersTaskManager.Dispose();
             }
@@ -340,12 +330,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _workersTaskManager.OnTaskFailure(failedTask);
 
-            if (_serversTaskManager.Done)
+            if (_serversTaskManager.Done())
             {
                 _serversTaskManager.Dispose();
             }
 
-            if (_workersTaskManager.Done)
+            if (_workersTaskManager.Done())
             {
                 _workersTaskManager.Dispose();
             }

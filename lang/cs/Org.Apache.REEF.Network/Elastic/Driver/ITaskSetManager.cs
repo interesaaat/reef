@@ -39,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     {
         void AddTaskSetSubscription(IElasticTaskSetSubscription subscription);
 
-        bool HasMoreContextToAdd { get; }
+        bool HasMoreContextToAdd();
 
         int GetNextTaskContextId(IAllocatedEvaluator evaluator = null);
 
@@ -51,11 +51,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext);
 
-        int NumTasks { get; }
-
         void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext);
 
-        bool StartSubmitTasks { get; }
+        bool StartSubmitTasks();
 
         void SubmitTasks();
 
@@ -63,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         void OnTaskCompleted(ICompletedTask task);
 
-        bool Done { get; }
+        bool Done();
 
         void Dispose();
 

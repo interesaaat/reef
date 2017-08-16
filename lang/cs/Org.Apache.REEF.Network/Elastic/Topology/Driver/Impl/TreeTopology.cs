@@ -28,9 +28,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 {
     public class TreeTopology : ITopology
     {
-        private readonly int _rootId;
+        private int _rootId;
         private readonly int _degree;
-        private bool _sorted;
+        private readonly bool _sorted;
         private bool _finalized;
 
         private readonly IDictionary<int, DataNode> _nodes;

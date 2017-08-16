@@ -29,11 +29,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultEmpty : ElasticOperatorWithDefaultDispatcher
     {
-        private const string _operator = Constants.Empty;
-
         public DefaultEmpty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
             base(subscription, null, new EmptyTopology(), filureMachine)
         {
+            OperatorName = Constants.Empty;
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)

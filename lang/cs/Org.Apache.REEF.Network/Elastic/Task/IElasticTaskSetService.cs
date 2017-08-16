@@ -23,16 +23,16 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    /// Used by Tasks to fetch CommunicationGroupTask.
+    /// Used by Tasks to fetch Subscrptions.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetService))]
     public interface IElasticTaskSetService : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
-        /// Gets the CommunicationGroupClient with the given group name.
+        /// Gets the Subscrption with the given name.
         /// </summary>
-        /// <param name="groupName">The name of the CommunicationGroupClient</param>
-        /// <returns>The configured CommunicationGroupClient</returns>
-        IElasticTaskSetSubscription GetSubscription(string groupName);
+        /// <param name="subscriptionName">The name of the Subscription</param>
+        /// <returns>The configured subscrption</returns>
+        IElasticTaskSetSubscription GetSubscription(string subscriptionName);
     }
 }

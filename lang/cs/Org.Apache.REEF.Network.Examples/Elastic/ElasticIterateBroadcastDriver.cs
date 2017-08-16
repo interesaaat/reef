@@ -100,7 +100,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
-            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription;
+            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
             ElasticOperator pipeline = subscription.RootOperator;
 
@@ -196,7 +196,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskCompleted(value);
 
-            if (_taskManager.Done)
+            if (_taskManager.Done())
             {
                 _taskManager.Dispose();
             }
@@ -211,7 +211,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskFailure(failedTask);
 
-            if (_taskManager.Done)
+            if (_taskManager.Done())
             {
                 _taskManager.Dispose();
             }

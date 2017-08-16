@@ -28,9 +28,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultBroadcast<T> : ElasticOperatorWithDefaultDispatcher, IElasticBroadcast
     {
-        private const string _operator = Constants.Broadcast;
-        private int _senderId;
-
         public DefaultBroadcast(
             int senderId,
             ElasticOperator prev,
@@ -45,25 +42,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel,
                 configurations)
         {
-            _senderId = senderId;
-        }
-
-        public int SenderTaskId
-        {
-            get
-            {
-                return _senderId;
-            }
-        }
-
-        protected override string OperatorName
-        {
-            get { return _operator; }
-        }
-
-        protected override int MasterTaskId
-        {
-            get { return SenderTaskId; }
+            MasterTaskId = senderId;
+            OperatorName = Constants.Broadcast;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

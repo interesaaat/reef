@@ -27,9 +27,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultReduce : ElasticOperatorWithDefaultDispatcher, IElasticReduce
     {
-        private const string _operator = Constants.Reduce;
-        private int _receiverId;
-
         public DefaultReduce(
             int receiverId,
             ElasticOperator prev,
@@ -43,31 +40,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 failureMachine,
                 checkpointLevel)
         {
-            _receiverId = receiverId;
-        }
-
-        public int ReceiverTaskId
-        {
-            get
-            {
-                return _receiverId;
-            }
-        }
-
-        private int GenerateReceiverTaskId()
-        {
-            _receiverId = 1;
-            return _receiverId;
-        }
-
-        protected override string OperatorName
-        {
-            get { return _operator; }
-        }
-
-        protected override int MasterTaskId
-        {
-            get { return ReceiverTaskId; }
+            MasterTaskId = receiverId;
+            OperatorName = Constants.Reduce;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

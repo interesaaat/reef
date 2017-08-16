@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly List<TaskInfo> _taskInfos; 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
-        private IFailureState _failureState;
+        private IFailureState _failureStatus;
 
         private readonly object _taskLock;
         private readonly object _statusLock;
@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             _taskInfos = new List<TaskInfo>(numTasks);
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
-            _failureState = new DefaultFailureState();
+            _failureStatus = new DefaultFailureState();
 
             _taskLock = new object();
             _statusLock = new object();
@@ -88,12 +88,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _subscriptions.Add(subscription.SubscriptionName, subscription);
         }
 
-        public bool HasMoreContextToAdd
+        public bool HasMoreContextToAdd()
         {
-            get
-            {
-                return _contextsAdded < _numTasks;
-            }
+             return _contextsAdded < _numTasks;
         }
 
         public int GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
@@ -129,14 +126,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return _subscriptions.Values.Where(sub => sub.IsMasterTaskContext(activeContext));
         }
 
-        public int NumTasks
-        {
-            get
-            {
-                return _numTasks;
-            }
-        }
-
         public void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
         {
             int id = Utils.GetTaskNum(taskId) - 1;
@@ -160,20 +149,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, TaskStatus.Init, subList);
 
-            if (StartSubmitTasks)
+            if (StartSubmitTasks())
             {
                 SubmitTasks();
             }
         }
 
-        public bool StartSubmitTasks
+        public bool StartSubmitTasks()
         {
-            get
-            {
-                var canI = _subscriptions.All(sub => sub.Value.ScheduleSubscription == true);
+            var canI = _subscriptions.All(sub => sub.Value.ScheduleSubscription());
 
-                return _tasksAdded == _numTasks && canI;
-            }
+            return _tasksAdded == _numTasks && canI;
         }
 
         public void SubmitTasks()
@@ -227,7 +213,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     {
                         _taskInfos[id].TaskStatus = TaskStatus.Running;
                         _taskInfos[id].TaskRunner = task;
-                        ////task.Send
                     }
                 }
             }
@@ -248,16 +233,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        // Task set is done when we have no more tasks running and the failure state is
-        // not stop and reschedule
-        public bool Done
+        /// <summary>
+        /// A task set is done when we have no more tasks running and the failure state is
+        /// not stop and reschedule
+        /// </summary>
+        public bool Done()
         {
-            get
-            {
-                return _tasksRunning == 0
-                    && !_taskInfos.Any(info => info.TaskStatus < TaskStatus.Failed)
-                    && (DefaultFailureStates)_failureState.FailureState < DefaultFailureStates.StopAndReschedule;
-            }
+            return _tasksRunning == 0
+                && !_taskInfos.Any(info => info.TaskStatus < TaskStatus.Failed)
+                && (DefaultFailureStates)_failureStatus.FailureState < DefaultFailureStates.StopAndReschedule;
         }
 
         public void Dispose()
@@ -278,7 +262,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public IFailureState OnTaskFailure(IFailedTask info)
         {
-            Console.WriteLine("FAILURE RECEIVED!");
+            OnFail(); // Default action until we don't have mechanisms implemented
             if (BelongsTo(info.Id))
             {
                 var id = Utils.GetTaskNum(info.Id) - 1;
@@ -311,12 +295,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     lock (_statusLock)
                     {
-                        _failureState = currentState;
+                        _failureStatus = currentState;
                     }
 
-                    if (_failureState.FailureState > (int)DefaultFailureStates.Continue)
+                    if (_failureStatus.FailureState > (int)DefaultFailureStates.Continue)
                     {
-                        switch ((DefaultFailureStateEvents)_failureState.FailureState)
+                        switch ((DefaultFailureStateEvents)_failureStatus.FailureState)
                         {
                             case DefaultFailureStateEvents.Reconfigure:
                                 LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reconfiguration event");

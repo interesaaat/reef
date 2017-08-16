@@ -34,9 +34,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         ElasticOperator RootOperator { get; }
 
-        int IteratorId { get; set; }
+        /// <summary>
+        /// This is needed for fault-tolerancy. Failures over an iterative pipeline of operators
+        /// have to be propagated through all operators.
+        /// <summary>
+        bool IsIterative { get; set; }
 
-        IFailureState FailureState { get; }
+        IFailureState FailureStatus { get; }
 
         IElasticTaskSetService Service { get; }
 
@@ -46,7 +50,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         bool AddTask(string taskId);
 
-        bool ScheduleSubscription { get; }
+        /// <summary>
+        /// Method for implementing different policies for 
+        /// triggering the scheduling of subscription's tasks.
+        /// </summary>
+        bool ScheduleSubscription();
 
         bool IsMasterTaskContext(IActiveContext activeContext);
 

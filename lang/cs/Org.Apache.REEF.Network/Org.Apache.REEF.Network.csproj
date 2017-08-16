@@ -74,7 +74,6 @@ under the License.
     <Compile Include="Elastic\Config\OperatorsConfiguration.cs" />
     <Compile Include="Elastic\Config\ElasticServiceConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\GroupCommunicationConfigurationOptions.cs" />
-    <Compile Include="Elastic\Config\PipelineDataConverterConfiguration.cs" />
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
     <Compile Include="Elastic\Config\StreamingCodecConfiguration.cs" />
     <Compile Include="Elastic\Driver\Impl\TaskInfo.cs" />

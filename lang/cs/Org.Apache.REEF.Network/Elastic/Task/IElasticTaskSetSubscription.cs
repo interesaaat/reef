@@ -19,7 +19,6 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
-using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
@@ -49,37 +48,5 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         /// <param name="operatorName">The name of the Iterate operator</param>
         /// <returns>The Iterate operator</returns>
         IElasticIterator<T> GetIterator<T>(int operatorId);
-
-        /// <summary>
-        /// Gets the ReduceSender with the given name and message type.
-        /// </summary>
-        /// <typeparam name="T">The message type</typeparam>
-        /// <param name="operatorName">The name of the Reduce operator</param>
-        /// <returns>The ReduceSender</returns>
-        IReduceSender<T> GetReduceSender<T>(string operatorName);
-
-        /// <summary>
-        /// Gets the ReduceReceiver with the given name and message type.
-        /// </summary>
-        /// <typeparam name="T">The message type</typeparam>
-        /// <param name="operatorName">The name of the Reduce operator</param>
-        /// <returns>The ReduceReceiver</returns>
-        IReduceReceiver<T> GetReduceReceiver<T>(string operatorName);
-
-        /// <summary>
-        /// Gets the ScatterSender with the given name and message type.
-        /// </summary>
-        /// <typeparam name="T">The message type</typeparam>
-        /// <param name="operatorName">The name of the Scatter operator</param>
-        /// <returns>The ScatterSender</returns>
-        IScatterSender<T> GetScatterSender<T>(string operatorName);
-
-        /// <summary>
-        /// Gets the ScatterReceiver with the given name and message type.
-        /// </summary>
-        /// <typeparam name="T">The message type</typeparam>
-        /// <param name="operatorName">The name of the Scatter operator</param>
-        /// <returns>The ScatterReceiver</returns>
-        IScatterReceiver<T> GetScatterReceiver<T>(string operatorName);
     }
 }

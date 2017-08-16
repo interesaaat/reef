@@ -33,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         private int _rootId;
         private bool _finalized;
-        private bool _sorted;
+        private readonly bool _sorted;
 
         private readonly Dictionary<int, DataNode> _nodes;
 

@@ -26,7 +26,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology
     {
         int AddTask(string taskId);
 
-        // For the moments we don't propagate unreachable datapoints but only node failures
         int RemoveTask(string taskId);
 
         void Build();

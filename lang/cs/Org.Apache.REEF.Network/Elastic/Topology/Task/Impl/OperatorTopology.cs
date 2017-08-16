@@ -15,15 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using Org.Apache.REEF.Tang.Annotations;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
-using Org.Apache.REEF.Common.Tasks;
-using System.Runtime.Remoting;
 using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Network.Elastic.Task;
@@ -33,9 +29,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
     public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
     {
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
-        protected readonly string _rootId;
+        protected string _rootId;
         protected readonly string _taskId;
-        protected volatile bool _initialized;
+        protected bool _initialized;
         internal CommunicationLayer _commLayer;
 
         private ConcurrentQueue<GroupCommunicationMessage> _sendQueue;

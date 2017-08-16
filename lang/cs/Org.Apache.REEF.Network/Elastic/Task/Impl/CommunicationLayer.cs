@@ -82,8 +82,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// Registers a <see cref="TaskMessageObserver"/> for a given <see cref="taskSourceId"/>.
-        /// If the <see cref="TaskMessageObserver"/> has already been initialized, it will return
+        /// Registers a <see cref="OperatorTopology"/> for a given <see cref="taskSourceId"/>.
+        /// If the <see cref="OperatorTopology"/> has already been initialized, it will return
         /// the existing one.
         /// </summary>
         public void RegisterOperatorTopologyForTask(string taskSourceId, OperatorTopology operatorObserver)
@@ -137,10 +137,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// On the first message, we map the <see cref="TaskMessageObserver"/> to the <see cref="IPEndPoint"/>
-        /// of the sending Task and register the observer with <see cref="IRemoteManager{T}"/> 
-        /// by calling <see cref="TaskMessageObserver#OnNext"/>. On subsequent messages we simply ignore the message
-        /// and allow <see cref="ObserverContainer{T}"/> to send the message directly via the <see cref="IPEndPoint"/>.
+        /// Forward the received message to the target <see cref="OperatorTopology"/>.
         /// </summary>
         /// <param name="remoteMessage"></param>
         public void OnNext(IRemoteMessage<NsMessage<GroupCommunicationMessage>> remoteMessage)

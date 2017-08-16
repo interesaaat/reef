@@ -16,7 +16,6 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
-using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {

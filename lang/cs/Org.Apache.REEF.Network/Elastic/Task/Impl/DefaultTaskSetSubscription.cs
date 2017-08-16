@@ -16,7 +16,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
-        private readonly string _name;
         private readonly IDictionary<int, object> _operators;
 
         [Inject]
@@ -26,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
            AvroConfigurationSerializer configSerializer,
            IInjector injector)
         {
-            _name = subscriptionName;
+            SubscriptionName = subscriptionName;
 
             _operators = new SortedDictionary<int, object>();
 
@@ -48,10 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
         }
 
-        public string SubscriptionName
-        {
-            get { return _name; }
-        }
+        public string SubscriptionName { get; private set; }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
@@ -81,26 +77,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             _operators.TryGetValue(operatorId, out object output);
 
             return output as IElasticIterator<T>;
-        }
-
-        public IReduceReceiver<T> GetReduceReceiver<T>(string operatorName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IReduceSender<T> GetReduceSender<T>(string operatorName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IScatterReceiver<T> GetScatterReceiver<T>(string operatorName)
-        {
-            throw new NotImplementedException();
-        }
-
-        public IScatterSender<T> GetScatterSender<T>(string operatorName)
-        {
-            throw new NotImplementedException();
         }
 
         public void Dispose()

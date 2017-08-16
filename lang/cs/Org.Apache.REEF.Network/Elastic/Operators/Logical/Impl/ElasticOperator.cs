@@ -54,7 +54,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected bool _stateFinalized = false;
         protected bool _operatorFinalized = false;
 
-        protected int _masterTaskId = 1;
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
@@ -77,6 +76,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _configurations = configurations;
         }
 
+        public int MasterTaskId { get; protected set; }
+
+        public string OperatorName { get; protected set; }
+
         public bool AddTask(string taskId)
         {
             _topology.AddTask(taskId);
@@ -90,16 +93,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
 
             return true;
-        }
-
-        protected virtual int MasterTaskId
-        {
-            get { return _masterTaskId; }
-        }
-
-        protected virtual string OperatorName
-        {
-            get { return string.Empty; }
         }
 
         protected IElasticTaskSetSubscription Subscription
@@ -263,7 +256,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             var exception = task.AsError() as OperatorException;
 
-            if (Subscription.IteratorId > 0 || exception.OperatorId <= _id)
+            if (Subscription.IsIterative || exception.OperatorId <= _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
                 IFailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);

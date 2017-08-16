@@ -27,72 +27,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// </summary>
     internal sealed class TaskInfo
     {
-        private readonly IConfiguration _configuration;
-        private readonly IActiveContext _activeContext;
-        private int _numRetry;
-        private TaskStatus _status;
-        private readonly IList<IElasticTaskSetSubscription> _subscriptions;
-        private IRunningTask _taskRunner;
-
         internal TaskInfo(IConfiguration config, IActiveContext context, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
         {
-            _configuration = config;
-            _activeContext = context;
-            _numRetry = 0;
-            _status = status;
-            _subscriptions = subscriptions;
+            TaskConfiguration = config;
+            ActiveContext = context;
+            Subscriptions = subscriptions;
+            NumRetry = 0;
+            TaskStatus = status;
         }
 
-        internal IConfiguration TaskConfiguration
-        {
-            get { return _configuration; }
-        }
+        internal IConfiguration TaskConfiguration { get; private set; }
 
-        internal IActiveContext ActiveContext
-        {
-            get { return _activeContext; }
-        }
+        internal IActiveContext ActiveContext { get; private set; }
 
-        internal IList<IElasticTaskSetSubscription> Subscriptions
-        {
-            get { return _subscriptions; }
-        }
+        internal IList<IElasticTaskSetSubscription> Subscriptions { get; private set; }
 
-        internal IRunningTask TaskRunner
-        {
-            get
-            {
-                return _taskRunner;
-            }
-            set
-            {
-                _taskRunner = value;
-            }
-        }
+        internal IRunningTask TaskRunner { get; set; }
 
-        internal TaskStatus TaskStatus
-        {
-            get
-            {
-                return _status;
-            }
-            set
-            {
-                _status = value;
-            }
-        }
+        internal TaskStatus TaskStatus { get; set; }
 
-        internal int NumRetry
-        {
-            get
-            {
-                return _numRetry;
-            }
-
-            set
-            {
-                _numRetry = value;
-            }
-        }
+        internal int NumRetry { get; set; }
     }
 }

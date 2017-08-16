@@ -29,12 +29,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     public class DefaultFailureStateMachine : IFailureStateMachine
     {
-        private int _numDependencise;
-        private int _currentFailures;
-        private DefaultFailureState _currentState;
         private bool _finalized;
 
-        private object _statusLock;
+        private readonly object _statusLock;
 
         private readonly SortedDictionary<DefaultFailureStates, DefaultFailureStates> transitionMapUp = new SortedDictionary<DefaultFailureStates, DefaultFailureStates>()
         {
@@ -60,18 +57,19 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         [Inject]
         public DefaultFailureStateMachine()
         {
-            _numDependencise = 0;
-            _currentFailures = 0;
-            _currentState = new DefaultFailureState();
+            NumOfDataPoints = 0;
+            NumOfFailedDataPoints = 0;
+            State = new DefaultFailureState();
             _finalized = false;
 
             _statusLock = new object();
         }
 
-        public IFailureState State 
-        {
-            get { return _currentState; }
-        }
+        public IFailureState State { get; private set; }
+
+        public int NumOfDataPoints { get; private set; }
+
+        public int NumOfFailedDataPoints { get; private set; }
 
         public IFailureState AddDataPoints(int points)
         {
@@ -79,24 +77,24 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             {
                 if (!_finalized)
                 {
-                    _numDependencise += points;
+                    NumOfDataPoints += points;
                 }
                 else
                 {
-                    _currentFailures -= points;
+                    NumOfFailedDataPoints -= points;
 
-                    if (_currentState.FailureState != (int)DefaultFailureStates.Continue)
+                    if (State.FailureState != (int)DefaultFailureStates.Continue)
                     {
-                        float currentRate = _currentFailures / _numDependencise;
+                        float currentRate = NumOfFailedDataPoints / NumOfDataPoints;
 
-                        while (currentRate < transitionWeights[(DefaultFailureStates)_currentState.FailureState])
+                        while (currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
                         {
-                            _currentState.FailureState = (int)transitionMapDown[(DefaultFailureStates)_currentState.FailureState];
+                            State.FailureState = (int)transitionMapDown[(DefaultFailureStates)State.FailureState];
                         }
                     }
                 }
 
-                return _currentState;
+                return State;
             }
         }
 
@@ -104,16 +102,17 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             lock (_statusLock)
             {
-                _currentFailures += points;
+                NumOfFailedDataPoints += points;
 
-                float currentRate = (float)_currentFailures / _numDependencise;
+                float currentRate = (float)NumOfFailedDataPoints / NumOfDataPoints;
 
-                while (_currentState.FailureState != (int)DefaultFailureStates.StopAndReschedule && currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)_currentState.FailureState]])
+                while (State.FailureState != (int)DefaultFailureStates.StopAndReschedule && 
+                    currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)State.FailureState]])
                 {
-                    _currentState.FailureState = (int)transitionMapUp[(DefaultFailureStates)_currentState.FailureState];
+                    State.FailureState = (int)transitionMapUp[(DefaultFailureStates)State.FailureState];
                 }
 
-                return _currentState;
+                return State;
             }
         }
 
@@ -200,20 +199,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
 
             return newMachine;
-        }
-
-        public int NumOfDataPoints
-        {
-            get { return _numDependencise; }
-
-            set { _numDependencise = value; }
-        }
-
-        public int NumOfFailedDataPoints
-        {
-            get { return _currentFailures; }
-
-            set { _currentFailures = value; }
         }
     }
 }

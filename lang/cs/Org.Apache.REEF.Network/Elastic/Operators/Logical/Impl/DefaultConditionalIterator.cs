@@ -31,8 +31,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultConditionalIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
-        private const string _operator = Constants.Iterate;
-    
         public DefaultConditionalIterator(
             int coordinatortId,
             ElasticOperator prev,
@@ -46,26 +44,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 failureMachine,
                 checkpointLevel)
         {
-            _masterTaskId = coordinatortId;
-            Subscription.IteratorId = _id;
-        }
-
-        protected override string OperatorName
-        {
-            get { return _operator; }
-        }
-
-        internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
-        {
-            if (_operatorFinalized != true)
-            {
-                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
-            }
-
-            if (_next != null)
-            {
-                _next.GatherMasterIds(ref missingMasterTasks);
-            }
+            MasterTaskId = coordinatortId;
+            OperatorName = Constants.Iterate;
+            Subscription.IsIterative = true;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

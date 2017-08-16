@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     [DefaultImplementation(typeof(DefaultTaskSetService))]
     public interface IElasticTaskSetService : IFailureResponse
     {
-        IElasticTaskSetSubscription DefaultTaskSetSubscription { get; }
+        IElasticTaskSetSubscription DefaultTaskSetSubscription();
 
         IElasticTaskSetSubscription NewTaskSetSubscription(string subscriptionName, int numTasks, IFailureStateMachine failureMachine = null);
 

@@ -28,13 +28,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         public int FailureState
         {
-            get
-            {
-                return -1;
-            }
-            set
-            {
-            }
+            get { return -1; }
+            set { }
         }
 
         public IFailureState Merge(IFailureState that)
