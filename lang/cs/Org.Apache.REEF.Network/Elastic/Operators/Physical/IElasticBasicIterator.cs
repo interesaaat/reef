@@ -22,10 +22,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// <summary>
     /// Group Communication operator used to for iterations.
     /// </summary>
-    public interface IElasticIterator : IElasticOperator
+    public interface IElasticBasicIterator<T> : IElasticIterator, IElasticBasicOperator<T>, IEnumerator<T>
     {
-        bool MoveNext();
-
-        object Current { get; }
     }
 }

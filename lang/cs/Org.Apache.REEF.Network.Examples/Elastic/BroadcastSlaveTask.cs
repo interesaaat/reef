@@ -21,6 +21,7 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
+using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -28,7 +29,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
-        private readonly IElasticBroadcast<int> _broadcastReceiver;
 
         private readonly CancellationTokenSource _cancellationSource;
 
@@ -40,16 +40,30 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
-            _broadcastReceiver = _subscriptionClient.GetBroadcast<int>(2);
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            var rec = _broadcastReceiver.Receive(_cancellationSource);
+            using (var workflow = _subscriptionClient.Workflow)
+            {
+                while (workflow.MoveNext())
+                {
+                    switch (workflow.Current.OperatorName)
+                    {
+                        case Constants.Broadcast:
+                            var receiver = workflow.Current as IElasticBroadcast<int>;
 
-            Console.WriteLine("Slave has received {0}", rec);
+                            var rec = receiver.Receive(_cancellationSource);
+
+                            Console.WriteLine("Slave has received {0}", rec);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
 
             return null;
         }

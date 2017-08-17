@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
 using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -29,8 +30,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
-        private readonly IElasticIterator<int> _iterator;
-        private readonly IElasticBroadcast<int> _broadcastReceiver;
 
         private readonly CancellationTokenSource _cancellationSource;
 
@@ -42,21 +41,38 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
-            _iterator = _subscriptionClient.GetIterator<int>(2);
-            _broadcastReceiver = _subscriptionClient.GetBroadcast<int>(3);
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            while (_iterator.MoveNext())
+            try
             {
-                var number = new Random().Next();
+                using (var workflow = _subscriptionClient.Workflow)
+                {
+                    while (workflow.MoveNext())
+                    {
+                        switch (workflow.Current.OperatorName)
+                        {
+                            case Constants.Broadcast:
+                                var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                var rec = _broadcastReceiver.Receive(_cancellationSource);
+                                Thread.Sleep(100000);
 
-                Console.WriteLine("Slave has received {0} in iteration {1}", rec, _iterator.Current);
+                                var rec = receiver.Receive(_cancellationSource);
+
+                                Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
+                                break;
+                            default:
+                                throw new InvalidOperationException("Operation {0} in workflow not implemented");
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                throw e;
             }
 
             return null;
@@ -66,7 +82,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
         }
 
-            public void Dispose()
+        public void Dispose()
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();

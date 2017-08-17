@@ -30,6 +30,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// </summary>
         /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
         /// <returns>The incoming message</returns>
-        T Receive(CancellationTokenSource cancellationSource = null);
+        T Receive(CancellationTokenSource cancellationSource);
     }
 }

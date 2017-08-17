@@ -32,6 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     class DefaultEnumerableIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
         public DefaultEnumerableIterator(
+            int masterTaskId,
             ElasticOperator prev,
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
@@ -43,6 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel,
                 configurations)
         {
+            MasterTaskId = masterTaskId;
             OperatorName = Constants.Iterate;
             Subscription.IsIterative = true;
         }
@@ -63,8 +65,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
             confBuilder
-                .BindImplementation(GenericType<IElasticOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator>.Class);
-            SetMessageType(typeof(IElasticOperator<int>), ref confBuilder);
+                .BindImplementation(GenericType<IElasticBasicOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator>.Class);
+            SetMessageType(typeof(IElasticBasicOperator<int>), ref confBuilder);
         }
     }
 }

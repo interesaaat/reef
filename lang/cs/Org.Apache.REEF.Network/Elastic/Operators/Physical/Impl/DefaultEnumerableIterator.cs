@@ -18,19 +18,15 @@
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
-using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using System;
 using System.Collections;
-using Org.Apache.REEF.Tang.Interface;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
     /// Default Group Communication Operator used to iterate over a fixed set of ints.
     /// </summary>
-    public sealed class DefaultEnumerableIterator : IElasticIterator<int>
+    public sealed class DefaultEnumerableIterator : IElasticBasicIterator<int>
     {
         private readonly ElasticIteratorEnumerator<int> _inner;
 
@@ -59,6 +55,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         }
 
         object IEnumerator.Current
+        {
+            get { return _inner.Current; }
+        }
+
+        object IElasticIterator.Current
         {
             get { return _inner.Current; }
         }

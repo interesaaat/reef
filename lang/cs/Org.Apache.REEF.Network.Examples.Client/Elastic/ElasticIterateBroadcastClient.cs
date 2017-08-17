@@ -50,6 +50,9 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(

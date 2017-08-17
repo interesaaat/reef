@@ -9,6 +9,8 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
@@ -16,18 +18,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
-        private readonly IDictionary<int, object> _operators;
-
         [Inject]
         private DefaultTaskSetSubscription(
            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscriptionName,
            [Parameter(typeof(GroupCommunicationConfigurationOptions.SerializedOperatorConfigs))] ISet<string> operatorConfigs,
            AvroConfigurationSerializer configSerializer,
+           Workflow workflow,
            IInjector injector)
         {
             SubscriptionName = subscriptionName;
-
-            _operators = new SortedDictionary<int, object>();
+            Workflow = workflow;
 
             foreach (string operatorConfigStr in operatorConfigs)
             {
@@ -39,11 +39,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task
                 int id = operatorInjector.GetNamedInstance<OperatorsConfiguration.OperatorId, int>(
                     GenericType<OperatorsConfiguration.OperatorId>.Class);
 
-                Type groupCommOperatorGenericInterface = typeof(IElasticOperator<>);
+                Type groupCommOperatorGenericInterface = typeof(IElasticBasicOperator<>);
                 Type groupCommOperatorInterface = groupCommOperatorGenericInterface.MakeGenericType(Type.GetType(msgType));
                 var operatorObj = operatorInjector.GetInstance(groupCommOperatorInterface);
 
-                _operators.Add(id, operatorObj);
+                Workflow.Add(operatorObj as IElasticOperator);
             }
         }
 
@@ -53,10 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         {
             try
             {
-                foreach (var op in _operators.Values)
-                {
-                    ((IWaitForTaskRegistration)op).WaitForTaskRegistration(cancellationSource);
-                }
+                Workflow.WaitForTaskRegistration(cancellationSource);
             }
             catch (OperationCanceledException e)
             {
@@ -65,26 +62,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
         }
 
-        public IElasticBroadcast<T> GetBroadcast<T>(int operatorId)
-        {
-            _operators.TryGetValue(operatorId, out object output);
-
-            return output as IElasticBroadcast<T>;
-        }
-
-        public IElasticIterator<T> GetIterator<T>(int operatorId)
-        {
-            _operators.TryGetValue(operatorId, out object output);
-
-            return output as IElasticIterator<T>;
-        }
+        public Workflow Workflow { get; private set; }
 
         public void Dispose()
         {
-            foreach (var op in _operators.Values)
+            if (Workflow != null)
             {
-                var disposableOperator = op as IDisposable;
-                disposableOperator.Dispose();
+                Workflow.Dispose();
             }
         }
     }

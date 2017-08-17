@@ -19,14 +19,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     public enum TaskStatus
     {
-        Init,
+        Init = 1,
 
-        Submitted,
+        Submitted = 2,
 
-        Running,
+        Running = 3,
 
-        Failed,
+        Failed = 4,
 
-        Completed
+        Completed = 5
     }
 }

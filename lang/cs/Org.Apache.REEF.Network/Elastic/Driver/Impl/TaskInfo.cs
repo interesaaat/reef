@@ -19,13 +19,14 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     /// <summary>
     /// Wraps all the info required to proper manager a task life cicle.
     /// </summary>
-    internal sealed class TaskInfo
+    internal sealed class TaskInfo : IDisposable
     {
         internal TaskInfo(IConfiguration config, IActiveContext context, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
         {
@@ -47,5 +48,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         internal TaskStatus TaskStatus { get; set; }
 
         internal int NumRetry { get; set; }
+
+        internal bool IsDisposed { get; private set; }
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                IsDisposed = true;
+
+                if (ActiveContext != null)
+                {
+                    ActiveContext.Dispose();
+                    ActiveContext = null;
+                }
+                if (TaskRunner != null)
+                {
+                    TaskRunner.Dispose();
+                    TaskRunner = null;
+                }
+            }
+        }
     }
 }

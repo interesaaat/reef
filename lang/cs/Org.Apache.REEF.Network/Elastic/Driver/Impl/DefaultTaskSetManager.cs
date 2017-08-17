@@ -229,6 +229,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     _taskInfos[id].TaskStatus = TaskStatus.Completed;
                     _taskInfos[id].TaskRunner.Dispose();
+                    _taskInfos[id].TaskRunner = null;
                 }
             }
         }
@@ -246,23 +247,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void Dispose()
         {
-            foreach (var info in _taskInfos)
+            lock (_taskLock)
             {
-                 info.ActiveContext.Dispose();
-            }
-        }
-
-        public void KillAll()
-        {
-            foreach (var info in _taskInfos)
-            {
-                info.TaskRunner.Dispose();
+                foreach (var info in _taskInfos)
+                {
+                    if (info != null)
+                    {
+                        info.Dispose();
+                    }
+                }
             }
         }
 
         public IFailureState OnTaskFailure(IFailedTask info)
         {
-            OnFail(); // Default action until we don't have mechanisms implemented
+            // Default action until we don't have mechanisms implemented
+            LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
+            OnFail();
             if (BelongsTo(info.Id))
             {
                 var id = Utils.GetTaskNum(info.Id) - 1;
@@ -367,7 +368,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnFail()
         {
-            KillAll();
             Dispose();
         }
 

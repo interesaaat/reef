@@ -61,9 +61,12 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultEnumerableIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\ForLoopEnumerator.cs" />
     <Compile Include="Elastic\Operators\Physical\ElasticIteratorEnumerator.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticBasicOperator.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticBasicIterator.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessageStreamingCodec.cs" />
+    <Compile Include="Elastic\Task\Impl\Workflow.cs" />
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
     <Compile Include="Elastic\Task\IWaitForTaskRegistration.cs" />
     <Compile Include="Elastic\Topology\Task\Impl\BroadcastTopology.cs" />

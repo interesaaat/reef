@@ -223,9 +223,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return Reduce(receiverTaskId, TopologyTypes.Flat, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
-        public abstract ElasticOperator ConditionalIterate(int masterTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator ConditionalIterate(int coordinatorId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
-        public abstract ElasticOperator EnumerableIterate(IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator EnumerableIterate(int masterTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
         public ElasticOperator Iterate(TopologyTypes topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
@@ -239,12 +239,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Iterate(IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            return EnumerableIterate(failureMachine, checkpointLevel, configurations);
+            return EnumerableIterate(MasterTaskId, failureMachine, checkpointLevel, configurations);
         }
 
         public ElasticOperator Iterate(params IConfiguration[] configurations)
         {
-            return EnumerableIterate(_failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return EnumerableIterate(MasterTaskId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Scatter(string senderTaskId, ElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat)

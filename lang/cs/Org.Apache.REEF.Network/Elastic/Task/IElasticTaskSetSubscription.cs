@@ -16,9 +16,11 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
@@ -33,20 +35,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         /// </summary>
         string SubscriptionName { get; }
 
-        /// <summary>
-        /// Gets the Broadcast operator with the given id and message type.
-        /// </summary>
-        /// <typeparam name="T">The message type</typeparam>
-        /// <param name="operatorName">The name of the Broadcast operator</param>
-        /// <returns>The Broadcast operator</returns>
-        IElasticBroadcast<T> GetBroadcast<T>(int operatorId);
-
-        /// <summary>
-        /// Gets the Iterate operator with the given id and type.
-        /// </summary>
-        /// <typeparam name="T">The iterator type</typeparam>
-        /// <param name="operatorName">The name of the Iterate operator</param>
-        /// <returns>The Iterate operator</returns>
-        IElasticIterator<T> GetIterator<T>(int operatorId);
+        Workflow Workflow { get; }
     }
 }

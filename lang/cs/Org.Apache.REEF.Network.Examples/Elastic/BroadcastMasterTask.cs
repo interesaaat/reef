@@ -19,9 +19,11 @@ using System;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
-using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
 using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Network.Elastic.Operators;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -29,7 +31,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
-        private readonly IElasticBroadcast<int> _broadcastSender;
 
         private readonly CancellationTokenSource _cancellationSource;
 
@@ -41,18 +42,35 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
-            _broadcastSender = _subscriptionClient.GetBroadcast<int>(2);
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            var number = new Random().Next();
+            var rand = new Random();
+            int number = 0;
 
-            _broadcastSender.Send(number);
+            using (var workflow = _subscriptionClient.Workflow)
+            {
+                while (workflow.MoveNext())
+                {
+                    number = rand.Next();
 
-            Console.WriteLine("Master has sent {0}", number);
+                    switch (workflow.Current.OperatorName)
+                    {
+                        case Constants.Broadcast:
+                            var sender = workflow.Current as IElasticBroadcast<int>;
+
+                            sender.Send(number);
+
+                            Console.WriteLine("Master has sent {0}", number);
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
 
             return null;
         }
