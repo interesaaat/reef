@@ -33,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             base(subscription, null, new EmptyTopology(), filureMachine)
         {
             OperatorName = Constants.Empty;
-            MasterTaskId = 1;
+            MasterId = 1;
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)

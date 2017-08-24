@@ -162,6 +162,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
+        public ISet<RingReturnMessage> OnTaskMessage(ITaskMessage message)
+        {
+            return RootOperator.OnTaskMessage(message);
+        }
+
         public IFailureState OnTaskFailure(IFailedTask task)
         {
             // Failure have to be propagated down to the operators

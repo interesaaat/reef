@@ -31,6 +31,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 /// <summary>
 /// Basic implementation for logical operators.
@@ -39,7 +40,7 @@ using Org.Apache.REEF.Tang.Implementations.Configuration;
 /// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
-    public abstract class ElasticOperator : IFailureResponse
+    public abstract class ElasticOperator : IFailureResponse, ITaskMessageResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticOperator));
 
@@ -76,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _configurations = configurations;
         }
 
-        public int MasterTaskId { get; protected set; }
+        public int MasterId { get; protected set; }
 
         public string OperatorName { get; protected set; }
 
@@ -181,7 +182,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new IllegalStateException("Operator need to be build before finalizing the subscription");
             }
 
-            missingMasterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterTaskId));
+            missingMasterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterId));
 
             if (_next != null)
             {
@@ -198,12 +199,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Broadcast<T>(MasterTaskId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterTaskId) : (ITopology)new TreeTopology(MasterTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Broadcast<T>(MasterId, new FullConnectedTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType, params IConfiguration[] configurations)
         {
-            return Broadcast<T>(MasterTaskId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterTaskId) : (ITopology)new TreeTopology(MasterTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(MasterId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Broadcast<T>(int senderTaskId, params IConfiguration[] configurations)
@@ -211,11 +212,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return Broadcast<T>(senderTaskId, new FlatTopology(senderTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        public abstract ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+
+        public ElasticOperator AggregationRing<T>(params IConfiguration[] configurations)
+        {
+            return AggregationRing<T>(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+        }
+
         public abstract ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
         public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Reduce(MasterTaskId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Reduce(MasterId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Reduce(int receiverTaskId, params IConfiguration[] configurations)
@@ -229,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Iterate(TopologyTypes topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return ConditionalIterate(MasterTaskId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterTaskId) : (ITopology)new TreeTopology(MasterTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return ConditionalIterate(MasterId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Iterate(int coordinatorTaskId, params IConfiguration[] configurations)
@@ -239,17 +247,29 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Iterate(IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            return EnumerableIterate(MasterTaskId, failureMachine, checkpointLevel, configurations);
+            return EnumerableIterate(MasterId, failureMachine, checkpointLevel, configurations);
         }
 
         public ElasticOperator Iterate(params IConfiguration[] configurations)
         {
-            return EnumerableIterate(MasterTaskId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return EnumerableIterate(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public ElasticOperator Scatter(string senderTaskId, ElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat)
         {
             throw new NotImplementedException();
+        }
+
+        public ISet<RingReturnMessage> OnTaskMessage(ITaskMessage message)
+        {
+            var replies = ReactOnTaskMessage(message);
+
+            if (_next != null)
+            {
+                replies.UnionWith(_next.OnTaskMessage(message));
+            }
+
+            return replies;
         }
 
         public IFailureState OnTaskFailure(IFailedTask task)
@@ -323,12 +343,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected virtual void LogOperatorState()
         {
             string intro = string.Format(CultureInfo.InvariantCulture,
-               "State for Operator {0} in Subscription {1}:\n", Subscription.SubscriptionName, OperatorName);
+               "State for Operator {0} in Subscription {1}:\n", OperatorName, Subscription.SubscriptionName);
             string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}", _topology.LogTopologyState());
             string failureMachineState = "Failure State: " + _failureMachine.State.FailureState +
                     "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;
 
             LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
+        }
+
+        protected virtual ISet<RingReturnMessage> ReactOnTaskMessage(ITaskMessage message)
+        {
+            return new HashSet<RingReturnMessage>();
         }
     }
 }

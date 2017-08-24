@@ -15,20 +15,34 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
-
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
+namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     /// <summary>
-    /// Group Communication Operator used to send messages to child Tasks.
+    /// Messages sent by the driver to operators part of an aggregation ring. 
+    /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    /// <typeparam name="T">The data type</typeparam>
-    public interface ISender<T>
+    public sealed class RingReturnMessage
     {
         /// <summary>
-        /// Send the data to all BroadcastReceivers.
+        /// Create new RingReturnMessage.
         /// </summary>
-        /// <param name="data">The data to send.</param>
-        void Send(T data, CancellationTokenSource cancellationSource);
+        /// <param name="destination">The message destination</param>
+        /// <param name="message">The message</param>
+        public RingReturnMessage(
+            int destination,
+            byte[] message)
+        {
+            Destination = destination;
+            Message = message;
+        }
+
+        /// <summary>
+        /// Returns the Subscription
+        internal int Destination { get; private set; }
+
+        /// <summary>
+        /// Returns the Operator id.
+        /// </summary>
+        internal byte[] Message { get; private set; }
     }
 }

@@ -20,6 +20,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators
     {
         public const string Broadcast = "broadcast";
         public const string Reduce = "reduce";
+        public const string AggregationRing = "aggregation ring";
         public const string Iterate = "iterate";
         public const string Scatter = "scatter";
         public const string Gather = "gather";

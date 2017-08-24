@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 failureMachine,
                 checkpointLevel)
         {
-            MasterTaskId = receiverId;
+            MasterId = receiverId;
             OperatorName = Constants.Reduce;
         }
 

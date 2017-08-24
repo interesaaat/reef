@@ -15,20 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
-
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication Operator used to send messages to child Tasks.
+    /// Group Communication operator used to receive and reduce messages.
     /// </summary>
-    /// <typeparam name="T">The data type</typeparam>
-    public interface ISender<T>
+    public interface IElasticAggregationRing<T> : IElasticBasicOperator<T>, IReceiver<T>, ISender<T>
     {
-        /// <summary>
-        /// Send the data to all BroadcastReceivers.
-        /// </summary>
-        /// <param name="data">The data to send.</param>
-        void Send(T data, CancellationTokenSource cancellationSource);
     }
 }

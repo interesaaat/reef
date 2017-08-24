@@ -15,20 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
+using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Group Communication Operator used to send messages to child Tasks.
+    /// Used to propagate messages through operators and subscriptions.
     /// </summary>
-    /// <typeparam name="T">The data type</typeparam>
-    public interface ISender<T>
+    public interface ITaskMessageResponse
     {
-        /// <summary>
-        /// Send the data to all BroadcastReceivers.
-        /// </summary>
-        /// <param name="data">The data to send.</param>
-        void Send(T data, CancellationTokenSource cancellationSource);
+        ISet<RingReturnMessage> OnTaskMessage(ITaskMessage message);
     }
 }

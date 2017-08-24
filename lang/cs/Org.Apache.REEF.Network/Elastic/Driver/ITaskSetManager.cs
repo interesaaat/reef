@@ -61,6 +61,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         void OnTaskCompleted(ICompletedTask task);
 
+        void OnTaskMessage(ITaskMessage message);
+
         bool Done();
 
         void Dispose();

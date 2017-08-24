@@ -23,6 +23,7 @@ using System.Threading;
 using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Network.Elastic.Task;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
@@ -34,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
         protected bool _initialized;
         internal CommunicationLayer _commLayer;
 
-        private ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
+        protected ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
@@ -60,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
              return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        public void Send(List<GroupCommunicationMessage> messages)
+        public void Send(List<GroupCommunicationMessage> messages, CancellationTokenSource cancellationSource)
         {
             foreach (var message in messages)
             {
@@ -69,7 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
             if (_initialized)
             {
-                Send();
+                Send(cancellationSource);
             }
         }
 
@@ -86,13 +87,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
             _initialized = true;
 
-            Send();
+            Send(cancellationSource);
         }
 
-        public void OnNext(NsMessage<GroupCommunicationMessage> message)
+        public virtual void OnNext(NsMessage<GroupCommunicationMessage> message)
         {
             if (_messageQueue.IsAddingCompleted)
             {
+                if (_messageQueue.Count > 0)
+                {
+                    throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
+                }
+
                 _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             }
 
@@ -106,9 +112,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
                 }
             }
 
-                if (_initialized)
+            if (_initialized)
             {
-                Send();
+                Send(new CancellationTokenSource());
             }
         }
 
@@ -133,12 +139,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             _commLayer.Dispose();
         }
 
-        private void Send()
+        protected virtual void Send(CancellationTokenSource cancellationSource)
         {
             while (_sendQueue.Count > 0)
             {
                 GroupCommunicationMessage message;
                 _sendQueue.TryPeek(out message);
+
                 foreach (var child in _children.Values)
                 {
                     _commLayer.Send(child, message);

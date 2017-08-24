@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel,
                 configurations)
         {
-            MasterTaskId = masterTaskId;
+            MasterId = masterTaskId;
             OperatorName = Constants.Iterate;
             Subscription.IsIterative = true;
         }

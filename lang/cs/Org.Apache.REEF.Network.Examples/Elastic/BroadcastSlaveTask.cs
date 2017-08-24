@@ -48,20 +48,27 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             using (var workflow = _subscriptionClient.Workflow)
             {
-                while (workflow.MoveNext())
+                try
                 {
-                    switch (workflow.Current.OperatorName)
+                    while (workflow.MoveNext())
                     {
-                        case Constants.Broadcast:
-                            var receiver = workflow.Current as IElasticBroadcast<int>;
+                        switch (workflow.Current.OperatorName)
+                        {
+                            case Constants.Broadcast:
+                                var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                            var rec = receiver.Receive(_cancellationSource);
+                                var rec = receiver.Receive(_cancellationSource);
 
-                            Console.WriteLine("Slave has received {0}", rec);
-                            break;
-                        default:
-                            break;
+                                Console.WriteLine("Slave has received {0}", rec);
+                                break;
+                            default:
+                                break;
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    workflow.Throw(e);
                 }
             }
 

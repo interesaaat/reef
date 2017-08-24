@@ -18,16 +18,24 @@
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Threading;
 using Org.Apache.REEF.Common.Tasks;
+using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.NetworkService;
+using Org.Apache.REEF.Tang.Exceptions;
+using System.Diagnostics;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
-    public class BroadcastTopology : OperatorTopology
+    public class AggregationRingTopology : DriverAwareOperatorTopology
     {
+        private BlockingCollection<string> _next;
+
         [Inject]
-        private BroadcastTopology(
+        private AggregationRingTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
@@ -37,18 +45,63 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
         {
             OperatorId = operatorId;
             _commLayer = commLayer;
-            _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
+            _next = new BlockingCollection<string>();
 
-            if (rootId >= 0)
-            {
-                _commLayer.RegisterOperatorTopologyForTask(_rootId, this);
-            }
+            _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
 
             foreach (var child in children)
             {
                 var childTaskId = Utils.BuildTaskId(SubscriptionName, child);
 
                 _children.TryAdd(child, childTaskId);
+
+                _commLayer.RegisterOperatorTopologyForTask(childTaskId, this);
+            }
+
+            _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
+        }
+
+        public override void OnNext(NsMessage<GroupCommunicationMessage> message)
+        {
+            if (_messageQueue.IsAddingCompleted)
+            {
+                if (_messageQueue.Count > 0)
+                {
+                    throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
+                }
+                _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
+            }
+
+            foreach (var payload in message.Data)
+            {
+                _messageQueue.Add(payload);
+            }
+        }
+
+        public override void OnNext(string value)
+        {
+            _next.Add(value);
+        }
+
+        public void WaitForToken()
+        {
+            if (_taskId != _rootId)
+            {
+                _commLayer.WaitingForToken(_taskId);
+            }
+        }
+
+        protected override void Send(CancellationTokenSource cancellationSource)
+        {
+            while (_sendQueue.Count > 0)
+            {
+                GroupCommunicationMessage message;
+                _sendQueue.TryPeek(out message);
+
+                var next = _next.Take(cancellationSource.Token);
+
+                _commLayer.Send(next, message);
+                _sendQueue.TryDequeue(out message);
             }
         }
     }

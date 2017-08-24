@@ -107,6 +107,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        public void Throw(Exception e)
+        {
+            throw e;
+        }
+
         public void Reset()
         {
             _position = Math.Max(0, _iteratorPosition);

@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel,
                 configurations)
         {
-            MasterTaskId = senderId;
+            MasterId = senderId;
             OperatorName = Constants.Broadcast;
         }
 

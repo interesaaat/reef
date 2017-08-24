@@ -22,7 +22,6 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using System.Threading;
 using Org.Apache.REEF.Common.Tasks.Events;
 using Org.Apache.REEF.Network.Elastic.Operators;
-using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
@@ -53,22 +52,29 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             using (var workflow = _subscriptionClient.Workflow)
             {
-                while (workflow.MoveNext())
+                try
                 {
-                    number = rand.Next();
-
-                    switch (workflow.Current.OperatorName)
+                    while (workflow.MoveNext())
                     {
-                        case Constants.Broadcast:
-                            var sender = workflow.Current as IElasticBroadcast<int>;
+                        number = rand.Next();
 
-                            sender.Send(number);
+                        switch (workflow.Current.OperatorName)
+                        {
+                            case Constants.Broadcast:
+                                var sender = workflow.Current as IElasticBroadcast<int>;
 
-                            Console.WriteLine("Master has sent {0}", number);
-                            break;
-                        default:
-                            break;
+                                sender.Send(number, _cancellationSource);
+
+                                Console.WriteLine("Master has sent {0}", number);
+                                break;
+                            default:
+                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    workflow.Throw(e);
                 }
             }
 

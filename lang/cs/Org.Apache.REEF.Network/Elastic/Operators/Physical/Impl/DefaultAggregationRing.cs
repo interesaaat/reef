@@ -21,6 +21,8 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using System;
+using System.Diagnostics;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -28,9 +30,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
+    public sealed class DefaultAggregationRing<T> : IElasticAggregationRing<T>
     {
-        private readonly BroadcastTopology _topology;
+        private readonly AggregationRingTopology _topology;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -38,11 +40,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="id">The operator identifier</param>
         /// <param name="topology">The operator topology layer</param>
         [Inject]
-        private DefaultBroadcast(
+        private DefaultAggregationRing(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
-            BroadcastTopology topology)
+            AggregationRingTopology topology)
         {
-            OperatorName = Constants.Broadcast;
+            OperatorName = Constants.AggregationRing;
             OperatorId = id;
             _topology = topology;
         }
@@ -61,6 +63,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
+            _topology.WaitForToken();
+
             var objs = _topology.Receive(cancellationSource);
 
             objs.MoveNext();

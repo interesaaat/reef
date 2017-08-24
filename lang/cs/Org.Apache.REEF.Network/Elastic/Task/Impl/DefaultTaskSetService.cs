@@ -25,6 +25,7 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -52,6 +53,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
+            RingTaskMessageSource ringMessageSource, // Otherwise the correct instance does not propagate through
+            RingDriverMessageHandler ringDriverSource,
             IInjector injector)
         {
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();

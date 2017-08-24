@@ -47,9 +47,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            try
+            using (var workflow = _subscriptionClient.Workflow)
             {
-                using (var workflow = _subscriptionClient.Workflow)
+                try
                 {
                     while (workflow.MoveNext())
                     {
@@ -57,8 +57,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         {
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
-
-                                Thread.Sleep(100000);
 
                                 var rec = receiver.Receive(_cancellationSource);
 
@@ -69,10 +67,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         }
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                throw e;
+                catch (Exception e)
+                {
+                    throw e;
+                }
             }
 
             return null;

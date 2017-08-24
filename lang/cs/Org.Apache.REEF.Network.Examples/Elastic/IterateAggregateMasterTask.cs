@@ -25,7 +25,7 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastMasterTask : ITask
+    public class IterateAggregateMasterTask : ITask
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
@@ -33,12 +33,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
-        public IterateBroadcastMasterTask(IElasticTaskSetService serviceClient)
+        public IterateAggregateMasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
             _cancellationSource = new CancellationTokenSource();
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateAggregate");
         }
 
         public byte[] Call(byte[] memento)
@@ -58,12 +58,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                         switch (workflow.Current.OperatorName)
                         {
-                            case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                            case Constants.AggregationRing:
+                                var aggregator = workflow.Current as IElasticAggregationRing<int>;
 
-                                sender.Send(number, _cancellationSource);
+                                aggregator.Send(number, _cancellationSource);
 
                                 Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+
+                                var rec = aggregator.Receive(_cancellationSource);
+
+                                Console.WriteLine("Master has received {0} in iteration {1}", rec, workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");

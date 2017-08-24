@@ -29,6 +29,7 @@ using System.Threading;
 using System.Runtime.Remoting;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Topology.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -45,6 +46,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _retryCount;
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
+        private readonly RingTaskMessageSource _ringMessageSource;
+        private readonly RingDriverMessageHandler _ringDriverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
 
         private bool _disposed;
@@ -68,12 +71,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryCount,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
+            RingTaskMessageSource ringMessageSource,
+            RingDriverMessageHandler ringDriverMessagesHandler,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
             _retryCount = retryCount;
             _sleepTime = sleepTime;
             _networkService = networkService;
+            _ringMessageSource = ringMessageSource;
+            _ringDriverMessagesHandler = ringDriverMessagesHandler;
             _idFactory = idFactory;
 
             _disposed = false;
@@ -106,6 +113,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             taskObservers.TryAdd(id, operatorObserver);
+        }
+
+        public void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
+        {
+            _ringDriverMessagesHandler.RegisterOperatorTopologyForDriver(taskDestinationId, operatorObserver);
         }
 
         /// <summary>
@@ -162,6 +174,54 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             operatorObserver.OnNext(nsMessage);
         }
 
+        public void WaitingForToken(string taskId)
+        {
+            _ringMessageSource.WaitingForToken(taskId);
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
+            foreach (var observers in _messageObservers.Values)
+            {
+                foreach (var observer in observers.Values)
+                {
+                    observer.OnCompleted();
+                }
+            }
+
+            _messageObservers.Clear();
+        }
+
+        public void Dispose()
+        {
+            if (!_disposed)
+            {
+                foreach (var conn in _registeredConnections.Values)
+                {
+                    if (conn != null && conn.IsOpen)
+                    {
+                        conn.Dispose();
+                    }
+                }
+
+                foreach (var observers in _messageObservers.Values)
+                {
+                    foreach (var observer in observers.Values)
+                    {
+                        observer.OnCompleted();
+                    }
+                }
+
+                _disposed = true;
+
+                Logger.Log(Level.Info, "Disposed of group communication layer");
+            }
+        }
+
         internal bool IsAlive(string nodeIdentifier, CancellationTokenSource cancellationSource)
         {
             return _networkService.NamingClient.Lookup(nodeIdentifier) != null;
@@ -208,49 +268,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 var leftOver = foundList.Count == 0 ? string.Join(",", identifiers) : string.Join(",", identifiers.Where(e => !foundList.Contains(e)));
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", leftOver);
                 throw new RemotingException("Failed to find parent/children nodes");
-            }
-        }
-
-        public void OnError(Exception error)
-        {
-        }
-
-        public void OnCompleted()
-        {
-            foreach (var observers in _messageObservers.Values)
-            {
-                foreach (var observer in observers.Values)
-                {
-                    observer.OnCompleted();
-                }
-            }
-
-            _messageObservers.Clear();
-        }
-
-        public void Dispose()
-        {
-            if (!_disposed)
-            {
-                foreach (var conn in _registeredConnections.Values)
-                {
-                    if (conn != null && conn.IsOpen)
-                    {
-                        conn.Dispose();
-                    }
-                }
-
-                foreach (var observers in _messageObservers.Values)
-                {
-                    foreach (var observer in observers.Values)
-                    {
-                        observer.OnCompleted();
-                    }
-                }
-
-                _disposed = true;
-
-                Logger.Log(Level.Info, "Disposed of group communication layer");
             }
         }
     }

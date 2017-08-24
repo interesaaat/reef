@@ -21,7 +21,6 @@ using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Network.Group.Pipelining.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -37,29 +36,30 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
+    /// Example implementation of a broadcast and aggregation ring pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticIterateBroadcastDriver : 
+    public class ElasticIterateAggregateDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
         IObserver<IFailedEvaluator>,
-        IObserver<IFailedTask>
+        IObserver<IFailedTask>,
+        IObserver<ITaskMessage>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateAggregateDriver));
 
         private readonly int _numEvaluators;
         private readonly int _numIterations;
@@ -73,7 +73,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticIterateBroadcastDriver(
+        private ElasticIterateAggregateDriver(
             [Parameter(typeof(OperatorsConfiguration.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
@@ -106,15 +106,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             ElasticOperator pipeline = subscription.RootOperator;
 
-            System.Threading.Thread.Sleep(10000);
+            System.Threading.Thread.Sleep(20000);
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyTypes.Tree,
-                        new DefaultFailureStateMachine(),
-                        CheckpointLevel.None)
+                    .AggregationRing<int>()
                     .Build();
 
             // Build the subscription
@@ -169,7 +167,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<IterateBroadcastMasterTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
+                        .Set(TaskConfiguration.OnMessage, GenericType<RingDriverMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
                         .Build())
                     .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                         GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -181,7 +181,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<IterateBroadcastSlaveTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
+                        .Set(TaskConfiguration.OnMessage, GenericType<RingDriverMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
                         .Build())
                     .Build();
             }
@@ -227,6 +229,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnError(Exception error)
         {
             throw new NotImplementedException();
+        }
+
+        public void OnNext(ITaskMessage taskMessage)
+        {
+            _taskManager.OnTaskMessage(taskMessage);
         }
     }
 }

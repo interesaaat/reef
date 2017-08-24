@@ -29,6 +29,7 @@ using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -47,7 +48,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly int _numTasks;
         private float _failRatio;
 
-        private readonly List<TaskInfo> _taskInfos; 
+        // Task info 0-indexed
+        private readonly List<TaskInfo> _taskInfos;
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private IFailureState _failureStatus;
 
@@ -230,6 +232,24 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     _taskInfos[id].TaskStatus = TaskStatus.Completed;
                     _taskInfos[id].TaskRunner.Dispose();
                     _taskInfos[id].TaskRunner = null;
+                }
+            }
+        }
+
+        public void OnTaskMessage(ITaskMessage message)
+        {
+            ISet<RingReturnMessage> returnMessages = new HashSet<RingReturnMessage>();
+
+            foreach (var sub in _subscriptions.Values)
+            {
+                returnMessages.UnionWith(sub.OnTaskMessage(message));
+            }
+
+            foreach (var returnMessage in returnMessages)
+            {
+                if (returnMessage != null)
+                {
+                    _taskInfos[returnMessage.Destination - 1].TaskRunner.Send(returnMessage.Message);
                 }
             }
         }

@@ -49,6 +49,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
+        public override ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        {
+            _next = new DefaultAggregationRing<T>(coordinatorTaskId, this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return _next;
+        }
+
         public override ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             _next = new DefaultReduce(receiverTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
@@ -106,7 +112,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected override void LogOperatorState()
         {
             string intro = string.Format(CultureInfo.InvariantCulture,
-               "State for Operator {0} in Subscription {1}:\n", Subscription.SubscriptionName, OperatorName);
+               "State for Operator {0} in Subscription {1}:\n", OperatorName, Subscription.SubscriptionName);
             string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}\n", _topology.LogTopologyState());
             string failureMachineState = "Failure State: " + (DefaultFailureStates)_failureMachine.State.FailureState +
                     "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;

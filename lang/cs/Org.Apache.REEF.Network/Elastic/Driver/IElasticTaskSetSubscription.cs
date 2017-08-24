@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Driver.Context;
-using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
@@ -28,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// All operators in the same Subscription share similar semantics
     /// and behaviour under failures.
     /// </summary>
-    public interface IElasticTaskSetSubscription : IFailureResponse
+    public interface IElasticTaskSetSubscription : IFailureResponse, ITaskMessageResponse
     {
         string SubscriptionName { get; }
 
