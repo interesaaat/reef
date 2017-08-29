@@ -199,7 +199,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Broadcast<T>(MasterId, new FullConnectedTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Broadcast<T>(MasterId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType, params IConfiguration[] configurations)

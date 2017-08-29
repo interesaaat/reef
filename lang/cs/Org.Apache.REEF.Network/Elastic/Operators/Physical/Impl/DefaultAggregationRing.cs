@@ -21,8 +21,6 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using System;
-using System.Diagnostics;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {

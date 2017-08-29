@@ -33,15 +33,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int operatorId,
-            CommunicationLayer commLayer) : base(taskId, rootId, subscription)
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
+            CommunicationLayer commLayer) : base(taskId, rootId, subscription, timeout, operatorId, commLayer)
         {
-            OperatorId = operatorId;
-            _commLayer = commLayer;
-            _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
-
             if (rootId >= 0)
             {
-                _commLayer.RegisterOperatorTopologyForTask(_rootId, this);
+                _commLayer.RegisterOperatorTopologyForTask(_rootTaskId, this);
             }
 
             foreach (var child in children)

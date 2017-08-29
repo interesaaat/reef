@@ -58,8 +58,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int>;
 
-                                System.Threading.Thread.Sleep(new Random().Next(4000));
-
                                 var rec = aggregator.Receive(_cancellationSource);
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
@@ -67,7 +65,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 aggregator.Send(rec + 1, _cancellationSource);
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", rec + 1, workflow.Iteration);
-
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation {0} in workflow not implemented");
@@ -81,10 +78,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
 
             return null;
-        }
-
-        public void Handle(IDriverMessage message)
-        {
         }
 
         public void Dispose()

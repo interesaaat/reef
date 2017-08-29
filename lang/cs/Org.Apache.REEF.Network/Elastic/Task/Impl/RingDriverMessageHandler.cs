@@ -31,13 +31,12 @@ public class RingDriverMessageHandler : IDriverMessageHandler
 
     public void Handle(IDriverMessage value)
     {
-        string message = string.Empty;
         if (value.Message.IsPresent())
         {
-            message = ByteUtilities.ByteArraysToString(value.Message.Value);
+            var message = ByteUtilities.ByteArraysToString(value.Message.Value);
 
             var data = message.Split(':');
-            
+
             if (data.Length != 3)
             {
                 throw new IllegalStateException("Can not recognize message " + message);
@@ -63,6 +62,10 @@ public class RingDriverMessageHandler : IDriverMessageHandler
                 default:
                     throw new IllegalStateException("Driver message for operator " + data[1] + " not supported");
             }
+        }
+        else
+        {
+            throw new IllegalStateException("Received message with no payload");
         }
     }
 }

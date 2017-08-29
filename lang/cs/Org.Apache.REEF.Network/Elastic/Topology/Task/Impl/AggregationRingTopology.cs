@@ -23,15 +23,17 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Exceptions;
-using System.Diagnostics;
+using Org.Apache.REEF.Utilities.Logging;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
     public class AggregationRingTopology : DriverAwareOperatorTopology
     {
+        private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopology));
+
         private BlockingCollection<string> _next;
 
         [Inject]
@@ -41,13 +43,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int operatorId,
-            CommunicationLayer commLayer) : base(taskId, rootId, subscription)
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
+            CommunicationLayer commLayer) : base(taskId, rootId, subscription, timeout, operatorId, commLayer)
         {
-            OperatorId = operatorId;
-            _commLayer = commLayer;
             _next = new BlockingCollection<string>();
-
-            _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
 
             foreach (var child in children)
             {
@@ -55,10 +54,35 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
                 _children.TryAdd(child, childTaskId);
 
-                _commLayer.RegisterOperatorTopologyForTask(childTaskId, this);
+               _commLayer.RegisterOperatorTopologyForTask(childTaskId, this);
             }
 
+            ////if (_children.ContainsKey(Utils.GetTaskNum(taskId) - 1))
+            ////{
+            ////    _children.TryGetValue(Utils.GetTaskNum(taskId) - 1, out string tmp);
+            ////    _commLayer.RegisterOperatorTopologyForTask(tmp, this);
+            ////}
+            ////else
+            ////{
+            ////    _children.TryGetValue(62, out string tmp);
+            ////    _commLayer.RegisterOperatorTopologyForTask(tmp, this);
+            ////}
+
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
+        }
+
+        public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
+        {
+            try
+            {
+                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
+            }
+            catch (Exception e)
+            {
+                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
+            }
+
+            _initialized = true;
         }
 
         public override void OnNext(NsMessage<GroupCommunicationMessage> message)
@@ -85,7 +109,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         public void WaitForToken()
         {
-            if (_taskId != _rootId)
+            if (_taskId != _rootTaskId)
             {
                 _commLayer.WaitingForToken(_taskId);
             }
@@ -93,16 +117,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         protected override void Send(CancellationTokenSource cancellationSource)
         {
-            while (_sendQueue.Count > 0)
-            {
-                GroupCommunicationMessage message;
-                _sendQueue.TryPeek(out message);
+            GroupCommunicationMessage message;
+            _sendQueue.TryPeek(out message);
 
-                var next = _next.Take(cancellationSource.Token);
+            var nextNode = _next.Take();
+            ////var nextNode = _rootId;
+            ////if (_children.ContainsKey(Utils.GetTaskNum(_taskId) + 1))
+            ////{
+            ////    _children.TryGetValue(Utils.GetTaskNum(_taskId) + 1, out nextNode);
+            ////}
 
-                _commLayer.Send(next, message);
-                _sendQueue.TryDequeue(out message);
-            }
+            _commLayer.Send(nextNode, message);
+            _sendQueue.TryDequeue(out message);
         }
     }
 }

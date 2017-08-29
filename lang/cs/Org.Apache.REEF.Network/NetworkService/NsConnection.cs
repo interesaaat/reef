@@ -115,15 +115,15 @@ namespace Org.Apache.REEF.Network.NetworkService
             {
                 _remoteSender.OnNext(new NsMessage<T>(_sourceId, _destId, message));
             }
-            catch (IOException)
+            catch (IOException e)
             {
                 LOGGER.Log(Level.Error, "Network Service cannot write message to {0}", _destId);
-                throw;
+                throw e;
             }
-            catch (ObjectDisposedException)
+            catch (ObjectDisposedException e)
             {
-                LOGGER.Log(Level.Error, "Network Service cannot write message to {0}", _destId);
-                throw;
+                LOGGER.Log(Level.Error, "Object Disposed, Network Service cannot write message to {0}", _destId);
+                throw e;
             }
         }
 

@@ -20,7 +20,6 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Topology.Impl;
-using System.Collections.Concurrent;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities.Logging;
@@ -38,15 +37,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
 
-        private ConcurrentDictionary<string, byte> _currentWaitingList;
-        private ConcurrentDictionary<string, byte> _nextWaitingList;
-        private ConcurrentDictionary<string, byte> _tasksInRing;
+        private HashSet<string> _currentWaitingList;
+        private HashSet<string> _nextWaitingList;
+        private HashSet<string> _tasksInRing;
         private LinkedList<string> _ring;
         private LinkedList<string> _prevRing;
         private string _coordinatorTaskId;
 
-        private readonly object _ringLock;
-        private readonly object _waitingListLock;
+        private readonly object _lock;
 
         public DefaultAggregationRing(
             int coordinatorId,
@@ -65,15 +63,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             OperatorName = Constants.AggregationRing;
             _coordinatorTaskId = Utils.BuildTaskId(Subscription.SubscriptionName, MasterId);
 
-            _currentWaitingList = new ConcurrentDictionary<string, byte>();
-            _nextWaitingList = new ConcurrentDictionary<string, byte>();
-            _tasksInRing = new ConcurrentDictionary<string, byte>();
-            _tasksInRing.AddOrUpdate(_coordinatorTaskId, 0, (task, value) => value);
+            _currentWaitingList = new HashSet<string>();
+            _nextWaitingList = new HashSet<string>();
+            _tasksInRing = new HashSet<string> { { _coordinatorTaskId } };
             _ring = new LinkedList<string>();
             _ring.AddLast(_coordinatorTaskId);
            
-            _ringLock = new object();
-            _waitingListLock = new object();
+            _lock = new object();
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
@@ -89,17 +85,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             switch (msgReceived)
             {
                 case Constants.AggregationRing:
-                    lock (_waitingListLock)
-                    {
-                        if (_currentWaitingList.ContainsKey(message.TaskId) || _tasksInRing.ContainsKey(message.TaskId))
+                   lock (_lock)
+                   {
+                        if (_currentWaitingList.Contains(message.TaskId) || _tasksInRing.Contains(message.TaskId))
                         {
-                            _nextWaitingList.AddOrUpdate(message.TaskId, 0, (task, value) => value);
+                            _nextWaitingList.Add(message.TaskId);
                         }
                         else
                         {
-                            LOGGER.Log(Level.Info, "Task {0} is waiting in the ring", message.TaskId);
-                            _currentWaitingList.AddOrUpdate(message.TaskId, 0, (task, value) => value);
-                            _tasksInRing.AddOrUpdate(message.TaskId, 0, (task, value) => value);
+                            _currentWaitingList.Add(message.TaskId);
                         }
                     }
 
@@ -115,20 +109,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         private void SubmitNextNodes(ref HashSet<RingReturnMessage> messages)
         {
-            lock (_ringLock)
+            lock (_lock)
             {
-                while (_currentWaitingList.Keys.Count > 0)
+                while (_currentWaitingList.Count > 0)
                 {
-                    var nextTask = _currentWaitingList.Keys.Take(1).GetEnumerator();
-                    while (nextTask.MoveNext())
+                    var enumerator = _currentWaitingList.Take(1);
+                    foreach (var nextTask in enumerator)
                     {
                         var dest = _ring.Last.Value;
-                        var data = dest + ":" + Constants.AggregationRing + ":" + nextTask.Current;
+                        var data = dest + ":" + Constants.AggregationRing + ":" + nextTask;
                         var returnMessage = new RingReturnMessage(Utils.GetTaskNum(dest), ByteUtilities.StringToByteArrays(data));
 
                         messages.Add(returnMessage);
-                        _ring.AddLast(nextTask.Current);
-                        _currentWaitingList.TryRemove(nextTask.Current, out byte value);
+                        _ring.AddLast(nextTask);
+                        _tasksInRing.Add(nextTask);
+                        _currentWaitingList.Remove(nextTask);
                     }
                 }
 
@@ -139,29 +134,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var returnMessage = new RingReturnMessage(Utils.GetTaskNum(dest), ByteUtilities.StringToByteArrays(data));
 
                     messages.Add(returnMessage);
-
                     LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", string.Join("->", _ring), _ring.First.Value);
 
-                    lock (_waitingListLock)
-                    {
-                        _prevRing = _ring;
-                        _ring = new LinkedList<string>();
-                        _ring.AddLast(_prevRing.First.Value);
-                        _currentWaitingList = _nextWaitingList;
-                        _nextWaitingList = new ConcurrentDictionary<string, byte>();
-                        _tasksInRing = new ConcurrentDictionary<string, byte>();
-                        _tasksInRing.AddOrUpdate(_coordinatorTaskId, 0, (task, value) => value);
+                    _prevRing = _ring;
+                    _ring = new LinkedList<string>();
+                    _ring.AddLast(_prevRing.First.Value);
+                    _currentWaitingList = _nextWaitingList;
+                    _nextWaitingList = new HashSet<string>();
+                    _tasksInRing = new HashSet<string> { { _coordinatorTaskId } };
 
-                        foreach (var task in _currentWaitingList.Keys)
-                        {
-                            _tasksInRing.AddOrUpdate(task, 0, (id, value) => value);
-                        }
+                    foreach (var task in _currentWaitingList)
+                    {
+                        _tasksInRing.Add(task);
                     }
                 }
             }
 
             // Continuously build the ring until there is some node waiting
-            if (_currentWaitingList.Keys.Count > 0)
+            if (_currentWaitingList.Count > 0)
             {
                 SubmitNextNodes(ref messages); 
             }

@@ -25,6 +25,7 @@ using Org.Apache.REEF.Utilities.Diagnostics;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake.StreamingCodec;
 using Org.Apache.REEF.Wake.Util;
+using System.IO;
 
 namespace Org.Apache.REEF.Wake.Remote.Impl
 {
@@ -160,6 +161,11 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 T value = _streamingCodec.Read(_reader);
                 return value;
             }
+            catch (IOException e)
+            {
+                Logger.Log(Level.Warning, "In StreamingLink::Read {0}.", e);
+                throw e;
+            }
             catch (Exception e)
             {
                 Logger.Log(Level.Warning, "In StreamingLink::Read function unable to read the message {0}.", e.GetType());
@@ -186,7 +192,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             catch (Exception e)
             {
                 Logger.Log(Level.Warning, "In StreamingLink::ReadAsync function unable to read the message, {0}.", e.GetType());
-                throw;
+                throw e;
             }
         }
 

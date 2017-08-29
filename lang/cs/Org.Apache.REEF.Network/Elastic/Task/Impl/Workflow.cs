@@ -18,6 +18,7 @@
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Utilities.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -27,7 +28,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     public class Workflow : IEnumerator<IElasticOperator>
     {
+        private static readonly Logger Logger = Logger.GetLogger(typeof(Workflow));
+
         private int _position = 0;
+        private bool _failed;
         private readonly IList<IElasticOperator> _operators;
         private int _iteratorPosition = -1; // For the moment I am not considering nested iterators
 
@@ -36,6 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _operators = new List<IElasticOperator>();
             Iteration = 0;
+            _failed = false;
         }
 
         public object Iteration { get; private set; }
@@ -54,6 +59,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public bool MoveNext()
         {
+            if (_failed)
+            {
+                _position = -1;
+                return false;
+            }
+
             _position--;
 
             if (_position == _iteratorPosition)
@@ -109,6 +120,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void Throw(Exception e)
         {
+            Logger.Log(Level.Error, "Workflow captured an Exception", e);
+            _failed = true;
             throw e;
         }
 

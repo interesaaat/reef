@@ -106,8 +106,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             ElasticOperator pipeline = subscription.RootOperator;
 
-            System.Threading.Thread.Sleep(10000);
-
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,

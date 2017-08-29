@@ -134,8 +134,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             if (_taskInfos[id] != null)
             {
-                throw new ArgumentException(
-                    "Task Id already registered with TaskSet");
+                throw new ArgumentException("Task Id already registered with TaskSet");
             }
 
             Interlocked.Increment(ref _tasksAdded);
@@ -166,8 +165,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SubmitTasks()
         {
-            System.Threading.Thread.Sleep(20000);
-
             for (int i = 0; i < _numTasks; i++)
             {
                 var subs = _taskInfos[i].Subscriptions;
@@ -249,6 +246,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 if (returnMessage != null)
                 {
+                    if (_taskInfos[returnMessage.Destination - 1] == null)
+                    {
+                        throw new ArgumentNullException("Task Info");
+                    }
+                    if (_taskInfos[returnMessage.Destination - 1].TaskRunner == null)
+                    {
+                        throw new ArgumentNullException("Task Runner");
+                    }
+
                     _taskInfos[returnMessage.Destination - 1].TaskRunner.Send(returnMessage.Message);
                 }
             }

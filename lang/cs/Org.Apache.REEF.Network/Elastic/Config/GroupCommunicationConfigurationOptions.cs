@@ -47,6 +47,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
+        [NamedParameter("Timeout for disposing operators when messages are still in queue", defaultValue: "60000")]
+        public class DisposeTimeout : Name<int>
+        {
+        }
+
         /// <summary>
         /// Each Communication group needs to check and wait until all the other nodes in the group are registered to the NameServer
         /// Sleep time is set between each retry. 

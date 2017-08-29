@@ -24,14 +24,20 @@ using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Network.Elastic.Config;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 {
-    public class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
+    public abstract class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
     {
+        private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopology));
+
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
-        protected string _rootId;
+        protected string _rootTaskId;
         protected readonly string _taskId;
+        private readonly int _timeout;
         protected bool _initialized;
         internal CommunicationLayer _commLayer;
 
@@ -39,16 +45,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
-        protected OperatorTopology(string taskId, int rootId, string subscription)
+        internal OperatorTopology(string taskId, int rootId, string subscription, int timeout, int operatorId, CommunicationLayer commLayer)
         {
             _taskId = taskId;
             SubscriptionName = subscription;
+            OperatorId = operatorId;
+            _timeout = timeout;
             _initialized = false;
+            _commLayer = commLayer;
+            _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
 
             if (rootId >= 0)
             {
-                _rootId = Utils.BuildTaskId(SubscriptionName, rootId);
+                _rootTaskId = Utils.BuildTaskId(SubscriptionName, rootId);
             }
         }
 
@@ -61,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
              return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        public void Send(List<GroupCommunicationMessage> messages, CancellationTokenSource cancellationSource)
+        public virtual void Send(List<GroupCommunicationMessage> messages, CancellationTokenSource cancellationSource)
         {
             foreach (var message in messages)
             {
@@ -74,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             }
         }
 
-        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
+        public virtual void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             try
             {
@@ -130,10 +140,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
 
         public void Dispose()
         {
-            while (_sendQueue.Count > 0)
+            var elapsedTime = 0;
+            while (_sendQueue.Count > 0 && elapsedTime < _timeout)
             {
                 // The topology is still trying to send messages, wait
-                Thread.Sleep(10);
+                Thread.Sleep(100);
+                elapsedTime += 100;
             }
 
             _commLayer.Dispose();
