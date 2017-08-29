@@ -279,7 +279,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
 
             if (readBytes == -1)
             {
-                Exceptions.Throw(new Exception("No bytes read"), Logger);
+                throw new Exception("No bytes read");
             }
             return BitConverter.ToInt32(intBytes, 0);
         }

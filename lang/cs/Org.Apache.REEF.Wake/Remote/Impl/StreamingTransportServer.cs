@@ -192,18 +192,15 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 {
                     while (!token.IsCancellationRequested)
                     {
-                        if (client.GetStream().DataAvailable)
+                        T message = await link.ReadAsync(token);
+
+                        if (message == null)
                         {
-                            T message = await link.ReadAsync(token);
-
-                            if (message == null)
-                            {
-                                break;
-                            }
-
-                            TransportEvent<T> transportEvent = new TransportEvent<T>(message, link);
-                            _remoteObserver.OnNext(transportEvent);
+                            break;
                         }
+
+                        TransportEvent<T> transportEvent = new TransportEvent<T>(message, link);
+                        _remoteObserver.OnNext(transportEvent);
                     }
 
                     LOGGER.Log(Level.Warning,

@@ -181,7 +181,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
         {
             if (_disposed)
             {
-                Exceptions.Throw(new IllegalStateException("Link has been disposed."), Logger);
+                throw new IllegalStateException("Link has been disposed.");
             }
 
             try
