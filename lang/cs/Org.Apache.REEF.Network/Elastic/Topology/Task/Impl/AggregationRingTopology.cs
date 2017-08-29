@@ -57,17 +57,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
                _commLayer.RegisterOperatorTopologyForTask(childTaskId, this);
             }
 
-            ////if (_children.ContainsKey(Utils.GetTaskNum(taskId) - 1))
-            ////{
-            ////    _children.TryGetValue(Utils.GetTaskNum(taskId) - 1, out string tmp);
-            ////    _commLayer.RegisterOperatorTopologyForTask(tmp, this);
-            ////}
-            ////else
-            ////{
-            ////    _children.TryGetValue(62, out string tmp);
-            ////    _commLayer.RegisterOperatorTopologyForTask(tmp, this);
-            ////}
-
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
         }
 
@@ -121,11 +110,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             _sendQueue.TryPeek(out message);
 
             var nextNode = _next.Take();
-            ////var nextNode = _rootId;
-            ////if (_children.ContainsKey(Utils.GetTaskNum(_taskId) + 1))
-            ////{
-            ////    _children.TryGetValue(Utils.GetTaskNum(_taskId) + 1, out nextNode);
-            ////}
 
             _commLayer.Send(nextNode, message);
             _sendQueue.TryDequeue(out message);
