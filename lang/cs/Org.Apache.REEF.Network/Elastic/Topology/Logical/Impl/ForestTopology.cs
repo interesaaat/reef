@@ -15,12 +15,40 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Topology
+using System;
+using Org.Apache.REEF.Network.Group.Operators;
+using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
+
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
-    public enum TopologyTypes
+    class ForestTopology : ITopology
     {
-        Flat = 0,
-        Tree = 1,
-        Forest = 2
+        public ForestTopology()
+        {
+        }
+
+        public int AddTask(string taskId)
+        {
+            return 1;
+        }
+
+        public int RemoveTask(string taskId)
+        {
+            return 1;
+        }
+
+        public void Build()
+        {
+        }
+
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        {
+        }
+
+        public string LogTopologyState()
+        {
+            return "forest";
+        }
     }
 }

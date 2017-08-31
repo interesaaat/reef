@@ -22,7 +22,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Org.Apache.REEF.Common.Tasks;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     public class BroadcastTopology : OperatorTopology
     {

@@ -17,7 +17,7 @@
 
 using Org.Apache.REEF.Tang.Interface;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
     /// <summary>
     /// Represents a topology graph for Elastic Group Communication Operators.

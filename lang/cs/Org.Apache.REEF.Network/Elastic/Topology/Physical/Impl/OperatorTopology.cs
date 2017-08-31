@@ -25,10 +25,8 @@ using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Config;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     public abstract class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
     {

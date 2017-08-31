@@ -19,14 +19,14 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using Org.Apache.REEF.Network.Elastic.Topology.Impl;
-using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Collections.Generic;
-using System;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Linq;
+using System;
+using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -43,6 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private LinkedList<string> _ring;
         private LinkedList<string> _prevRing;
         private string _coordinatorTaskId;
+        private volatile string _tokenPosition;
 
         private readonly object _lock;
 
@@ -68,7 +69,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _tasksInRing = new HashSet<string> { { _coordinatorTaskId } };
             _ring = new LinkedList<string>();
             _ring.AddLast(_coordinatorTaskId);
-           
+            _tokenPosition = string.Empty;
+
             _lock = new object();
         }
 
@@ -78,13 +80,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 
-        protected override ISet<RingReturnMessage> ReactOnTaskMessage(ITaskMessage message)
+        protected override ISet<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
         {
-            var msgReceived = ByteUtilities.ByteArraysToString(message.Message);
+            var msgReceived = (RingTaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
             switch (msgReceived)
             {
-                case Constants.AggregationRing:
+                case RingTaskMessageType.WaitForToken:
                    lock (_lock)
                    {
                         if (_currentWaitingList.Contains(message.TaskId) || _tasksInRing.Contains(message.TaskId))
@@ -97,17 +99,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         }
                     }
 
-                    var messages = new HashSet<RingReturnMessage>();
+                    var messages = new HashSet<DriverMessage>();
 
                     SubmitNextNodes(ref messages);
 
                     return messages;
+                case RingTaskMessageType.TokenReceived:
+                    _tokenPosition = message.TaskId;
+                    return new HashSet<DriverMessage>();
                 default:
                     return null;
             }
         }
 
-        private void SubmitNextNodes(ref HashSet<RingReturnMessage> messages)
+        private void SubmitNextNodes(ref HashSet<DriverMessage> messages)
         {
             lock (_lock)
             {
@@ -117,8 +122,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     foreach (var nextTask in enumerator)
                     {
                         var dest = _ring.Last.Value;
-                        var data = dest + ":" + Constants.AggregationRing + ":" + nextTask;
-                        var returnMessage = new RingReturnMessage(Utils.GetTaskNum(dest), ByteUtilities.StringToByteArrays(data));
+                        var data = new RingMessagePayload(nextTask);
+                        var returnMessage = new DriverMessage(dest, data);
 
                         messages.Add(returnMessage);
                         _ring.AddLast(nextTask);
@@ -130,8 +135,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 if (_failureMachine.NumOfDataPoints - _failureMachine.NumOfFailedDataPoints <= _ring.Count)
                 {
                     var dest = _ring.Last.Value;
-                    var data = dest + ":" + Constants.AggregationRing + ":" + _ring.First.Value;
-                    var returnMessage = new RingReturnMessage(Utils.GetTaskNum(dest), ByteUtilities.StringToByteArrays(data));
+                    var data = new RingMessagePayload(_ring.First.Value);
+                    var returnMessage = new DriverMessage(dest, data);
 
                     messages.Add(returnMessage);
                     LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", string.Join("->", _ring), _ring.First.Value);

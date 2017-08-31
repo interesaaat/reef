@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", rec + 1, workflow.Iteration);
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation {0} in workflow not implemented");
+                                throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");
                         }
                     }
                 }

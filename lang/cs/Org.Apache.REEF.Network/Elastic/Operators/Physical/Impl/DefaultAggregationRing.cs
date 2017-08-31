@@ -18,9 +18,9 @@
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -61,9 +61,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
-            _topology.WaitForToken();
+            _topology.WaitingForToken();
 
             var objs = _topology.Receive(cancellationSource);
+
+            _topology.TokenReceived();
 
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;

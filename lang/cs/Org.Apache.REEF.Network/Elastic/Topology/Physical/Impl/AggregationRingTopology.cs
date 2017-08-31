@@ -27,8 +27,10 @@ using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Driver;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     public class AggregationRingTopology : DriverAwareOperatorTopology
     {
@@ -91,17 +93,28 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Task.Impl
             }
         }
 
-        public override void OnNext(string value)
+        public override void OnMessageFromDriver(IDriverMessagePayload message)
         {
-            _next.Add(value);
+            if (message.MessageType != DriverMessageType.Ring)
+            {
+                throw new IllegalStateException("Message not appropriate for Aggregation Ring Topology");
+            }
+
+            var data = message as RingMessagePayload;
+            _next.Add(data.NextTaskId);
         }
 
-        public void WaitForToken()
+        public void WaitingForToken()
         {
             if (_taskId != _rootTaskId)
             {
                 _commLayer.WaitingForToken(_taskId);
             }
+        }
+
+        public void TokenReceived()
+        {
+            _commLayer.TokenReceived(_taskId);
         }
 
         protected override void Send(CancellationTokenSource cancellationSource)

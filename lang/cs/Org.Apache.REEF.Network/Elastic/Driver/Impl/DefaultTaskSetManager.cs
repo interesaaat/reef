@@ -235,7 +235,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskMessage(ITaskMessage message)
         {
-            ISet<RingReturnMessage> returnMessages = new HashSet<RingReturnMessage>();
+            ISet<DriverMessage> returnMessages = new HashSet<DriverMessage>();
 
             foreach (var sub in _subscriptions.Values)
             {
@@ -246,16 +246,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 if (returnMessage != null)
                 {
-                    if (_taskInfos[returnMessage.Destination - 1] == null)
+                    var destination = Utils.GetTaskNum(returnMessage.Destination) - 1;
+                    if (_taskInfos[destination] == null)
                     {
                         throw new ArgumentNullException("Task Info");
                     }
-                    if (_taskInfos[returnMessage.Destination - 1].TaskRunner == null)
+                    if (_taskInfos[destination].TaskRunner == null)
                     {
                         throw new ArgumentNullException("Task Runner");
                     }
 
-                    _taskInfos[returnMessage.Destination - 1].TaskRunner.Send(returnMessage.Message);
+                    _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());
                 }
             }
         }

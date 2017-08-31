@@ -17,7 +17,7 @@
 
 using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
     /// <summary>
     /// Represents a node in the operator topology graph.

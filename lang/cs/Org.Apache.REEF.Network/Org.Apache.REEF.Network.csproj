@@ -56,8 +56,11 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Elastic\Driver\Impl\RingReturnMessage.cs" />
+    <Compile Include="Elastic\Driver\IDriverMessagePayload.cs" />
+    <Compile Include="Elastic\Driver\Impl\DriverMessage.cs" />
+    <Compile Include="Elastic\Driver\Impl\RingMessagePayload.cs" />
     <Compile Include="Elastic\Driver\ITaskMessageResponse.cs" />
+    <Compile Include="Elastic\Driver\DriverMessageType.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultConditionalIterator.cs" />
@@ -69,6 +72,7 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\ElasticIteratorEnumerator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticBasicOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticBasicIterator.cs" />
+    <Compile Include="Elastic\Task\RingTaskMessageType.cs" />
     <Compile Include="Elastic\Task\Impl\RingDriverMessageHandler.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />
@@ -76,11 +80,11 @@ under the License.
     <Compile Include="Elastic\Task\Impl\Workflow.cs" />
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
     <Compile Include="Elastic\Task\IWaitForTaskRegistration.cs" />
-    <Compile Include="Elastic\Topology\Driver\Impl\FullConnectedTopology.cs" />
-    <Compile Include="Elastic\Topology\Task\Impl\AggregationRingTopology.cs" />
-    <Compile Include="Elastic\Topology\Task\Impl\BroadcastTopology.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\FullConnectedTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\BroadcastTopology.cs" />
     <Compile Include="Elastic\Task\Impl\RingTaskMessageSource.cs" />
-    <Compile Include="Elastic\Topology\Task\Impl\OperatorTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopology.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetSubscription.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetService.cs" />
     <Compile Include="Elastic\Task\Impl\GroupCommunicationMessage.cs" />
@@ -106,7 +110,7 @@ under the License.
     <Compile Include="Elastic\Failures\CheckpointLevel.cs" />
     <Compile Include="Elastic\Failures\Impl\DefaultFailureStateMachine.cs" />
     <Compile Include="Elastic\Driver\Impl\DefaultTaskSetManager.cs" />
-    <Compile Include="Elastic\Topology\Task\Impl\DriverAwareOperatorTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\DriverAwareOperatorTopology.cs" />
     <Compile Include="Elastic\Utils.cs" />
     <Compile Include="Elastic\Driver\TaskStatus.cs" />
     <Compile Include="Elastic\Driver\Impl\DefaultTaskSetSubscription.cs" />
@@ -137,14 +141,14 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\IElasticScatter.cs" />
     <Compile Include="Elastic\Task\IElasticTaskSetService.cs" />
     <Compile Include="Elastic\Task\IElasticTaskSetSubscription.cs" />
-    <Compile Include="Elastic\Topology\Driver\DataNodeState.cs" />
-    <Compile Include="Elastic\Topology\Driver\Impl\EmptyTopology.cs" />
-    <Compile Include="Elastic\Topology\Driver\Impl\DataNode.cs" />
-    <Compile Include="Elastic\Topology\Driver\Impl\TreeTopology.cs" />
-    <Compile Include="Elastic\Topology\Driver\Impl\ForestTopology.cs" />
-    <Compile Include="Elastic\Topology\Driver\Impl\FlatTopology.cs" />
-    <Compile Include="Elastic\Topology\Driver\ITopology.cs" />
-    <Compile Include="Elastic\Topology\Driver\TopologyTypes.cs" />
+    <Compile Include="Elastic\Topology\Logical\DataNodeState.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\EmptyTopology.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\DataNode.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\TreeTopology.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\ForestTopology.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\FlatTopology.cs" />
+    <Compile Include="Elastic\Topology\Logical\ITopology.cs" />
+    <Compile Include="Elastic\Topology\Logical\TopologyTypes.cs" />
     <Compile Include="Group\Config\CodecToStreamingCodecConfiguration.cs" />
     <Compile Include="Group\Config\StreamingCodecConfigurationMinusMessage.cs" />
     <Compile Include="Group\Driver\Impl\GeneralGroupCommunicationMessage.cs" />

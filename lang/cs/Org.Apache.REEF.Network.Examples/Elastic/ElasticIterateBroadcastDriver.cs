@@ -37,13 +37,10 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Elastic;
-using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
-using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

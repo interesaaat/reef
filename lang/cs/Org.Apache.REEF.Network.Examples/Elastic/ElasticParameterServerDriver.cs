@@ -41,9 +41,9 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Topology.Impl;
-using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Elastic;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

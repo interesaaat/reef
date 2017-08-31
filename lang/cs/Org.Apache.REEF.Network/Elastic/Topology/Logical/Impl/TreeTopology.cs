@@ -24,7 +24,7 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Tang.Exceptions;
 using System.Linq;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
     public class TreeTopology : ITopology
     {

@@ -24,7 +24,7 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
     public class FullConnectedTopology : ITopology
     {

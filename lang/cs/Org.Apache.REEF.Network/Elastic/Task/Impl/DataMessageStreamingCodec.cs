@@ -23,6 +23,7 @@ using System.Threading.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Wake.StreamingCodec;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -116,7 +117,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             List<byte[]> metadataBytes = new List<byte[]>();
 
-            byte[] subscriptionBytes = StringToBytes(obj.SubscriptionName);
+            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
             byte[] operatorBytes = BitConverter.GetBytes(obj.OperatorId);
 
             metadataBytes.Add(BitConverter.GetBytes(subscriptionBytes.Length));
@@ -128,29 +129,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private static Tuple<string, int> GenerateMetaDataDecoding(byte[] obj)
         {
-            int subscriptionCount = BitConverter.ToInt32(obj, 0);
+            int subscriptionLength = BitConverter.ToInt32(obj, 0);
             int offset = sizeof(int);
 
-            string subscriptionString = BytesToString(obj.Skip(offset).Take(subscriptionCount).ToArray());
-            offset += subscriptionCount;
+            string subscriptionString = ByteUtilities.ByteArraysToString(obj.Skip(offset).Take(subscriptionLength).ToArray());
+            offset += subscriptionLength;
             int operatorInt = BitConverter.ToInt32(obj, offset);
-            offset += 4;
 
             return new Tuple<string, int>(subscriptionString, operatorInt);
-        }
-
-        private static byte[] StringToBytes(string str)
-        {
-            byte[] bytes = new byte[str.Length * sizeof(char)];
-            Buffer.BlockCopy(str.ToCharArray(), 0, bytes, 0, bytes.Length);
-            return bytes;
-        }
-
-        private static string BytesToString(byte[] bytes)
-        {
-            char[] chars = new char[bytes.Length / sizeof(char)];
-            Buffer.BlockCopy(bytes, 0, chars, 0, bytes.Length);
-            return new string(chars);
         }
     }
 }

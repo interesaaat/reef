@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public ISet<RingReturnMessage> OnTaskMessage(ITaskMessage message)
+        public ISet<DriverMessage> OnTaskMessage(ITaskMessage message)
         {
             return RootOperator.OnTaskMessage(message);
         }

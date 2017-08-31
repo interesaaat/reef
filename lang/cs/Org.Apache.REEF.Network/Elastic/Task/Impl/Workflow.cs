@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Tang.Annotations;
@@ -122,7 +123,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             Logger.Log(Level.Error, "Workflow captured an Exception", e);
             _failed = true;
-            throw e;
+            throw new OperatorException("Workflow captured an Exception", Current.OperatorId, e);
         }
 
         public void Reset()

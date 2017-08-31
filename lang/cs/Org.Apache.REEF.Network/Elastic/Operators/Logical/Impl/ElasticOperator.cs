@@ -17,13 +17,11 @@
 
 using System;
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Topology.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -32,6 +30,8 @@ using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 
 /// <summary>
 /// Basic implementation for logical operators.
@@ -260,7 +260,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public ISet<RingReturnMessage> OnTaskMessage(ITaskMessage message)
+        public ISet<DriverMessage> OnTaskMessage(ITaskMessage message)
         {
             var replies = ReactOnTaskMessage(message);
 
@@ -351,9 +351,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
         }
 
-        protected virtual ISet<RingReturnMessage> ReactOnTaskMessage(ITaskMessage message)
+        protected virtual ISet<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
         {
-            return new HashSet<RingReturnMessage>();
+            return new HashSet<DriverMessage>();
         }
     }
 }

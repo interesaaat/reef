@@ -70,7 +70,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 Console.WriteLine("Master has received {0} in iteration {1}", rec, workflow.Iteration);
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                                throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");
                         }
                     }
                 }

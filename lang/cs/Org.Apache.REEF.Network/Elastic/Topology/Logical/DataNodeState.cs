@@ -15,17 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using System.Collections.Generic;
-
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
-    /// <summary>
-    /// Used to propagate messages through operators and subscriptions.
-    /// </summary>
-    public interface ITaskMessageResponse
+    public enum DataNodeState : int
     {
-        ISet<DriverMessage> OnTaskMessage(ITaskMessage message);
+        Reachable = 1,
+
+        Unreachable = 2,
+
+        Lost = 3
     }
 }

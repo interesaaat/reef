@@ -15,17 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Tang.Implementations.Tang;
+using System;
 using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
-    class ForestTopology : ITopology
+    class EmptyTopology : ITopology
     {
-        public ForestTopology()
+        private bool _finalized;
+
+        public EmptyTopology()
         {
+            _finalized = false;
         }
 
         public int AddTask(string taskId)
@@ -35,11 +39,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         public int RemoveTask(string taskId)
         {
-            return 1;
+            return 0;
         }
 
         public void Build()
         {
+            if (_finalized == true)
+            {
+                throw new IllegalStateException("Topology cannot be built more than once");
+            }
+
+            _finalized = true;
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
@@ -48,7 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Impl
 
         public string LogTopologyState()
         {
-            return "forest";
+            return "empty";
         }
     }
 }

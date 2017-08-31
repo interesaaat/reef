@@ -27,9 +27,8 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Threading;
 using System.Runtime.Remoting;
-using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Network.Elastic.Topology.Task;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -177,6 +176,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public void WaitingForToken(string taskId)
         {
             _ringMessageSource.WaitingForToken(taskId);
+        }
+
+        public void TokenReceived(string taskId)
+        {
+            _ringMessageSource.TokenReceived(taskId);
         }
 
         public void OnError(Exception error)

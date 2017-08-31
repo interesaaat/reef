@@ -15,17 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using System.Collections.Generic;
-
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    /// <summary>
-    /// Used to propagate messages through operators and subscriptions.
-    /// </summary>
-    public interface ITaskMessageResponse
+    public enum RingTaskMessageType : ushort
     {
-        ISet<DriverMessage> OnTaskMessage(ITaskMessage message);
+        WaitForToken = 1,
+        TokenReceived = 2
     }
 }

@@ -39,6 +39,7 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Elastic;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

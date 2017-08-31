@@ -15,14 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Topology
+namespace Org.Apache.REEF.Network.Elastic.Driver
 {
-    public enum DataNodeState : int
+    public interface IDriverMessagePayload
     {
-        Reachable = 1,
+        DriverMessageType MessageType { get; }
 
-        Unreachable = 2,
-
-        Lost = 3
+        byte[] Serialize();
     }
 }

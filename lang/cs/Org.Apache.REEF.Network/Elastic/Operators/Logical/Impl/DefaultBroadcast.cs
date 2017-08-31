@@ -20,6 +20,7 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {

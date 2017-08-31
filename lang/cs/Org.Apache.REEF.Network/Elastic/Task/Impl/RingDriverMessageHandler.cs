@@ -1,8 +1,9 @@
 ﻿using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Network.Elastic.Driver;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators;
-using Org.Apache.REEF.Network.Elastic.Topology.Task;
-using Org.Apache.REEF.Network.Elastic.Topology.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities;
@@ -33,35 +34,17 @@ public class RingDriverMessageHandler : IDriverMessageHandler
     {
         if (value.Message.IsPresent())
         {
-            var message = ByteUtilities.ByteArraysToString(value.Message.Value);
-
-            var data = message.Split(':');
-
-            if (data.Length != 3)
-            {
-                throw new IllegalStateException("Can not recognize message " + message);
-            }
+            var message = DriverMessage.From(value.Message.Value);
 
             DriverAwareOperatorTopology observer;
-            _messageObservers.TryGetValue(data[0], out observer);
+            _messageObservers.TryGetValue(message.Destination, out observer);
 
             if (observer == null)
             {
-                throw new IllegalStateException("Observer for task " + data[0] + " not found");
+                throw new IllegalStateException("Observer for task " + message.Destination + " not found");
             }
 
-            switch (data[1])
-            {
-                case Constants.AggregationRing:
-                    if (!(observer.GetType() == typeof(AggregationRingTopology)))
-                    {
-                        throw new IllegalStateException("Observer " + observer + " not appropriate for " + Constants.AggregationRing);
-                    }
-                    observer.OnNext(data[2]);
-                    break;
-                default:
-                    throw new IllegalStateException("Driver message for operator " + data[1] + " not supported");
-            }
+            observer.OnNext(message.Message);
         }
         else
         {
