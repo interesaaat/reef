@@ -21,6 +21,8 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using System;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -28,7 +30,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultAggregationRing<T> : IElasticAggregationRing<T>
+    public sealed class DefaultAggregationRing<T> : CheckpointingOperator<List<GroupCommunicationMessage>>, IElasticAggregationRing<T>
     {
         private readonly AggregationRingTopology _topology;
 
@@ -40,10 +42,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultAggregationRing(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
+            [Parameter(typeof(OperatorsConfiguration.Checkpointing))] int level,
             AggregationRingTopology topology)
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
+            CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
         }
 
@@ -54,6 +58,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string OperatorName { get; private set; }
 
+        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
+
+        private CheckpointLevel CheckpointLevel { get; set; }
+
         /// <summary>
         /// Receive a message from neighbors broadcasters.
         /// </summary>
@@ -61,7 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
-            _topology.WaitingForToken();
+            _topology.JoinTheRing();
 
             var objs = _topology.Receive(cancellationSource);
 
@@ -76,6 +84,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Send(T data, CancellationTokenSource cancellationSource)
         {
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
+            var messages = new List<GroupCommunicationMessage> { message };
+
+            Checkpoint(messages);
 
             _topology.Send(new List<GroupCommunicationMessage> { message }, cancellationSource);
         }
@@ -88,6 +99,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Dispose()
         {
             _topology.Dispose();
+        }
+
+        internal override void Checkpoint(List<GroupCommunicationMessage> data)
+        {
+            switch (CheckpointLevel)
+            {
+                case CheckpointLevel.AllInMemory:
+                    CheckpointedMessages = new List<GroupCommunicationMessage>(data);
+                    break;
+                default: break;
+            }
         }
     }
 }

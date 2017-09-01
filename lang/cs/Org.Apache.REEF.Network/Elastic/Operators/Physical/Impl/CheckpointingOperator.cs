@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Task
+namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
-    public enum RingTaskMessageType : ushort
+    /// <summary>
+    /// Group Communication operator used to receive and send messages.
+    /// </summary>
+    public abstract class CheckpointingOperator<T>
     {
-        JoinTheRing = 1,
-
-        TokenReceived = 2
+        internal abstract void Checkpoint(T data);
     }
 }

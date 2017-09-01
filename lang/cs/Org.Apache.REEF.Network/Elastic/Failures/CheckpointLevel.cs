@@ -17,16 +17,16 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public enum CheckpointLevel
+    public enum CheckpointLevel : int
     {
-        None,
+        None = 0,
 
-        MasterInMemory,
+        MasterInMemory = 1,
 
-        MasterInDisk,
+        MasterInDisk = 2,
 
-        AllInMemory,
+        AllInMemory = 3,
 
-        AllInDisk
+        AllInDisk = 4
     }
 }

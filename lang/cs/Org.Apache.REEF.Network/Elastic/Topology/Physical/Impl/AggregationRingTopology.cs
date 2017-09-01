@@ -29,6 +29,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -46,7 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
-            CommunicationLayer commLayer) : base(taskId, rootId, subscription, timeout, operatorId, commLayer)
+            CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
         {
             _next = new BlockingCollection<string>();
 
@@ -104,11 +105,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _next.Add(data.NextTaskId);
         }
 
-        public void WaitingForToken()
+        public void JoinTheRing()
         {
             if (_taskId != _rootTaskId)
             {
-                _commLayer.WaitingForToken(_taskId);
+                _commLayer.JoinTheRing(_taskId);
             }
         }
 

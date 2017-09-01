@@ -272,7 +272,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return replies;
         }
 
-        public IFailureState OnTaskFailure(IFailedTask task)
+        public virtual IFailureState OnTaskFailure(IFailedTask task)
         {
             var exception = task.AsError() as OperatorException;
 

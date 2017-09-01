@@ -23,24 +23,55 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
-    public class FullConnectedTopology : ITopology
+    /// <summary>
+    /// Ring topology for aggregation ring operator.
+    /// At configuration time the topology initialize as full connected.
+    /// At run-time a ring topology is generated dynamically as nodes join the ring. 
+    /// </summary>
+    public class RingTopology : ITopology
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(FullConnectedTopology));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(RingTopology));
 
         private int _rootId;
+        private string _rootTaskId;
         private bool _finalized;
+        private string _subscription;
 
         private readonly Dictionary<int, DataNode> _nodes;
 
-        public FullConnectedTopology(int rootId)
+        private int _availableDataPoints;
+
+        private HashSet<string> _currentWaitingList;
+        private HashSet<string> _nextWaitingList;
+        private HashSet<string> _tasksInRing;
+        private LinkedList<string> _ring;
+        private LinkedList<string> _prevRing;
+        private volatile string _tokenPosition;
+
+        private readonly object _lock;
+
+        public RingTopology(int rootId)
         {
             _rootId = rootId;
+            _rootTaskId = string.Empty;
+            _subscription = string.Empty;
             _finalized = false;
 
             _nodes = new Dictionary<int, DataNode>();
+
+            _availableDataPoints = 0;
+
+            _currentWaitingList = new HashSet<string>();
+            _nextWaitingList = new HashSet<string>();
+            _ring = new LinkedList<string>();
+            _tokenPosition = string.Empty;
+
+            _lock = new object();
         }
 
         public int AddTask(string taskId)
@@ -51,12 +82,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
 
             var id = Utils.GetTaskNum(taskId);
-
+            
             if (_nodes.ContainsKey(id))
             {
                 if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
                 {
                     _nodes[id].FailState = DataNodeState.Reachable;
+                    _availableDataPoints++;
 
                     return 1;
                 }
@@ -66,8 +98,24 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             DataNode node = new DataNode(id, false);
             _nodes[id] = node;
+            _availableDataPoints++;
+
+            // This is required later in order to build the topology
+            if (_subscription == string.Empty)
+            {
+                _subscription = Utils.GetTaskSubscriptions(taskId);
+            }
 
             return 1;
+        }
+
+        public ISet<DriverMessage> GetNextTasksInRing()
+        {
+            var messages = new HashSet<DriverMessage>();
+
+            SubmitNextNodes(ref messages);
+
+            return messages;
         }
 
         public int RemoveTask(string taskId)
@@ -92,6 +140,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
 
             node.FailState = DataNodeState.Lost;
+            _availableDataPoints--;
 
             return 1;
         }
@@ -111,6 +160,26 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             BuildTopology();
 
             _finalized = true;
+        }
+
+        public void AddTaskIdToRing(string taskId)
+        {
+            lock (_lock)
+            {
+                if (_currentWaitingList.Contains(taskId) || _tasksInRing.Contains(taskId))
+                {
+                    _nextWaitingList.Add(taskId);
+                }
+                else
+                {
+                    _currentWaitingList.Add(taskId);
+                }
+            }
+        }
+
+        public void UpdateTokenPosition(string taskId)
+        {
+            _tokenPosition = taskId;
         }
 
         public string LogTopologyState()
@@ -150,8 +219,61 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
+        private void SubmitNextNodes(ref HashSet<DriverMessage> messages)
+        {
+            lock (_lock)
+            {
+                while (_currentWaitingList.Count > 0)
+                {
+                    var enumerator = _currentWaitingList.Take(1);
+                    foreach (var nextTask in enumerator)
+                    {
+                        var dest = _ring.Last.Value;
+                        var data = new RingMessagePayload(nextTask);
+                        var returnMessage = new DriverMessage(dest, data);
+
+                        messages.Add(returnMessage);
+                        _ring.AddLast(nextTask);
+                        _tasksInRing.Add(nextTask);
+                        _currentWaitingList.Remove(nextTask);
+                    }
+                }
+
+                if (_availableDataPoints <= _ring.Count)
+                {
+                    var dest = _ring.Last.Value;
+                    var data = new RingMessagePayload(_ring.First.Value);
+                    var returnMessage = new DriverMessage(dest, data);
+
+                    messages.Add(returnMessage);
+                    LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", string.Join("->", _ring), _ring.First.Value);
+
+                    _prevRing = _ring;
+                    _ring = new LinkedList<string>();
+                    _ring.AddLast(_prevRing.First.Value);
+                    _currentWaitingList = _nextWaitingList;
+                    _nextWaitingList = new HashSet<string>();
+                    _tasksInRing = new HashSet<string> { { _rootTaskId } };
+
+                    foreach (var task in _currentWaitingList)
+                    {
+                        _tasksInRing.Add(task);
+                    }
+                }
+            }
+
+            // Continuously build the ring until there is some node waiting
+            if (_currentWaitingList.Count > 0)
+            {
+                SubmitNextNodes(ref messages);
+            }
+        }
+
         private void BuildTopology()
         {
+            _rootTaskId = Utils.BuildTaskId(_subscription, _rootId);
+            _tasksInRing = new HashSet<string> { { _rootTaskId } };
+            _ring.AddLast(_rootTaskId);
         }
     }
 }

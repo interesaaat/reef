@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using Org.Apache.REEF.Common.Tasks;
 
@@ -34,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
-            CommunicationLayer commLayer) : base(taskId, rootId, subscription, timeout, operatorId, commLayer)
+            CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
         {
             if (rootId >= 0)
             {

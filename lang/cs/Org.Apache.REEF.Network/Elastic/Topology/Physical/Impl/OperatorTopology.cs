@@ -35,22 +35,24 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
         protected string _rootTaskId;
         protected readonly string _taskId;
-        private readonly int _timeout;
         protected bool _initialized;
         internal CommunicationLayer _commLayer;
+
+        private readonly int _timeout;
 
         protected ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
-        internal OperatorTopology(string taskId, int rootId, string subscription, int timeout, int operatorId, CommunicationLayer commLayer)
+        internal OperatorTopology(string taskId, int rootId, string subscription, int operatorId, CommunicationLayer commLayer,
+            int timeout)
         {
             _taskId = taskId;
             SubscriptionName = subscription;
             OperatorId = operatorId;
-            _timeout = timeout;
             _initialized = false;
             _commLayer = commLayer;
+
             _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
 
@@ -58,6 +60,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 _rootTaskId = Utils.BuildTaskId(SubscriptionName, rootId);
             }
+
+            _timeout = timeout;
         }
 
         public string SubscriptionName { get; protected set; }

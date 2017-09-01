@@ -10,7 +10,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     {
         private string _taskId;
         private string _taskIdWithToken;
-        private readonly byte[] _message1 = BitConverter.GetBytes((ushort)RingTaskMessageType.WaitForToken);
+        private readonly byte[] _message1 = BitConverter.GetBytes((ushort)RingTaskMessageType.JoinTheRing);
         private readonly byte[] _message2 = BitConverter.GetBytes((ushort)RingTaskMessageType.TokenReceived);
 
         [Inject]
@@ -20,7 +20,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskIdWithToken = string.Empty;
         }
 
-        public void WaitingForToken(string taskId)
+        public void JoinTheRing(string taskId)
         {
             _taskId = taskId;
         }

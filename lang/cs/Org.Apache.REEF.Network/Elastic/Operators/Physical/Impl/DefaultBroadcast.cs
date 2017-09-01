@@ -21,6 +21,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -40,10 +41,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultBroadcast(
             [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
+            [Parameter(typeof(OperatorsConfiguration.Checkpointing))] int level,
             BroadcastTopology topology)
         {
             OperatorName = Constants.Broadcast;
             OperatorId = id;
+            CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
         }
 
@@ -53,6 +56,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public int OperatorId { get; private set; }
 
         public string OperatorName { get; private set; }
+
+        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
+
+        private CheckpointLevel CheckpointLevel { get; set; }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.

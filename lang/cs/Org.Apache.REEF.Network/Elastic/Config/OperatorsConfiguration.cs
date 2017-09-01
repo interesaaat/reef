@@ -15,8 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Annotations;
-using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
@@ -39,6 +39,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 
         [NamedParameter("Number of iterations")]
         public class NumIterations : Name<int>
+        {
+        }
+
+        [NamedParameter("Checkpointing", defaultValue: "0")]
+        public class Checkpointing : Name<int>
         {
         }
     }
