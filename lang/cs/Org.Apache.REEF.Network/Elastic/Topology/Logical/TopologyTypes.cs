@@ -21,6 +21,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
     {
         Flat = 0,
         Tree = 1,
-        Forest = 2
+        Ring = 2
     }
 }

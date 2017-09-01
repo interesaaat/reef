@@ -47,6 +47,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
+            var rand = new Random();
+
             using (var workflow = _subscriptionClient.Workflow)
             {
                 try
@@ -58,9 +60,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int>;
 
+                                System.Threading.Thread.Sleep(rand.Next(5000));
+
                                 var rec = aggregator.Receive(_cancellationSource);
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
+
+                                System.Threading.Thread.Sleep(rand.Next(1000));
 
                                 aggregator.Send(rec + 1, _cancellationSource);
 

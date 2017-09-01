@@ -125,6 +125,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             var nextNode = _next.Take();
 
+            Console.WriteLine("Sending to " + nextNode);
+
             _commLayer.Send(nextNode, message);
             _sendQueue.TryDequeue(out message);
         }

@@ -73,10 +73,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             var objs = _topology.Receive(cancellationSource);
 
-            _topology.TokenReceived();
-
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
+
+            _topology.TokenReceived();
 
             return message.Data;
         }
