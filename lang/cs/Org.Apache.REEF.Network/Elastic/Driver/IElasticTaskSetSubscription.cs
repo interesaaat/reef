@@ -23,12 +23,16 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
-    /// Used to configure (Group Communication) operators in REEF driver.
+    /// Used to group operators in logical units.
     /// All operators in the same Subscription share similar semantics
     /// and behaviour under failures.
     /// </summary>
     public interface IElasticTaskSetSubscription : IFailureResponse, ITaskMessageResponse
     {
+        /// <summary>
+        /// Creates a Subscription with the default settings. 
+        /// The subscription lifecicle is managed by the service.
+        /// </summary>
         string SubscriptionName { get; }
 
         ElasticOperator RootOperator { get; }

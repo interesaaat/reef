@@ -84,7 +84,7 @@ under the License.
     <Compile Include="Elastic\Topology\Logical\Impl\RingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\BroadcastTopology.cs" />
-    <Compile Include="Elastic\Task\Impl\RingTaskMessageSource.cs" />
+    <Compile Include="Elastic\Task\Impl\RingTaskMessageHandler.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopology.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetSubscription.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetService.cs" />

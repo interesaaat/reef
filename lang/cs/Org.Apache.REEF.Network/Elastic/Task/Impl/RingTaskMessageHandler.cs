@@ -6,7 +6,7 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    public class RingTaskMessageSource : ITaskMessageSource
+    public class RingTaskMessageHandler : ITaskMessageSource
     {
         private string _taskId;
         private string _taskIdWithToken;
@@ -14,7 +14,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly byte[] _message2 = BitConverter.GetBytes((ushort)RingTaskMessageType.TokenReceived);
 
         [Inject]
-        private RingTaskMessageSource()
+        private RingTaskMessageHandler()
         {
             _taskId = string.Empty;
             _taskIdWithToken = string.Empty;

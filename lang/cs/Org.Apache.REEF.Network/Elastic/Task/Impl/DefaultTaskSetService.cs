@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
-            RingTaskMessageSource ringMessageSource, // Otherwise the correct instance does not propagate through
+            RingTaskMessageHandler ringMessageSource, // Otherwise the correct instance does not propagate through
             RingDriverMessageHandler ringDriverSource,
             IInjector injector)
         {

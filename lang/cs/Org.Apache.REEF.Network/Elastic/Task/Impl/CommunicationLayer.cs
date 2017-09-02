@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _retryCount;
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
-        private readonly RingTaskMessageSource _ringMessageSource;
+        private readonly RingTaskMessageHandler _ringMessageSource;
         private readonly RingDriverMessageHandler _ringDriverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
 
@@ -70,7 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryCount,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
-            RingTaskMessageSource ringMessageSource,
+            RingTaskMessageHandler ringMessageSource,
             RingDriverMessageHandler ringDriverMessagesHandler,
             IIdentifierFactory idFactory)
         {

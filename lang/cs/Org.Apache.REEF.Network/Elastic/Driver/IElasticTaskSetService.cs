@@ -19,8 +19,6 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Interface;
-using System;
-using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {

@@ -164,7 +164,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
                         .Set(TaskConfiguration.OnMessage, GenericType<RingDriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
+                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageHandler>.Class)
                         .Build())
                     .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                         GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -178,7 +178,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
                         .Set(TaskConfiguration.OnMessage, GenericType<RingDriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
+                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageHandler>.Class)
                         .Build())
                     .Build();
             }
