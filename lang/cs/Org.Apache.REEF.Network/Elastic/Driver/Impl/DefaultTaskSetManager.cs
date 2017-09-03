@@ -130,6 +130,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
         {
+            if (_finalized != true)
+            {
+                throw new IllegalStateException("Task set have to be built before adding tasks");
+            }
+
             int id = Utils.GetTaskNum(taskId) - 1;
 
             if (_taskInfos[id] != null)
@@ -189,7 +194,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void Build()
+        public ITaskSetManager Build()
         {
             if (_finalized == true)
             {
@@ -197,6 +202,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
 
             _finalized = true;
+
+            return this;
         }
 
         public void OnTaskRunning(IRunningTask task)

@@ -19,8 +19,19 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Interface wrapping an event rised by a transition to a new failure
+    /// state. The event speicifies which action have to be executed in response
+    /// to the change in the failure state.
+    /// </summary>
     public interface IFailureEvent : IDisposable
     {
+        /// <summary>
+        /// The event / action rised by the transition to the new failure state.
+        /// It is assumed that the result encodes the magnituted of the action, 
+        /// e.g., smaller number, less demanding action.
+        /// </summary>
+        /// <returns>A value identifing the magnitued of the event</returns>
         int FailureEvent { get; }
     }
 }

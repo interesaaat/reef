@@ -33,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// Creates a Subscription with the default settings. 
         /// The subscription lifecicle is managed by the service.
         /// </summary>
-        /// <returns>A new Task Set Subscription</returns>
+        /// <returns>A new Task Set Subscription with default parameters</returns>
         IElasticTaskSetSubscription DefaultTaskSetSubscription();
 
         /// <summary>

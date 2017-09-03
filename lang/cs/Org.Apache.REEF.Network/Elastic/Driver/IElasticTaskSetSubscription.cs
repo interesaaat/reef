@@ -30,37 +30,69 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     public interface IElasticTaskSetSubscription : IFailureResponse, ITaskMessageResponse
     {
         /// <summary>
-        /// Creates a Subscription with the default settings. 
-        /// The subscription lifecicle is managed by the service.
+        /// The name of the Subscription.
         /// </summary>
         string SubscriptionName { get; }
 
+        /// <summary>
+        /// The operator at the beginning of the computation workflow.
+        /// </summary>
         ElasticOperator RootOperator { get; }
 
         /// <summary>
-        /// This is needed for fault-tolerancy. Failures over an iterative pipeline of operators
-        /// have to be propagated through all operators.
-        /// <summary>
-        bool IsIterative { get; set; }
-
+        /// The Failure State of the target Subscription. 
+        /// </summary>
         IFailureState FailureStatus { get; }
 
+        /// <summary>
+        /// The Service managing the Subscription.
+        /// </summary>
         IElasticTaskSetService Service { get; }
 
+        /// <summary>
+        /// Generates an id to uniquely identify operators in the Subscription.
+        /// </summary>
+        /// <returns>A new unique id</returns>
         int GetNextOperatorId();
 
+        /// <summary>
+        /// Finalizes the Subscription.
+        /// After the Subscription has been finalized, no more operators may
+        /// be added to the group.
+        /// </summary>
+        /// <returns>The same finalized Subscription</returns>
         IElasticTaskSetSubscription Build();
 
+        /// <summary>
+        /// Add a task to the Subscription.
+        /// The Subscription must have called Build() before adding tasks.
+        /// </summary>
+        /// <param name="taskId">The id of the task to add</param>
+        /// <returns>True if the task is added to the Subscription</returns>
         bool AddTask(string taskId);
 
         /// <summary>
-        /// Method for implementing different policies for 
-        /// triggering the scheduling of subscription's tasks.
+        /// Decides if the tasks added to the Subscription can be scheduled for execution
+        /// or not. Method used for implementing different policies for 
+        /// triggering the scheduling of tasks.
         /// </summary>
+        /// <returns>True if the added tasks can be scheduled for execution</returns>
         bool ScheduleSubscription();
 
+        /// <summary>
+        /// Whether the input activeContext is the one of the master Task.
+        /// </summary>
+        /// <param name="activeContext">The active context for the task</param>
+        /// <returns>True if the parameter is the master task's active context</returns>
         bool IsMasterTaskContext(IActiveContext activeContext);
 
+        /// <summary>
+        /// Creates the Configuration for the input task.
+        /// Must be called only after all tasks have been added to the Subscription.
+        /// </summary>
+        /// <param name="builder">The configuration builder the configuration will be appended to</param>
+        /// <param name="taskId">The task id of the task that belongs to this Subscription</param>
+        /// <returns>The configuration for the Task with added Subscription informations</returns>
         void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);
     }
 }

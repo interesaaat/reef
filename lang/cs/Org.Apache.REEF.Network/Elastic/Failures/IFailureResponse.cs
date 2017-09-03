@@ -20,12 +20,23 @@ using Org.Apache.REEF.Driver.Task;
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
+    /// Entry point for classes expected to be aware and act over failres.
     /// Used to propagate failures through operators, subscriptions and the service.
     /// </summary>
     public interface IFailureResponse
     {
-        IFailureState OnTaskFailure(IFailedTask info);
+        /// <summary>
+        /// Used to react on a failure occurred on a task.
+        /// </summary>
+        /// <param name="info">The failed task</param>
+        /// <returns>The failure state after the notification of the failed task</returns>
+        IFailureState OnTaskFailure(IFailedTask task);
 
+        /// <summary>
+        /// When a new failure state is rised, this method is used to dispatch
+        /// such event to the proper failure mitigation logic.
+        /// </summary>
+        /// <param name="event">Notification specifiying the updated failure state</param>
         void EventDispatcher(IFailureEvent @event);
     }
 }

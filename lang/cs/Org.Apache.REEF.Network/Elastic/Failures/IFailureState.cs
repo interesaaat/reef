@@ -18,12 +18,23 @@
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Base interface defining both the possible failure states and the current status
+    /// Base interface defining both the possible failure states and the current status.
     /// </summary>
     public interface IFailureState
     {
+        /// <summary>
+        /// The current failure state. It is assumed that bigger values mean worst
+        /// failure state.
+        /// </summary>
+        /// <returns>A value identifing the failure state</returns>
         int FailureState { get; set; }
 
+        /// <summary>
+        /// A utility method to merge the current failure states and a new one passed as
+        /// parameter. The merging is based on user defined semantic.
+        /// </summary>
+        /// <param name="that">A new failure state</param>
+        /// <returns>The merge of the two failure states</returns>
         IFailureState Merge(IFailureState that);
     }
 }
