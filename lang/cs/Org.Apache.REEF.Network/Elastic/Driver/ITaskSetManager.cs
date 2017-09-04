@@ -22,7 +22,7 @@ using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
+namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
     /// Class defining how groups of tasks sharing similar scheduling semantics are managed.

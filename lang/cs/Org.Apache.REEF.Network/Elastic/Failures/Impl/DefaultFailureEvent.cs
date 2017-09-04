@@ -33,10 +33,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         public int FailureEvent { get; set; }
-
-        public void Dispose()
-        {
-        }
     }
 
     public enum DefaultFailureStateEvents : int

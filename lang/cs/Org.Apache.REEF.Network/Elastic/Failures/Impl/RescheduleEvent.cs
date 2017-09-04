@@ -47,9 +47,5 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             get { throw new NotImplementedException(); }
         }
-
-        public void Dispose()
-        {
-        }
     }
 }

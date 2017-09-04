@@ -24,7 +24,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// state. The event speicifies which action have to be executed in response
     /// to the change in the failure state.
     /// </summary>
-    public interface IFailureEvent : IDisposable
+    public interface IFailureEvent
     {
         /// <summary>
         /// The event / action rised by the transition to the new failure state.

@@ -26,9 +26,5 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             get { return (int)DefaultFailureStateEvents.Stop; }
         }
-
-        public void Dispose()
-        {
-        }
     }
 }
