@@ -29,11 +29,11 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    public class AggregationRingTopology : DriverAwareOperatorTopology
+    internal class AggregationRingTopology : DriverAwareOperatorTopology, CheckpointingTopology<List<GroupCommunicationMessage>>
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopology));
 
@@ -62,6 +62,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
         }
+
+        public List<GroupCommunicationMessage> CheckpointedData { get; set; }
 
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
@@ -94,7 +96,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public override void OnMessageFromDriver(IDriverMessagePayload message)
+        internal override void OnMessageFromDriver(IDriverMessagePayload message)
         {
             if (message.MessageType != DriverMessageType.Ring)
             {
@@ -105,7 +107,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _next.Add(data.NextTaskId);
         }
 
-        public void JoinTheRing()
+        internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
+        {
+            var destMessage = message as FailureMessagePayload;
+            foreach (var data in CheckpointedData)
+            {
+                _commLayer.Send(destMessage.NextTaskId, data);
+            }
+        }
+
+        internal void JoinTheRing()
         {
             if (_taskId != _rootTaskId)
             {
@@ -113,7 +124,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public void TokenReceived()
+        internal void TokenReceived()
         {
             _commLayer.TokenReceived(_taskId);
         }

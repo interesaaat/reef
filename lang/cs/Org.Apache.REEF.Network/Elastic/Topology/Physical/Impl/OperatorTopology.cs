@@ -28,7 +28,7 @@ using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    public abstract class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
+    internal abstract class OperatorTopology : IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopology));
 
@@ -64,16 +64,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _timeout = timeout;
         }
 
-        public string SubscriptionName { get; protected set; }
+        internal string SubscriptionName { get; set; }
 
-        public int OperatorId { get; protected set; }
+        internal int OperatorId { get; set; }
 
-        public IEnumerator<GroupCommunicationMessage> Receive(CancellationTokenSource cancellationSource)
+        internal IEnumerator<GroupCommunicationMessage> Receive(CancellationTokenSource cancellationSource)
         {
              return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        public virtual void Send(List<GroupCommunicationMessage> messages, CancellationTokenSource cancellationSource)
+        internal virtual void Send(List<GroupCommunicationMessage> messages, CancellationTokenSource cancellationSource)
         {
             foreach (var message in messages)
             {

@@ -64,6 +64,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get { return _inner.Current; }
         }
 
+        public string FailureInfo
+        {
+            get { return PositionTracker.Nil.ToString(); }
+        }
+
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
         }

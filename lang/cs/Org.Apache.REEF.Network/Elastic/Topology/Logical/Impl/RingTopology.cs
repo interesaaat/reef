@@ -196,7 +196,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         _lastToken = taskId;
                         _prevRing.Clear();
                     }
-                    // Otherwise we cannot say anything
                 }
                 else if (_tasksInRing.Contains(taskId))
                 {

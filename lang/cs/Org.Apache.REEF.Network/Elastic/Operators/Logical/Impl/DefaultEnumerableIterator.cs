@@ -46,7 +46,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = masterTaskId;
             OperatorName = Constants.Iterate;
-            Subscription.IsIterative = true;
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)

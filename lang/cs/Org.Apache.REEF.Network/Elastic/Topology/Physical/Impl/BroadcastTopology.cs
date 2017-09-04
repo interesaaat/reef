@@ -23,7 +23,7 @@ using Org.Apache.REEF.Common.Tasks;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    public class BroadcastTopology : OperatorTopology
+    internal class BroadcastTopology : OperatorTopology
     {
         [Inject]
         private BroadcastTopology(

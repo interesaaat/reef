@@ -57,6 +57,7 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Elastic\Driver\IDriverMessagePayload.cs" />
+    <Compile Include="Elastic\Failures\FailureMessagePayload.cs" />
     <Compile Include="Elastic\Driver\Impl\DriverMessage.cs" />
     <Compile Include="Elastic\Driver\Impl\RingMessagePayload.cs" />
     <Compile Include="Elastic\Driver\ITaskMessageResponse.cs" />
@@ -64,6 +65,7 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\IElasticAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultConditionalIterator.cs" />
+    <Compile Include="Elastic\Operators\Physical\PositionTracker.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\CheckpointingOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticIterator.cs" />
@@ -82,6 +84,7 @@ under the License.
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
     <Compile Include="Elastic\Task\IWaitForTaskRegistration.cs" />
     <Compile Include="Elastic\Topology\Logical\Impl\RingTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\CheckpointingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\BroadcastTopology.cs" />
     <Compile Include="Elastic\Task\Impl\RingTaskMessageHandler.cs" />

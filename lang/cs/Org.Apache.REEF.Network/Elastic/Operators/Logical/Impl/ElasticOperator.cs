@@ -276,7 +276,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             var exception = task.AsError() as OperatorException;
 
-            if (Subscription.IsIterative || exception.OperatorId <= _id)
+            if (exception.OperatorId <= _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
                 IFailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);

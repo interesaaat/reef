@@ -4,7 +4,7 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    public abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<IDriverMessagePayload>
+    internal abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<IDriverMessagePayload>
     {
         internal DriverAwareOperatorTopology(string taskId, int rootId, string subscription, int operatorId, CommunicationLayer commLayer, 
             int timeout)
@@ -25,10 +25,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public abstract void OnMessageFromDriver(IDriverMessagePayload value);
+        internal abstract void OnMessageFromDriver(IDriverMessagePayload value);
 
-        public void OnFailureResponseMessageFromDriver(IDriverMessagePayload value)
-        {
-        }
+        internal abstract void OnFailureResponseMessageFromDriver(IDriverMessagePayload value);
     }
 }

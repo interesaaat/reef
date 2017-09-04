@@ -15,23 +15,18 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
-
-namespace Org.Apache.REEF.Network.Elastic.Task
+namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
-    /// <summary>
-    /// Used by Tasks to fetch Subscrptions.
-    /// </summary>
-    [DefaultImplementation(typeof(DefaultTaskSetService))]
-    public interface IElasticTaskSetService : IWaitForTaskRegistration, IDisposable
+    public enum PositionTracker : int
     {
-        /// <summary>
-        /// Gets the Subscrption with the given name.
-        /// </summary>
-        /// <param name="subscriptionName">The name of the Subscription</param>
-        /// <returns>The configured subscrption</returns>
-        IElasticTaskSetSubscription GetSubscription(string subscriptionName);
+        Nil = 0,
+
+        InSend = 1,
+
+        InReceive = 2,
+
+        AfterReceiveBeforeSend = 3,
+
+        AfterSendBeforeReceive = 4
     }
 }

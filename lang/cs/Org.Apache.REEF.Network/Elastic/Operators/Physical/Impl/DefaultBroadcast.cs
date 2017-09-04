@@ -32,6 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
     {
         private readonly BroadcastTopology _topology;
+        private PositionTracker _position;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -48,6 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
+            _position = PositionTracker.Nil;
         }
 
         /// <summary>
@@ -61,6 +63,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         private CheckpointLevel CheckpointLevel { get; set; }
 
+        public string FailureInfo
+        {
+            get { return _position.ToString(); }
+        }
+
         /// <summary>
         /// Receive a message from neighbors broadcasters.
         /// </summary>
@@ -68,19 +75,26 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
+            _position = PositionTracker.InReceive;
             var objs = _topology.Receive(cancellationSource);
 
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
+
+            _position = PositionTracker.AfterReceiveBeforeSend;
 
             return message.Data;
         }
 
         public void Send(T data, CancellationTokenSource cancellationSource)
         {
+            _position = PositionTracker.InSend;
+
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
 
             _topology.Send(new List<GroupCommunicationMessage> { message }, cancellationSource);
+
+            _position = PositionTracker.AfterSendBeforeReceive;
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)

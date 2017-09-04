@@ -41,7 +41,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = coordinatortId;
             OperatorName = Constants.Iterate;
-            Subscription.IsIterative = true;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

@@ -123,7 +123,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             Logger.Log(Level.Error, "Workflow captured an Exception", e);
             _failed = true;
-            throw new OperatorException("Workflow captured an Exception", Current.OperatorId, e);
+            throw new OperatorException(
+                "Workflow captured an Exception", Current.OperatorId, e, Current.FailureInfo);
         }
 
         public void Reset()

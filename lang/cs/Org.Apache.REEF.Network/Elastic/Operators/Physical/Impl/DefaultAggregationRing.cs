@@ -33,6 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     public sealed class DefaultAggregationRing<T> : CheckpointingOperator<List<GroupCommunicationMessage>>, IElasticAggregationRing<T>
     {
         private readonly AggregationRingTopology _topology;
+        private PositionTracker _position;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -49,6 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
+            _position = PositionTracker.Nil;
         }
 
         /// <summary>
@@ -58,9 +60,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string OperatorName { get; private set; }
 
-        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
-
         private CheckpointLevel CheckpointLevel { get; set; }
+
+        public string FailureInfo
+        {
+            get { return _position.ToString(); }
+        }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.
@@ -69,6 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
+            _position = PositionTracker.InReceive;
             _topology.JoinTheRing();
 
             var objs = _topology.Receive(cancellationSource);
@@ -77,18 +83,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             var message = objs.Current as DataMessage<T>;
 
             _topology.TokenReceived();
+            _position = PositionTracker.AfterReceiveBeforeSend;
 
             return message.Data;
         }
 
         public void Send(T data, CancellationTokenSource cancellationSource)
         {
+            _position = PositionTracker.InSend;
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
             var messages = new List<GroupCommunicationMessage> { message };
 
             Checkpoint(messages);
 
             _topology.Send(new List<GroupCommunicationMessage> { message }, cancellationSource);
+            _position = PositionTracker.AfterSendBeforeReceive;
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
@@ -106,7 +115,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             switch (CheckpointLevel)
             {
                 case CheckpointLevel.AllInMemory:
-                    CheckpointedMessages = new List<GroupCommunicationMessage>(data);
+                    _topology.CheckpointedData = new List<GroupCommunicationMessage>(data);
                     break;
                 default: break;
             }

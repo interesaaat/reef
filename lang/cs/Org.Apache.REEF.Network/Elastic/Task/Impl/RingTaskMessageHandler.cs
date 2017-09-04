@@ -1,5 +1,4 @@
 ﻿using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities;
 using System;

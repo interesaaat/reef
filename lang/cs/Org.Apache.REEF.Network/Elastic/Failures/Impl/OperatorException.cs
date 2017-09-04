@@ -27,10 +27,16 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     public class OperatorException : Exception, ISerializable
     {
         public readonly int _id;
+        public readonly string _additionalInfo;
 
         public int OperatorId 
         {
             get { return _id;  }
+        }
+
+        public string AdditionalInfo
+        {
+            get { return _additionalInfo; }
         }
 
         /// <summary>
@@ -57,15 +63,33 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             _id = id;
         }
 
+        /// <summary>
+        /// Constructor. A serializable exception object that represents a task operator error and wraps an inner exception
+        /// plus some additional operator specific information
+        /// </summary>
+        /// <param name="message">The exception message</param>
+        /// <param name="id">The id of the operator where the exception is triggered</param>
+        /// <param name="innerException">Inner exception</param>
+        /// <param name="info">Additional operator speicifc information on the failure</param>
+        public OperatorException(string message, int id, Exception innerException, string info)
+            : base(GetMessagePrefix(id) + message, innerException)
+        {
+            _id = id;
+            _additionalInfo = info;
+        }
+
         public OperatorException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
             _id = info.GetInt32("id");
+            _additionalInfo = info.GetString("info");
         }
+
         public new void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);
             info.AddValue("id", _id, typeof(int));
+            info.AddValue("info", _additionalInfo, typeof(string));
         }
 
         private static string GetMessagePrefix(int id)
