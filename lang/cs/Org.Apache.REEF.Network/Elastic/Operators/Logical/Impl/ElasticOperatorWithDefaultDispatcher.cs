@@ -99,12 +99,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             LOGGER.Log(Level.Info, "Reconfiguring operator");
         }
 
-        public void OnReschedule(IReschedule rescheduleEvent)
+        public virtual void OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task with operator");
         }
 
-        public void OnStop(IStop stopEvent)
+        public virtual void OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop operator and reschedule a task");
         }

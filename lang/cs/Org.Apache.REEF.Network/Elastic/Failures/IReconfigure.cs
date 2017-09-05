@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Driver.Task;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
@@ -22,5 +24,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface IReconfigure : IFailureEvent
     {
+        IFailedTask FailedTask { get; }
     }
 }

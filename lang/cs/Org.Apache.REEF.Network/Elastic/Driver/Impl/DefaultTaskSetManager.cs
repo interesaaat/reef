@@ -339,7 +339,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         {
                             case DefaultFailureStateEvents.Reconfigure:
                                 LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reconfiguration event");
-                                IReconfigure reconfigureEvent = new ReconfigureEvent();
+                                IReconfigure reconfigureEvent = new ReconfigureEvent(info);
                                 EventDispatcher(reconfigureEvent);
                                 break;
                             case DefaultFailureStateEvents.Reschedule:

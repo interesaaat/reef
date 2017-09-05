@@ -33,7 +33,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class AggregationRingTopology : DriverAwareOperatorTopology, CheckpointingTopology<List<GroupCommunicationMessage>>
+    internal class AggregationRingTopology : DriverAwareOperatorTopology, ICheckpointingTopology<List<GroupCommunicationMessage>>
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopology));
 

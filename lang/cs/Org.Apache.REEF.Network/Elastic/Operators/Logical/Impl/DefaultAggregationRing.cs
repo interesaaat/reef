@@ -27,6 +27,7 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Linq;
 using System;
 using Org.Apache.REEF.Network.Elastic.Task;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -36,6 +37,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     class DefaultAggregationRing<T> : ElasticOperatorWithDefaultDispatcher, IElasticAggregationRing
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
+
+        private HashSet<string> _currentWaitingList;
+        private HashSet<string> _nextWaitingList;
+        private HashSet<string> _tasksInRing;
+        private LinkedList<string> _ring;
+        private LinkedList<string> _prevRing;
+        private string _ringPrint;
+        private string _lastToken;
+        private string _rootTaskId;
+        private string _taskSubscription;
+
+        private readonly object _lock;
 
         public DefaultAggregationRing(
             int coordinatorId,
@@ -52,12 +65,45 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = coordinatorId;
             OperatorName = Constants.AggregationRing;
+            _rootTaskId = string.Empty;
+
+            _currentWaitingList = new HashSet<string>();
+            _nextWaitingList = new HashSet<string>();
+            _ring = new LinkedList<string>();
+            _prevRing = new LinkedList<string>();
+            _ringPrint = string.Empty;
+            _lastToken = string.Empty;
+
+            _lock = new object();
+        }
+
+        public override bool AddTask(string taskId)
+        {
+            // This is required later in order to build the topology
+            if (_taskSubscription == string.Empty)
+            {
+                _taskSubscription = Utils.GetTaskSubscriptions(taskId);
+            }
+
+            return base.AddTask(taskId);
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
             confBuilder.BindImplementation(GenericType<IElasticBasicOperator<T>>.Class, GenericType<Physical.Impl.DefaultAggregationRing<T>>.Class);
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
+        }
+
+        public override ElasticOperator Build()
+        {
+            _rootTaskId = Utils.BuildTaskId(_taskSubscription, MasterId);
+            _tasksInRing = new HashSet<string> { { _rootTaskId } };
+            _ring.AddLast(_rootTaskId);
+            _lastToken = _rootTaskId;
+
+            _ringPrint = _rootTaskId;
+
+            return base.Build();
         }
 
         protected override ISet<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
@@ -69,14 +115,178 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 case RingTaskMessageType.JoinTheRing:
 
-                    ring.AddTaskIdToRing(message.TaskId);
+                    AddTaskIdToRing(message.TaskId);
 
-                    return ring.GetNextTasksInRing();
+                    return GetNextTasksInRing();
                 case RingTaskMessageType.TokenReceived:
-                    ring.UpdateTokenPosition(message.TaskId);
+                    UpdateTokenPosition(message.TaskId);
                     return new HashSet<DriverMessage>();
                 default:
                     return null;
+            }
+        }
+
+        private void AddTaskIdToRing(string taskId)
+        {
+            lock (_lock)
+            {
+                if (_currentWaitingList.Contains(taskId) || _tasksInRing.Contains(taskId))
+                {
+                    _nextWaitingList.Add(taskId);
+                }
+                else
+                {
+                    _currentWaitingList.Add(taskId);
+                }
+            }
+        }
+
+        private ISet<DriverMessage> GetNextTasksInRing()
+        {
+            var messages = new HashSet<DriverMessage>();
+
+            SubmitNextNodes(ref messages);
+
+            return messages;
+        }
+
+        private void UpdateTokenPosition(string taskId)
+        {
+            lock (_lock)
+            {
+                // The taskId can be:
+                // 1) in tasksInRing, in which case we are working on the current ring;
+                // 2) in prevRing if we are constructing the ring of the successvie iteration;
+                // 3) if it is neither in tasksInRing nor in prevRing it must be a late token message therefore we can ignore it.
+                if (taskId == _rootTaskId)
+                {
+                    // We are at the end of previous ring
+                    if (_prevRing.Count > 0 && _lastToken == _prevRing.First.Value)
+                    {
+                        _lastToken = taskId;
+                        _prevRing.Clear();
+                    }
+                }
+                else if (_tasksInRing.Contains(taskId))
+                {
+                    if (_ring.Contains(taskId))
+                    {
+                        if (_prevRing.Count > 0 && _lastToken == _prevRing.First.Value)
+                        {
+                            _prevRing.Clear();
+                        }
+
+                        var head = _ring.First;
+
+                        while (head.Value != taskId)
+                        {
+                            head = head.Next;
+                            _ring.RemoveFirst();
+                        }
+                        _lastToken = taskId;
+                    }
+                }
+                else if (_prevRing.Contains(taskId))
+                {
+                    var head = _prevRing.First;
+
+                    while (head.Value != taskId)
+                    {
+                        head = head.Next;
+                        _prevRing.RemoveFirst();
+                    }
+                    _lastToken = taskId;
+                }
+            }
+        }
+
+        private void SubmitNextNodes(ref HashSet<DriverMessage> messages)
+        {
+            lock (_lock)
+            {
+                while (_currentWaitingList.Count > 0)
+                {
+                    var enumerator = _currentWaitingList.Take(1);
+                    foreach (var nextTask in enumerator)
+                    {
+                        var dest = _ring.Last.Value;
+                        var data = new RingMessagePayload(nextTask);
+                        var returnMessage = new DriverMessage(dest, data);
+
+                        messages.Add(returnMessage);
+                        _ring.AddLast(nextTask);
+                        _tasksInRing.Add(nextTask);
+                        _currentWaitingList.Remove(nextTask);
+
+                        _ringPrint += "->" + nextTask;
+                    }
+                }
+
+                if (_failureMachine.NumOfDataPoints - _failureMachine.NumOfFailedDataPoints <= _tasksInRing.Count)
+                {
+                    var dest = _ring.Last.Value;
+                    var data = new RingMessagePayload(_rootTaskId);
+                    var returnMessage = new DriverMessage(dest, data);
+
+                    messages.Add(returnMessage);
+                    LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", _ringPrint, _rootTaskId);
+
+                    _prevRing = _ring;
+                    _ring = new LinkedList<string>();
+                    _ring.AddLast(_rootTaskId);
+                    _currentWaitingList = _nextWaitingList;
+                    _nextWaitingList = new HashSet<string>();
+                    _tasksInRing = new HashSet<string> { { _rootTaskId } };
+
+                    foreach (var task in _currentWaitingList)
+                    {
+                        _tasksInRing.Add(task);
+                    }
+
+                    _ringPrint = _rootTaskId;
+                }
+            }
+
+            // Continuously build the ring until there is some node waiting
+            if (_currentWaitingList.Count > 0)
+            {
+                SubmitNextNodes(ref messages);
+            }
+        }
+
+        public new void OnReconfigure(IReconfigure reconfigureEvent)
+        {
+            var ring = _topology as RingTopology;
+
+            if (_checkpointLevel > CheckpointLevel.None)
+            {
+                if (reconfigureEvent.FailedTask.AsError() is OperatorException)
+                {
+                    var exception = reconfigureEvent.FailedTask.AsError() as OperatorException;
+                    if (exception.OperatorId == _id)
+                    {
+                        switch (int.Parse(exception.AdditionalInfo))
+                        {
+                            // The failure is on the node with token
+                            case (int)PositionTracker.AfterReceiveBeforeSend:
+                                if (reconfigureEvent.FailedTask.Id == _lastToken)
+                                {
+                                    // Get a random checkpointed node. 
+                                    // TODO get the closed node in the topology
+                                    var diff = _tasksInRing;
+                                    diff.ExceptWith(_currentWaitingList);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                    else
+                    {
+                        ////reconfigureEvent.ReconfigureOperator = false;
+                        throw new NotImplementedException("Future work");
+                    }
+                }
             }
         }
     }

@@ -20,7 +20,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
     /// <summary>
     /// Group Communication operator used to receive and send messages.
     /// </summary>
-    internal interface CheckpointingTopology<T>
+    internal interface ICheckpointingTopology<T>
     {
         T CheckpointedData { get; set; }
     }

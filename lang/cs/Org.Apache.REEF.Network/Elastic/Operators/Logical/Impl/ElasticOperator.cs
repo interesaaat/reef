@@ -81,7 +81,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public string OperatorName { get; protected set; }
 
-        public bool AddTask(string taskId)
+        public virtual bool AddTask(string taskId)
         {
             _topology.AddTask(taskId);
 
@@ -131,7 +131,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public ElasticOperator Build()
+        public virtual ElasticOperator Build()
         {
             if (_operatorFinalized == true)
             {

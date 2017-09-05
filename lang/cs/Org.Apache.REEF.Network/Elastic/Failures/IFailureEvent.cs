@@ -15,8 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
@@ -31,7 +29,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// It is assumed that the result encodes the magnituted of the action, 
         /// e.g., smaller number, less demanding action.
         /// </summary>
-        /// <returns>A value identifing the magnitued of the event</returns>
         int FailureEvent { get; }
     }
 }
