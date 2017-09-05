@@ -41,9 +41,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private HashSet<string> _currentWaitingList;
         private HashSet<string> _nextWaitingList;
         private HashSet<string> _tasksInRing;
-        private LinkedList<string> _ring;
+        private LinkedList<string> _currentRing;
         private LinkedList<string> _prevRing;
-        private string _ringPrint;
+        private LinkedList<string> _ring;
         private string _lastToken;
         private string _rootTaskId;
         private string _taskSubscription;
@@ -69,10 +69,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             _currentWaitingList = new HashSet<string>();
             _nextWaitingList = new HashSet<string>();
-            _ring = new LinkedList<string>();
+            _currentRing = new LinkedList<string>();
             _prevRing = new LinkedList<string>();
-            _ringPrint = string.Empty;
+            _ring = new LinkedList<string>();
             _lastToken = string.Empty;
+            _taskSubscription = string.Empty;
 
             _lock = new object();
         }
@@ -94,16 +95,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 
-        public override ElasticOperator Build()
+        public override ElasticOperator BuildState()
         {
             _rootTaskId = Utils.BuildTaskId(_taskSubscription, MasterId);
             _tasksInRing = new HashSet<string> { { _rootTaskId } };
-            _ring.AddLast(_rootTaskId);
+            _currentRing.AddLast(_rootTaskId);
             _lastToken = _rootTaskId;
+            _ring.AddLast(_rootTaskId);
 
-            _ringPrint = _rootTaskId;
-
-            return base.Build();
+            return base.BuildState();
         }
 
         protected override ISet<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
@@ -169,19 +169,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 }
                 else if (_tasksInRing.Contains(taskId))
                 {
-                    if (_ring.Contains(taskId))
+                    if (_currentRing.Contains(taskId))
                     {
                         if (_prevRing.Count > 0 && _lastToken == _prevRing.First.Value)
                         {
                             _prevRing.Clear();
                         }
 
-                        var head = _ring.First;
+                        var head = _currentRing.First;
 
                         while (head.Value != taskId)
                         {
                             head = head.Next;
-                            _ring.RemoveFirst();
+                            _currentRing.RemoveFirst();
                         }
                         _lastToken = taskId;
                     }
@@ -209,31 +209,31 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var enumerator = _currentWaitingList.Take(1);
                     foreach (var nextTask in enumerator)
                     {
-                        var dest = _ring.Last.Value;
+                        var dest = _currentRing.Last.Value;
                         var data = new RingMessagePayload(nextTask);
                         var returnMessage = new DriverMessage(dest, data);
 
                         messages.Add(returnMessage);
-                        _ring.AddLast(nextTask);
+                        _currentRing.AddLast(nextTask);
                         _tasksInRing.Add(nextTask);
                         _currentWaitingList.Remove(nextTask);
 
-                        _ringPrint += "->" + nextTask;
+                        _ring.AddLast(nextTask);
                     }
                 }
 
                 if (_failureMachine.NumOfDataPoints - _failureMachine.NumOfFailedDataPoints <= _tasksInRing.Count)
                 {
-                    var dest = _ring.Last.Value;
+                    var dest = _currentRing.Last.Value;
                     var data = new RingMessagePayload(_rootTaskId);
                     var returnMessage = new DriverMessage(dest, data);
 
                     messages.Add(returnMessage);
-                    LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", _ringPrint, _rootTaskId);
+                    LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", string.Join("->",_ring), _rootTaskId);
 
-                    _prevRing = _ring;
-                    _ring = new LinkedList<string>();
-                    _ring.AddLast(_rootTaskId);
+                    _prevRing = _currentRing;
+                    _currentRing = new LinkedList<string>();
+                    _currentRing.AddLast(_rootTaskId);
                     _currentWaitingList = _nextWaitingList;
                     _nextWaitingList = new HashSet<string>();
                     _tasksInRing = new HashSet<string> { { _rootTaskId } };
@@ -243,7 +243,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         _tasksInRing.Add(task);
                     }
 
-                    _ringPrint = _rootTaskId;
+                    _ring = new LinkedList<string>();
+                    _ring.AddLast(_rootTaskId);
                 }
             }
 
@@ -258,6 +259,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             var ring = _topology as RingTopology;
 
+            if (reconfigureEvent.FailedTask.Id == _rootTaskId)
+            {
+                throw new NotImplementedException("Failure on master not supported yet");
+            }
+
             if (_checkpointLevel > CheckpointLevel.None)
             {
                 if (reconfigureEvent.FailedTask.AsError() is OperatorException)
@@ -271,8 +277,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             case (int)PositionTracker.AfterReceiveBeforeSend:
                                 if (reconfigureEvent.FailedTask.Id == _lastToken)
                                 {
-                                    // Get a random checkpointed node. 
-                                    // TODO get the closed node in the topology
+                                    // Get the last available checkpointed node
                                     var diff = _tasksInRing;
                                     diff.ExceptWith(_currentWaitingList);
                                 }

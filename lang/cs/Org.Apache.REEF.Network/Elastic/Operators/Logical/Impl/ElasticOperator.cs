@@ -148,7 +148,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return this;
         }
 
-        public ElasticOperator BuildState()
+        public virtual ElasticOperator BuildState()
         {
             if (_stateFinalized == true)
             {
