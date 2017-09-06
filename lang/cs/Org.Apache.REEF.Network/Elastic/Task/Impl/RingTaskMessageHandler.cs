@@ -2,6 +2,8 @@
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -9,6 +11,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     {
         private string _taskId;
         private string _taskIdWithToken;
+        private int _iterationNumber;
+
         private readonly byte[] _message1 = BitConverter.GetBytes((ushort)RingTaskMessageType.JoinTheRing);
         private readonly byte[] _message2 = BitConverter.GetBytes((ushort)RingTaskMessageType.TokenReceived);
 
@@ -24,9 +28,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskId = taskId;
         }
 
-        public void TokenReceived(string taskId)
+        public void TokenReceived(string taskId, int iterationNumber)
         {
             _taskIdWithToken = taskId;
+            _iterationNumber = iterationNumber;
         }
 
         public Optional<TaskMessage> Message
@@ -42,7 +47,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 if (_taskIdWithToken != string.Empty)
                 {
-                    var message = TaskMessage.From(_taskIdWithToken, _message2);
+                    List<byte[]> buffer = new List<byte[]>(2);
+                    buffer.Add(_message2);
+                    buffer.Add(BitConverter.GetBytes(_iterationNumber));
+                    var message = TaskMessage.From(_taskIdWithToken, buffer.SelectMany(i => i).ToArray());
                     _taskIdWithToken = string.Empty;
 
                     return Optional<TaskMessage>.Of(message);

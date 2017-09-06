@@ -49,6 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private RingNode _lastToken;
         private string _rootTaskId;
         private string _taskSubscription;
+        private int _iteration;
 
         private readonly object _lock;
 
@@ -70,11 +71,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             _currentWaitingList = new HashSet<string>();
             _nextWaitingList = new HashSet<string>();
-            ////_currentRing = new LinkedList<RingNode>();
-            ////_prevRing = new LinkedList<RingNode>();
             _ringPrint = new StringBuilder();
             _rootTaskId = string.Empty;
             _taskSubscription = string.Empty;
+            _iteration = 1;
 
             _lock = new object();
         }
@@ -100,7 +100,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _rootTaskId = Utils.BuildTaskId(_taskSubscription, MasterId);
             _tasksInRing = new HashSet<string> { { _rootTaskId } };
-            _currentRingHead = new RingNode(_rootTaskId);
+            _currentRingHead = new RingNode(_rootTaskId, _iteration);
             _currentRingTail = _currentRingHead;
             _lastToken = _currentRingHead;
             _ringPrint.Append(_rootTaskId);
@@ -121,7 +121,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                     return GetNextTasksInRing();
                 case RingTaskMessageType.TokenReceived:
-                    UpdateTokenPosition(message.TaskId);
+                    var iteration = BitConverter.ToInt32(message.Message, 2);
+                    UpdateTokenPosition(message.TaskId, iteration);
                     return new HashSet<DriverMessage>();
                 default:
                     return null;
@@ -152,7 +153,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return messages;
         }
 
-        private void UpdateTokenPosition(string taskId)
+        private void UpdateTokenPosition(string taskId, int iterationNumber)
         {
             lock (_lock)
             {
@@ -163,47 +164,37 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 if (taskId == _rootTaskId)
                 {
                     // We are at the end of previous ring
-                    if (_lastToken.Current == false)
+                    if (_lastToken.Iteration == iterationNumber)
                     {
-                        var pos = _lastToken;
-                        while (pos != null)
-                        {
-                            pos.Done = true;
-                            pos.Current = false;
-                            pos = pos.Next;
-                        }
                         _lastToken = _currentRingHead;
-                        Console.WriteLine("Token at beginnig");
+                        Console.WriteLine("Token at " + taskId + " iteration " + _lastToken.Iteration);
                     }
                 }
                 else
                 {
                     var head = _lastToken;
 
-                    while (head != null && head.TaskId != taskId)
+                    if (iterationNumber == _lastToken.Iteration)
                     {
-                        head.Done = true;
-                        head.Current = _lastToken.Current;
-                        head = head.Next;
-                    }
-
-                    if (head == null)
-                    {
-                        head = _currentRingHead;
-
-                        while (head.TaskId != taskId)
+                        while (head != null && head.TaskId != taskId)
                         {
-                            head.Done = true;
                             head = head.Next;
                         }
 
-                        Console.WriteLine("Token at " + taskId);
-                    }
-                    _lastToken = head;
+                        _lastToken = head ?? _lastToken;
 
-                    Console.WriteLine("Token at pre" + taskId);
-                    Console.WriteLine("Pre " + _lastToken.Prev.TaskId + " Next " + _lastToken.Next == null ? _lastToken.Next.TaskId : "null");
-                    Console.WriteLine("Current " + _lastToken.Current);
+                    }
+                    else if (iterationNumber == _iteration)
+                    {
+                        head = _currentRingHead;
+
+                        while (head != null && head.TaskId != taskId)
+                        {
+                            head = head.Next;
+                        }
+
+                        _lastToken = head ?? throw new ArgumentNullException("Token in a not identified position in the ring");
+                    }
                 }
             }
         }
@@ -222,7 +213,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         var returnMessage = new DriverMessage(dest, data);
 
                         messages.Add(returnMessage);
-                        _currentRingTail.Next = new RingNode(nextTask, _currentRingTail);
+                        _currentRingTail.Next = new RingNode(nextTask, _iteration, _currentRingTail);
                         _currentRingTail = _currentRingTail.Next;
                         _tasksInRing.Add(nextTask);
                         _currentWaitingList.Remove(nextTask);
@@ -238,11 +229,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var returnMessage = new DriverMessage(dest, data);
 
                     messages.Add(returnMessage);
-                    LOGGER.Log(Level.Info, "Ring is closed:\n {0}->{1}", _ringPrint, _rootTaskId);
+                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, _ringPrint, _rootTaskId);
 
                     _prevRingHead = _currentRingHead;
-                    _lastToken.Current = false;
-                    _currentRingHead = new RingNode(_rootTaskId);
+                    _iteration++;
+                    _currentRingHead = new RingNode(_rootTaskId, _iteration);
                     _currentRingTail = _currentRingHead;
                     _currentWaitingList = _nextWaitingList;
                     _nextWaitingList = new HashSet<string>();
@@ -307,24 +298,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
     internal class RingNode
     {
-        public RingNode(string taskId, RingNode prev = null)
+        public RingNode(string taskId, int iteration, RingNode prev = null)
         {
             TaskId = taskId;
-            Done = false;
+            Iteration = iteration;
             Next = null;
             Prev = prev;
-            Current = true;
         }
 
         public string TaskId { get; private set; }
 
-        public bool Done { get; set; }
+        public int Iteration { get; set; }
 
         public RingNode Next { get; set; }
 
         public RingNode Prev { get; set; }
-
-        public bool Current { get; set; }
 
         ////public static bool operator ==(RingNode a, RingNode b)
         ////{

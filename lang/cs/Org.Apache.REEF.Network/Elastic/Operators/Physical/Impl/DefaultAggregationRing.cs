@@ -21,7 +21,6 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using System;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
@@ -34,6 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     {
         private readonly AggregationRingTopology _topology;
         private PositionTracker _position;
+        private int _iterationNumber = 0;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -82,7 +82,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
 
-            _topology.TokenReceived();
+            _iterationNumber++;
+            _topology.TokenReceived(_iterationNumber);
             _position = PositionTracker.AfterReceiveBeforeSend;
 
             return message.Data;

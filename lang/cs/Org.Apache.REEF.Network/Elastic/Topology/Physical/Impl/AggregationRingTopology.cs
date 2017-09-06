@@ -124,9 +124,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        internal void TokenReceived()
+        internal void TokenReceived(int iterationNumber)
         {
-            _commLayer.TokenReceived(_taskId);
+            _commLayer.TokenReceived(_taskId, iterationNumber);
         }
 
         protected override void Send(CancellationTokenSource cancellationSource)

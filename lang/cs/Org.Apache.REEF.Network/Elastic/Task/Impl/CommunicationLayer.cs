@@ -178,9 +178,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.JoinTheRing(taskId);
         }
 
-        public void TokenReceived(string taskId)
+        public void TokenReceived(string taskId, int iterationNumber)
         {
-            _ringMessageSource.TokenReceived(taskId);
+            _ringMessageSource.TokenReceived(taskId, iterationNumber);
         }
 
         public void OnError(Exception error)
