@@ -148,7 +148,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return count;
         }
 
-        public void Build()
+        public ITopology Build()
         {
             if (_finalized == true)
             {
@@ -167,6 +167,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             BuildTopology(ref parents, ref iter);
 
             _finalized = true;
+
+            return this;
         }
 
         public string LogTopologyState()

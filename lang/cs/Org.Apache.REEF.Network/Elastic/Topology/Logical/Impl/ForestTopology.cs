@@ -38,8 +38,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return 1;
         }
 
-        public void Build()
+        public ITopology Build()
         {
+            return this;
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)

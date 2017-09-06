@@ -114,7 +114,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             switch (CheckpointLevel)
             {
-                case CheckpointLevel.AllInMemory:
+                case CheckpointLevel.Memory:
                     _topology.CheckpointedData = new List<GroupCommunicationMessage>(data);
                     break;
                 default: break;

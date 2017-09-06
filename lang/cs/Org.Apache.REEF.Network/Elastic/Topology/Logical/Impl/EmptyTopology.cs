@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return 0;
         }
 
-        public void Build()
+        public ITopology Build()
         {
             if (_finalized == true)
             {
@@ -50,6 +50,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
 
             _finalized = true;
+
+            return this;
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)

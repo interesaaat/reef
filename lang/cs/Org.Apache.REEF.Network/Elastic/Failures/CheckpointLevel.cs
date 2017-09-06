@@ -17,16 +17,13 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Definition of supported checkpointing policies
+    /// </summary>
     public enum CheckpointLevel : int
     {
         None = 0,
 
-        MasterInMemory = 1,
-
-        MasterInDisk = 2,
-
-        AllInMemory = 3,
-
-        AllInDisk = 4
+        Memory = 1
     }
 }

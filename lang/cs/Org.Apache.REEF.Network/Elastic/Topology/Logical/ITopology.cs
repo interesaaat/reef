@@ -24,11 +24,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
     /// </summary>
     public interface ITopology
     {
+        /// <summary>
+        /// Adds a new task to the topology.
+        /// When called before Build() actually adds the task to the topology.
+        /// After Build(), it assumes that the task is added because recovered from a failure.
+        /// </summary>
+        /// <param name="taskId">The id of the task to be added</param>
+        /// <returns>The number of data points linked with the added task id</returns>
         int AddTask(string taskId);
 
+        /// <summary>
+        /// Removes a task from the topology
+        /// </summary>
+        /// <param name="taskId">The id of the task to be removed</param>
+        /// <returns>The number of data points lost because of the removed task id</returns>
         int RemoveTask(string taskId);
 
-        void Build();
+        /// <summary>
+        /// Finalizes the Topology.
+        /// After the Topology has been finalized, any task added to the topology is
+        /// assumed as a task recovered from a failure
+        /// </summary>
+        /// <returns>The same finalized Subscription</returns>
+        ITopology Build();
 
         void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId);
 
