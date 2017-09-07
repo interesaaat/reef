@@ -43,13 +43,24 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// <summary>
         /// Finalizes the Topology.
         /// After the Topology has been finalized, any task added to the topology is
-        /// assumed as a task recovered from a failure
+        /// assumed as a task recovered from a failure.
         /// </summary>
         /// <returns>The same finalized Subscription</returns>
         ITopology Build();
 
-        void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId);
+        /// <summary>
+        /// Adds the topology configuration for the input task to the input builder.
+        /// Must be called only after all tasks have been added to the Topology, i.e., after build.
+        /// </summary>
+        /// <param name="builder">The configuration builder the configuration will be appended to</param>
+        /// <param name="taskId">The task id of the task that belongs to this Topology</param>
+        void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);
 
+        /// <summary>
+        /// Utility method for logging the topology state.
+        /// This will be called every time a topology object is built or modified
+        /// because of a failure.
+        /// </summary>
         string LogTopologyState();
     }
 }
