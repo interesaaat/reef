@@ -29,6 +29,8 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using System.Text;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Driver;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -42,9 +44,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private HashSet<string> _currentWaitingList;
         private HashSet<string> _nextWaitingList;
         private HashSet<string> _tasksInRing;
+
+        // Now I only use current and prev. Eventually one could play with this plus checkpointing,
+        // for instance if we checkpoint for up to 5 iterations, we can have an array of prev
         private RingNode _currentRingHead;
         private RingNode _prevRingHead;
         private RingNode _currentRingTail;
+        private RingNode _prevRingTail;
         private StringBuilder _ringPrint;
         private RingNode _lastToken;
         private string _rootTaskId;
@@ -125,7 +131,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     UpdateTokenPosition(message.TaskId, iteration);
                     return new HashSet<DriverMessage>();
                 default:
-                    return null;
+                    return new HashSet<DriverMessage>();
             }
         }
 
@@ -182,7 +188,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         }
 
                         _lastToken = head ?? _lastToken;
-
                     }
                     else if (iterationNumber == _iteration)
                     {
@@ -193,7 +198,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             head = head.Next;
                         }
 
-                        _lastToken = head ?? throw new ArgumentNullException("Token in a not identified position in the ring");
+                        if (head == null)
+                        {
+                            throw new ArgumentNullException("Token in a not identified position in the ring");
+                        }
+                        else
+                        {
+                            _lastToken = head;
+                        }
                     }
                 }
             }
@@ -209,7 +221,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     foreach (var nextTask in enumerator)
                     {
                         var dest = _currentRingTail.TaskId;
-                        var data = new RingMessagePayload(nextTask);
+                        var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask) : (IDriverMessagePayload)new FailureMessagePayload(nextTask);
                         var returnMessage = new DriverMessage(dest, data);
 
                         messages.Add(returnMessage);
@@ -225,13 +237,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 if (_failureMachine.NumOfDataPoints - _failureMachine.NumOfFailedDataPoints <= _tasksInRing.Count)
                 {
                     var dest = _currentRingTail.TaskId;
-                    var data = new RingMessagePayload(_rootTaskId);
+                    var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId);
                     var returnMessage = new DriverMessage(dest, data);
 
                     messages.Add(returnMessage);
                     LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, _ringPrint, _rootTaskId);
 
                     _prevRingHead = _currentRingHead;
+                    _prevRingTail = _currentRingTail;
                     _iteration++;
                     _currentRingHead = new RingNode(_rootTaskId, _iteration);
                     _currentRingTail = _currentRingHead;
@@ -255,8 +268,25 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public new void OnReconfigure(IReconfigure reconfigureEvent)
+        protected override bool PropagateFailureDownstream()
         {
+            switch (_failureMachine.State.FailureState)
+            {
+                case (int)DefaultFailureStates.Continue:
+                case (int)DefaultFailureStates.ContinueAndReconfigure:
+                case (int)DefaultFailureStates.ContinueAndReschedule:
+                    return true;
+                case (int)DefaultFailureStates.StopAndReschedule:
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
+        public override ISet<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        {
+            LOGGER.Log(Level.Info, "Going to reconfigure the ring");
+
             var ring = _topology as RingTopology;
 
             if (reconfigureEvent.FailedTask.Id == _rootTaskId)
@@ -271,28 +301,97 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var exception = reconfigureEvent.FailedTask.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        switch (int.Parse(exception.AdditionalInfo))
+                        var messages = new HashSet<DriverMessage>();
+                        var failureInfos = exception.AdditionalInfo.Split(':');
+                        int position = int.Parse(failureInfos[0]);
+                        int currentIteration = int.Parse(failureInfos[1]);
+
+                        switch (position)
                         {
                             // The failure is on the node with token
                             case (int)PositionTracker.AfterReceiveBeforeSend:
-                                if (reconfigureEvent.FailedTask.Id == _lastToken.TaskId)
+                                lock (_lock)
                                 {
+                                    // Position at the right ring
+                                    if (_lastToken.Iteration < currentIteration)
+                                    {
+                                        _lastToken = _currentRingHead;
+                                    }
+
+                                    var head = _lastToken;
+
+                                    while (head != null && head.TaskId != reconfigureEvent.FailedTask.Id)
+                                    {
+                                        head = head.Next;
+                                    }
+
+                                    _lastToken = head;
+
+                                    _tasksInRing.Remove(_lastToken.TaskId);
+                                    _currentWaitingList.Remove(_lastToken.TaskId);
+                                    _nextWaitingList.Remove(_lastToken.TaskId);
+
                                     // Get the last available checkpointed node
-                                    var diff = _tasksInRing;
-                                    diff.ExceptWith(_currentWaitingList);
+                                    var lastCheckpoint = _lastToken.Prev;
+                                    var nextNode = _lastToken.Next;
+                                    _lastToken.Prev = null;
+
+                                    // We are at the end of the ring
+                                    if (nextNode == null)
+                                    {
+                                        // We are on the current ring
+                                        if (_lastToken.Iteration == _iteration)
+                                        {
+                                            _currentRingTail = lastCheckpoint;
+                                            _currentRingTail.Next = null;
+                                            _currentRingTail.Type = DriverMessageType.Failure; 
+                                            _lastToken = _currentRingTail;
+                                        }
+                                        else
+                                        {
+                                            // We are on the prev ring
+                                            _prevRingTail = lastCheckpoint;
+                                            _prevRingTail.Next = null;
+                                            _prevRingTail.Type = DriverMessageType.Failure;
+                                            _lastToken = _prevRingTail;
+
+                                            var data = new FailureMessagePayload(_currentRingHead.TaskId);
+                                            var returnMessage = new DriverMessage(_lastToken.TaskId, data);
+                                            messages.Add(returnMessage);
+                                        }       
+                                    }
+                                    else
+                                    {
+                                        _tasksInRing.Remove(_lastToken.TaskId);
+                                        _currentWaitingList.Remove(_lastToken.TaskId);
+                                        _nextWaitingList.Remove(_lastToken.TaskId);
+                                        _lastToken.Next = null;
+                                        _lastToken = lastCheckpoint;
+                                        _lastToken.Next = nextNode;
+                                        nextNode.Prev = _lastToken;
+
+                                        var data = new FailureMessagePayload(nextNode.TaskId);
+                                        var returnMessage = new DriverMessage(_lastToken.TaskId, data);
+                                        messages.Add(returnMessage);
+                                    }
                                 }
-                                break;
+
+                                LOGGER.Log(Level.Info, "Sending reconfiguration message: retrieving checkpoint from node {0}", _lastToken.TaskId);
+
+                                _ringPrint.Replace(reconfigureEvent.FailedTask.Id, "X");
+
+                                return messages;
                             default:
-                                break;
+                                return messages;
                         }
                     }
                     else
                     {
-                        ////reconfigureEvent.ReconfigureOperator = false;
                         throw new NotImplementedException("Future work");
                     }
                 }
             }
+            throw new NotImplementedException("Future work");
         }
     }
 
@@ -304,6 +403,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             Iteration = iteration;
             Next = null;
             Prev = prev;
+            Type = DriverMessageType.Ring;
         }
 
         public string TaskId { get; private set; }
@@ -314,24 +414,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public RingNode Prev { get; set; }
 
-        ////public static bool operator ==(RingNode a, RingNode b)
-        ////{
-        ////    if (ReferenceEquals(a, b))
-        ////    {
-        ////        return true;
-        ////    }
-
-        ////    if (((object)a == null) || ((object)b == null))
-        ////    {
-        ////        return false;
-        ////    }
-
-        ////    return a.TaskId == b.TaskId;
-        ////}
-
-        ////public static bool operator !=(RingNode a, RingNode b)
-        ////{
-        ////    return !(a == b);
-        ////}
+        public DriverMessageType Type { get; set; }
     }
 }

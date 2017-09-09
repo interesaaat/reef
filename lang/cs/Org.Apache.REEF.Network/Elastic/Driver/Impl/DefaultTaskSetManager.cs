@@ -29,7 +29,6 @@ using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -249,23 +248,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 returnMessages.UnionWith(sub.OnTaskMessage(message));
             }
 
-            foreach (var returnMessage in returnMessages)
-            {
-                if (returnMessage != null)
-                {
-                    var destination = Utils.GetTaskNum(returnMessage.Destination) - 1;
-                    if (_taskInfos[destination] == null)
-                    {
-                        throw new ArgumentNullException("Task Info");
-                    }
-                    if (_taskInfos[destination].TaskRunner == null)
-                    {
-                        throw new ArgumentNullException("Task Runner");
-                    }
-
-                    _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());
-                }
-            }
+            SendToTasks(returnMessages);
         }
 
         /// <summary>
@@ -279,25 +262,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 && (DefaultFailureStates)_failureStatus.FailureState < DefaultFailureStates.StopAndReschedule;
         }
 
-        public void Dispose()
-        {
-            lock (_taskLock)
-            {
-                foreach (var info in _taskInfos)
-                {
-                    if (info != null)
-                    {
-                        info.Dispose();
-                    }
-                }
-            }
-        }
-
         public IFailureState OnTaskFailure(IFailedTask info)
         {
-            // Default action until we don't have mechanisms implemented
-            LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
-            OnFail();
             if (BelongsTo(info.Id))
             {
                 var id = Utils.GetTaskNum(info.Id) - 1;
@@ -335,27 +301,39 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     if (_failureStatus.FailureState > (int)DefaultFailureStates.Continue)
                     {
+                        ISet<DriverMessage> messages;
+
                         switch ((DefaultFailureStateEvents)_failureStatus.FailureState)
                         {
                             case DefaultFailureStateEvents.Reconfigure:
                                 LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reconfiguration event");
                                 IReconfigure reconfigureEvent = new ReconfigureEvent(info);
-                                EventDispatcher(reconfigureEvent);
+                                messages = EventDispatcher(reconfigureEvent);
                                 break;
                             case DefaultFailureStateEvents.Reschedule:
                                 LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reschedule event");
                                 IReschedule rescheduleEvent = new RescheduleEvent();
-                                EventDispatcher(rescheduleEvent);
+                                messages = EventDispatcher(rescheduleEvent);
                                 break;
                             case DefaultFailureStateEvents.Stop:
                                 LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a stop event");
                                 IStop stopEvent = new StopEvent();
-                                EventDispatcher(stopEvent);
+                                messages = EventDispatcher(stopEvent);
+                                break;
+                            default: 
+                                messages = new HashSet<DriverMessage>();
                                 break;
                         }
+
+                        SendToTasks(messages);
                     }
                 }
+                else
+                {
+                    OnFail();
+                }
             }
+   
             return null;
         }
 
@@ -364,40 +342,49 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
-        public void EventDispatcher(IFailureEvent @event)
+        public ISet<DriverMessage> EventDispatcher(IFailureEvent @event)
         {
+            HashSet<DriverMessage> messages = new HashSet<DriverMessage>();
+
             foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
             {
-                sub.EventDispatcher(@event);
+                messages.UnionWith(sub.EventDispatcher(@event));
             }
 
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    OnReconfigure(@event as IReconfigure);
+                    messages.UnionWith(OnReconfigure(@event as IReconfigure));
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    OnReschedule(@event as IReschedule);
+                    messages.UnionWith(OnReschedule(@event as IReschedule));
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    OnStop(@event as IStop);
+                    messages.UnionWith(OnStop(@event as IStop));
+                    break;
+                default:
                     break;
             }
+
+            return messages;
         }
 
-        public void OnReconfigure(IReconfigure info)
+        public ISet<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
+            return new HashSet<DriverMessage>();
         }
 
-        public void OnReschedule(IReschedule rescheduleEvent)
+        public ISet<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
+            return new HashSet<DriverMessage>();
         }
 
-        public void OnStop(IStop stopEvent)
+        public ISet<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
+            return new HashSet<DriverMessage>();
         }
 
         public void OnFail()
@@ -405,9 +392,44 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             Dispose();
         }
 
+        public void Dispose()
+        {
+            lock (_taskLock)
+            {
+                foreach (var info in _taskInfos)
+                {
+                    if (info != null)
+                    {
+                        info.Dispose();
+                    }
+                }
+            }
+        }
+
         private bool BelongsTo(string id)
         {
             return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
+        }
+
+        private void SendToTasks(ISet<DriverMessage> messages)
+        {
+            foreach (var returnMessage in messages)
+            {
+                if (returnMessage != null)
+                {
+                    var destination = Utils.GetTaskNum(returnMessage.Destination) - 1;
+                    if (_taskInfos[destination] == null)
+                    {
+                        throw new ArgumentNullException("Task Info");
+                    }
+                    if (_taskInfos[destination].TaskRunner == null)
+                    {
+                        throw new ArgumentNullException("Task Runner");
+                    }
+
+                    _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());
+                }
+            }
         }
     }
 }

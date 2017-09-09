@@ -109,6 +109,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
         {
+            Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
+
             var destMessage = message as FailureMessagePayload;
             foreach (var data in CheckpointedData)
             {

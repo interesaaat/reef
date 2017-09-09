@@ -52,8 +52,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
-            RingTaskMessageHandler ringMessageSource, // Otherwise the correct instance does not propagate through
-            RingDriverMessageHandler ringDriverSource,
+            RingTaskMessageSource ringMessageSource, // Otherwise the correct instance does not propagate through
+            DriverMessageHandler ringDriverSource,
             IInjector injector)
         {
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();

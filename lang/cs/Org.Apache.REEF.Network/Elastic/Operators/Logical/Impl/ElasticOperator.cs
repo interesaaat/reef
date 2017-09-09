@@ -219,6 +219,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return AggregationRing<T>(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        public ElasticOperator AggregationRing<T>(CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        {
+            return AggregationRing<T>(MasterId, _failureMachine.Clone(), checkpointLevel, configurations);
+        }
+
         public abstract ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
         public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
@@ -283,7 +288,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                 LogOperatorState();
 
-                if (_next != null)
+                if (PropagateFailureDownstream() && _next != null)
                 {
                     result = result.Merge(_next.OnTaskFailure(task));
                 }
@@ -292,7 +297,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
             else
             {
-                if (_next != null)
+                if (PropagateFailureDownstream() && _next != null)
                 {
                     return _next.OnTaskFailure(task);
                 }
@@ -303,7 +308,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public abstract void EventDispatcher(IFailureEvent @event);
+        public abstract ISet<DriverMessage> EventDispatcher(IFailureEvent @event);
 
         protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
@@ -349,6 +354,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;
 
             LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
+        }
+
+        protected virtual bool PropagateFailureDownstream()
+        {
+            return true;
         }
 
         protected virtual ISet<DriverMessage> ReactOnTaskMessage(ITaskMessage message)

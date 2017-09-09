@@ -48,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
-            CheckpointLevel = (CheckpointLevel)level;
+            CheckpointLevel = CheckpointLevel.Memory; ////(CheckpointLevel)level;
             _topology = topology;
             _position = PositionTracker.Nil;
         }
@@ -64,7 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string FailureInfo
         {
-            get { return _position.ToString(); }
+            get { return ((int)_position).ToString() + ":" + _iterationNumber; }
         }
 
         /// <summary>
@@ -74,6 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
+            _iterationNumber++;
             _position = PositionTracker.InReceive;
             _topology.JoinTheRing();
 
@@ -82,7 +83,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
 
-            _iterationNumber++;
             _topology.TokenReceived(_iterationNumber);
             _position = PositionTracker.AfterReceiveBeforeSend;
 

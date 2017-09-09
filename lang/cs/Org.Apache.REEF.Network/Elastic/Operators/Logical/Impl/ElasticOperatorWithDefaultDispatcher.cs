@@ -23,6 +23,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Globalization;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -73,40 +75,47 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override void EventDispatcher(IFailureEvent @event)
+        public override ISet<DriverMessage> EventDispatcher(IFailureEvent @event)
         {
+            ISet<DriverMessage> messages;
+
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    OnReconfigure(@event as IReconfigure);
+                    messages = OnReconfigure(@event as IReconfigure);
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    OnReschedule(@event as IReschedule);
+                    messages = OnReschedule(@event as IReschedule);
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    OnStop(@event as IStop);
+                    messages = OnStop(@event as IStop);
+                    break;
+                default:
+                    messages = new HashSet<DriverMessage>();
                     break;
             }
 
             if (_next != null)
             {
-                _next.EventDispatcher(@event);
+                messages.UnionWith(_next.EventDispatcher(@event));
             }
+
+            return messages;
         }
 
-        public void OnReconfigure(IReconfigure reconfigureEvent)
+        public virtual ISet<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
         {
-            LOGGER.Log(Level.Info, "Reconfiguring operator");
+            return new HashSet<DriverMessage>();
         }
 
-        public virtual void OnReschedule(IReschedule rescheduleEvent)
+        public virtual ISet<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reschedule a task with operator");
+            return new HashSet<DriverMessage>();
         }
 
-        public virtual void OnStop(IStop stopEvent)
+        public virtual ISet<DriverMessage> OnStop(IStop stopEvent)
         {
-            LOGGER.Log(Level.Info, "Going to stop operator and reschedule a task");
+            return new HashSet<DriverMessage>();
         }
 
         protected override void LogOperatorState()

@@ -190,35 +190,37 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void EventDispatcher(IFailureEvent @event)
+        public ISet<DriverMessage> EventDispatcher(IFailureEvent @event)
         {
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    OnReconfigure(@event as IReconfigure);
-                    break;
+                    return OnReconfigure(@event as IReconfigure);
                 case DefaultFailureStateEvents.Reschedule:
-                    OnReschedule(@event as IReschedule);
-                    break;
+                    return OnReschedule(@event as IReschedule);
                 case DefaultFailureStateEvents.Stop:
-                    OnStop(@event as IStop);
-                    break;
+                    return OnStop(@event as IStop);
+                default:
+                    return new HashSet<DriverMessage>();
             }
         }
 
-        public void OnReconfigure(IReconfigure info)
+        public ISet<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the service");
+            return new HashSet<DriverMessage>();
         }
 
-        public void OnReschedule(IReschedule rescheduleEvent)
+        public ISet<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
+            return new HashSet<DriverMessage>();
         }
 
-        public void OnStop(IStop stopEvent)
+        public ISet<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
+            return new HashSet<DriverMessage>();
         }
     }
 }

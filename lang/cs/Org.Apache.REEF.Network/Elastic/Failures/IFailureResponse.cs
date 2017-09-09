@@ -16,6 +16,8 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -37,6 +39,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// such event to the proper failure mitigation logic.
         /// </summary>
         /// <param name="event">Notification specifiying the updated failure state</param>
-        void EventDispatcher(IFailureEvent @event);
+        ISet<DriverMessage> EventDispatcher(IFailureEvent @event);
     }
 }

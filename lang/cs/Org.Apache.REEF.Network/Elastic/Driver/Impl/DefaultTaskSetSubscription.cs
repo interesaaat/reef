@@ -189,39 +189,44 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return FailureStatus;
         }
 
-        public void EventDispatcher(IFailureEvent @event)
+        public ISet<DriverMessage> EventDispatcher(IFailureEvent @event)
         {
-            RootOperator.EventDispatcher(@event);
+            ISet<DriverMessage> messages  = RootOperator.EventDispatcher(@event);
 
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    OnReconfigure(@event as IReconfigure);
+                    messages.UnionWith(OnReconfigure(@event as IReconfigure));
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    OnReschedule(@event as IReschedule);
+                    messages.UnionWith(OnReschedule(@event as IReschedule));
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    OnStop(@event as IStop);
+                    messages.UnionWith(OnStop(@event as IStop));
                     break;
             }
 
-            Service.EventDispatcher(@event);
+            messages.UnionWith(Service.EventDispatcher(@event));
+
+            return messages;
         }
 
-        public void OnReconfigure(IReconfigure info)
+        public ISet<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
+            return new HashSet<DriverMessage>();
         }
 
-        public void OnReschedule(IReschedule rescheduleEvent)
+        public ISet<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
+            return new HashSet<DriverMessage>();
         }
 
-        public void OnStop(IStop stopEvent)
+        public ISet<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
+            return new HashSet<DriverMessage>();
         }
     }
 }

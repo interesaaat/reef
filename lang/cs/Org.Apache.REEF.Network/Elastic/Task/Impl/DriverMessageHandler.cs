@@ -8,13 +8,13 @@ using System.Collections.Concurrent;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    public class RingDriverMessageHandler : IDriverMessageHandler
+    public class DriverMessageHandler : IDriverMessageHandler
     {
         private readonly ConcurrentDictionary<string, DriverAwareOperatorTopology> _messageObservers =
                 new ConcurrentDictionary<string, DriverAwareOperatorTopology>();
 
         [Inject]
-        public RingDriverMessageHandler()
+        public DriverMessageHandler()
         {
         }
 

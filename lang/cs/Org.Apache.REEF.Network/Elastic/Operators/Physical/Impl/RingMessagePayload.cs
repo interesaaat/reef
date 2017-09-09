@@ -15,12 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     /// <summary>
     /// Messages sent by the driver to operators part of an aggregation ring. 
@@ -37,11 +38,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public DriverMessageType MessageType { get; private set; }
 
         public string NextTaskId { get; private set; }
-
-        public IDriverMessagePayload Deserialize(byte[] data)
-        {
-            throw new NotImplementedException();
-        }
 
         public byte[] Serialize()
         {

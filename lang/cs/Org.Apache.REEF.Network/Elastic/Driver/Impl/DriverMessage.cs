@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities;
 using System;
@@ -80,6 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             switch (type)
             {
                 case DriverMessageType.Failure:
+                    payload = FailureMessagePayload.From(data, offset);
                     break;
                 case DriverMessageType.Ring:
                     payload = RingMessagePayload.From(data, offset);

@@ -49,9 +49,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         private readonly IDictionary<DefaultFailureStates, float> transitionWeights = new Dictionary<DefaultFailureStates, float>()
         {
-            { DefaultFailureStates.ContinueAndReconfigure, 0.10F },
-            { DefaultFailureStates.ContinueAndReschedule, 0.20F },
-            { DefaultFailureStates.StopAndReschedule, 0.30F }
+            { DefaultFailureStates.ContinueAndReconfigure, 0.0F },
+            { DefaultFailureStates.ContinueAndReschedule, 0.5F },
+            { DefaultFailureStates.StopAndReschedule, 0.6F }
         };
 
         [Inject]

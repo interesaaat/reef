@@ -45,8 +45,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _retryCount;
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
-        private readonly RingTaskMessageHandler _ringMessageSource;
-        private readonly RingDriverMessageHandler _ringDriverMessagesHandler;
+        private readonly RingTaskMessageSource _ringMessageSource;
+        private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
 
         private bool _disposed;
@@ -70,8 +70,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryCount,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
-            RingTaskMessageHandler ringMessageSource,
-            RingDriverMessageHandler ringDriverMessagesHandler,
+            RingTaskMessageSource ringMessageSource,
+            DriverMessageHandler driverMessagesHandler,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -79,7 +79,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _sleepTime = sleepTime;
             _networkService = networkService;
             _ringMessageSource = ringMessageSource;
-            _ringDriverMessagesHandler = ringDriverMessagesHandler;
+            _driverMessagesHandler = driverMessagesHandler;
             _idFactory = idFactory;
 
             _disposed = false;
@@ -116,7 +116,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
         {
-            _ringDriverMessagesHandler.RegisterOperatorTopologyForDriver(taskDestinationId, operatorObserver);
+            _driverMessagesHandler.RegisterOperatorTopologyForDriver(taskDestinationId, operatorObserver);
         }
 
         /// <summary>
