@@ -33,13 +33,13 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 
-/// <summary>
-/// Basic implementation for logical operators.
-/// Each operator is part of a subscription and requires a topology, a failure
-/// state machine and a checkpoint policy.
-/// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
+    /// <summary>
+    /// Basic implementation for logical operators.
+    /// Each operator is part of a subscription and is parametrized by a topology, a failure
+    /// state machine and a checkpoint policy.
+    /// </summary>
     public abstract class ElasticOperator : IFailureResponse, ITaskMessageResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticOperator));
@@ -60,12 +60,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected IConfiguration[] _configurations;
 
+        /// <summary>
+        /// Specification for generic Elasti Operators
+        /// </summary>
+        /// <param name="subscription">The subscription this operator is part of</param>
+        /// <param name="prev">The previous operator in the pipeline</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The behaviour of the operator under failures</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configuration parameters</param>
         public ElasticOperator(
             IElasticTaskSetSubscription subscription,
             ElasticOperator prev,
             ITopology topology,
             IFailureStateMachine failureMachine,
-            CheckpointLevel level = CheckpointLevel.None,
+            CheckpointLevel checkpointLevel = CheckpointLevel.None,
             params IConfiguration[] configurations)
         {
             _subscription = subscription;
@@ -73,12 +82,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _id = Subscription.GetNextOperatorId();
             _topology = topology;
             _failureMachine = failureMachine;
-            _checkpointLevel = level;
+            _checkpointLevel = checkpointLevel;
             _configurations = configurations;
         }
 
+        /// <summary>
+        /// The identifier of the master / coordinator node for this operator
+        /// </summary>
         public int MasterId { get; protected set; }
 
+        /// <summary>
+        /// An operator type specific name
+        /// </summary>
         public string OperatorName { get; protected set; }
 
         public virtual bool AddTask(string taskId)
