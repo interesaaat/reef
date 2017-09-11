@@ -61,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected IConfiguration[] _configurations;
 
         /// <summary>
-        /// Specification for generic Elasti Operators
+        /// Specification for generic Elastic Operators
         /// </summary>
         /// <param name="subscription">The subscription this operator is part of</param>
         /// <param name="prev">The previous operator in the pipeline</param>
@@ -96,21 +96,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         public string OperatorName { get; protected set; }
 
-        public virtual bool AddTask(string taskId)
-        {
-            _topology.AddTask(taskId);
-
-            // The assumption is that only one data point is added for each task
-            _failureMachine.AddDataPoints(1);
-
-            if (_next != null)
-            {
-                _next.AddTask(taskId);
-            }
-
-            return true;
-        }
-
+        /// <summary>
+        /// The Subscription this Operator is part of
+        /// </summary>
         protected IElasticTaskSetSubscription Subscription
         {
             get
@@ -129,23 +117,60 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public void GetElasticTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        /// <summary>
+        /// Add a task to the Operator.
+        /// The Operator must have called Build() before adding tasks.
+        /// </summary>
+        /// <param name="taskId">The id of the task to add</param>
+        /// <returns>True if the task is added to the Operator</returns>
+        public virtual bool AddTask(string taskId)
+        {
+            if (_operatorFinalized == false)
+            {
+                throw new IllegalStateException("Operator needs to be built before adding tasks");
+            }
+
+            _topology.AddTask(taskId);
+
+            // The assumption is that only one data point is added for each task
+            _failureMachine.AddDataPoints(1);
+
+            if (_next != null)
+            {
+                _next.AddTask(taskId);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Appends the Operator configuration for the input task to the input builder.
+        /// Must be called only after Build() and Build() have been called.
+        /// </summary>
+        /// <param name="builder">The configuration builder the Operator configuration will be appended to</param>
+        /// <param name="taskId">The task id of the task that belongs to this Operator</param>
+        /// <returns>The configuration for the Task with added Operator informations</returns>
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             if (_operatorFinalized && _stateFinalized)
             {
-                GetOperatorConfiguration(ref confBuilder, taskId);
+                GetOperatorConfiguration(ref builder, taskId);
 
                 if (_next != null)
                 {
-                    _next.GetElasticTaskConfiguration(ref confBuilder, taskId);
+                    _next.GetTaskConfiguration(ref builder, taskId);
                 }
             }
             else
             {
-                throw new IllegalStateException("Operator need to be Build before getting tasks configuration");
+                throw new IllegalStateException("Operator needs to be built before getting tasks configuration");
             }
         }
 
+        /// <summary>
+        /// Finalizes the Operator.
+        /// </summary>
+        /// <returns>The same finalized Operator</returns>
         public virtual ElasticOperator Build()
         {
             if (_operatorFinalized == true)
@@ -163,6 +188,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return this;
         }
 
+        /// <summary>
+        /// Finalizes the Operator state. After BuildState, no more tasks can be added
+        /// to the Operator
+        /// </summary>
+        /// <returns>The same finalized Operator</returns>
         public virtual ElasticOperator BuildState()
         {
             if (_stateFinalized == true)

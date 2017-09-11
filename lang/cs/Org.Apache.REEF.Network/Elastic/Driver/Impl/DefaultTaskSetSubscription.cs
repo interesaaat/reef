@@ -145,7 +145,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     GenericType<GroupCommunicationConfigurationOptions.SubscriptionName>.Class,
                     SubscriptionName);
 
-                RootOperator.GetElasticTaskConfiguration(ref builder, taskId);
+                RootOperator.GetTaskConfiguration(ref builder, taskId);
         }
 
         public IElasticTaskSetSubscription Build()
