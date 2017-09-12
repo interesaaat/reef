@@ -301,7 +301,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     if (_failureStatus.FailureState > (int)DefaultFailureStates.Continue)
                     {
-                        IEnumerable<DriverMessage> messages;
+                        IEnumerable<DriverMessage> messages = null;
 
                         switch ((DefaultFailureStateEvents)_failureStatus.FailureState)
                         {
@@ -320,8 +320,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                                 IStop stopEvent = new StopEvent();
                                 messages = EventDispatcher(stopEvent);
                                 break;
-                            default: 
-                                messages = new List<DriverMessage>();
+                            default:
+                                OnFail();
                                 break;
                         }
 

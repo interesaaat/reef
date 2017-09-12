@@ -173,23 +173,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string LogTopologyState()
         {
-            var nodes = _nodes.Values.GetEnumerator();
-            string output = _rootId + "\n";
-            while (nodes.MoveNext())
-            {
-                if (nodes.Current.TaskId != _rootId)
-                {
-                    var rep = "X";
-                    if (nodes.Current.FailState == DataNodeState.Reachable)
-                    {
-                        rep = nodes.Current.TaskId.ToString();
-                    }
-
-                    output += rep + " ";
-                }
-            }
-
-            return output;
+            return _ringPrint.ToString();
         }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
@@ -314,7 +298,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     var returnMessage = new DriverMessage(dest, data);
 
                     messages.Add(returnMessage);
-                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, _ringPrint, _rootTaskId);
+                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, LogTopologyState(), _rootTaskId);
 
                     _prevRingHead = _currentRingHead;
                     _prevRingTail = _currentRingTail;
