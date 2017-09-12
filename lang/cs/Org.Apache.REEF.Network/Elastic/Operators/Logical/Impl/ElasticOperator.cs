@@ -192,7 +192,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Finalizes the Operator state. After BuildState, no more tasks can be added
         /// to the Operator
         /// </summary>
-        /// <returns>The same finalized Operator</returns>
+        /// <returns>The same Operator with the finalized state</returns>
         public virtual ElasticOperator BuildState()
         {
             if (_stateFinalized == true)
@@ -220,26 +220,35 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return this;
         }
 
-        internal virtual void GatherMasterIds(ref HashSet<string> missingMasterTasks)
+        /// <summary>
+        /// Utility method gathering the set of master task ids of the operators in the current pipeline.
+        /// </summary>
+        /// <param name="masterTasks">The id of the master tasks of the operators preceding operators</param>
+        internal virtual void GatherMasterIds(ref HashSet<string> masterTasks)
         {
             if (_operatorFinalized != true)
             {
                 throw new IllegalStateException("Operator need to be build before finalizing the subscription");
             }
 
-            missingMasterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterId));
+            masterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterId));
 
             if (_next != null)
             {
-                _next.GatherMasterIds(ref missingMasterTasks);
+                _next.GatherMasterIds(ref masterTasks);
             }
         }
 
-        public void ChangePolicy(IFailureStateMachine level)
-        {
-            throw new NotImplementedException();
-        }
-
+        /// <summary>
+        /// Adds the Broadcast Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="senderTaskId">The id of the sender node</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Broadcast operator</returns>
         public abstract ElasticOperator Broadcast<T>(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)

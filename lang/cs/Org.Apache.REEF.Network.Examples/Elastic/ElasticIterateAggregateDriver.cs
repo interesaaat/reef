@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
+                        CheckpointLevel.Memory,
                         iteratorConfig)
                     .AggregationRing<int>()
                     .Build();
@@ -163,8 +163,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
-                        .Set(TaskConfiguration.OnMessage, GenericType<RingDriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
                         .Build())
                     .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                         GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -177,8 +177,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
-                        .Set(TaskConfiguration.OnMessage, GenericType<RingDriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
                         .Build())
                     .Build();
             }
