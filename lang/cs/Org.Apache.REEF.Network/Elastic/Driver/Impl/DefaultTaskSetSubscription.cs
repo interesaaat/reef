@@ -163,9 +163,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public IEnumerable<DriverMessage> OnTaskMessage(ITaskMessage message)
+        public void OnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
         {
-            return RootOperator.OnTaskMessage(message);
+            RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
         public IFailureState OnTaskFailure(IFailedTask task)

@@ -311,16 +311,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public IEnumerable<DriverMessage> OnTaskMessage(ITaskMessage message)
+        public void OnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
         {
-            var replies = ReactOnTaskMessage(message);
+            ReactOnTaskMessage(message, ref returnMessages);
 
             if (_next != null)
             {
-                replies = replies.Concat(_next.OnTaskMessage(message));
+                _next.OnTaskMessage(message, ref returnMessages);
             }
-
-            return replies;
         }
 
         public virtual IFailureState OnTaskFailure(IFailedTask task)
@@ -407,9 +405,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return true;
         }
 
-        protected virtual IEnumerable<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
+        protected virtual void ReactOnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
         {
-            return new List<DriverMessage>();
         }
     }
 }

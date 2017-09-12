@@ -119,6 +119,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return new List<DriverMessage>();
         }
 
+        protected override bool PropagateFailureDownstream()
+        {
+            switch (_failureMachine.State.FailureState)
+            {
+                case (int)DefaultFailureStates.Continue:
+                case (int)DefaultFailureStates.ContinueAndReconfigure:
+                case (int)DefaultFailureStates.ContinueAndReschedule:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         protected override void LogOperatorState()
         {
             string intro = string.Format(CultureInfo.InvariantCulture,

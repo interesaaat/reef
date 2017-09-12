@@ -13,8 +13,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private string _taskIdWithToken;
         private int _iterationNumber;
 
-        private readonly byte[] _message1 = BitConverter.GetBytes((ushort)RingTaskMessageType.JoinTheRing);
-        private readonly byte[] _message2 = BitConverter.GetBytes((ushort)RingTaskMessageType.TokenReceived);
+        private readonly byte[] _message1 = BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing);
+        private readonly byte[] _message2 = BitConverter.GetBytes((ushort)TaskMessageType.TokenReceived);
 
         [Inject]
         private RingTaskMessageSource()

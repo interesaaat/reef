@@ -43,9 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _contextsAdded;
         private int _tasksAdded;
         private int _tasksRunning;
-        private int _tasksFailed;
         private readonly int _numTasks;
-        private float _failRatio;
 
         // Task info 0-indexed
         private readonly List<TaskInfo> _taskInfos;
@@ -55,16 +53,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly object _taskLock;
         private readonly object _statusLock;
 
-        public DefaultTaskSetManager(int numTasks, float failRatio = 0.5F)
+        public DefaultTaskSetManager(int numTasks)
         {
             _finalized = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
             _tasksRunning = 0;
-            _tasksFailed = 0;
             _numTasks = numTasks;
-            _failRatio = failRatio;
 
             _taskInfos = new List<TaskInfo>(numTasks);
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
@@ -245,7 +241,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             foreach (var sub in _subscriptions.Values)
             {
-                returnMessages = returnMessages.Concat(sub.OnTaskMessage(message));
+                sub.OnTaskMessage(message, ref returnMessages);
             }
 
             SendToTasks(returnMessages);
@@ -268,14 +264,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 var id = Utils.GetTaskNum(info.Id) - 1;
                 Interlocked.Decrement(ref _tasksRunning);
-                Interlocked.Increment(ref _tasksFailed);
-
-                if (_tasksFailed / _numTasks > _failRatio)
-                {
-                    LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
-                    OnFail();
-                    return new FailState();
-                }
 
                 lock (_taskLock)
                 {
@@ -321,6 +309,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                                 messages = EventDispatcher(stopEvent);
                                 break;
                             default:
+                                LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
                                 OnFail();
                                 break;
                         }
@@ -330,6 +319,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
                 else
                 {
+                    LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
+
                     OnFail();
                 }
             }
@@ -389,7 +380,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnFail()
         {
-            Dispose();
         }
 
         public void Dispose()

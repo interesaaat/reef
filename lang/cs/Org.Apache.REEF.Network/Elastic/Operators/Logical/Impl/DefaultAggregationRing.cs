@@ -27,6 +27,7 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -65,38 +66,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 
-        protected override IEnumerable<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
+        protected override void ReactOnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
         {
-            var msgReceived = (RingTaskMessageType)BitConverter.ToUInt16(message.Message, 0);
+            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
             switch (msgReceived)
             {
-                case RingTaskMessageType.JoinTheRing:
+                case TaskMessageType.JoinTheRing:
 
                     RingTopology.AddTaskIdToRing(message.TaskId);
 
-                    return RingTopology.GetNextTasksInRing();
-                case RingTaskMessageType.TokenReceived:
+                    returnMessages = returnMessages.Concat(RingTopology.GetNextTasksInRing());
+                    break;
+                case TaskMessageType.TokenReceived:
                     var iteration = BitConverter.ToInt32(message.Message, 2);
                     RingTopology.UpdateTokenPosition(message.TaskId, iteration);
-                    return new List<DriverMessage>();
+                    break;
                 default:
-                    return new List<DriverMessage>();
-            }
-        }
-
-        protected override bool PropagateFailureDownstream()
-        {
-            switch (_failureMachine.State.FailureState)
-            {
-                case (int)DefaultFailureStates.Continue:
-                case (int)DefaultFailureStates.ContinueAndReconfigure:
-                case (int)DefaultFailureStates.ContinueAndReschedule:
-                    return true;
-                case (int)DefaultFailureStates.StopAndReschedule:
-                    return false;
-                default:
-                    return false;
+                    break;
             }
         }
 

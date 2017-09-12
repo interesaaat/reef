@@ -17,7 +17,7 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    public enum RingTaskMessageType : ushort
+    public enum TaskMessageType : ushort
     {
         JoinTheRing = 1,
 
