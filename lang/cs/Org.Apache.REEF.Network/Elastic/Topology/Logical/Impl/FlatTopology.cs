@@ -24,6 +24,7 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -173,6 +174,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     root.AddChild(iter.Current);
                 }
             }
+        }
+
+        public IList<DriverMessage> Reconfigure(string taskId, string info)
+        {
+            throw new NotImplementedException();
         }
     }
 }

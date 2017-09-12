@@ -28,6 +28,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -162,7 +163,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public ISet<DriverMessage> OnTaskMessage(ITaskMessage message)
+        public IEnumerable<DriverMessage> OnTaskMessage(ITaskMessage message)
         {
             return RootOperator.OnTaskMessage(message);
         }
@@ -189,44 +190,44 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return FailureStatus;
         }
 
-        public ISet<DriverMessage> EventDispatcher(IFailureEvent @event)
+        public IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
         {
-            ISet<DriverMessage> messages  = RootOperator.EventDispatcher(@event);
+            var messages  = RootOperator.EventDispatcher(@event);
 
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    messages.UnionWith(OnReconfigure(@event as IReconfigure));
+                    messages = messages.Concat(OnReconfigure(@event as IReconfigure));
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    messages.UnionWith(OnReschedule(@event as IReschedule));
+                    messages = messages.Concat(OnReschedule(@event as IReschedule));
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    messages.UnionWith(OnStop(@event as IStop));
+                    messages = messages.Concat(OnStop(@event as IStop));
                     break;
             }
 
-            messages.UnionWith(Service.EventDispatcher(@event));
+            messages = messages.Concat(Service.EventDispatcher(@event));
 
             return messages;
         }
 
-        public ISet<DriverMessage> OnReconfigure(IReconfigure info)
+        public IList<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
 
-        public ISet<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
 
-        public ISet<DriverMessage> OnStop(IStop stopEvent)
+        public IList<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
     }
 }

@@ -68,6 +68,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 System.Threading.Thread.Sleep(rand.Next(1000));
 
+                                if ((int)workflow.Iteration != 10 && rand.Next(100) < 5)
+                                {
+                                    Console.WriteLine("I die. Bye.");
+
+                                    throw new Exception("Die");
+                                }
+
                                 aggregator.Send(rec + 1, _cancellationSource);
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", rec + 1, workflow.Iteration);
@@ -79,7 +86,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 }
                 catch (Exception e)
                 {
-                    throw e;
+                    workflow.Throw(e);
                 }
             }
 

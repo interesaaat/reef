@@ -23,6 +23,7 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Tang.Exceptions;
 using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -260,6 +261,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 BuildTopology(ref parents, ref iter);
             }
+        }
+
+        public IList<DriverMessage> Reconfigure(string taskId, string info)
+        {
+            throw new NotImplementedException();
         }
     }
 }
