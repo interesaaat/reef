@@ -222,104 +222,187 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         }
 
         /// <summary>
-        /// Utility method gathering the set of master task ids of the operators in the current pipeline.
-        /// </summary>
-        /// <param name="masterTasks">The id of the master tasks of the operators preceding operators</param>
-        internal virtual void GatherMasterIds(ref HashSet<string> masterTasks)
-        {
-            if (_operatorFinalized != true)
-            {
-                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
-            }
-
-            masterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterId));
-
-            if (_next != null)
-            {
-                _next.GatherMasterIds(ref masterTasks);
-            }
-        }
-
-        /// <summary>
         /// Adds the Broadcast Operator to the operator pipeline.
         /// </summary>
         /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
-        /// <param name="senderTaskId">The id of the sender node</param>
+        /// <param name="senderId">The id of the sender node</param>
         /// <param name="topology">The topology of the operator</param>
         /// <param name="failureMachine">The failure state machine of the operator</param>
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Broadcast operator</returns>
-        public abstract ElasticOperator Broadcast<T>(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator Broadcast<T>(int senderId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
+        /// <summary>
+        /// Adds an instance of the Broadcast Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Broadcast operator</returns>
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
             return Broadcast<T>(MasterId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
+        /// <summary>
+        /// Adds an instance of the Broadcast Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Broadcast operator</returns>
         public ElasticOperator Broadcast<T>(TopologyTypes topologyType, params IConfiguration[] configurations)
         {
             return Broadcast<T>(MasterId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
-        public ElasticOperator Broadcast<T>(int senderTaskId, params IConfiguration[] configurations)
+        /// <summary>
+        /// Adds an instance of the Broadcast Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="senderId">The id of the sender node</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Broadcast operator</returns>
+        public ElasticOperator Broadcast<T>(int senderId, params IConfiguration[] configurations)
         {
-            return Broadcast<T>(senderTaskId, new FlatTopology(senderTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(senderId, new FlatTopology(senderId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
-        public abstract ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        /// <summary>
+        /// Adds an instance of the Aggregation Ring Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="coordinatorId">The id of the coordinator node starting the ring</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Aggregtion Ring operator</returns>
+        public abstract ElasticOperator AggregationRing<T>(int coordinatorId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
+        /// <summary>
+        /// Adds an instance of the Aggregation Ring Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Aggregtion Ring operator</returns>
         public ElasticOperator AggregationRing<T>(params IConfiguration[] configurations)
         {
             return AggregationRing<T>(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        /// <summary>
+        /// Adds an instance of the Aggregation Ring Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Aggregtion Ring operator</returns>
         public ElasticOperator AggregationRing<T>(CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             return AggregationRing<T>(MasterId, _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public abstract ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public ElasticOperator Reduce(TopologyTypes topologyType = TopologyTypes.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
             return Reduce(MasterId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public ElasticOperator Reduce(int receiverTaskId, params IConfiguration[] configurations)
         {
             return Reduce(receiverTaskId, TopologyTypes.Flat, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        /// <summary>
+        /// TODO
+        /// Adds an instance of the Conditional Iterate Operator to the operator pipeline.
+        /// This Operator Iterate until a user provided condition is satisfied.
+        /// </summary>
+        /// <param name="coordinatorId">The id of the node coordinating the iterations</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Conditional Iterate operator</returns>
         public abstract ElasticOperator ConditionalIterate(int coordinatorId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
-        public abstract ElasticOperator EnumerableIterate(int masterTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        /// <summary>
+        /// Adds an instance of the Enumerable Iterate Operator to the operator pipeline.
+        /// This Operator Iterate a user provided number of times.
+        /// </summary>
+        /// <param name="masterId">The id of the node coordinating the iterations</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
+        public abstract ElasticOperator EnumerableIterate(int masterId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public ElasticOperator Iterate(TopologyTypes topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
             return ConditionalIterate(MasterId, topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public ElasticOperator Iterate(int coordinatorTaskId, params IConfiguration[] configurations)
         {
             return ConditionalIterate(coordinatorTaskId, new FlatTopology(coordinatorTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        /// <summary>
+        /// Adds an instance of the Enumerable Iterate Operator to the operator pipeline.
+        /// This Operator Iterate a user provided number of times.
+        /// </summary>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
         public ElasticOperator Iterate(IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             return EnumerableIterate(MasterId, failureMachine, checkpointLevel, configurations);
         }
 
+        /// <summary>
+        /// Adds an instance of the Enumerable Iterate Operator to the operator pipeline.
+        /// This Operator Iterate a user provided number of times.
+        /// </summary>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
         public ElasticOperator Iterate(params IConfiguration[] configurations)
         {
             return EnumerableIterate(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
         public ElasticOperator Scatter(string senderTaskId, ElasticOperator prev, TopologyTypes topologyType = TopologyTypes.Flat)
         {
             throw new NotImplementedException();
         }
 
+        /// <summary>
+        /// Method triggered when a Task to Driver message is received. 
+        /// </summary>
+        /// <param name="message">The task message for the operator</param>
+        /// <returns>A list of messages containing the instructions for the task</returns>
         public IEnumerable<DriverMessage> OnTaskMessage(ITaskMessage message)
         {
             var replies = ReactOnTaskMessage(message);
@@ -332,6 +415,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return replies;
         }
 
+        /// <summary>
+        /// Method triggered when a Task failure occures. 
+        /// </summary>
+        /// <param name="task">Information about the failed task</param>
+        /// <returns>The updated failure state of the operator</returns>
         public virtual IFailureState OnTaskFailure(IFailedTask task)
         {
             var exception = task.AsError() as OperatorException;
@@ -363,6 +451,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// Dispatches failure events to the proper logic implementing failure response actions. 
+        /// </summary>
+        /// <param name="event">An event encoding the type of action to be triggered</param>
+        /// <returns>A list of messages containing the recovery instructions for the tasks still alive</returns>
         public abstract IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event);
 
         protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
@@ -419,6 +512,25 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected virtual IEnumerable<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
         {
             return new List<DriverMessage>();
+        }
+
+        /// <summary>
+        /// Utility method gathering the set of master task ids of the operators in the current pipeline.
+        /// </summary>
+        /// <param name="masterTasks">The id of the master tasks of the operators preceding operators</param>
+        internal virtual void GatherMasterIds(ref HashSet<string> masterTasks)
+        {
+            if (_operatorFinalized != true)
+            {
+                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
+            }
+
+            masterTasks.Add(Utils.BuildTaskId(Subscription.SubscriptionName, MasterId));
+
+            if (_next != null)
+            {
+                _next.GatherMasterIds(ref masterTasks);
+            }
         }
     }
 }
