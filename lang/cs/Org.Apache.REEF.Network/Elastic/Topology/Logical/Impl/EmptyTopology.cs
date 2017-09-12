@@ -20,6 +20,7 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using System;
 using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -61,6 +62,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         public string LogTopologyState()
         {
             return "empty";
+        }
+
+        public IList<DriverMessage> Reconfigure(string taskId, string info)
+        {
+            return new List<DriverMessage>();
         }
     }
 }

@@ -149,7 +149,6 @@ under the License.
     <Compile Include="Elastic\Topology\Logical\Impl\EmptyTopology.cs" />
     <Compile Include="Elastic\Topology\Logical\Impl\DataNode.cs" />
     <Compile Include="Elastic\Topology\Logical\Impl\TreeTopology.cs" />
-    <Compile Include="Elastic\Topology\Logical\Impl\ForestTopology.cs" />
     <Compile Include="Elastic\Topology\Logical\Impl\FlatTopology.cs" />
     <Compile Include="Elastic\Topology\Logical\ITopology.cs" />
     <Compile Include="Elastic\Topology\Logical\TopologyTypes.cs" />

@@ -51,6 +51,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         ContinueAndReschedule = 3,
 
-        StopAndReschedule = 4
+        StopAndReschedule = 4,
+
+        Fail = 5
     }
 }

@@ -25,6 +25,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -75,9 +76,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override ISet<DriverMessage> EventDispatcher(IFailureEvent @event)
+        public override IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
         {
-            ISet<DriverMessage> messages;
+            IEnumerable<DriverMessage> messages;
 
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
@@ -91,31 +92,31 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     messages = OnStop(@event as IStop);
                     break;
                 default:
-                    messages = new HashSet<DriverMessage>();
+                    messages = new List<DriverMessage>();
                     break;
             }
 
             if (_next != null)
             {
-                messages.UnionWith(_next.EventDispatcher(@event));
+                messages = messages.Concat(_next.EventDispatcher(@event));
             }
 
             return messages;
         }
 
-        public virtual ISet<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public virtual IList<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
         {
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
 
-        public virtual ISet<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public virtual IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
 
-        public virtual ISet<DriverMessage> OnStop(IStop stopEvent)
+        public virtual IList<DriverMessage> OnStop(IStop stopEvent)
         {
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
 
         protected override void LogOperatorState()

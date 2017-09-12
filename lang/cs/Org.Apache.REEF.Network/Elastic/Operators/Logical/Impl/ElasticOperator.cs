@@ -32,6 +32,7 @@ using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -319,13 +320,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public ISet<DriverMessage> OnTaskMessage(ITaskMessage message)
+        public IEnumerable<DriverMessage> OnTaskMessage(ITaskMessage message)
         {
             var replies = ReactOnTaskMessage(message);
 
             if (_next != null)
             {
-                replies.UnionWith(_next.OnTaskMessage(message));
+                replies = replies.Concat(_next.OnTaskMessage(message));
             }
 
             return replies;
@@ -362,7 +363,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public abstract ISet<DriverMessage> EventDispatcher(IFailureEvent @event);
+        public abstract IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event);
 
         protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
@@ -415,9 +416,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return true;
         }
 
-        protected virtual ISet<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
+        protected virtual IEnumerable<DriverMessage> ReactOnTaskMessage(ITaskMessage message)
         {
-            return new HashSet<DriverMessage>();
+            return new List<DriverMessage>();
         }
     }
 }

@@ -39,6 +39,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// such event to the proper failure mitigation logic.
         /// </summary>
         /// <param name="event">Notification specifiying the updated failure state</param>
-        ISet<DriverMessage> EventDispatcher(IFailureEvent @event);
+        IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event);
     }
 }

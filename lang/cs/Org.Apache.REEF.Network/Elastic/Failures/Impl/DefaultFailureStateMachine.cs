@@ -37,7 +37,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             { DefaultFailureStates.Continue, DefaultFailureStates.ContinueAndReconfigure },
             { DefaultFailureStates.ContinueAndReconfigure, DefaultFailureStates.ContinueAndReschedule },
-            { DefaultFailureStates.ContinueAndReschedule, DefaultFailureStates.StopAndReschedule }
+            { DefaultFailureStates.ContinueAndReschedule, DefaultFailureStates.StopAndReschedule },
+            { DefaultFailureStates.StopAndReschedule, DefaultFailureStates.Fail }
         };
 
         private readonly SortedDictionary<DefaultFailureStates, DefaultFailureStates> transitionMapDown = new SortedDictionary<DefaultFailureStates, DefaultFailureStates>()
@@ -51,7 +52,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             { DefaultFailureStates.ContinueAndReconfigure, 0.0F },
             { DefaultFailureStates.ContinueAndReschedule, 0.5F },
-            { DefaultFailureStates.StopAndReschedule, 0.6F }
+            { DefaultFailureStates.StopAndReschedule, 0.5F },
+            { DefaultFailureStates.Fail, 0.5F }
         };
 
         [Inject]
@@ -106,7 +108,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
                 float currentRate = (float)NumOfFailedDataPoints / NumOfDataPoints;
 
-                while (State.FailureState != (int)DefaultFailureStates.StopAndReschedule && 
+                while (State.FailureState != (int)DefaultFailureStates.Fail && 
                     currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)State.FailureState]])
                 {
                     State.FailureState = (int)transitionMapUp[(DefaultFailureStates)State.FailureState];

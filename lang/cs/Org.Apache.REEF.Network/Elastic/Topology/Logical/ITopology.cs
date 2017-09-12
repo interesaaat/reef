@@ -15,7 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
@@ -62,5 +65,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// because of a failure.
         /// </summary>
         string LogTopologyState();
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        /// <param name="reconfigureEvent"></param>
+        /// <returns></returns>
+        IList<DriverMessage> Reconfigure(string taskId, string info);
     }
 }
