@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticIterateAggregateDriver(
-            [Parameter(typeof(OperatorsConfiguration.NumIterations))] int numIterations,
+            [Parameter(typeof(OperatorParameters.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
@@ -95,7 +95,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(GenericType<OperatorsConfiguration.NumIterations>.Class,
+                .BindNamedParameter<OperatorParameters.NumIterations, int>(GenericType<OperatorParameters.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 

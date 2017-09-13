@@ -78,10 +78,10 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
-        /// Builds a task identifier out of a subscription(s) and a task number.
+        /// Builds a task identifier out of a subscription(s) and an id.
         /// </summary>
         /// <param name="subscriptionName">The subscriptions active in the task</param>
-        /// <param name="contextNum">The task number</param>
+        /// <param name="id">The task id</param>
         /// <returns>The task identifier</returns>
         public static string BuildTaskId(string subscriptionName, int id)
         {

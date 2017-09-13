@@ -34,10 +34,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task
                 IConfiguration operatorConfig = configSerializer.FromString(operatorConfigStr);
 
                 IInjector operatorInjector = injector.ForkInjector(operatorConfig);
-                string msgType = operatorInjector.GetNamedInstance<OperatorsConfiguration.MessageType, string>(
-                    GenericType<OperatorsConfiguration.MessageType>.Class);
-                int id = operatorInjector.GetNamedInstance<OperatorsConfiguration.OperatorId, int>(
-                    GenericType<OperatorsConfiguration.OperatorId>.Class);
+                string msgType = operatorInjector.GetNamedInstance<OperatorParameters.MessageType, string>(
+                    GenericType<OperatorParameters.MessageType>.Class);
+                int id = operatorInjector.GetNamedInstance<OperatorParameters.OperatorId, int>(
+                    GenericType<OperatorParameters.OperatorId>.Class);
 
                 Type groupCommOperatorGenericInterface = typeof(IElasticBasicOperator<>);
                 Type groupCommOperatorInterface = groupCommOperatorGenericInterface.MakeGenericType(Type.GetType(msgType));

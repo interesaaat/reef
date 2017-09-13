@@ -23,9 +23,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Globalization;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Collections.Generic;
-using System.Linq;
+using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -58,7 +57,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override ElasticOperator Reduce(int receiverTaskId, TopologyTypes topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        public override ElasticOperator Reduce(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             _next = new DefaultReduce(receiverTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
             return _next;
@@ -74,6 +73,42 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             _next = new DefaultEnumerableIterator(masterTaskId, this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
+        }
+
+        public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
+        {
+            var exception = task.AsError() as OperatorException;
+
+            if (exception.OperatorId <= _id)
+            {
+                int lostDataPoints = _topology.RemoveTask(task.Id);
+                var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
+
+                switch ((DefaultFailureStates)failureState.FailureState)
+                {
+                    case DefaultFailureStates.ContinueAndReconfigure:
+                        failureEvents.Add(new ReconfigureEvent(task, _id));
+                        break;
+                    case DefaultFailureStates.ContinueAndReschedule:
+                        failureEvents.Add(new RescheduleEvent(task.Id, _id));
+                        break;
+                    case DefaultFailureStates.StopAndReschedule:
+                        failureEvents.Add(new StopEvent(task.Id, _id));
+                        break;
+                    case DefaultFailureStates.Fail:
+                        failureEvents.Add(new FailEvent(task.Id));
+                        break;
+                    default:
+                        break;
+                }
+
+                LogOperatorState();
+            }
+
+            if (PropagateFailureDownstream() && _next != null)
+            {
+                _next.OnTaskFailure(task, ref failureEvents);
+            }
         }
 
         public override void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses)

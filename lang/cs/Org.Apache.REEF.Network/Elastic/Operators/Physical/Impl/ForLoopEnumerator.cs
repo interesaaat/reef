@@ -8,7 +8,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private int _iterations;
 
         [Inject]
-        private ForLoopEnumerator([Parameter(typeof(OperatorsConfiguration.NumIterations))] int iterations)
+        private ForLoopEnumerator([Parameter(typeof(OperatorParameters.NumIterations))] int iterations)
         {
             _iterations = iterations;
             State = 0;

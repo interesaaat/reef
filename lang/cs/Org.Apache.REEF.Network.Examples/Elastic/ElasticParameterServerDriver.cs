@@ -82,7 +82,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticParameterServerDriver(
-            [Parameter(typeof(OperatorsConfiguration.NumIterations))] int numIterations,
+            [Parameter(typeof(OperatorParameters.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
@@ -110,7 +110,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(GenericType<OperatorsConfiguration.NumIterations>.Class,
+                .BindNamedParameter<OperatorParameters.NumIterations, int>(GenericType<OperatorParameters.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
@@ -132,7 +132,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce(1, TopologyTypes.Tree,
+                    .Reduce(1, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
@@ -147,7 +147,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                     .Reduce(2, TopologyTypes.Tree,
+                     .Reduce(2, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce(3, TopologyTypes.Tree,
+                    .Reduce(3, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)

@@ -96,7 +96,7 @@ under the License.
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetSubscription.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetService.cs" />
     <Compile Include="Elastic\Task\Impl\GroupCommunicationMessage.cs" />
-    <Compile Include="Elastic\Config\OperatorsConfiguration.cs" />
+    <Compile Include="Elastic\Config\OperatorParameters.cs" />
     <Compile Include="Elastic\Config\ElasticServiceConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\GroupCommunicationConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\ReduceFunctionConfiguration.cs" />
@@ -154,7 +154,7 @@ under the License.
     <Compile Include="Elastic\Topology\Logical\Impl\TreeTopology.cs" />
     <Compile Include="Elastic\Topology\Logical\Impl\FlatTopology.cs" />
     <Compile Include="Elastic\Topology\Logical\ITopology.cs" />
-    <Compile Include="Elastic\Topology\Logical\TopologyTypes.cs" />
+    <Compile Include="Elastic\Topology\Logical\TopologyType.cs" />
     <Compile Include="Group\Config\CodecToStreamingCodecConfiguration.cs" />
     <Compile Include="Group\Config\StreamingCodecConfigurationMinusMessage.cs" />
     <Compile Include="Group\Driver\Impl\GeneralGroupCommunicationMessage.cs" />

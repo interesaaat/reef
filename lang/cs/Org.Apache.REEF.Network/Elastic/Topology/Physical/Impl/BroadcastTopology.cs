@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            [Parameter(typeof(OperatorsConfiguration.OperatorId))] int operatorId,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
             CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
         {

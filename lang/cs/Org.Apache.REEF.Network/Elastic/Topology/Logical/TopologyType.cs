@@ -17,7 +17,7 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
-    public enum TopologyTypes
+    public enum TopologyType
     {
         Flat = 0,
         Tree = 1,

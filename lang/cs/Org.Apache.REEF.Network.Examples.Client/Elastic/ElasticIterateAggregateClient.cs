@@ -56,8 +56,8 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateAggregateDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<OperatorsConfiguration.NumIterations, int>(
-                    GenericType<OperatorsConfiguration.NumIterations>.Class,
+                .BindNamedParameter<OperatorParameters.NumIterations, int>(
+                    GenericType<OperatorParameters.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,

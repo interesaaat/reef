@@ -15,12 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    public class OperatorsConfiguration
+    public class OperatorParameters
     {
         [NamedParameter("Operator Name")]
         public class OperatorType : Name<string>

@@ -30,13 +30,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public DefaultReduce(
             int receiverId,
             ElasticOperator prev,
-            TopologyTypes topologyType,
+            TopologyType topologyType,
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 
-                topologyType == TopologyTypes.Flat ? (ITopology)new FlatTopology(receiverId) : (ITopology)new TreeTopology(receiverId), 
+                topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(receiverId) : (ITopology)new TreeTopology(receiverId), 
                 failureMachine,
                 checkpointLevel)
         {

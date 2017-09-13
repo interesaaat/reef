@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="innerIterator">The inner eunmerator implemeting the iterator</param>
         [Inject]
         private DefaultEnumerableIterator(
-            [Parameter(typeof(OperatorsConfiguration.OperatorId))] int id,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
             ForLoopEnumerator innerIterator)
         {
             OperatorName = Constants.Iterate;

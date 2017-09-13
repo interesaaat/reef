@@ -100,10 +100,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyTypes.Tree,
+            pipeline.Broadcast<int>(TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce(TopologyTypes.Flat,
+                    .Reduce(TopologyType.Flat,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
