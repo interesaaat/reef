@@ -181,7 +181,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {       
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses)
+        public void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses)
         {
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
@@ -199,7 +199,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public List<DriverMessage> OnReconfigure(IReconfigure info)
+        public List<IDriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the service");
 
@@ -208,10 +208,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
 
-            return new List<DriverMessage>();
+            return new List<IDriverMessage>();
         }
 
-        public List<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<IDriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
 
@@ -220,10 +220,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
 
-            return new List<DriverMessage>();
+            return new List<IDriverMessage>();
         }
 
-        public List<DriverMessage> OnStop(IStop stopEvent)
+        public List<IDriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
 
@@ -232,7 +232,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
             }
 
-            return new List<DriverMessage>();
+            return new List<IDriverMessage>();
         }
     }
 }

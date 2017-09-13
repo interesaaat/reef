@@ -28,6 +28,7 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Driver;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -66,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 
-        protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
+        protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
         {
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
@@ -93,7 +94,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override List<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public override List<IDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
         {
             LOGGER.Log(Level.Info, "Going to reconfigure the ring");
 

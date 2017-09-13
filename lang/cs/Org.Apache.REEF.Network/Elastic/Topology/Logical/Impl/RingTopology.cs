@@ -325,14 +325,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public List<DriverMessage> Reconfigure(string taskId, string info)
+        public List<IDriverMessage> Reconfigure(string taskId, string info)
         {
             if (taskId == _rootTaskId)
             {
                 throw new NotImplementedException("Failure on master not supported yet");
             }
 
-            var messages = new List<DriverMessage>();
+            var messages = new List<IDriverMessage>();
             var failureInfos = info.Split(':');
             int position = int.Parse(failureInfos[0]);
             int currentIteration = int.Parse(failureInfos[1]);

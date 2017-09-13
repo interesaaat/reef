@@ -398,7 +398,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
+        public void OnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
         {
             var hasReacted = ReactOnTaskMessage(message, ref returnMessages);
 
@@ -444,7 +444,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public abstract void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses);
+        public abstract void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses);
 
         /// <summary>
         /// Appends the Operator specific configuration for the input task to the input builder.
@@ -528,7 +528,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="message">Incoming message from a task</param>
         /// <param name="returnMessages">Zero or more reply messages for the task</param>
         /// <returns>True if the operator has reacted to the task message</returns>
-        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
+        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
         {
             return false;
         }

@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    public sealed class DriverMessage
+    public sealed class DriverMessage : IDriverMessage
     {
         /// <summary>
         /// Create new RingReturnMessage.

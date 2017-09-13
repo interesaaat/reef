@@ -16,7 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Driver;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -44,6 +44,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <param name="event">The failure event to react upon</param>
         /// <param name="failureResponses">A list of messages containing the recovery instructions for the tasks still alive</param>
         /// <returns>Zero or more messages for the tasks</returns>
-        void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses);
+        void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses);
     }
 }

@@ -15,8 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 
@@ -71,6 +70,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// </summary>
         /// <param name="reconfigureEvent"></param>
         /// <returns></returns>
-        List<DriverMessage> Reconfigure(string taskId, string info);
+        List<IDriverMessage> Reconfigure(string taskId, string info);
     }
 }

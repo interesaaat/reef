@@ -15,24 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using System.Collections.Generic;
-
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
-    /// Used to propagate task messages through operators and subscriptions.
+    /// Message sent by the driver to operators on running tasks. 
+    /// This message contains instructions from the Driver to Tasks.
     /// </summary>
-    public interface ITaskMessageResponse
+    public interface IDriverMessage
     {
         /// <summary>
-        /// Method triggered when a Task to Driver message is received. 
+        /// The destionation task of the message
+        string Destination { get; }
+
+        /// <summary>
+        /// Operator and situation specifyc payload of the message
         /// </summary>
-        /// <param name="message">The task message for the operator</param>
-        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
-        /// <returns>Zero or more messages for the tasks</returns>
-        void OnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages);
+        IDriverMessagePayload Message { get; }
+
+        /// <summary>
+        /// Utility method to serialize the message for communication
+        /// </summary>
+        byte[] Serialize();
     }
 }

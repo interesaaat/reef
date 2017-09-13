@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Collections.Generic;
 
@@ -26,10 +27,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface IDefaultFailureEventResponse
     {
-        List<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent);
+        List<IDriverMessage> OnReconfigure(IReconfigure reconfigureEvent);
 
-        List<DriverMessage> OnReschedule(IReschedule rescheduleEvent);
+        List<IDriverMessage> OnReschedule(IReschedule rescheduleEvent);
 
-        List<DriverMessage> OnStop(IStop stopEvent);
+        List<IDriverMessage> OnStop(IStop stopEvent);
     }
 }

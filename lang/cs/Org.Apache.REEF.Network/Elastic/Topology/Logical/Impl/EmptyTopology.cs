@@ -17,10 +17,8 @@
 
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Tang.Implementations.Tang;
-using System;
 using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Driver;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -64,9 +62,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return "empty";
         }
 
-        public List<DriverMessage> Reconfigure(string taskId, string info)
+        public List<IDriverMessage> Reconfigure(string taskId, string info)
         {
-            return new List<DriverMessage>();
+            return new List<IDriverMessage>();
         }
     }
 }

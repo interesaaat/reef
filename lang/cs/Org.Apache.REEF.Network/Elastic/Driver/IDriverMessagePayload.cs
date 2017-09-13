@@ -17,10 +17,19 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
+    /// <summary>
+    /// Payload of Driver messages.
+    /// </summary>
     public interface IDriverMessagePayload
     {
+        /// <summary>
+        /// The type of payload
+        /// </summary>
         DriverMessageType MessageType { get; }
 
+        /// <summary>
+        /// Utility method to serialize the payload for communication
+        /// </summary>
         byte[] Serialize();
     }
 }

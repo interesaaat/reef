@@ -17,6 +17,9 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
+    /// <summary>
+    /// Possible types of Driver message payloads
+    /// </summary>
     public enum DriverMessageType : ushort
     {
         Failure = 1,
