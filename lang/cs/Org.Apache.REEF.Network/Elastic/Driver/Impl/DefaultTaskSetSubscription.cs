@@ -163,31 +163,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public void OnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
+        public void OnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
         {
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
-        public IFailureState OnTaskFailure(IFailedTask task)
+        public void OnTaskFailure(IFailedTask task, ref IList<IFailureEvent> failureEvents)
         {
             // Failure have to be propagated down to the operators
-            var status = RootOperator.OnTaskFailure(task);
-
-            // Update the current subscription status
-            lock (_statusLock)
-            {
-                if (status.FailureState < FailureStatus.FailureState)
-                {
-                    throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
-                }
-
-                FailureStatus.FailureState = status.FailureState;
-            }
+            RootOperator.OnTaskFailure(task, ref failureEvents);
 
             // Failure have to be propagated up to the service
-            Service.OnTaskFailure(task);
-
-            return FailureStatus;
+            Service.OnTaskFailure(task, ref failureEvents);
         }
 
         public IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
@@ -215,18 +202,46 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public IList<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
+            // Update the current subscription status
+            ////lock (_statusLock)
+            ////{
+            ////    if (status.FailureState < FailureStatus.FailureState)
+            ////    {
+            ////        throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
+            ////    }
+
+            ////    FailureStatus.FailureState = status.FailureState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
+            ////lock (_statusLock)
+            ////{
+            ////    if (status.FailureState < FailureStatus.FailureState)
+            ////    {
+            ////        throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
+            ////    }
+
+            ////    FailureStatus.FailureState = status.FailureState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public IList<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
+            ////lock (_statusLock)
+            ////{
+            ////    if (status.FailureState < FailureStatus.FailureState)
+            ////    {
+            ////        throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
+            ////    }
+
+            ////    FailureStatus.FailureState = status.FailureState;
+            ////}
             return new List<DriverMessage>();
         }
     }

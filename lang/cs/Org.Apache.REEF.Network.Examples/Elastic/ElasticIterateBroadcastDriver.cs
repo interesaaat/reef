@@ -41,6 +41,8 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
+using System.Collections;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -206,7 +208,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IFailedTask failedTask)
         {
-            _taskManager.OnTaskFailure(failedTask);
+            IList<IFailureEvent> failureEvents = null;
+            _taskManager.OnTaskFailure(failedTask, ref failureEvents);
 
             if (_taskManager.Done())
             {

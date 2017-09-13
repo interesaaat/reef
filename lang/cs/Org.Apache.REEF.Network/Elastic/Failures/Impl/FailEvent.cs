@@ -15,17 +15,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using System.Collections.Generic;
-
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
-    /// Used to propagate messages through operators and subscriptions.
+    /// Reconfigure the execution to work with fewer tasks
     /// </summary>
-    public interface ITaskMessageResponse
+    public class FailEvent : IFailureEvent
     {
-        void OnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages);
+        public int FailureEvent
+        {
+            get { return (int)DefaultFailureStateEvents.Fail; }
+        }
     }
 }

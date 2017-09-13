@@ -66,7 +66,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 
-        protected override void ReactOnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
+        protected override bool ReactOnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
         {
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
@@ -76,14 +76,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                     RingTopology.AddTaskIdToRing(message.TaskId);
 
-                    returnMessages = returnMessages.Concat(RingTopology.GetNextTasksInRing());
-                    break;
+                    var nextTasksMessages = RingTopology.GetNextTasksInRing();
+
+                    foreach (var next in nextTasksMessages)
+                    {
+                        returnMessages.Add(next);
+                    }
+
+                    return true;
                 case TaskMessageType.TokenReceived:
                     var iteration = BitConverter.ToInt32(message.Message, 2);
                     RingTopology.UpdateTokenPosition(message.TaskId, iteration);
-                    break;
+                    return true;
                 default:
-                    break;
+                    return false;
             }
         }
 

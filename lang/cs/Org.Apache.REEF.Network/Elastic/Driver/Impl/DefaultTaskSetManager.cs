@@ -237,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskMessage(ITaskMessage message)
         {
-            IEnumerable<DriverMessage> returnMessages = new List<DriverMessage>();
+            IList<DriverMessage> returnMessages = new List<DriverMessage>();
 
             foreach (var sub in _subscriptions.Values)
             {
@@ -258,7 +258,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 && (DefaultFailureStates)_failureStatus.FailureState < DefaultFailureStates.StopAndReschedule;
         }
 
-        public IFailureState OnTaskFailure(IFailedTask info)
+        public void OnTaskFailure(IFailedTask info)
+        {
+            IList<IFailureEvent> failureEvents = new List<IFailureEvent>();
+            OnTaskFailure(info, ref failureEvents);
+        }
+
+        public void OnTaskFailure(IFailedTask info, ref IList<IFailureEvent> failureEvents)
         {
             if (BelongsTo(info.Id))
             {
@@ -275,47 +281,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (info.AsError() is OperatorException)
                 {
-                    IFailureState currentState = new DefaultFailureState();
-
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
-                        currentState = currentState.Merge(sub.OnTaskFailure(info));
+                       sub.OnTaskFailure(info, ref failureEvents);
                     }
 
-                    lock (_statusLock)
+                    if (failureEvents.Any(ev => ev.FailureEvent == (int)DefaultFailureStateEvents.Fail))
                     {
-                        _failureStatus = currentState;
+                        OnFail();
                     }
-
-                    if (_failureStatus.FailureState > (int)DefaultFailureStates.Continue)
+                    else
                     {
-                        IEnumerable<DriverMessage> messages = null;
+                        IList<DriverMessage> failureResponses = new List<DriverMessage>();
 
-                        switch ((DefaultFailureStateEvents)_failureStatus.FailureState)
+                        foreach (var failureEvent in failureEvents)
                         {
-                            case DefaultFailureStateEvents.Reconfigure:
-                                LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reconfiguration event");
-                                IReconfigure reconfigureEvent = new ReconfigureEvent(info);
-                                messages = EventDispatcher(reconfigureEvent);
-                                break;
-                            case DefaultFailureStateEvents.Reschedule:
-                                LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a reschedule event");
-                                IReschedule rescheduleEvent = new RescheduleEvent();
-                                messages = EventDispatcher(rescheduleEvent);
-                                break;
-                            case DefaultFailureStateEvents.Stop:
-                                LOGGER.Log(Level.Info, "Failure on " + info.Id + " triggered a stop event");
-                                IStop stopEvent = new StopEvent();
-                                messages = EventDispatcher(stopEvent);
-                                break;
-                            default:
-                                LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
-                                OnFail();
-                                break;
+                            EventDispatcher(failureEvent, ref failureResponses);
                         }
 
-                        SendToTasks(messages);
-                    }
+                        SendToTasks(failureResponses);
+                    }  
                 }
                 else
                 {
@@ -324,8 +309,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     OnFail();
                 }
             }
-   
-            return null;
+  
         }
 
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
@@ -333,53 +317,62 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
-        public IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
+        public void EventDispatcher(IFailureEvent @event, ref IList<DriverMessage> failureResponses)
         {
-            IEnumerable<DriverMessage> messages = new List<DriverMessage>();
-
             foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
             {
-                messages = messages.Concat(sub.EventDispatcher(@event));
-            }
+                sub.EventDispatcher(@event, ref failureResponses);
 
-            switch ((DefaultFailureStateEvents)@event.FailureEvent)
-            {
-                case DefaultFailureStateEvents.Reconfigure:
-                    messages = messages.Concat(OnReconfigure(@event as IReconfigure));
-                    break;
-                case DefaultFailureStateEvents.Reschedule:
-                    messages = messages.Concat(OnReschedule(@event as IReschedule));
-                    break;
-                case DefaultFailureStateEvents.Stop:
-                    messages = messages.Concat(OnStop(@event as IStop));
-                    break;
-                default:
-                    break;
+                switch ((DefaultFailureStateEvents)@event.FailureEvent)
+                {
+                    case DefaultFailureStateEvents.Reconfigure:
+                        messages = messages.Concat(OnReconfigure(@event as IReconfigure));
+                        break;
+                    case DefaultFailureStateEvents.Reschedule:
+                        messages = messages.Concat(OnReschedule(@event as IReschedule));
+                        break;
+                    case DefaultFailureStateEvents.Stop:
+                        messages = messages.Concat(OnStop(@event as IStop));
+                        break;
+                    default:
+                        break;
+                }
             }
-
-            return messages;
         }
 
         public IList<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
+            ////lock (_statusLock)
+            ////{
+            ////    _failureStatus = currentState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
+            ////lock (_statusLock)
+            ////{
+            ////    _failureStatus = currentState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public IList<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
+            ////lock (_statusLock)
+            ////{
+            ////    _failureStatus = currentState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public void OnFail()
         {
+            Dispose();
         }
 
         public void Dispose()
@@ -401,7 +394,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
         }
 
-        private void SendToTasks(IEnumerable<DriverMessage> messages)
+        private void SendToTasks(IList<DriverMessage> messages)
         {
             foreach (var returnMessage in messages)
             {

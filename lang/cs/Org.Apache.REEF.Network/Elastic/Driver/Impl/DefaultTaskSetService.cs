@@ -177,17 +177,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _configSerializer.ToString(operatorConfiguration));
         }
 
-        public IFailureState OnTaskFailure(IFailedTask value)
-        {
-            lock (_statusLock)
-            {
-                foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
-                {
-                    _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
-                }
-
-                return _failureState;
-            }
+        public void OnTaskFailure(IFailedTask value, ref IList<IFailureEvent> failureEvents)
+        {       
         }
 
         public IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
@@ -208,18 +199,45 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public IList<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the service");
+            ////lock (_statusLock)
+            ////{
+            ////    foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            ////    {
+            ////        _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
+            ////    }
+
+            ////    return _failureState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
+            ////lock (_statusLock)
+            ////{
+            ////    foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            ////    {
+            ////        _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
+            ////    }
+
+            ////    return _failureState;
+            ////}
             return new List<DriverMessage>();
         }
 
         public IList<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
+            ////lock (_statusLock)
+            ////{
+            ////    foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            ////    {
+            ////        _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
+            ////    }
+
+            ////    return _failureState;
+            ////}
             return new List<DriverMessage>();
         }
     }

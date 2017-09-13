@@ -25,20 +25,23 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// Entry point for classes expected to be aware and act over failres.
     /// Used to propagate failures through operators, subscriptions and the service.
     /// </summary>
-    public interface IFailureResponse
+    internal interface IFailureResponse
     {
         /// <summary>
         /// Used to react on a failure occurred on a task.
+        /// It gets a failed task as input and in response it produces zero or more failure events
         /// </summary>
-        /// <param name="info">The failed task</param>
+        /// <param name="task">The failed task</param>
+        /// <param name="failureEvents">Events triggered by the failures</param>
         /// <returns>The failure state after the notification of the failed task</returns>
-        IFailureState OnTaskFailure(IFailedTask task);
+        void OnTaskFailure(IFailedTask task, ref IList<IFailureEvent> failureEvents);
 
         /// <summary>
         /// When a new failure state is rised, this method is used to dispatch
         /// such event to the proper failure mitigation logic.
+        /// It gets a failure event as input and produces zero or more failure response messages for tasks
         /// </summary>
         /// <param name="event">Notification specifiying the updated failure state</param>
-        IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event);
+        void EventDispatcher(IFailureEvent @event, ref IList<DriverMessage> failureResponses);
     }
 }

@@ -15,10 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities;
+using System.Collections.Generic;
+using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Driver.Context;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Stop event.
+    /// Stop task event.
     /// </summary>
     public interface IStop : IFailureEvent
     {

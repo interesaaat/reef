@@ -43,6 +43,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         Reschedule = 3,
 
-        Stop = 4
+        Stop = 4,
+
+        Fail = 5
     }
 }

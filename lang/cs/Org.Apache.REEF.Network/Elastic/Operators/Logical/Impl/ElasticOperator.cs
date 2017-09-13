@@ -402,12 +402,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Method triggered when a Task to Driver message is received. 
         /// </summary>
         /// <param name="message">The task message for the operator</param>
-        /// <returns>A list of messages containing the instructions for the task</returns>
-        public IEnumerable<DriverMessage> OnTaskMessage(ITaskMessage message)
+        /// <param name="returnMessages">>A list of messages containing the instructions for the task</param>
+        public void OnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
         {
-            ReactOnTaskMessage(message, ref returnMessages);
+            var hasReacted = ReactOnTaskMessage(message, ref returnMessages);
 
-            if (_next != null)
             {
                 _next.OnTaskMessage(message, ref returnMessages);
             }
@@ -418,34 +417,39 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         /// <param name="task">Information about the failed task</param>
         /// <returns>The updated failure state of the operator</returns>
-        public virtual IFailureState OnTaskFailure(IFailedTask task)
+        public virtual void OnTaskFailure(IFailedTask task, ref IList<IFailureEvent> failureEvents)
         {
             var exception = task.AsError() as OperatorException;
 
             if (exception.OperatorId <= _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
-                IFailureState result = _failureMachine.RemoveDataPoints(lostDataPoints);
+                var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
+
+                switch ((DefaultFailureStates)failureState.FailureState)
+                {
+                    case DefaultFailureStates.ContinueAndReconfigure:
+                        failureEvents.Add(new ReconfigureEvent(task));
+                        break;
+                    case DefaultFailureStates.ContinueAndReschedule:
+                        failureEvents.Add(new RescheduleEvent());
+                        break;
+                    case DefaultFailureStates.StopAndReschedule:
+                        failureEvents.Add(new StopEvent());
+                        break;
+                    case DefaultFailureStates.Fail:
+                        failureEvents.Add(new FailEvent());
+                        break;
+                    default:
+                        break;
+                }
 
                 LogOperatorState();
-
-                if (PropagateFailureDownstream() && _next != null)
-                {
-                    result = result.Merge(_next.OnTaskFailure(task));
-                }
-
-                return result;
             }
-            else
+
+            if (PropagateFailureDownstream() && _next != null)
             {
-                if (PropagateFailureDownstream() && _next != null)
-                {
-                    return _next.OnTaskFailure(task);
-                }
-                else
-                {
-                    return _failureMachine.State;
-                }
+                _next.OnTaskFailure(task, ref failureEvents);
             }
         }
 
@@ -507,8 +511,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return true;
         }
 
-        protected virtual void ReactOnTaskMessage(ITaskMessage message, ref IEnumerable<DriverMessage> returnMessages)
+        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
         {
+            return false;
         }
 
         /// <summary>
