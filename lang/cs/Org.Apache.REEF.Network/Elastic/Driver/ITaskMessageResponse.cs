@@ -26,6 +26,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface ITaskMessageResponse
     {
-        void OnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages);
+        void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages);
     }
 }

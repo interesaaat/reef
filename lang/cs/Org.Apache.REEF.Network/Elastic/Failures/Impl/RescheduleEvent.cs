@@ -28,6 +28,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// </summary>
     public class RescheduleEvent : IReschedule
     {
+        public RescheduleEvent(string taskId, int operatorId)
+        {
+            TaskId = taskId;
+            OperatorId = operatorId;
+        }
+
         public int FailureEvent
         {
             get { return (int)DefaultFailureStateEvents.Reschedule; }
@@ -47,5 +53,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             get { throw new NotImplementedException(); }
         }
+
+        public string TaskId { get; private set; }
+
+        public int OperatorId { get; private set; }
     }
 }

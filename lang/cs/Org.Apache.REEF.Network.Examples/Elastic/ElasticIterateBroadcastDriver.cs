@@ -208,8 +208,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IFailedTask failedTask)
         {
-            IList<IFailureEvent> failureEvents = null;
-            _taskManager.OnTaskFailure(failedTask, ref failureEvents);
+            _taskManager.OnTaskFailure(failedTask);
 
             if (_taskManager.Done())
             {

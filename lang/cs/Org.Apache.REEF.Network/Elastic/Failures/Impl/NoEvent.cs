@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
@@ -25,6 +27,16 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public int FailureEvent
         {
             get { return (int)DefaultFailureStateEvents.Continue; }
+        }
+
+        public string TaskId
+        {
+            get { return string.Empty; }
+        }
+
+        public int OperatorId
+        {
+            get { return -1; }
         }
     }
 }

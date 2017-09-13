@@ -163,85 +163,68 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public void OnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
+        public void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
         {
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
-        public void OnTaskFailure(IFailedTask task, ref IList<IFailureEvent> failureEvents)
+        public void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             // Failure have to be propagated down to the operators
             RootOperator.OnTaskFailure(task, ref failureEvents);
-
-            // Failure have to be propagated up to the service
-            Service.OnTaskFailure(task, ref failureEvents);
         }
 
-        public IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
+        public void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses)
         {
-            var messages  = RootOperator.EventDispatcher(@event);
+            RootOperator.EventDispatcher(@event, ref failureResponses);
 
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    messages = messages.Concat(OnReconfigure(@event as IReconfigure));
+                    failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    messages = messages.Concat(OnReschedule(@event as IReschedule));
+                    failureResponses.AddRange(OnReschedule(@event as IReschedule));
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    messages = messages.Concat(OnStop(@event as IStop));
+                    failureResponses.AddRange(OnStop(@event as IStop));
                     break;
             }
-
-            messages = messages.Concat(Service.EventDispatcher(@event));
-
-            return messages;
         }
 
-        public IList<DriverMessage> OnReconfigure(IReconfigure info)
+        public List<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
-            // Update the current subscription status
-            ////lock (_statusLock)
-            ////{
-            ////    if (status.FailureState < FailureStatus.FailureState)
-            ////    {
-            ////        throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
-            ////    }
 
-            ////    FailureStatus.FailureState = status.FailureState;
-            ////}
+            lock (_statusLock)
+            {
+                FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
+            }
+
             return new List<DriverMessage>();
         }
 
-        public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
-            ////lock (_statusLock)
-            ////{
-            ////    if (status.FailureState < FailureStatus.FailureState)
-            ////    {
-            ////        throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
-            ////    }
 
-            ////    FailureStatus.FailureState = status.FailureState;
-            ////}
+            lock (_statusLock)
+            {
+                FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
+            }
+
             return new List<DriverMessage>();
         }
 
-        public IList<DriverMessage> OnStop(IStop stopEvent)
+        public List<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
-            ////lock (_statusLock)
-            ////{
-            ////    if (status.FailureState < FailureStatus.FailureState)
-            ////    {
-            ////        throw new IllegalStateException("A failure cannot improve the failure status of the subscription");
-            ////    }
 
-            ////    FailureStatus.FailureState = status.FailureState;
-            ////}
+            lock (_statusLock)
+            {
+                FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+            }
+
             return new List<DriverMessage>();
         }
     }

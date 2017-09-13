@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
 using Org.Apache.REEF.Driver.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
@@ -24,9 +25,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// </summary>
     public class ReconfigureEvent : IReconfigure
     {
-        public ReconfigureEvent(IFailedTask failedTask)
+        public ReconfigureEvent(IFailedTask failedTask, int opertorId)
         {
             FailedTask = failedTask;
+            OperatorId = opertorId;
         }
 
         public int FailureEvent
@@ -35,5 +37,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         public IFailedTask FailedTask { get; private set; }
+
+        public string TaskId
+        {
+            get { return FailedTask.Id; }
+        }
+
+        public int OperatorId { get; private set; }
     }
 }

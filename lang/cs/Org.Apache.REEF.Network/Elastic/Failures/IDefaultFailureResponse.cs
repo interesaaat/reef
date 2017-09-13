@@ -26,10 +26,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface IDefaultFailureEventResponse
     {
-        IList<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent);
+        List<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent);
 
-        IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent);
+        List<DriverMessage> OnReschedule(IReschedule rescheduleEvent);
 
-        IList<DriverMessage> OnStop(IStop stopEvent);
+        List<DriverMessage> OnStop(IStop stopEvent);
     }
 }

@@ -237,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskMessage(ITaskMessage message)
         {
-            IList<DriverMessage> returnMessages = new List<DriverMessage>();
+            var returnMessages = new List<DriverMessage>();
 
             foreach (var sub in _subscriptions.Values)
             {
@@ -260,11 +260,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskFailure(IFailedTask info)
         {
-            IList<IFailureEvent> failureEvents = new List<IFailureEvent>();
+            var failureEvents = new List<IFailureEvent>();
             OnTaskFailure(info, ref failureEvents);
         }
 
-        public void OnTaskFailure(IFailedTask info, ref IList<IFailureEvent> failureEvents)
+        public void OnTaskFailure(IFailedTask info, ref List<IFailureEvent> failureEvents)
         {
             if (BelongsTo(info.Id))
             {
@@ -281,18 +281,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (info.AsError() is OperatorException)
                 {
+                    failureEvents = failureEvents ?? new List<IFailureEvent>();
+
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
                        sub.OnTaskFailure(info, ref failureEvents);
                     }
 
+                    // Failures have to be propagated up to the service
+                    _taskInfos[id].Subscriptions.First().Service.OnTaskFailure(info, ref failureEvents);
+
                     if (failureEvents.Any(ev => ev.FailureEvent == (int)DefaultFailureStateEvents.Fail))
                     {
-                        OnFail();
+                        OnFail(info.Id);
                     }
                     else
                     {
-                        IList<DriverMessage> failureResponses = new List<DriverMessage>();
+                        var failureResponses = new List<DriverMessage>();
 
                         foreach (var failureEvent in failureEvents)
                         {
@@ -306,10 +311,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
 
-                    OnFail();
+                    OnFail(info.Id);
                 }
             }
-  
         }
 
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
@@ -317,61 +321,78 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref IList<DriverMessage> failureResponses)
+        public void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses)
         {
-            foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            var id = Utils.GetTaskNum(@event.TaskId) - 1;
+
+            _taskInfos[id].Subscriptions.First().Service.EventDispatcher(@event, ref failureResponses);
+
+            foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
             {
                 sub.EventDispatcher(@event, ref failureResponses);
+            }
 
-                switch ((DefaultFailureStateEvents)@event.FailureEvent)
-                {
-                    case DefaultFailureStateEvents.Reconfigure:
-                        messages = messages.Concat(OnReconfigure(@event as IReconfigure));
-                        break;
-                    case DefaultFailureStateEvents.Reschedule:
-                        messages = messages.Concat(OnReschedule(@event as IReschedule));
-                        break;
-                    case DefaultFailureStateEvents.Stop:
-                        messages = messages.Concat(OnStop(@event as IStop));
-                        break;
-                    default:
-                        break;
-                }
+            switch ((DefaultFailureStateEvents)@event.FailureEvent)
+            {
+                case DefaultFailureStateEvents.Reconfigure:
+                    OnReconfigure(@event as IReconfigure);
+                    break;
+                case DefaultFailureStateEvents.Reschedule:
+                    OnReschedule(@event as IReschedule);
+                    break;
+                case DefaultFailureStateEvents.Stop:
+                    OnStop(@event as IStop);
+                    break;
+                default:
+                    break;
             }
         }
 
-        public IList<DriverMessage> OnReconfigure(IReconfigure info)
+        public List<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
-            ////lock (_statusLock)
-            ////{
-            ////    _failureStatus = currentState;
-            ////}
-            return new List<DriverMessage>();
+
+            lock (_statusLock)
+            {
+                _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
+            }
+
+            return null;
         }
 
-        public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
-            ////lock (_statusLock)
-            ////{
-            ////    _failureStatus = currentState;
-            ////}
-            return new List<DriverMessage>();
+
+            lock (_statusLock)
+            {
+                _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
+            }
+
+            return null;
         }
 
-        public IList<DriverMessage> OnStop(IStop stopEvent)
+        public List<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
-            ////lock (_statusLock)
-            ////{
-            ////    _failureStatus = currentState;
-            ////}
-            return new List<DriverMessage>();
+
+            lock (_statusLock)
+            {
+                _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+            }
+
+            return null;
         }
 
-        public void OnFail()
+        public void OnFail(string taskId)
         {
+            LOGGER.Log(Level.Info, "Task set failed because of failure in Task {0}", taskId);
+
+            lock (_statusLock)
+            {
+                _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
+            }
+
             Dispose();
         }
 

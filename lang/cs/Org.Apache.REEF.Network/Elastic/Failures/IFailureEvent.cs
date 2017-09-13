@@ -30,5 +30,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// e.g., smaller number, less demanding action.
         /// </summary>
         int FailureEvent { get; }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        string TaskId { get; }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        int OperatorId { get; }
     }
 }

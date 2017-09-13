@@ -76,45 +76,40 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
+        public override void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses)
         {
-            IEnumerable<DriverMessage> messages;
-
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    messages = OnReconfigure(@event as IReconfigure);
+                    failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    messages = OnReschedule(@event as IReschedule);
+                    failureResponses.AddRange(OnReschedule(@event as IReschedule));
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    messages = OnStop(@event as IStop);
+                    failureResponses.AddRange(OnStop(@event as IStop));
                     break;
                 default:
-                    messages = new List<DriverMessage>();
                     break;
             }
 
             if (_next != null)
             {
-                messages = messages.Concat(_next.EventDispatcher(@event));
+                _next.EventDispatcher(@event, ref failureResponses);
             }
-
-            return messages;
         }
 
-        public virtual IList<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public virtual List<DriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
         {
             return new List<DriverMessage>();
         }
 
-        public virtual IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public virtual List<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             return new List<DriverMessage>();
         }
 
-        public virtual IList<DriverMessage> OnStop(IStop stopEvent)
+        public virtual List<DriverMessage> OnStop(IStop stopEvent)
         {
             return new List<DriverMessage>();
         }

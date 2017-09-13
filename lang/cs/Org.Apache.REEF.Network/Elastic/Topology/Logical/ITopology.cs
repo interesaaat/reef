@@ -71,6 +71,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// </summary>
         /// <param name="reconfigureEvent"></param>
         /// <returns></returns>
-        IList<DriverMessage> Reconfigure(string taskId, string info);
+        List<DriverMessage> Reconfigure(string taskId, string info);
     }
 }

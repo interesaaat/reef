@@ -22,9 +22,19 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// </summary>
     public class StopEvent : IStop
     {
+        public StopEvent(string taskId, int operatorId)
+        {
+            TaskId = taskId;
+            OperatorId = operatorId;
+        }
+
         public int FailureEvent
         {
             get { return (int)DefaultFailureStateEvents.Stop; }
         }
+
+        public string TaskId { get; private set; }
+
+        public int OperatorId { get; private set; }
     }
 }

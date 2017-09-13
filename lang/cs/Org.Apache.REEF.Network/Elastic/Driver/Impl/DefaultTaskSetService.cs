@@ -177,67 +177,61 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _configSerializer.ToString(operatorConfiguration));
         }
 
-        public void OnTaskFailure(IFailedTask value, ref IList<IFailureEvent> failureEvents)
+        public void OnTaskFailure(IFailedTask value, ref List<IFailureEvent> failureEvents)
         {       
         }
 
-        public IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event)
+        public void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses)
         {
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    return OnReconfigure(@event as IReconfigure);
+                    failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
+                    break;
                 case DefaultFailureStateEvents.Reschedule:
-                    return OnReschedule(@event as IReschedule);
+                    failureResponses.AddRange(OnReschedule(@event as IReschedule));
+                    break;
                 case DefaultFailureStateEvents.Stop:
-                    return OnStop(@event as IStop);
+                    failureResponses.AddRange(OnStop(@event as IStop));
+                    break;
                 default:
-                    return new List<DriverMessage>();
+                    break;
             }
         }
 
-        public IList<DriverMessage> OnReconfigure(IReconfigure info)
+        public List<DriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the service");
-            ////lock (_statusLock)
-            ////{
-            ////    foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
-            ////    {
-            ////        _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
-            ////    }
 
-            ////    return _failureState;
-            ////}
+            lock (_statusLock)
+            {
+                _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
+            }
+
             return new List<DriverMessage>();
         }
 
-        public IList<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<DriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
-            ////lock (_statusLock)
-            ////{
-            ////    foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
-            ////    {
-            ////        _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
-            ////    }
 
-            ////    return _failureState;
-            ////}
+            lock (_statusLock)
+            {
+                _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
+            }
+
             return new List<DriverMessage>();
         }
 
-        public IList<DriverMessage> OnStop(IStop stopEvent)
+        public List<DriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
-            ////lock (_statusLock)
-            ////{
-            ////    foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
-            ////    {
-            ////        _failureState.FailureState = Math.Max(_failureState.FailureState, sub.FailureStatus.FailureState);
-            ////    }
 
-            ////    return _failureState;
-            ////}
+            lock (_statusLock)
+            {
+                _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+            }
+
             return new List<DriverMessage>();
         }
     }

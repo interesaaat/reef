@@ -403,7 +403,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         /// <param name="message">The task message for the operator</param>
         /// <param name="returnMessages">>A list of messages containing the instructions for the task</param>
-        public void OnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
+        public void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
         {
             var hasReacted = ReactOnTaskMessage(message, ref returnMessages);
 
@@ -417,7 +417,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         /// <param name="task">Information about the failed task</param>
         /// <returns>The updated failure state of the operator</returns>
-        public virtual void OnTaskFailure(IFailedTask task, ref IList<IFailureEvent> failureEvents)
+        public virtual void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var exception = task.AsError() as OperatorException;
 
@@ -429,16 +429,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 switch ((DefaultFailureStates)failureState.FailureState)
                 {
                     case DefaultFailureStates.ContinueAndReconfigure:
-                        failureEvents.Add(new ReconfigureEvent(task));
+                        failureEvents.Add(new ReconfigureEvent(task, _id));
                         break;
                     case DefaultFailureStates.ContinueAndReschedule:
-                        failureEvents.Add(new RescheduleEvent());
+                        failureEvents.Add(new RescheduleEvent(task.Id, _id));
                         break;
                     case DefaultFailureStates.StopAndReschedule:
-                        failureEvents.Add(new StopEvent());
+                        failureEvents.Add(new StopEvent(task.Id, _id));
                         break;
                     case DefaultFailureStates.Fail:
-                        failureEvents.Add(new FailEvent());
+                        failureEvents.Add(new FailEvent(task.Id));
                         break;
                     default:
                         break;
@@ -457,8 +457,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Dispatches failure events to the proper logic implementing failure response actions. 
         /// </summary>
         /// <param name="event">An event encoding the type of action to be triggered</param>
+        /// <param name="failureResponses">An event encoding the type of action to be triggered</param>
         /// <returns>A list of messages containing the recovery instructions for the tasks still alive</returns>
-        public abstract IEnumerable<DriverMessage> EventDispatcher(IFailureEvent @event);
+        public abstract void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses);
 
         protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
@@ -511,7 +512,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return true;
         }
 
-        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref IList<DriverMessage> returnMessages)
+        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
         {
             return false;
         }

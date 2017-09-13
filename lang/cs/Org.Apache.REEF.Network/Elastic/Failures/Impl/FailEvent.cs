@@ -22,9 +22,21 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// </summary>
     public class FailEvent : IFailureEvent
     {
+        public FailEvent(string taskId)
+        {
+            TaskId = taskId;
+        }
+
         public int FailureEvent
         {
             get { return (int)DefaultFailureStateEvents.Fail; }
+        }
+
+        public string TaskId { get; private set; }
+
+        public int OperatorId
+        {
+            get { return -1; }
         }
     }
 }

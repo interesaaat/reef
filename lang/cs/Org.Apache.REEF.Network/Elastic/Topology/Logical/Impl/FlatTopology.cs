@@ -176,7 +176,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public IList<DriverMessage> Reconfigure(string taskId, string info)
+        public List<DriverMessage> Reconfigure(string taskId, string info)
         {
             throw new NotImplementedException();
         }
