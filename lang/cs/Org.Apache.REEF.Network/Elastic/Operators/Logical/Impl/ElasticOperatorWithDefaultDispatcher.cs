@@ -78,22 +78,25 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses)
         {
-            switch ((DefaultFailureStateEvents)@event.FailureEvent)
+            if (@event.OperatorId == _id)
             {
-                case DefaultFailureStateEvents.Reconfigure:
-                    failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
-                    break;
-                case DefaultFailureStateEvents.Reschedule:
-                    failureResponses.AddRange(OnReschedule(@event as IReschedule));
-                    break;
-                case DefaultFailureStateEvents.Stop:
-                    failureResponses.AddRange(OnStop(@event as IStop));
-                    break;
-                default:
-                    break;
+                switch ((DefaultFailureStateEvents)@event.FailureEvent)
+                {
+                    case DefaultFailureStateEvents.Reconfigure:
+                        failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
+                        break;
+                    case DefaultFailureStateEvents.Reschedule:
+                        failureResponses.AddRange(OnReschedule(@event as IReschedule));
+                        break;
+                    case DefaultFailureStateEvents.Stop:
+                        failureResponses.AddRange(OnStop(@event as IStop));
+                        break;
+                    default:
+                        break;
+                }
             }
 
-            if (_next != null)
+            if (_next != null && @event.OperatorId > _id)
             {
                 _next.EventDispatcher(@event, ref failureResponses);
             }
