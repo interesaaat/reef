@@ -32,12 +32,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         int FailureEvent { get; }
 
         /// <summary>
-        /// TODO
+        /// The Task id where the failur occurred
         /// </summary>
         string TaskId { get; }
 
         /// <summary>
-        /// TODO
+        /// The Operator id where the failure occurred
         /// </summary>
         int OperatorId { get; }
     }
