@@ -145,12 +145,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         }
 
         /// <summary>
-        /// Appends the Operator configuration for the input task to the input builder.
-        /// Must be called only after Build() and Build() have been called.
+        /// Appends the Operators configuration for the input task to the input builder.
+        /// Must be called only after Build() and BuildState() have been called.
+        /// This method shold be called from the root operator at beginning of the pipeline
         /// </summary>
         /// <param name="builder">The configuration builder the Operator configuration will be appended to</param>
         /// <param name="taskId">The task id of the task that belongs to this Operator</param>
-        /// <returns>The configuration for the Task with added Operator informations</returns>
+        /// <returns>The configuration for the Task with added Operators information</returns>
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             if (_operatorFinalized && _stateFinalized)
@@ -402,7 +403,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Method triggered when a Task to Driver message is received. 
         /// </summary>
         /// <param name="message">The task message for the operator</param>
-        /// <param name="returnMessages">>A list of messages containing the instructions for the task</param>
+        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
+        /// <returns>Zero or more messages for the tasks</returns>
         public void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
         {
             var hasReacted = ReactOnTaskMessage(message, ref returnMessages);
@@ -416,7 +418,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Method triggered when a Task failure occures. 
         /// </summary>
         /// <param name="task">Information about the failed task</param>
-        /// <returns>The updated failure state of the operator</returns>
+        /// <param name="failureEvents">A list of events encoding the type of action to be triggered</param>
+        /// <returns>Zero or more events to use to trigger failure mitigation mechanisms</returns>
         public virtual void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var exception = task.AsError() as OperatorException;
@@ -457,11 +460,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Dispatches failure events to the proper logic implementing failure response actions. 
         /// </summary>
         /// <param name="event">An event encoding the type of action to be triggered</param>
-        /// <param name="failureResponses">An event encoding the type of action to be triggered</param>
-        /// <returns>A list of messages containing the recovery instructions for the tasks still alive</returns>
+        /// <param name="failureResponses">A list of messages containing the recovery instructions for the tasks still alive</param>
+        /// <returns>Zero or more messages for the tasks</returns>
         public abstract void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses);
 
-        protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        /// <summary>
+        /// Appends the Operator specific configuration for the input task to the input builder.
+        /// This method is operator specific and serializes the operator configuration into the builder.
+        /// </summary>
+        /// <param name="builder">The configuration builder the Operator configuration will be appended to</param>
+        /// <param name="taskId">The task id of the task that belongs to this Operator</param>
+        /// <returns>The configuration for the Task with added serialized Operator conf</returns>
+        protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             ICsConfigurationBuilder operatorBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
@@ -480,11 +490,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 operatorConf = Configurations.Merge(operatorConf, conf);
             }
 
-            Subscription.Service.SerializeOperatorConfiguration(ref confBuilder, operatorConf);
+            Subscription.Service.SerializeOperatorConfiguration(ref builder, operatorConf);
         }
 
-        protected abstract void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder);
+        /// <summary>
+        /// Binding from logical to physical operator. 
+        /// </summary>
+        /// <param name="builder">The configuration builder the binding will be added to</param>
+        /// <returns>The configuration for the Task with added logical-to-physical binding</returns>
+        protected abstract void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder builder);
 
+        /// <summary>
+        /// Appends the message type to the configuration. 
+        /// </summary>
+        /// <param name="operatorType">The type of the messages the operator is configured to accept</param>
+        /// <param name="builder">The configuration builder the message type will be added to</param>
+        /// <returns>The configuration for the Task with added message type information</returns>
         protected static void SetMessageType(Type operatorType, ref ICsConfigurationBuilder confBuilder)
         {
             if (operatorType.IsGenericType)
@@ -496,6 +517,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// Logs the current operator state 
+        /// </summary>
         protected virtual void LogOperatorState()
         {
             string intro = string.Format(CultureInfo.InvariantCulture,
@@ -507,11 +531,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
         }
 
+        /// <summary>
+        /// Returns whether a failure should be propagated to downstream operators or not  
+        /// </summary>
+        /// <returns>True if the failure has to be sent downstream</returns>
         protected virtual bool PropagateFailureDownstream()
         {
             return true;
         }
 
+        /// <summary>
+        /// Operator specific logic for reacting when a task message is received.
+        /// </summary>
+        /// <param name="message">Incoming message from a task</param>
+        /// <param name="returnMessages">Zero or more reply messages for the task</param>
+        /// <returns>True if the operator has reacted to the task message</returns>
         protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
         {
             return false;

@@ -21,7 +21,6 @@ using System.Linq;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Network.Group.Pipelining.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -37,7 +36,6 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic.Topology;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 

@@ -17,6 +17,9 @@
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
 {
+    /// <summary>
+    /// Group Communication operator used as a placeholder for the root of pipelines.
+    /// </summary>
     public interface IElasticEmpty
     {
     }
