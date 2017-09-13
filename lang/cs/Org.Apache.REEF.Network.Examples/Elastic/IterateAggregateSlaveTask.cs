@@ -68,7 +68,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 System.Threading.Thread.Sleep(rand.Next(1000));
 
-                                if ((int)workflow.Iteration != 10 && rand.Next(100) < 5)
+                                if (rand.Next(100) < 5)
                                 {
                                     Console.WriteLine("I die. Bye.");
 

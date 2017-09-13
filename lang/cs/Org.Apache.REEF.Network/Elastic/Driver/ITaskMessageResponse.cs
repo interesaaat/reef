@@ -22,10 +22,16 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Used to propagate messages through operators and subscriptions.
+    /// Used to propagate task messages through operators and subscriptions.
     /// </summary>
     public interface ITaskMessageResponse
     {
+        /// <summary>
+        /// Method triggered when a Task to Driver message is received. 
+        /// </summary>
+        /// <param name="message">The task message for the operator</param>
+        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
+        /// <returns>Zero or more messages for the tasks</returns>
         void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages);
     }
 }

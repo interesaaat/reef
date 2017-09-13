@@ -32,7 +32,6 @@ using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
-using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -399,27 +398,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        /// <summary>
-        /// Method triggered when a Task to Driver message is received. 
-        /// </summary>
-        /// <param name="message">The task message for the operator</param>
-        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
-        /// <returns>Zero or more messages for the tasks</returns>
         public void OnTaskMessage(ITaskMessage message, ref List<DriverMessage> returnMessages)
         {
             var hasReacted = ReactOnTaskMessage(message, ref returnMessages);
 
+            if (!hasReacted && _next != null)
             {
                 _next.OnTaskMessage(message, ref returnMessages);
             }
         }
 
-        /// <summary>
-        /// Method triggered when a Task failure occures. 
-        /// </summary>
-        /// <param name="task">Information about the failed task</param>
-        /// <param name="failureEvents">A list of events encoding the type of action to be triggered</param>
-        /// <returns>Zero or more events to use to trigger failure mitigation mechanisms</returns>
         public virtual void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var exception = task.AsError() as OperatorException;
@@ -456,12 +444,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        /// <summary>
-        /// Dispatches failure events to the proper logic implementing failure response actions. 
-        /// </summary>
-        /// <param name="event">An event encoding the type of action to be triggered</param>
-        /// <param name="failureResponses">A list of messages containing the recovery instructions for the tasks still alive</param>
-        /// <returns>Zero or more messages for the tasks</returns>
         public abstract void EventDispatcher(IFailureEvent @event, ref List<DriverMessage> failureResponses);
 
         /// <summary>
