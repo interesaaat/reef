@@ -189,6 +189,7 @@ under the License.
     </Compile>
     <Compile Include="Protobuf\ReefProtocol\Serializer.cs" />
     <Compile Include="Files\REEFFileNames.cs" />
+    <Compile Include="Runtime\Evaluator\HeartBeatReference.cs" />
     <Compile Include="Runtime\Evaluator\Constants.cs" />
     <Compile Include="Runtime\Evaluator\Context\ContextClientCodeException.cs" />
     <Compile Include="Runtime\Evaluator\Context\ContextException.cs" />
