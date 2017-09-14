@@ -21,6 +21,7 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
@@ -30,6 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// TaskSets subscribe to Subscriptions in order to define tasks logic.
     /// TaskSets schedule and manage group of tasks running in the cluster.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface ITaskSetManager : IFailureResponse, IDisposable
     {
         /// <summary>
@@ -112,12 +114,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         bool Done();
 
         /// <summary>
-        /// Used to react of a failure of a task.
-        /// </summary>
-        /// <param name="evaluator">The failed task</param>
-        void OnTaskFailure(IFailedTask info);
-
-        /// <summary>
         /// Used to react of a failure event occurred on an evaluator.
         /// </summary>
         /// <param name="evaluator">The failed evaluator</param>
@@ -126,7 +122,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <summary>
         /// Contains the logic to trigger when the execution fails.
         /// </summary>
-        /// <param name="taskId">The id of the task triggering the fail</param>
-        void OnFail(string taskId);
+        void OnFail();
     }
 }

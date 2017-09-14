@@ -16,34 +16,29 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver;
-using System.Collections.Generic;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Entry point for classes expected to be aware and act over failures.
+    /// Entry point for classes expected to be aware and act over failres.
     /// Used to propagate failures through operators, subscriptions and the service.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IFailureResponse
     {
         /// <summary>
         /// Used to react on a failure occurred on a task.
-        /// It gets a failed task as input and in response it produces zero or more failure events
         /// </summary>
-        /// <param name="task">The failed task</param>
-        /// <param name="failureEvents">A list of events encoding the type of action to be triggered</param>
-        /// <returns>Zero or more events for triggering failure mitigation mechanisms</returns>
-        void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
+        /// <param name="info">The failed task</param>
+        /// <returns>The failure state after the notification of the failed task</returns>
+        IFailureState OnTaskFailure(IFailedTask task);
 
         /// <summary>
         /// When a new failure state is rised, this method is used to dispatch
         /// such event to the proper failure mitigation logic.
-        /// It gets a failure event as input and produces zero or more failure response messages for tasks
         /// </summary>
-        /// <param name="event">The failure event to react upon</param>
-        /// <param name="failureResponses">A list of messages containing the recovery instructions for the tasks still alive</param>
-        /// <returns>Zero or more messages for the tasks</returns>
-        void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses);
+        /// <param name="event">Notification specifiying the updated failure state</param>
+        void EventDispatcher(IFailureEvent @event);
     }
 }

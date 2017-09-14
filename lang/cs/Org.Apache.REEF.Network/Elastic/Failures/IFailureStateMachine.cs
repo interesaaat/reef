@@ -15,9 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
 using System;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -26,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// A decision is made based on the ration between the initial data points
     /// and how many data points are lost.
     /// </summary>
-    [DefaultImplementation(typeof(DefaultFailureStateMachine))]
+    [Unstable("0.16", "API may change")]
     public interface IFailureStateMachine
     {
         /// <summary>
@@ -73,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// Remove data point(s) from the Failure Machine as a result of a runtime failure.
         /// </summary>
         /// <param name="points">How many data point to remove</param>
-        /// <returns>A failure event resulting from the removal of the data points</returns>
+        /// <returns>The failure state resulting from the removal of the data points</returns>
         IFailureState RemoveDataPoints(int points);
 
         /// <summary>

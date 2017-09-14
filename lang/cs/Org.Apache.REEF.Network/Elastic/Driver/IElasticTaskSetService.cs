@@ -15,10 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -26,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// Used to create Subscriptions for fault tolerant Task Sets.
     /// Also manages configurations for Group Communication operators/services.
     /// </summary>
-    [DefaultImplementation(typeof(DefaultTaskSetService))]
+    [Unstable("0.16", "API may change")]
     public interface IElasticTaskSetService : IFailureResponse
     {
         /// <summary>
