@@ -65,6 +65,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public List<GroupCommunicationMessage> CheckpointedData { get; set; }
 
+        public override void WaitCompletionBeforeDisposing()
+        {
+            if (_taskId != _rootTaskId)
+            {
+                while (_commLayer.Lookup(_rootTaskId) == true)
+                {
+                    Thread.Sleep(100);
+                }
+            }
+        }
+
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             try

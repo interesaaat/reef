@@ -140,6 +140,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _messageQueue.CompleteAdding();
         }
 
+        public virtual void WaitCompletionBeforeDisposing()
+        {
+            return;
+        }
+
         public void Dispose()
         {
             var elapsedTime = 0;

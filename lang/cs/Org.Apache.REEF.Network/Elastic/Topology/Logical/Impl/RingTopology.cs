@@ -222,7 +222,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 // The taskId can be:
                 // 1) in tasksInRing, in which case we are working on the current ring;
-                // 2) in prevRing if we are constructing the ring of the successvie iteration;
+                // 2) in prevRing if we are constructing the ring of the successive iteration;
                 // 3) if it is neither in tasksInRing nor in prevRing it must be a late token message therefore we can ignore it.
                 if (taskId == _rootTaskId)
                 {

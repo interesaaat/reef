@@ -39,5 +39,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// Operator specific information in case of failure
         /// </summary>
         string FailureInfo { get; }
+
+        /// <summary>
+        /// Wait until computation is globally completed for this operator 
+        /// before disposing the object
+        /// </summary>
+        void WaitCompletionBeforeDisposing();
     }
 }

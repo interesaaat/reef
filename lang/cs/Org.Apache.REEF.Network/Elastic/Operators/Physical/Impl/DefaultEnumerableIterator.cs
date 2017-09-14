@@ -34,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// Creates a new Enumerable Iterator.
         /// </summary>
         /// <param name="id">The operator identifier</param>
-        /// <param name="innerIterator">The inner eunmerator implemeting the iterator</param>
+        /// <param name="innerIterator">The inner enumerator implementing the iterator</param>
         [Inject]
         private DefaultEnumerableIterator(
             [Parameter(typeof(OperatorParameters.OperatorId))] int id,
@@ -71,6 +71,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
+        }
+
+        public void WaitCompletionBeforeDisposing()
+        {
+            return;
         }
 
         public void Dispose()

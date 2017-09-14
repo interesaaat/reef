@@ -54,10 +54,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>> _messageObservers =
             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>>();
 
-        /// <summary>
-        /// A ConcurrentDictionary is used here since there is no ConcurrentSet implementation in C#, and ConcurrentBag
-        /// does not allow for us to check for the existence of an item. The byte is simply a placeholder.
-        /// </summary>
         private readonly ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>> _registeredConnections = 
             new ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>>();
 
@@ -253,7 +249,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
                     foreach (var identifier in identifiers)
                     {
-                        if (!foundList.Contains(identifier) && _networkService.NamingClient.Lookup(identifier) != null)
+                        if (!foundList.Contains(identifier) && Lookup(identifier))
                         {
                             foundList.Add(identifier);
                             Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, find a dependent id {0} at loop {1}.", identifier, i);
@@ -273,6 +269,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", leftOver);
                 throw new RemotingException("Failed to find parent/children nodes");
             }
+        }
+
+        internal bool Lookup(string identifier)
+        {
+            if (_disposed || _networkService == null)
+            {
+                return false;
+            }
+            return _networkService.NamingClient.Lookup(identifier) != null;
         }
     }
 }

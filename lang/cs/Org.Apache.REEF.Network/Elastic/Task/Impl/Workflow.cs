@@ -107,6 +107,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             if (_operators != null)
             {
+                // Clean dispose, check that the computation is completed
+                if (_failed == false)
+                {
+                    foreach (var op in _operators)
+                    {
+                        if (op != null)
+                        {
+                            op.WaitCompletionBeforeDisposing();
+                        }
+                    }
+                }
+
                 foreach (var op in _operators)
                 {
                     if (op != null)

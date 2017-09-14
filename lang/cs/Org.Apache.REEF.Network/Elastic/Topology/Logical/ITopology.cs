@@ -66,7 +66,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         string LogTopologyState();
 
         /// <summary>
-        /// Reconfigure the topologyin response to some event
+        /// Reconfigure the topology in response to some event
         /// </summary>
         /// <param name="taskId">The task id responsible for the topology change</param>
         /// <param name="info">Some additional topology-specific information</param>

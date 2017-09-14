@@ -106,6 +106,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 
+        public void WaitCompletionBeforeDisposing()
+        {
+            if (CheckpointLevel > CheckpointLevel.None)
+            {
+                _topology.WaitCompletionBeforeDisposing();
+            }
+        }
+
         public void Dispose()
         {
             _topology.Dispose();
