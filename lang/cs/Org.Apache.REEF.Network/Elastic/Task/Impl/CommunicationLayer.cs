@@ -154,8 +154,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
             var id = NodeObserverIdentifier.FromMessage(gcm);
             OperatorTopology operatorObserver;
+            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> observers;
 
-            if (!_messageObservers.TryGetValue(gcMessageTaskSource, out ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> observers))
+            if (!_messageObservers.TryGetValue(gcMessageTaskSource, out observers))
             {
                 throw new KeyNotFoundException("Unable to find registered NodeMessageObserver for source Task " +
                     gcMessageTaskSource + ".");
