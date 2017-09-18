@@ -47,7 +47,7 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
+    /// Example implementation of an iterative broadcast pipeline using the elastic group communication service.
     /// </summary>
     public class ElasticIterateBroadcastDriver : 
         IObserver<IAllocatedEvaluator>, 
@@ -204,6 +204,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
+
+            if (_taskManager.Done())
+            {
+                _taskManager.Dispose();
+            }
         }
 
         public void OnNext(IFailedTask failedTask)
@@ -218,12 +223,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            _taskManager.Dispose();
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            _taskManager.Dispose();
         }
     }
 }

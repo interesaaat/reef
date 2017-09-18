@@ -21,7 +21,6 @@ using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Network.Group.Pipelining.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -322,6 +321,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serversTaskManager.OnEvaluatorFailure(failedEvaluator);
 
             _workersTaskManager.OnEvaluatorFailure(failedEvaluator);
+
+            if (_serversTaskManager.Done())
+            {
+                _serversTaskManager.Dispose();
+            }
+
+            if (_workersTaskManager.Done())
+            {
+                _workersTaskManager.Dispose();
+            }
         }
 
         public void OnNext(IFailedTask failedTask)
@@ -343,12 +352,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            _serversTaskManager.Dispose();
+
+            _workersTaskManager.Dispose();
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            _serversTaskManager.Dispose();
+
+            _workersTaskManager.Dispose();
         }
     }
 }

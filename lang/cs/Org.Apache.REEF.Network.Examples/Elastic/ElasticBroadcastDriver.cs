@@ -183,6 +183,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
+
+            if (_taskManager.Done())
+            {
+                _taskManager.Dispose();
+            }
         }
 
         public void OnNext(IFailedTask failedTask)
@@ -197,12 +202,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            _taskManager.Dispose();
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            _taskManager.Dispose();
         }
     }
 }
