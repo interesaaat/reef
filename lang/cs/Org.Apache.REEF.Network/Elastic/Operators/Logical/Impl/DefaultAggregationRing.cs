@@ -23,11 +23,9 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
@@ -109,7 +107,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                     else
                     {
-                        throw new NotImplementedException("Future work");
+                        throw new NotImplementedException("root: Future work");
                     }
                 }
             }

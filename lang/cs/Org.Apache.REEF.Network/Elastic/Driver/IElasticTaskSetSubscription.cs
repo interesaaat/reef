@@ -16,9 +16,9 @@
 // under the License.
 
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -27,13 +27,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// All operators in the same Subscription share similar semantics
     /// and behaviour under failures.
     /// </summary>
-    [Unstable("0.16", "API may change")]
-    public interface IElasticTaskSetSubscription : IFailureResponse
+    public interface IElasticTaskSetSubscription : IFailureResponse, ITaskMessageResponse
     {
         /// <summary>
         /// The name of the Subscription.
         /// </summary>
         string SubscriptionName { get; }
+
+        /// <summary>
+        /// The operator at the beginning of the computation workflow.
+        /// </summary>
+        ElasticOperator RootOperator { get; }
 
         /// <summary>
         /// The Failure State of the target Subscription. 

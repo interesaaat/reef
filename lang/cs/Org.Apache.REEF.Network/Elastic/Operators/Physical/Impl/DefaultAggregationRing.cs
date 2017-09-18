@@ -48,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
-            CheckpointLevel = CheckpointLevel.Memory; ////(CheckpointLevel)level;
+            CheckpointLevel = CheckpointLevel.MemoryAll; ////(CheckpointLevel)level;
             _topology = topology;
             _position = PositionTracker.Nil;
         }
@@ -123,7 +123,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             switch (CheckpointLevel)
             {
-                case CheckpointLevel.Memory:
+                case CheckpointLevel.MemoryAll:
                     _topology.CheckpointedData = new List<GroupCommunicationMessage>(data);
                     break;
                 default: break;

@@ -41,4 +41,3 @@ under the License.
     <ProjectReference Include="..\Org.Apache.REEF.Wake\Org.Apache.REEF.Wake.DotNet.csproj" />
   </ItemGroup>
 </Project>
-

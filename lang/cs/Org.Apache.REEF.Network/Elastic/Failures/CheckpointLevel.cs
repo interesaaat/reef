@@ -24,6 +24,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     {
         None = 0,
 
-        Memory = 1
+        MemoryMaster = 1,
+
+        MemoryAll = 2
     }
 }

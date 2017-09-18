@@ -23,11 +23,10 @@ under the License.
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Org.Apache.REEF.Common</RootNamespace>
     <AssemblyName>Org.Apache.REEF.Common</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <RestorePackages>true</RestorePackages>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..</SolutionDir>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="$(SolutionDir)\build.props" />
   <ItemGroup>
@@ -190,7 +189,6 @@ under the License.
     </Compile>
     <Compile Include="Protobuf\ReefProtocol\Serializer.cs" />
     <Compile Include="Files\REEFFileNames.cs" />
-    <Compile Include="Runtime\Evaluator\HeartBeatReference.cs" />
     <Compile Include="Runtime\Evaluator\Constants.cs" />
     <Compile Include="Runtime\Evaluator\Context\ContextClientCodeException.cs" />
     <Compile Include="Runtime\Evaluator\Context\ContextException.cs" />
@@ -206,6 +204,7 @@ under the License.
     <Compile Include="Runtime\Evaluator\EvaluatorRuntime.cs" />
     <Compile Include="Runtime\Evaluator\EvaluatorSettings.cs" />
     <Compile Include="Runtime\Evaluator\HeartBeatManager.cs" />
+    <Compile Include="Runtime\Evaluator\HeartBeatReference.cs" />
     <Compile Include="Runtime\Evaluator\IHeartBeatManager.cs" />
     <Compile Include="Runtime\Evaluator\Parameters\EvaluatorHeartbeatPeriodInMs.cs" />
     <Compile Include="Runtime\Evaluator\Parameters\HeartbeatMaxRetryForNonRecoveryMode.cs" />

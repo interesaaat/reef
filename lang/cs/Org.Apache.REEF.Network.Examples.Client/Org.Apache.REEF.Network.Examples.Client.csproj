@@ -23,11 +23,10 @@ under the License.
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Org.Apache.REEF.Network.Examples.Client</RootNamespace>
     <AssemblyName>Org.Apache.REEF.Network.Examples.Client</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.5.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..</SolutionDir>
     <RestorePackages>true</RestorePackages>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <Import Project="$(SolutionDir)\build.props" />
   <PropertyGroup>
@@ -48,14 +47,14 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="BroadcastAndReduceClient.cs" />
+    <Compile Include="PipelineBroadcastAndReduceClient.cs" />
+    <Compile Include="Run.cs" />
     <Compile Include="Elastic\ElasticIterateAggregateClient.cs" />
     <Compile Include="Elastic\ElasticIterateBroadcastClient.cs" />
     <Compile Include="Elastic\ElasticParameterServerClient.cs" />
     <Compile Include="Elastic\ElasticIterateBroadcastReduceClient.cs" />
     <Compile Include="Elastic\ElasticBroadcastReduceClient.cs" />
     <Compile Include="Elastic\ElasticBroadcastClient.cs" />
-    <Compile Include="PipelineBroadcastAndReduceClient.cs" />
-    <Compile Include="Run.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

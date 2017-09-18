@@ -46,4 +46,3 @@ under the License.
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.Client\Org.Apache.REEF.Client.pdb" target="lib\net45" />
   </files>
 </package>
-
