@@ -153,6 +153,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
             var id = NodeObserverIdentifier.FromMessage(gcm);
+            OperatorTopology operatorObserver;
 
             if (!_messageObservers.TryGetValue(gcMessageTaskSource, out ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> observers))
             {
@@ -160,7 +161,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     gcMessageTaskSource + ".");
             }
 
-            if (!observers.TryGetValue(id, out OperatorTopology operatorObserver))
+            if (!observers.TryGetValue(id, out operatorObserver))
             {
                 throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
                     gcm.SubscriptionName + " operator " + gcm.OperatorId);
