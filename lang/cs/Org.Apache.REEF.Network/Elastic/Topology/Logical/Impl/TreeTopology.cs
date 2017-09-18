@@ -159,7 +159,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             if (!_nodes.ContainsKey(_rootId))
             {
-                throw new IllegalStateException("Topology cannot be built becasue the root node is missing");
+                throw new IllegalStateException("Topology cannot be built because the root node is missing");
             }
 
             IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
@@ -212,9 +212,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private DataNode GetTaskNode(int taskId)
         {
-            if (_nodes.TryGetValue(taskId, out DataNode n))
+            DataNode node;
+            if (_nodes.TryGetValue(taskId, out node))
             {
-                return n;
+                return node;
             }
             throw new ArgumentException("Cannot find task node " + taskId + " in the nodes.");
         }
