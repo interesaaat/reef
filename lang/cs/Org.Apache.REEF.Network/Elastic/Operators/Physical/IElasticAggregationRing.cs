@@ -20,7 +20,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// <summary>
     /// Group Communication operator used to receive and reduce messages.
     /// </summary>
-    public interface IElasticAggregationRing<T> : IElasticBasicOperator<T>, IReceiver<T>, ISender<T>
+    public interface IElasticAggregationRing<T> : IElasticTypedOperator<T>, IReceiver<T>, ISender<T>
     {
     }
 }

@@ -160,7 +160,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         protected virtual void Send(CancellationTokenSource cancellationSource)
         {
-            while (_sendQueue.Count > 0)
+            while (_sendQueue.Count > 0 && !cancellationSource.IsCancellationRequested)
             {
                 GroupCommunicationMessage message;
                 _sendQueue.TryPeek(out message);

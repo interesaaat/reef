@@ -81,11 +81,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
-        public void Handle(IDriverMessage message)
-        {
-        }
-
-            public void Dispose()
+        public void Dispose()
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();

@@ -25,16 +25,19 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    ///  Used by Tasks to fetch Operators in the subscriptions configured by the driver.
+    ///  Used by Tasks to fetch the Workflow of the Subscriptions configured by the Driver.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetSubscription))]
     public interface IElasticTaskSetSubscription : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
-        /// Returns the subscription name
+        /// The name of the Subscription
         /// </summary>
         string SubscriptionName { get; }
 
+        /// <summary>
+        /// The workflow of operators
+        /// </summary>
         Workflow Workflow { get; }
     }
 }

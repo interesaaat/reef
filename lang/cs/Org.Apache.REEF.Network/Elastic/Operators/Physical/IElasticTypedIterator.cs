@@ -15,12 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System.Collections.Generic;
+
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication operator used to receive and send messages.
+    /// Group Communication operator used to for iterations.
     /// </summary>
-    public interface IElasticBasicOperator<T> : IElasticOperator
+    public interface IElasticTypedIterator<T> : IElasticIterator, IElasticTypedOperator<T>, IEnumerator<T>
     {
     }
 }
