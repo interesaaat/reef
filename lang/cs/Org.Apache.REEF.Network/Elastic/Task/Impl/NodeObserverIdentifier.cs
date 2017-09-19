@@ -32,7 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Creates a NodeObserverIdentifier from an observer.
         /// </summary>
-        public static NodeObserverIdentifier FromObserver(OperatorTopology observer)
+        public static NodeObserverIdentifier FromObserver(OperatorTopologyWithCommunication observer)
         {
             return new NodeObserverIdentifier(observer.SubscriptionName, observer.OperatorId);
         }

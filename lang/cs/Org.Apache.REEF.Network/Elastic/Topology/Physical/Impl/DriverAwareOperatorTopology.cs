@@ -23,9 +23,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<IDriverMessagePayload>
     {
-        internal DriverAwareOperatorTopology(string taskId, int rootId, string subscription, int operatorId, CommunicationLayer commLayer, 
-            int timeout)
-            : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
+        internal DriverAwareOperatorTopology(string taskId, int rootId, string subscription, int operatorId)
+            : base(taskId, rootId, subscription, operatorId)
         {
         }
 
@@ -40,6 +39,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     OnMessageFromDriver(message);
                     break;
             }
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
 
         internal abstract void OnMessageFromDriver(IDriverMessagePayload value);

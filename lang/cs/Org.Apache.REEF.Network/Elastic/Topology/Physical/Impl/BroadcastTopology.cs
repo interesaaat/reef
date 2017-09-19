@@ -20,10 +20,12 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using System.Collections.Generic;
 using Org.Apache.REEF.Common.Tasks;
+using Org.Apache.REEF.Network.Elastic.Driver;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class BroadcastTopology : OperatorTopology
+    internal class BroadcastTopology : OperatorTopologyWithCommunication
     {
         [Inject]
         private BroadcastTopology(
@@ -46,6 +48,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 _children.TryAdd(child, childTaskId);
             }
+        }
+
+        internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload value)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal override void OnMessageFromDriver(IDriverMessagePayload value)
+        {
+            throw new NotImplementedException();
         }
     }
 }

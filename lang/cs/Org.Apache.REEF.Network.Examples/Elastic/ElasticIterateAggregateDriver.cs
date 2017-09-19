@@ -105,9 +105,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        CheckpointLevel.MemoryMaster,
+                        CheckpointLevel.PersistentMemoryMaster,
                         iteratorConfig)
-                    .AggregationRing<int>(CheckpointLevel.MemoryAll)
+                    .AggregationRing<int>(CheckpointLevel.Ephemeral)
                     .Build();
 
             // Build the subscription

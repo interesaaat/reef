@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter(Documentation = "Number of retry when a failure accurs", DefaultValue = "1")]
+        [NamedParameter(Documentation = "Number of retry when a failure occurs", DefaultValue = "1")]
         public class NumRetry : Name<int>
         {
         }
@@ -67,8 +67,13 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Serialized subscrptions configuration")]
+        [NamedParameter("Serialized subscriptions configuration")]
         public class SerializedSubscriptionConfigs : Name<ISet<string>>
+        {
+        }
+
+        [NamedParameter("Number of checkpoints to store", defaultValue: "`")]
+        public class NumCheckpoints : Name<int>
         {
         }
     }

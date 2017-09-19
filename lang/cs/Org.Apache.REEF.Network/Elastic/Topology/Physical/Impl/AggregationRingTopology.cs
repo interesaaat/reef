@@ -33,9 +33,9 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class AggregationRingTopology : DriverAwareOperatorTopology, ICheckpointingTopology<List<GroupCommunicationMessage>>
+    internal class AggregationRingTopology : OperatorTopologyWithCommunication, ICheckpointingTopology<List<GroupCommunicationMessage>>
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopology));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopologyWithCommunication));
 
         private BlockingCollection<string> _next;
 
@@ -47,7 +47,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
-            CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
+            CommunicationLayer commLayer,
+            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
         {
             _next = new BlockingCollection<string>();
 
@@ -61,9 +62,36 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
+
+            Service = checkpointService;
         }
 
-        public CheckpointState<List<GroupCommunicationMessage>> CheckpointedData { get; set; }
+        public CheckpointService Service { private get; set; }
+
+        public CheckpointState<List<GroupCommunicationMessage>> InternalCheckpoint { get; private set; }
+
+        public void Checkpoint(CheckpointState<List<GroupCommunicationMessage>> state)
+        {
+            switch (state.Level)
+            {
+                case CheckpointLevel.None:
+                    break;
+                case CheckpointLevel.Ephemeral:
+                    InternalCheckpoint = state;
+                    break;
+                case CheckpointLevel.PersistentMemoryMaster:
+                case CheckpointLevel.PersistentMemoryAll:
+                    Service.Checkpoint(state);
+                    break;
+                default:
+                    throw new IllegalStateException("Checkpoint level not supported");
+            }
+        }
+
+        public CheckpointState<List<GroupCommunicationMessage>> GetCheckpoint(int iteration = -1)
+        {
+            return Service.GetCheckpoint(iteration) as CheckpointState<List<GroupCommunicationMessage>>;
+        }
 
         public override void WaitCompletionBeforeDisposing()
         {
@@ -123,7 +151,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
 
             var destMessage = message as FailureMessagePayload;
-            var state = CheckpointedData.State;
+            var state = GetCheckpoint().State;
             foreach (var data in state)
             {
                 _commLayer.Send(destMessage.NextTaskId, data);

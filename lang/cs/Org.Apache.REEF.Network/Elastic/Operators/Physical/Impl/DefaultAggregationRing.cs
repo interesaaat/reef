@@ -48,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
-            CheckpointLevel = CheckpointLevel.MemoryAll; ////(CheckpointLevel)level;
+            CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
             _position = PositionTracker.Nil;
         }
@@ -59,8 +59,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public int OperatorId { get; private set; }
 
         public string OperatorName { get; private set; }
-
-        private CheckpointLevel CheckpointLevel { get; set; }
 
         public string FailureInfo
         {
@@ -121,17 +119,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         internal override void Checkpoint(List<GroupCommunicationMessage> data)
         {
-            switch (CheckpointLevel)
+            if (CheckpointLevel > CheckpointLevel.None)
             {
-                case CheckpointLevel.MemoryAll:
-                    var state = new CheckpointState<List<GroupCommunicationMessage>>()
-                    {
-                        Iteration = _iterationNumber,
-                        State = data
-                    };
-                    _topology.CheckpointedData = state;
-                    break;
-                default: break;
+                var state = new CheckpointState<List<GroupCommunicationMessage>>()
+                {
+                    Iteration = _iterationNumber,
+                    State = data
+                };
+                _topology.CheckpointedData = state;
             }
         }
     }

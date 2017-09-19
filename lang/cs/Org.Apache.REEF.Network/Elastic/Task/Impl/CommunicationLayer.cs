@@ -51,8 +51,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private bool _disposed;
 
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>> _messageObservers =
-            new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>>();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>> _messageObservers =
+            new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>>();
 
         private readonly ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>> _registeredConnections = 
             new ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>>();
@@ -84,21 +84,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// Registers a <see cref="OperatorTopology"/> for a given <see cref="taskSourceId"/>.
-        /// If the <see cref="OperatorTopology"/> has already been initialized, it will return
+        /// Registers a <see cref="OperatorTopologyWithCommunication"/> for a given <see cref="taskSourceId"/>.
+        /// If the <see cref="OperatorTopologyWithCommunication"/> has already been initialized, it will return
         /// the existing one.
         /// </summary>
-        public void RegisterOperatorTopologyForTask(string taskSourceId, OperatorTopology operatorObserver)
+        public void RegisterOperatorTopologyForTask(string taskSourceId, OperatorTopologyWithCommunication operatorObserver)
         {
             // Add a TaskMessage observer for each upstream/downstream source.
-            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> taskObservers;
+            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> taskObservers;
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
             _messageObservers.TryGetValue(taskSourceId, out taskObservers);
 
             if (taskObservers == null)
             {
-                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology>();
+                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
                 _messageObservers.TryAdd(taskSourceId, taskObservers);
             }
 
@@ -144,7 +144,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// Forward the received message to the target <see cref="OperatorTopology"/>.
+        /// Forward the received message to the target <see cref="OperatorTopologyWithCommunication"/>.
         /// </summary>
         /// <param name="remoteMessage"></param>
         public void OnNext(IRemoteMessage<NsMessage<GroupCommunicationMessage>> remoteMessage)
@@ -153,8 +153,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
             var id = NodeObserverIdentifier.FromMessage(gcm);
-            OperatorTopology operatorObserver;
-            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopology> observers;
+            OperatorTopologyWithCommunication operatorObserver;
+            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
 
             if (!_messageObservers.TryGetValue(gcMessageTaskSource, out observers))
             {

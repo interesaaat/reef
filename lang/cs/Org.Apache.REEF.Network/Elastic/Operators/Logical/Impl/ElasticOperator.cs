@@ -66,7 +66,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="subscription">The subscription this operator is part of</param>
         /// <param name="prev">The previous operator in the pipeline</param>
         /// <param name="topology">The topology of the operator</param>
-        /// <param name="failureMachine">The behaviour of the operator under failures</param>
+        /// <param name="failureMachine">The behavior of the operator under failures</param>
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">Additional configuration parameters</param>
         public ElasticOperator(
@@ -146,7 +146,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <summary>
         /// Appends the Operators configuration for the input task to the input builder.
         /// Must be called only after Build() and BuildState() have been called.
-        /// This method shold be called from the root operator at beginning of the pipeline
+        /// This method should be called from the root operator at beginning of the pipeline
         /// </summary>
         /// <param name="builder">The configuration builder the Operator configuration will be appended to</param>
         /// <param name="taskId">The task id of the task that belongs to this Operator</param>
@@ -279,7 +279,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="failureMachine">The failure state machine of the operator</param>
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
-        /// <returns>The same operator pipeline with the added Aggregtion Ring operator</returns>
+        /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
         public abstract ElasticOperator AggregationRing<T>(int coordinatorId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
 
         /// <summary>
@@ -287,7 +287,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
         /// <param name="configurations">The configuration of the tasks</param>
-        /// <returns>The same operator pipeline with the added Aggregtion Ring operator</returns>
+        /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
         public ElasticOperator AggregationRing<T>(params IConfiguration[] configurations)
         {
             return AggregationRing<T>(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
@@ -299,7 +299,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
-        /// <returns>The same operator pipeline with the added Aggregtion Ring operator</returns>
+        /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
         public ElasticOperator AggregationRing<T>(CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             return AggregationRing<T>(MasterId, _failureMachine.Clone(), checkpointLevel, configurations);
@@ -431,6 +431,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 .BindNamedParameter<OperatorParameters.OperatorId, int>(
                     GenericType<OperatorParameters.OperatorId>.Class,
                     _id.ToString(CultureInfo.InvariantCulture))
+                .BindNamedParameter<OperatorParameters.Checkpointing, int>(
+                    GenericType<OperatorParameters.Checkpointing>.Class,
+                    ((int)_checkpointLevel).ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             foreach (var conf in _configurations)

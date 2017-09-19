@@ -20,6 +20,7 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections;
 using System;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -38,16 +39,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultEnumerableIterator(
             [Parameter(typeof(OperatorParameters.OperatorId))] int id,
+            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
             ForLoopEnumerator innerIterator)
         {
             OperatorName = Constants.Iterate;
             OperatorId = id;
+            CheckpointLevel = (CheckpointLevel)level;
             _inner = innerIterator;
         }
 
         public int OperatorId { get; private set; }
 
         public string OperatorName { get; private set; }
+
+        private CheckpointLevel CheckpointLevel { get; set; }
 
         public int Current
         {

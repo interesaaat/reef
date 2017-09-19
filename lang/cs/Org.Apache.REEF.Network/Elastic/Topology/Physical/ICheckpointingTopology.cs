@@ -24,6 +24,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
     /// </summary>
     internal interface ICheckpointingTopology<T>
     {
-        CheckpointState<T> CheckpointedData { get; set; }
+        CheckpointService Service { set; }
+
+        void Checkpoint(CheckpointState<T> state);
+
+        CheckpointState<T> GetCheckpoint(int iteration = -1);
+
+        CheckpointState<T> InternalCheckpoint { get; }
     }
 }
