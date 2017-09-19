@@ -20,8 +20,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <summary>
     /// Group Communication operator used to receive and send messages.
     /// </summary>
-    public abstract class CheckpointingOperator<T>
+    public abstract class CheckpointingOperator<ICheckpointState>
     {
-        internal abstract void Checkpoint(T data);
+        internal abstract void Checkpoint(ICheckpointState data);  
     }
 }

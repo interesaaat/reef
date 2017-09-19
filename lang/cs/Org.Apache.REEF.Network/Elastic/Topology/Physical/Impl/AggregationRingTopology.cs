@@ -29,6 +29,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -62,7 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
         }
 
-        public List<GroupCommunicationMessage> CheckpointedData { get; set; }
+        public CheckpointState<List<GroupCommunicationMessage>> CheckpointedData { get; set; }
 
         public override void WaitCompletionBeforeDisposing()
         {
@@ -122,7 +123,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
 
             var destMessage = message as FailureMessagePayload;
-            foreach (var data in CheckpointedData)
+            var state = CheckpointedData.State;
+            foreach (var data in state)
             {
                 _commLayer.Send(destMessage.NextTaskId, data);
             }

@@ -124,7 +124,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             switch (CheckpointLevel)
             {
                 case CheckpointLevel.MemoryAll:
-                    _topology.CheckpointedData = new List<GroupCommunicationMessage>(data);
+                    var state = new CheckpointState<List<GroupCommunicationMessage>>()
+                    {
+                        Iteration = _iterationNumber,
+                        State = data
+                    };
+                    _topology.CheckpointedData = state;
                     break;
                 default: break;
             }
