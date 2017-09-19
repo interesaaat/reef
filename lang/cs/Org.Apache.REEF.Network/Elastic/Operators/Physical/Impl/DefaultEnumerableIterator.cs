@@ -78,11 +78,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             return;
         }
 
-        public void Dispose()
-        {
-            _inner.Dispose();
-        }
-
         public bool MoveNext()
         {
             return _inner.MoveNext();
@@ -91,6 +86,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Reset()
         {
             _inner.Reset();
+        }
+
+        public void Dispose()
+        {
+            _inner.Dispose();
         }
     }
 }

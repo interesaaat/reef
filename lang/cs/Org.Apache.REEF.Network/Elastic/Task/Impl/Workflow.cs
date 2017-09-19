@@ -34,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private int _position = 0;
         private bool _failed;
         private readonly IList<IElasticOperator> _operators;
-        private int _iteratorPosition = -1; // For the moment I am not considering nested iterators
+        private int _iteratorPosition = -1; // For the moment we are not considering nested iterators
 
         [Inject]
         private Workflow()
@@ -103,6 +103,29 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             return true;
         }
 
+        public void Throw(Exception e)
+        {
+            Logger.Log(Level.Error, "Workflow captured an Exception", e);
+            _failed = true;
+            throw new OperatorException(
+                "Workflow captured an Exception", Current.OperatorId, e, Current.FailureInfo);
+        }
+
+        public void Reset()
+        {
+            _position = Math.Max(0, _iteratorPosition);
+        }
+
+        public IElasticOperator Current
+        {
+            get { return _operators[_position]; }
+        }
+
+        object IEnumerator.Current
+        {
+            get { return Current; }
+        }
+
         public void Dispose()
         {
             if (_operators != null)
@@ -131,19 +154,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        public void Throw(Exception e)
-        {
-            Logger.Log(Level.Error, "Workflow captured an Exception", e);
-            _failed = true;
-            throw new OperatorException(
-                "Workflow captured an Exception", Current.OperatorId, e, Current.FailureInfo);
-        }
-
-        public void Reset()
-        {
-            _position = Math.Max(0, _iteratorPosition);
-        }
-
         internal void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
             try
@@ -157,16 +167,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 throw e;
             }
-        }
-
-        public IElasticOperator Current
-        {
-            get { return _operators[_position]; }
-        }
-
-        object IEnumerator.Current
-        {
-            get { return Current; }
         }
     }
 }

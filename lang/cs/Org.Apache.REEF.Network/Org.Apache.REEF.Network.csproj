@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -80,6 +80,7 @@ under the License.
     </Compile>
     <Compile Include="Elastic\Driver\IDriverMessagePayload.cs" />
     <Compile Include="Elastic\Driver\IDriverMessage.cs" />
+    <Compile Include="Elastic\Failures\ICheckpointState.cs" />
     <Compile Include="Elastic\Failures\FailureMessagePayload.cs" />
     <Compile Include="Elastic\Driver\Impl\DriverMessage.cs" />
     <Compile Include="Elastic\Failures\Impl\NoEvent.cs" />

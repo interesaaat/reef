@@ -220,7 +220,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
             else
             {
-                throw new IllegalStateException("Initializing a number of contexes different than configured");
+                throw new IllegalStateException("Initializing a number of contexts different than configured");
             }
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule

@@ -28,7 +28,6 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
@@ -148,8 +147,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _sendQueue.TryPeek(out message);
 
             var nextNode = _next.Take();
-
-            Console.WriteLine("Sending to " + nextNode);
 
             _commLayer.Send(nextNode, message);
             _sendQueue.TryDequeue(out message);
