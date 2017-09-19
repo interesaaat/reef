@@ -18,9 +18,9 @@
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication operator used to receive and reduce messages.
+    /// Group Communication operator used to broadcast messages.
     /// </summary>
-    public interface IElasticBroadcast<T> : IElasticBasicOperator<T>, IReceiver<T>, ISender<T>
+    public interface IElasticBroadcast<T> : IElasticTypedOperator<T>, IReceiver<T>, ISender<T>
     {
     }
 }

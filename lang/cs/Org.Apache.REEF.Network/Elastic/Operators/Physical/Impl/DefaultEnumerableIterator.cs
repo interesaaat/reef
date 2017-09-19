@@ -26,7 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <summary>
     /// Default Group Communication Operator used to iterate over a fixed set of ints.
     /// </summary>
-    public sealed class DefaultEnumerableIterator : IElasticBasicIterator<int>
+    public sealed class DefaultEnumerableIterator : IElasticTypedIterator<int>
     {
         private readonly ElasticIteratorEnumerator<int> _inner;
 

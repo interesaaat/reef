@@ -21,7 +21,7 @@ using System;
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication operator used to receive and send messages.
+    /// Basic Group Communication operator.
     /// </summary>
     public interface IElasticOperator : IWaitForTaskRegistration, IDisposable
     {

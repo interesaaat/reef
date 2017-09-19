@@ -22,13 +22,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// <summary>
     /// Group Communication Operator used to send messages to child Tasks.
     /// </summary>
-    /// <typeparam name="T">The data type</typeparam>
+    /// <typeparam name="T">The data type of the message</typeparam>
     public interface ISender<T>
     {
         /// <summary>
-        /// Send the data to all BroadcastReceivers.
+        /// Send the data to all child receivers.
         /// </summary>
-        /// <param name="data">The data to send.</param>
+        /// <param name="data">The data to send</param>
+        /// <param name="cancellationSource">The cancellation token</param>
         void Send(T data, CancellationTokenSource cancellationSource);
     }
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -99,8 +99,8 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultEnumerableIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\ForLoopEnumerator.cs" />
     <Compile Include="Elastic\Operators\Physical\ElasticIteratorEnumerator.cs" />
-    <Compile Include="Elastic\Operators\Physical\IElasticBasicOperator.cs" />
-    <Compile Include="Elastic\Operators\Physical\IElasticBasicIterator.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticTypedOperator.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticTypedIterator.cs" />
     <Compile Include="Elastic\Task\RingTaskMessageType.cs" />
     <Compile Include="Elastic\Task\Impl\DriverMessageHandler.cs" />
     <Compile Include="Elastic\Task\Impl\DataMessage.cs" />

@@ -19,10 +19,13 @@ using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
+    /// <summary>
+    /// Extended by classes requiring the inizialization of group communication
+    /// </summary>
     public interface IWaitForTaskRegistration
     {
         /// <summary>
-        /// Initialization for group communications
+        /// Initializaze group communication
         /// </summary>
         /// <param name="cancellationSource"></param>
         void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null);

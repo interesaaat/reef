@@ -22,7 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    /// Used by Tasks to fetch Subscrptions.
+    /// Used by Tasks to initialize Group Communication and fetch Subscriptions.
     /// </summary>
     [DefaultImplementation(typeof(DefaultTaskSetService))]
     public interface IElasticTaskSetService : IWaitForTaskRegistration, IDisposable
@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         /// Gets the Subscrption with the given name.
         /// </summary>
         /// <param name="subscriptionName">The name of the Subscription</param>
-        /// <returns>The configured subscrption</returns>
+        /// <returns>The configured subscription</returns>
         IElasticTaskSetSubscription GetSubscription(string subscriptionName);
     }
 }

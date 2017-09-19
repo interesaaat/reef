@@ -20,15 +20,15 @@ using System.Threading;
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Group Communication Operator receiving messages.
     /// </summary>
-    /// <typeparam name="T">The type of data being sent.</typeparam>
+    /// <typeparam name="T">The type of data being receive.</typeparam>
     public interface IReceiver<T>
     {
         /// <summary>
-        /// Receive a message from parent BroadcastSender.
+        /// Receive a message from sender.
         /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
+        /// <param name="cancellationSource">The cancellation token for the data reading operation</param>
         /// <returns>The incoming message</returns>
         T Receive(CancellationTokenSource cancellationSource);
     }
