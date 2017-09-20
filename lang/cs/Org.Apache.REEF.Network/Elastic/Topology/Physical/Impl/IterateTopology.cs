@@ -19,14 +19,11 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Threading;
 using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
@@ -34,33 +31,22 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class AggregationRingTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
+    internal class IterateTopology : DriverAwareOperatorTopology, IDisposable, ICheckpointingTopology
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopologyWithCommunication));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(IterateTopology));
 
-        private BlockingCollection<string> _next;
+        private readonly CommunicationLayer _commLayer;
 
         [Inject]
-        private AggregationRingTopology(
+        private IterateTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorId))] int operatorId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
             CommunicationLayer commLayer,
-            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
+            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId)
         {
-            _next = new BlockingCollection<string>();
-
-            foreach (var child in children)
-            {
-                var childTaskId = Utils.BuildTaskId(SubscriptionName, child);
-
-                _children.TryAdd(child, childTaskId);
-
-                _commLayer.RegisterOperatorTopologyForTask(childTaskId, this);
-            }
+            _commLayer = commLayer;
 
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
 
@@ -85,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     {
                         state.OperatorId = OperatorId;
                         state.SubscriptionName = SubscriptionName;
-                        Service.Checkpoint(state); 
+                        Service.Checkpoint(state);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
@@ -118,97 +104,21 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
+        public void Dispose()
         {
-            try
-            {
-                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
-            }
-            catch (Exception e)
-            {
-                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
-            }
-
-            _initialized = true;
-        }
-
-        public override void OnNext(NsMessage<GroupCommunicationMessage> message)
-        {
-            if (_messageQueue.IsAddingCompleted)
-            {
-                if (_messageQueue.Count > 0)
-                {
-                    throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
-                }
-                _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
-            }
-
-            foreach (var payload in message.Data)
-            {
-                _messageQueue.Add(payload);
-            }
-        }
-
-        public new void Dispose()
-        {
-            base.Dispose();
-
             Service.RemoveCheckpoint(OperatorId);
         }
 
         internal override void OnMessageFromDriver(IDriverMessagePayload message)
         {
-            if (message.MessageType != DriverMessageType.Ring)
-            {
-                throw new IllegalStateException("Message not appropriate for Aggregation Ring Topology");
-            }
-
-            var data = message as RingMessagePayload;
-            _next.Add(data.NextTaskId);
         }
 
         internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
         {
-            Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
+            Logger.Log(Level.Info, "Received failure recovery, going to resume computation from my checkpoint");
 
             var destMessage = message as FailureMessagePayload;
-            var state = GetCheckpoint().State;
-            
-            if (state.GetType() == typeof(List<GroupCommunicationMessage>))
-            {
-                foreach (var data in state as List<GroupCommunicationMessage>)
-                {
-                    _commLayer.Send(destMessage.NextTaskId, data);
-                }
-            }
-            else
-            {
-                throw new IllegalStateException("Failure recovery from state not supported");
-            }
-        }
-
-        internal void JoinTheRing()
-        {
-            if (_taskId != _rootTaskId)
-            {
-                _commLayer.JoinTheRing(_taskId);
-            }
-        }
-
-        internal void TokenReceived(int iterationNumber)
-        {
-            _commLayer.TokenReceived(_taskId, iterationNumber);
-        }
-
-        protected override void Send(CancellationTokenSource cancellationSource)
-        {
-            GroupCommunicationMessage message;
-            _sendQueue.TryPeek(out message);
-
-            var nextNode = _next.Take();
-
-            _commLayer.Send(nextNode, message);
-            _sendQueue.TryDequeue(out message);
+            InternalCheckpoint = GetCheckpoint();
         }
     }
 }

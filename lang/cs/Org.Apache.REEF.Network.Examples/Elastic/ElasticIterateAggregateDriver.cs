@@ -98,7 +98,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
-               .Build();
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableModel<int>>.Class)
+                .Build();
 
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
@@ -106,9 +107,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.PersistentMemoryMaster,
+                        CheckpointLevel.PersistentMemoryMaster,
                         iteratorConfig)
-                    .AggregationRing<int>(Network.Elastic.Failures.CheckpointLevel.Ephemeral)
+                    .AggregationRing<int>(CheckpointLevel.EphemeralMaster)
                     .Build();
 
             // Build the subscription

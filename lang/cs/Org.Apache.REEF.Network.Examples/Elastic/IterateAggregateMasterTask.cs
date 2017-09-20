@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -46,28 +47,32 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
             var rand = new Random();
-            int number = 0;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
                 try
                 {
+                    var model = new int[1];
+
+                    model[0] = rand.Next();
+
+                    var checkpointable = workflow.GetCheckpointableState() as CheckpointableModel<int>;
+                    checkpointable.MakeCheckpointable(model);
+
                     while (workflow.MoveNext())
                     {
-                        number = rand.Next();
-
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int>;
 
-                                aggregator.Send(number, _cancellationSource);
+                                aggregator.Send(model[0], _cancellationSource);
 
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+                                Console.WriteLine("Master has sent {0} in iteration {1}", model[0], workflow.Iteration);
 
-                                var rec = aggregator.Receive(_cancellationSource);
+                                model[0] = aggregator.Receive(_cancellationSource);
 
-                                Console.WriteLine("Master has received {0} in iteration {1}", rec, workflow.Iteration);
+                                Console.WriteLine("Master has received {0} in iteration {1}", model[0], workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");

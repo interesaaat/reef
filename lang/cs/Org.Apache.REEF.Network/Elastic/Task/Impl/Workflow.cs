@@ -15,10 +15,13 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System;
 using System.Collections;
@@ -119,6 +122,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public IElasticOperator Current
         {
             get { return _operators[_position]; }
+        }
+
+        public ICheckpointableState GetCheckpointableState()
+        {
+            if (_iteratorPosition != -1 && _operators[_iteratorPosition] is CheckpointingOperator)
+            {
+                var checkpointable = (_operators[_iteratorPosition] as CheckpointingOperator).CheckpointState;
+
+                if (!(checkpointable is NoCheckpointableState))
+                {
+                    return checkpointable;
+                }
+            }
+
+            throw new IllegalStateException("No checkpointable state enabled for this workflow");
         }
 
         object IEnumerator.Current

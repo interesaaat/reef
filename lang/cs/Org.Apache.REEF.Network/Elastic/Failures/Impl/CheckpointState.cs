@@ -29,15 +29,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         {
         }
 
-        public int Iteration { get; internal set; }
+        public int Iteration { get; set; }
 
-        public int OperatorId { get; internal set; }
+        public int OperatorId { get; set; }
 
-        public string SubscriptionName { get; internal set; }
+        public string SubscriptionName { get; set; }
 
-        public CheckpointLevel Level { get; internal set; }
+        public CheckpointLevel Level { get; set; }
 
-        public T State { get; internal set; }
+        public T State { get; set; }
 
         object ICheckpointState.State
         {

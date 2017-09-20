@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultAggregationRing<T> : CheckpointingOperator<List<GroupCommunicationMessage>>, IElasticAggregationRing<T>
+    public sealed class DefaultAggregationRing<T> : IElasticAggregationRing<T>
     {
         private readonly AggregationRingTopology _topology;
         private PositionTracker _position;
@@ -64,6 +64,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             get { return ((int)_position).ToString() + ":" + _iterationNumber; }
         }
+
+        internal CheckpointLevel CheckpointLevel { get; set; }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.
@@ -117,9 +119,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal override void Checkpoint(List<GroupCommunicationMessage> data)
+        internal void Checkpoint(List<GroupCommunicationMessage> data)
         {
-            if (CheckpointLevel > Failures.CheckpointLevel.None)
+            if (CheckpointLevel > CheckpointLevel.None)
             {
                 var state = new CheckpointState<List<GroupCommunicationMessage>>()
                 {

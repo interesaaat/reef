@@ -17,8 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Tang.Exceptions;
-using System.Collections;
+using Org.Apache.REEF.Utilities.Logging;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -30,6 +29,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     internal class CheckpointService
     {
+        private static readonly Logger Logger = Logger.GetLogger(typeof(CheckpointService));
+
         public readonly Dictionary<int, SortedDictionary<int, ICheckpointState>> _checkpoints;
         private readonly int _limit;
 
@@ -45,7 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         {
             if (!_checkpoints.ContainsKey(operatorId))
             {
-                throw new IllegalStateException("Asking for checkpoint not in the service");
+                Logger.Log(Level.Warning, "Asking for checkpoint not in the service");
             }
 
             var checkpoints = _checkpoints[operatorId];

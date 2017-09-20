@@ -21,15 +21,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// Interface for checkpointing some task state
     /// Clients can implement this interface and inject it into context service and task function to save the current task state
     /// </summary>
-    internal interface ICheckpointState
+    public interface ICheckpointState
     {
-        int Iteration { get; }
+        int Iteration { get; set; }
 
-        int OperatorId { get; }
+        int OperatorId { get; set; }
 
-        string SubscriptionName { get; }
+        string SubscriptionName { get; set; }
 
-        CheckpointLevel Level { get; }
+        CheckpointLevel Level { get; set; }
 
         object State { get; }
     }

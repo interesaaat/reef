@@ -5,9 +5,9 @@
 // to you under the Apache License, Version 2.0 (the
 // "License"); you may not use this file except in compliance
 // with the License.  You may obtain a copy of the License at
-//
+// 
 //   http://www.apache.org/licenses/LICENSE-2.0
-//
+// 
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,15 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Group Communication operator used to receive and send messages.
+    /// Interface for checkpointing some task state
+    /// Clients can implement this interface and inject it into context service and task function to save the current task state
     /// </summary>
-    internal interface CheckpointingOperator
+    [DefaultImplementation(typeof(NoCheckpointableState))]
+    public interface ICheckpointableState
     {
-        ICheckpointableState CheckpointState { get; set; }
+        CheckpointLevel Level { get; }
+
+        void MakeCheckpointable(object state);
+
+        ICheckpointState Checkpoint();
     }
 }

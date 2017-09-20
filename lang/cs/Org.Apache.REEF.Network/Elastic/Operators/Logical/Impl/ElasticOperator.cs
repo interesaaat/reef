@@ -21,15 +21,12 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Implementations.Tang;
-using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
@@ -50,7 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected ElasticOperator _prev = null;
 
         protected IFailureStateMachine _failureMachine;
-        protected Failures.CheckpointLevel _checkpointLevel;
+        protected CheckpointLevel _checkpointLevel;
         protected ITopology _topology;
 
         protected bool _stateFinalized = false;
@@ -75,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             ElasticOperator prev,
             ITopology topology,
             IFailureStateMachine failureMachine,
-            Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None,
+            CheckpointLevel checkpointLevel = CheckpointLevel.None,
             params IConfiguration[] configurations)
         {
             _subscription = subscription;
@@ -291,7 +288,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
         public ElasticOperator AggregationRing<T>(params IConfiguration[] configurations)
         {
-            return AggregationRing<T>(MasterId, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
+            return AggregationRing<T>(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         /// <summary>

@@ -23,14 +23,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
     /// <summary>
     /// Group Communication operator used to receive and send messages.
     /// </summary>
-    internal interface ICheckpointingTopology<T> : IDisposable
+    internal interface ICheckpointingTopology : IDisposable
     {
-        CheckpointService Service { set; }
+        void Checkpoint(ICheckpointState state);
 
-        void Checkpoint(CheckpointState<T> state);
+        ICheckpointState GetCheckpoint(int iteration = -1);
 
-        CheckpointState<T> GetCheckpoint(int iteration = -1);
-
-        CheckpointState<T> InternalCheckpoint { get; }
+        // For the moment the assumption is that only one object is stored
+        ICheckpointState InternalCheckpoint { get; }
     }
 }

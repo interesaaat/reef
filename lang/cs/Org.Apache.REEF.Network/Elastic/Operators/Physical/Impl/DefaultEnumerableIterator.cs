@@ -17,20 +17,20 @@
 
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections;
-using System;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
     /// Default Group Communication Operator used to iterate over a fixed set of ints.
     /// </summary>
-    public sealed class DefaultEnumerableIterator : IElasticTypedIterator<int>
+    public sealed class DefaultEnumerableIterator : CheckpointingOperator, IElasticTypedIterator<int>
     {
         private readonly ElasticIteratorEnumerator<int> _inner;
+        private readonly IterateTopology _topology;
 
         /// <summary>
         /// Creates a new Enumerable Iterator.
@@ -40,20 +40,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultEnumerableIterator(
             [Parameter(typeof(OperatorId))] int id,
-            [Parameter(typeof(Checkpointing))] int level,
-            ForLoopEnumerator innerIterator)
+            ForLoopEnumerator innerIterator,
+            ICheckpointableState state,
+            IterateTopology topology)
         {
             OperatorName = Constants.Iterate;
             OperatorId = id;
-            CheckpointLevel = (Failures.CheckpointLevel)level;
+            CheckpointState = state;
             _inner = innerIterator;
+            _topology = topology;
         }
 
         public int OperatorId { get; private set; }
 
         public string OperatorName { get; private set; }
-
-        private CheckpointLevel CheckpointLevel { get; set; }
 
         public int Current
         {
@@ -75,6 +75,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get { return PositionTracker.Nil.ToString(); }
         }
 
+        public ICheckpointableState CheckpointState { get; set; }
+
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
         }
@@ -86,7 +88,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public bool MoveNext()
         {
-            return _inner.MoveNext();
+            var result = _inner.MoveNext();
+
+            Checkpoint();
+
+            return result;
         }
 
         public void Reset()
@@ -97,6 +103,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Dispose()
         {
             _inner.Dispose();
+        }
+
+        private void Checkpoint()
+        {
+            if (CheckpointState.Level > CheckpointLevel.None)
+            {
+                var state = new CheckpointState<object>()
+                {
+                    Iteration = _inner.Current,
+                    Level = CheckpointState.Level,
+                    State = CheckpointState.Checkpoint()
+                };
+
+                _topology.Checkpoint(state);
+            }
         }
     }
 }

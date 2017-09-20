@@ -15,15 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    /// <summary>
-    /// Group Communication operator used to receive and send messages.
-    /// </summary>
-    internal interface CheckpointingOperator
+    class NoCheckpointableState : ICheckpointableState
     {
-        ICheckpointableState CheckpointState { get; set; }
+        [Inject]
+        public NoCheckpointableState()
+        {
+        }
+
+        public CheckpointLevel Level
+        {
+            get { return CheckpointLevel.None; }
+        }
+
+        public void MakeCheckpointable(object state)
+        {
+        }
+ 
+        public ICheckpointState Checkpoint()
+        {
+            return new CheckpointState<object>();
+        }
     }
 }

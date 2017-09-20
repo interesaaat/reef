@@ -84,9 +84,12 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
     <Compile Include="Elastic\Failures\FailureMessagePayload.cs" />
     <Compile Include="Elastic\Driver\Impl\ElasticDriverMessageImpl.cs" />
+    <Compile Include="Elastic\Failures\Impl\CheckpointableModel.cs" />
+    <Compile Include="Elastic\Failures\Impl\NoCheckpointableState.cs" />
     <Compile Include="Elastic\Failures\Impl\NoEvent.cs" />
     <Compile Include="Elastic\Failures\Impl\FailEvent.cs" />
     <Compile Include="Elastic\Failures\ICheckpointState.cs" />
+    <Compile Include="Elastic\Failures\ICheckpointableState.cs" />
     <Compile Include="Elastic\Failures\IStop.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\RingMessagePayload.cs" />
     <Compile Include="Elastic\Driver\ITaskMessageResponse.cs" />
@@ -117,6 +120,7 @@ under the License.
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\BroadcastTopology.cs" />
     <Compile Include="Elastic\Task\Impl\RingTaskMessageSource.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\IterateTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopologyWithCommunication.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopology.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetSubscription.cs" />
