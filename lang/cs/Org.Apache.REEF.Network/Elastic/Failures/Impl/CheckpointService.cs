@@ -33,6 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         public readonly Dictionary<int, SortedDictionary<int, ICheckpointState>> _checkpoints;
         private readonly int _limit;
 
+        [Inject]
         public CheckpointService(
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num)
         {

@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Number of checkpoints to store", defaultValue: "`")]
+        [NamedParameter("Number of checkpoints to store per operator", defaultValue: "1")]
         public class NumCheckpoints : Name<int>
         {
         }

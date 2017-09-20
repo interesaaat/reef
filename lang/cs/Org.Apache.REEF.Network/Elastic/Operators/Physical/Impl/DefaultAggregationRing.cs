@@ -17,7 +17,6 @@
 
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
@@ -49,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
-            CheckpointLevel = (Failures.CheckpointLevel)level;
+            CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
             _position = PositionTracker.Nil;
         }
@@ -107,7 +106,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitCompletionBeforeDisposing()
         {
-            if (CheckpointLevel > Failures.CheckpointLevel.None)
+            if (CheckpointLevel > CheckpointLevel.None)
             {
                 _topology.WaitCompletionBeforeDisposing();
             }
