@@ -22,8 +22,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected string _rootTaskId;
         protected readonly string _taskId;
 
-        private readonly int _timeout;
-
         internal OperatorTopology(string taskId, int rootId, string subscription, int operatorId)
         {
             _taskId = taskId;

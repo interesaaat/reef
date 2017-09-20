@@ -68,7 +68,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public CheckpointService Service { private get; set; }
 
-        public CheckpointState<List<GroupCommunicationMessage>> InternalCheckpoint { get; private set; }
+        public CheckpointState<List<GroupCommunicationMessage>> InternalCheckpoint { get; set; }
 
         public void Checkpoint(CheckpointState<List<GroupCommunicationMessage>> state)
         {
@@ -80,7 +80,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     InternalCheckpoint = state;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
+                    if (_taskId == _rootTaskId)
+                    {
+                        state.OperatorId = OperatorId;
+                        state.SubscriptionName = SubscriptionName;
+                        Service.Checkpoint(state); 
+                    }
+                    break;
                 case CheckpointLevel.PersistentMemoryAll:
+                    state.OperatorId = OperatorId;
+                    state.SubscriptionName = SubscriptionName;
                     Service.Checkpoint(state);
                     break;
                 default:
@@ -90,6 +99,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public CheckpointState<List<GroupCommunicationMessage>> GetCheckpoint(int iteration = -1)
         {
+            if (InternalCheckpoint != null && (iteration == -1 || InternalCheckpoint.Iteration == iteration))
+            {
+                return InternalCheckpoint;
+            }
             return Service.GetCheckpoint(iteration) as CheckpointState<List<GroupCommunicationMessage>>;
         }
 
@@ -133,6 +146,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 _messageQueue.Add(payload);
             }
+        }
+
+        public new void Dispose()
+        {
+            base.Dispose();
+
+            Service.RemoveCheckpoint(OperatorId);
         }
 
         internal override void OnMessageFromDriver(IDriverMessagePayload message)

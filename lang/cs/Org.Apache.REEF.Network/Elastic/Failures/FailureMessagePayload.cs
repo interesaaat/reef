@@ -29,15 +29,18 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// </summary>
     public sealed class FailureMessagePayload : IDriverMessagePayload
     {
-        public FailureMessagePayload(string nextTaskId)
+        public FailureMessagePayload(string nextTaskId, int iteration)
         {
             NextTaskId = nextTaskId;
+            Iteration = iteration;
             MessageType = DriverMessageType.Failure;
         }
 
         public DriverMessageType MessageType { get; private set; }
 
         public string NextTaskId { get; private set; }
+
+        public int Iteration { get; private set; }
 
         public byte[] Serialize()
         {
@@ -47,6 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
             buffer.Add(BitConverter.GetBytes(nextBytes.Length));
             buffer.Add(nextBytes);
+            buffer.Add(BitConverter.GetBytes(Iteration));
 
             return buffer.SelectMany(i => i).ToArray();
         }
@@ -56,8 +60,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             int destinationLength = BitConverter.ToInt32(data, offset);
             offset += 4;
             string destination = ByteUtilities.ByteArraysToString(data.Skip(offset).Take(destinationLength).ToArray());
+            offset += destinationLength;
+            int iteration = BitConverter.ToInt32(data, offset);
 
-            return new FailureMessagePayload(destination);
+            return new FailureMessagePayload(destination, iteration);
         }
     }
 }

@@ -16,13 +16,14 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
 {
     /// <summary>
     /// Group Communication operator used to receive and send messages.
     /// </summary>
-    internal interface ICheckpointingTopology<T>
+    internal interface ICheckpointingTopology<T> : IDisposable
     {
         CheckpointService Service { set; }
 

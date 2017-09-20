@@ -84,7 +84,6 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
     <Compile Include="Elastic\Failures\FailureMessagePayload.cs" />
     <Compile Include="Elastic\Driver\Impl\DriverMessage.cs" />
-    <Compile Include="Elastic\Failures\Impl\IPersistentCheckpointState.cs" />
     <Compile Include="Elastic\Failures\Impl\NoEvent.cs" />
     <Compile Include="Elastic\Failures\Impl\FailEvent.cs" />
     <Compile Include="Elastic\Failures\ICheckpointState.cs" />

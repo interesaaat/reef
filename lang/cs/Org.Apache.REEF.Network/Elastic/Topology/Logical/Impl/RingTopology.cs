@@ -278,7 +278,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     foreach (var nextTask in enumerator)
                     {
                         var dest = _currentRingTail.TaskId;
-                        var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask) : (IDriverMessagePayload)new FailureMessagePayload(nextTask);
+                        var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask) : (IDriverMessagePayload)new FailureMessagePayload(nextTask, _currentRingTail.Iteration);
                         var returnMessage = new DriverMessage(dest, data);
 
                         messages.Add(returnMessage);
@@ -294,7 +294,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (_availableDataPoints <= _tasksInRing.Count)
                 {
                     var dest = _currentRingTail.TaskId;
-                    var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId);
+                    var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _currentRingTail.Iteration);
                     var returnMessage = new DriverMessage(dest, data);
 
                     messages.Add(returnMessage);
@@ -386,7 +386,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 _prevRingTail.Type = DriverMessageType.Failure;
                                 _lastToken = _prevRingTail;
 
-                                var data = new FailureMessagePayload(_currentRingHead.TaskId);
+                                var data = new FailureMessagePayload(_currentRingHead.TaskId, _currentRingHead.Iteration);
                                 var returnMessage = new DriverMessage(_lastToken.TaskId, data);
                                 messages.Add(returnMessage);
                             }
@@ -401,7 +401,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             _lastToken.Next = nextNode;
                             nextNode.Prev = _lastToken;
 
-                            var data = new FailureMessagePayload(nextNode.TaskId);
+                            var data = new FailureMessagePayload(nextNode.TaskId, nextNode.Iteration);
                             var returnMessage = new DriverMessage(_lastToken.TaskId, data);
                             messages.Add(returnMessage);
                         }

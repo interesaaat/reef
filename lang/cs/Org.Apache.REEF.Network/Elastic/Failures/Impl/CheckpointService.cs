@@ -33,56 +33,47 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         public readonly Dictionary<int, SortedDictionary<int, ICheckpointState>> _checkpoints;
         private readonly int _limit;
 
-        public CheckpointService([Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num,
-           )
+        public CheckpointService(
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num)
         {
             _limit = num;
             _checkpoints = new Dictionary<int, SortedDictionary<int, ICheckpointState>>();
         }
 
-        public ICheckpointState GetCheckpoint(int iteration = -1)
+        public ICheckpointState GetCheckpoint(int operatorId, int iteration = -1)
         {
-            if (!HasCheckpoint(iteration))
+            if (!_checkpoints.ContainsKey(operatorId))
             {
                 throw new IllegalStateException("Asking for checkpoint not in the service");
             }
 
-            iteration = iteration < 0 ? _last : iteration;
+            var checkpoints = _checkpoints[operatorId];
 
-            return _checkpoints[iteration];
+            iteration = iteration < 0 ? _checkpoints.Keys.Last() : iteration;
+
+            return checkpoints[iteration];
         }
 
         public void Checkpoint(ICheckpointState state)
         {   
-            if(!_checkpoints.ContainsKey(state.OperatorId))
+            if (!_checkpoints.ContainsKey(state.OperatorId))
             {
                 _checkpoints.Add(state.OperatorId, new SortedDictionary<int, ICheckpointState>());
             }
 
             var checkpoint = _checkpoints[state.OperatorId];
 
-            if (HasCheckpoint(state.Iteration))
-            {
-                throw new IllegalStateException("Going to checkpoint an already checkpointed state");
-            }
-
             checkpoint.Add(state.Iteration, state);
 
             CheckSize(checkpoint);
         }
-
-        private bool HasCheckpoint(SortedDictionary<int, ICheckpointState> checkpoint, int iteration = -1)
+        
+        public void RemoveCheckpoint(int operatorId)
         {
-            if (iteration < 0)
+            if (_checkpoints.ContainsKey(operatorId))
             {
-                if (_last < 0)
-                {
-                    return false;
-                }
-                return true;
+                _checkpoints.Remove(operatorId);
             }
-
-            return _checkpoints.ContainsKey(iteration);
         }
 
         private void CheckSize(SortedDictionary<int, ICheckpointState> checkpoint)

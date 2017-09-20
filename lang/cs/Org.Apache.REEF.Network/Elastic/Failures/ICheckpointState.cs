@@ -25,6 +25,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     {
         int Iteration { get; }
 
+        int OperatorId { get; }
+
+        string SubscriptionName { get; }
+
+        CheckpointLevel Level { get; }
+
         object State { get; }
     }
 }
