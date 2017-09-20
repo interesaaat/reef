@@ -29,14 +29,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    public sealed class DriverMessage : IDriverMessage
+    public sealed class ElasticDriverMessageImpl : IElasticDriverMessage
     {
         /// <summary>
         /// Create new RingReturnMessage.
         /// </summary>
         /// <param name="destination">The message destination</param>
         /// <param name="message">The message</param>
-        public DriverMessage(
+        public ElasticDriverMessageImpl(
             string destinationTaskId,
             IDriverMessagePayload message)
         {
@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return buffer.SelectMany(i => i).ToArray();
         }
 
-        public static DriverMessage From(byte[] data)
+        public static ElasticDriverMessageImpl From(byte[] data)
         {
             int destinationLength = BitConverter.ToInt32(data, 0);
             int offset = 4;
@@ -91,7 +91,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     throw new IllegalStateException("Message type not recognized");
             }
 
-            return new DriverMessage(destination, payload);
+            return new ElasticDriverMessageImpl(destination, payload);
         }
     }
 }

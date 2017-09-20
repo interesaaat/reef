@@ -35,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             int masterTaskId,
             ElasticOperator prev,
             IFailureStateMachine failureMachine,
-            CheckpointLevel checkpointLevel,
+            Failures.CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 

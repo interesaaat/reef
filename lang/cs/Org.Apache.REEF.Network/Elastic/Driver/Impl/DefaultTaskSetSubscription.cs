@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
-        public void OnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
+        public void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
@@ -173,7 +173,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator.OnTaskFailure(task, ref failureEvents);
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses)
+        public void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
         {
             RootOperator.EventDispatcher(@event, ref failureResponses);
 
@@ -191,7 +191,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public List<IDriverMessage> OnReconfigure(IReconfigure info)
+        public List<IElasticDriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
 
@@ -200,10 +200,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
 
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
-        public List<IDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
 
@@ -212,10 +212,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
 
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
-        public List<IDriverMessage> OnStop(IStop stopEvent)
+        public List<IElasticDriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
 
@@ -224,7 +224,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
             }
 
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
     }
 }

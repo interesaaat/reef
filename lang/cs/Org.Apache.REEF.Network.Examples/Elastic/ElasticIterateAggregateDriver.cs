@@ -40,6 +40,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -71,7 +72,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticIterateAggregateDriver(
-            [Parameter(typeof(OperatorParameters.NumIterations))] int numIterations,
+            [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
@@ -95,7 +96,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<OperatorParameters.NumIterations, int>(GenericType<OperatorParameters.NumIterations>.Class,
+                .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
@@ -105,9 +106,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        CheckpointLevel.PersistentMemoryMaster,
+                        Network.Elastic.Failures.CheckpointLevel.PersistentMemoryMaster,
                         iteratorConfig)
-                    .AggregationRing<int>(CheckpointLevel.Ephemeral)
+                    .AggregationRing<int>(Network.Elastic.Failures.CheckpointLevel.Ephemeral)
                     .Build();
 
             // Build the subscription
@@ -137,8 +138,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextId(_taskManager.SubscriptionsId, id);
+            string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -152,8 +152,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IActiveContext activeContext)
         {
             bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
-            int id = _taskManager.GetNextTaskId(activeContext);
-            string taskId = Utils.BuildTaskId(_taskManager.SubscriptionsId, id);
+            string taskId = _taskManager.GetNextTaskId(activeContext);
 
             IConfiguration partialTaskConf;
 

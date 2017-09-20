@@ -102,10 +102,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             // Create and build the pipeline
             pipeline.Broadcast<int>(TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None)
+                        Network.Elastic.Failures.CheckpointLevel.None)
                     .Reduce(TopologyType.Flat,
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
+                        Network.Elastic.Failures.CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
@@ -136,8 +136,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id = _taskManager.GetNextTaskContextId(allocatedEvaluator);
-            string identifier = Utils.BuildContextId(_taskManager.SubscriptionsId, id);
+            string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -151,8 +150,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IActiveContext activeContext)
         {
             bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
-            int id = _taskManager.GetNextTaskId(activeContext);
-            string taskId = Utils.BuildTaskId(_taskManager.SubscriptionsId, id);
+            string taskId = _taskManager.GetNextTaskId(activeContext);
 
             IConfiguration partialTaskConf;
 

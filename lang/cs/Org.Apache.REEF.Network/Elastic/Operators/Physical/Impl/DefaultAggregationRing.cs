@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -42,13 +43,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="topology">The operator topology layer</param>
         [Inject]
         private DefaultAggregationRing(
-            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
-            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
+            [Parameter(typeof(OperatorId))] int id,
+            [Parameter(typeof(Checkpointing))] int level,
             AggregationRingTopology topology)
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
-            CheckpointLevel = (CheckpointLevel)level;
+            CheckpointLevel = (Failures.CheckpointLevel)level;
             _topology = topology;
             _position = PositionTracker.Nil;
         }
@@ -106,7 +107,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitCompletionBeforeDisposing()
         {
-            if (CheckpointLevel > CheckpointLevel.None)
+            if (CheckpointLevel > Failures.CheckpointLevel.None)
             {
                 _topology.WaitCompletionBeforeDisposing();
             }
@@ -119,7 +120,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         internal override void Checkpoint(List<GroupCommunicationMessage> data)
         {
-            if (CheckpointLevel > CheckpointLevel.None)
+            if (CheckpointLevel > Failures.CheckpointLevel.None)
             {
                 var state = new CheckpointState<List<GroupCommunicationMessage>>()
                 {

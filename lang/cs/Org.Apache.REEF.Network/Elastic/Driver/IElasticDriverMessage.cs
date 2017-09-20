@@ -21,7 +21,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// Message sent by the driver to operators on running tasks. 
     /// This message contains instructions from the Driver to Tasks.
     /// </summary>
-    public interface IDriverMessage
+    public interface IElasticDriverMessage
     {
         /// <summary>
         /// The destionation task of the message

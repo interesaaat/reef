@@ -111,7 +111,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses)
+        public override void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
         {
             if (@event.OperatorId == _id)
             {
@@ -137,19 +137,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public virtual List<IDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public virtual List<IElasticDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
         {
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
-        public virtual List<IDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public virtual List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
-        public virtual List<IDriverMessage> OnStop(IStop stopEvent)
+        public virtual List<IElasticDriverMessage> OnStop(IStop stopEvent)
         {
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
         protected override bool PropagateFailureDownstream()

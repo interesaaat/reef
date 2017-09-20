@@ -33,6 +33,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <param name="message">The task message for the operator</param>
         /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
         /// <returns>Zero or more messages for the tasks</returns>
-        void OnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages);
+        void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages);
     }
 }

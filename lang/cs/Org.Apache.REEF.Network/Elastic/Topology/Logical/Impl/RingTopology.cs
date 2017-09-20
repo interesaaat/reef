@@ -207,9 +207,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        internal IList<DriverMessage> GetNextTasksInRing()
+        internal IList<ElasticDriverMessageImpl> GetNextTasksInRing()
         {
-            IList<DriverMessage> messages = new List<DriverMessage>();
+            IList<ElasticDriverMessageImpl> messages = new List<ElasticDriverMessageImpl>();
 
             SubmitNextNodes(ref messages);
 
@@ -268,7 +268,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        internal void SubmitNextNodes(ref IList<DriverMessage> messages)
+        internal void SubmitNextNodes(ref IList<ElasticDriverMessageImpl> messages)
         {
             lock (_lock)
             {
@@ -279,7 +279,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     {
                         var dest = _currentRingTail.TaskId;
                         var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask) : (IDriverMessagePayload)new FailureMessagePayload(nextTask, _currentRingTail.Iteration);
-                        var returnMessage = new DriverMessage(dest, data);
+                        var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                         messages.Add(returnMessage);
                         _currentRingTail.Next = new RingNode(nextTask, _iteration, _currentRingTail);
@@ -295,7 +295,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 {
                     var dest = _currentRingTail.TaskId;
                     var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _currentRingTail.Iteration);
-                    var returnMessage = new DriverMessage(dest, data);
+                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                     messages.Add(returnMessage);
                     LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, LogTopologyState(), _rootTaskId);
@@ -325,14 +325,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public List<IDriverMessage> Reconfigure(string taskId, string info)
+        public List<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
             if (taskId == _rootTaskId)
             {
                 throw new NotImplementedException("Failure on master not supported yet");
             }
 
-            var messages = new List<IDriverMessage>();
+            var messages = new List<IElasticDriverMessage>();
             var failureInfos = info.Split(':');
             int position = int.Parse(failureInfos[0]);
             int currentIteration = int.Parse(failureInfos[1]);
@@ -387,7 +387,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 _lastToken = _prevRingTail;
 
                                 var data = new FailureMessagePayload(_currentRingHead.TaskId, _currentRingHead.Iteration);
-                                var returnMessage = new DriverMessage(_lastToken.TaskId, data);
+                                var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, data);
                                 messages.Add(returnMessage);
                             }
                         }
@@ -402,7 +402,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             nextNode.Prev = _lastToken;
 
                             var data = new FailureMessagePayload(nextNode.TaskId, nextNode.Iteration);
-                            var returnMessage = new DriverMessage(_lastToken.TaskId, data);
+                            var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, data);
                             messages.Add(returnMessage);
                         }
                     }

@@ -90,14 +90,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
              return _contextsAdded < _numTasks;
         }
 
-        public int GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
+        public string GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
         {
             if (_contextsAdded > _numTasks)
             {
                 throw new IllegalStateException("Trying to schedule too many contextes");
             }
 
-            return Interlocked.Increment(ref _contextsAdded);
+            int id = Interlocked.Increment(ref _contextsAdded);
+            return Utils.BuildTaskId(SubscriptionsId, id);
         }
 
         public string SubscriptionsId
@@ -113,9 +114,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public int GetNextTaskId(IActiveContext context = null)
+        public string GetNextTaskId(IActiveContext context)
         {
-            return Utils.GetContextNum(context);
+            var id = Utils.GetContextNum(context);
+            return Utils.BuildTaskId(SubscriptionsId, id);
         }
 
         public IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext)
@@ -237,7 +239,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskMessage(ITaskMessage message)
         {
-            var returnMessages = new List<IDriverMessage>();
+            var returnMessages = new List<IElasticDriverMessage>();
 
             foreach (var sub in _subscriptions.Values)
             {
@@ -297,7 +299,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     }
                     else
                     {
-                        var failureResponses = new List<IDriverMessage>();
+                        var failureResponses = new List<IElasticDriverMessage>();
 
                         foreach (var failureEvent in failureEvents)
                         {
@@ -321,7 +323,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses)
+        public void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
         {
             var id = Utils.GetTaskNum(@event.TaskId) - 1;
 
@@ -348,7 +350,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public List<IDriverMessage> OnReconfigure(IReconfigure info)
+        public List<IElasticDriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
 
@@ -360,7 +362,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return null;
         }
 
-        public List<IDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
 
@@ -372,7 +374,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return null;
         }
 
-        public List<IDriverMessage> OnStop(IStop stopEvent)
+        public List<IElasticDriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
 
@@ -415,7 +417,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
         }
 
-        private void SendToTasks(IList<IDriverMessage> messages)
+        private void SendToTasks(IList<IElasticDriverMessage> messages)
         {
             foreach (var returnMessage in messages)
             {

@@ -24,7 +24,7 @@ namespace Org.Apache.REEF.Network.Elastic
     /// <summary>
     /// Utility class.
     /// </summary>
-    public static class Utils
+    internal static class Utils
     {
         /// <summary>
         /// Gets the context number associated with the Active Context id.

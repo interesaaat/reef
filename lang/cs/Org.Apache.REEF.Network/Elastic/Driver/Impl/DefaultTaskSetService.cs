@@ -34,6 +34,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Driver.Context;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -136,6 +137,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        public string GetContextSubscriptions(IActiveContext activeContext)
+        {
+            return Utils.GetContextSubscriptions(activeContext);
+        }
+
         public IConfiguration GetServiceConfiguration()
         {
             IConfiguration serviceConfig = ServiceConfiguration.ConfigurationModule
@@ -182,7 +188,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {       
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses)
+        public void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
         {
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
@@ -200,7 +206,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public List<IDriverMessage> OnReconfigure(IReconfigure info)
+        public List<IElasticDriverMessage> OnReconfigure(IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the service");
 
@@ -209,10 +215,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
 
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
-        public List<IDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
 
@@ -221,10 +227,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
 
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
 
-        public List<IDriverMessage> OnStop(IStop stopEvent)
+        public List<IElasticDriverMessage> OnStop(IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
 
@@ -233,7 +239,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
             }
 
-            return new List<IDriverMessage>();
+            return new List<IElasticDriverMessage>();
         }
     }
 }

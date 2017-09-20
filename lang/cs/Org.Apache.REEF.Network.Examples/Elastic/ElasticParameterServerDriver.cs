@@ -43,6 +43,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -81,7 +82,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticParameterServerDriver(
-            [Parameter(typeof(OperatorParameters.NumIterations))] int numIterations,
+            [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
@@ -109,7 +110,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<OperatorParameters.NumIterations, int>(GenericType<OperatorParameters.NumIterations>.Class,
+                .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
@@ -130,10 +131,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None)
+                        Network.Elastic.Failures.CheckpointLevel.None)
                     .Reduce(1, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
+                        Network.Elastic.Failures.CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
@@ -145,10 +146,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None)
+                        Network.Elastic.Failures.CheckpointLevel.None)
                      .Reduce(2, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
+                        Network.Elastic.Failures.CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
@@ -160,10 +161,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None)
+                        Network.Elastic.Failures.CheckpointLevel.None)
                     .Reduce(3, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
+                        Network.Elastic.Failures.CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
@@ -205,18 +206,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            int id;
             string identifier = null;
 
             if (_serversTaskManager.HasMoreContextToAdd())
             {
-                id = _serversTaskManager.GetNextTaskContextId(allocatedEvaluator);
-                identifier = Utils.BuildContextId(_serversTaskManager.SubscriptionsId, id);
+                identifier = _serversTaskManager.GetNextTaskContextId(allocatedEvaluator);
             }
             else if (_workersTaskManager.HasMoreContextToAdd())
             {
-                id = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
-                identifier = Utils.BuildContextId(_workersTaskManager.SubscriptionsId, id);
+                identifier = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
             }
             else
             {
@@ -234,16 +232,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IActiveContext activeContext)
         {
-            int id;
             string taskId;
             IConfiguration partialTaskConf;
 
-            bool isServerContext = _serversTaskManager.SubscriptionsId == Utils.GetContextSubscriptions(activeContext);
+            bool isServerContext = _serversTaskManager.SubscriptionsId == _service.GetContextSubscriptions(activeContext);
 
             if (isServerContext)
             {
-                id = _serversTaskManager.GetNextTaskId(activeContext);
-                taskId = Utils.BuildTaskId(_serversTaskManager.SubscriptionsId, id);
+                taskId = _serversTaskManager.GetNextTaskId(activeContext);
                 var servers = _serversTaskManager.IsMasterTaskContext(activeContext);
 
                 if (servers.Any(subs => subs.SubscriptionName == "servers"))
@@ -278,8 +274,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
             else
             {
-                id = _workersTaskManager.GetNextTaskId(activeContext);
-                taskId = Utils.BuildTaskId(_workersTaskManager.SubscriptionsId, id);
+                taskId = _workersTaskManager.GetNextTaskId(activeContext);
 
                 partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule

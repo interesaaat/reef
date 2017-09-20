@@ -65,7 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 
-        protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
+        protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
@@ -92,7 +92,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override List<IDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public override List<IElasticDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
         {
             LOGGER.Log(Level.Info, "Going to reconfigure the ring");
 

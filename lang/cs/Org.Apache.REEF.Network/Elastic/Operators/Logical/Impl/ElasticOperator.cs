@@ -32,6 +32,7 @@ using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -49,7 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected ElasticOperator _prev = null;
 
         protected IFailureStateMachine _failureMachine;
-        protected CheckpointLevel _checkpointLevel;
+        protected Failures.CheckpointLevel _checkpointLevel;
         protected ITopology _topology;
 
         protected bool _stateFinalized = false;
@@ -74,7 +75,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             ElasticOperator prev,
             ITopology topology,
             IFailureStateMachine failureMachine,
-            CheckpointLevel checkpointLevel = CheckpointLevel.None,
+            Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None,
             params IConfiguration[] configurations)
         {
             _subscription = subscription;
@@ -231,7 +232,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Broadcast operator</returns>
-        public abstract ElasticOperator Broadcast<T>(int senderId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator Broadcast<T>(int senderId, ITopology topology = null, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations);
 
         /// <summary>
         /// Adds an instance of the Broadcast Operator to the operator pipeline.
@@ -242,7 +243,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Broadcast operator</returns>
-        public ElasticOperator Broadcast<T>(TopologyType topologyType = TopologyType.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Broadcast<T>(TopologyType topologyType = TopologyType.Flat, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations)
         {
             return Broadcast<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
@@ -256,7 +257,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same operator pipeline with the added Broadcast operator</returns>
         public ElasticOperator Broadcast<T>(TopologyType topologyType, params IConfiguration[] configurations)
         {
-            return Broadcast<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -268,7 +269,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same operator pipeline with the added Broadcast operator</returns>
         public ElasticOperator Broadcast<T>(int senderId, params IConfiguration[] configurations)
         {
-            return Broadcast<T>(senderId, null, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Broadcast<T>(senderId, null, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -280,7 +281,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
-        public abstract ElasticOperator AggregationRing<T>(int coordinatorId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator AggregationRing<T>(int coordinatorId, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations);
 
         /// <summary>
         /// Adds an instance of the Aggregation Ring Operator to the operator pipeline.
@@ -290,7 +291,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
         public ElasticOperator AggregationRing<T>(params IConfiguration[] configurations)
         {
-            return AggregationRing<T>(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return AggregationRing<T>(MasterId, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -300,7 +301,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Aggregation Ring operator</returns>
-        public ElasticOperator AggregationRing<T>(CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        public ElasticOperator AggregationRing<T>(Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             return AggregationRing<T>(MasterId, _failureMachine.Clone(), checkpointLevel, configurations);
         }
@@ -308,12 +309,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <summary>
         /// TODO
         /// </summary>
-        public abstract ElasticOperator Reduce(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
+        public abstract ElasticOperator Reduce(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine, Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
         /// <summary>
         /// TODO
         /// </summary>
-        public ElasticOperator Reduce(TopologyType topologyType = TopologyType.Flat, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Reduce(TopologyType topologyType = TopologyType.Flat, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations)
         {
             return Reduce(MasterId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
@@ -323,7 +324,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         public ElasticOperator Reduce(int receiverTaskId, params IConfiguration[] configurations)
         {
-            return Reduce(receiverTaskId, TopologyType.Flat, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return Reduce(receiverTaskId, TopologyType.Flat, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -337,7 +338,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Conditional Iterate operator</returns>
-        public abstract ElasticOperator ConditionalIterate(int coordinatorId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator ConditionalIterate(int coordinatorId, ITopology topology = null, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations);
 
         /// <summary>
         /// Adds an instance of the Enumerable Iterate Operator to the operator pipeline.
@@ -348,12 +349,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
-        public abstract ElasticOperator EnumerableIterate(int masterId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+        public abstract ElasticOperator EnumerableIterate(int masterId, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations);
 
         /// <summary>
         /// TODO
         /// </summary>
-        public ElasticOperator Iterate(TopologyType topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Iterate(TopologyType topologyType, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations)
         {
             return ConditionalIterate(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
@@ -363,7 +364,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         public ElasticOperator Iterate(int coordinatorTaskId, params IConfiguration[] configurations)
         {
-            return ConditionalIterate(coordinatorTaskId, new FlatTopology(coordinatorTaskId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return ConditionalIterate(coordinatorTaskId, new FlatTopology(coordinatorTaskId), _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -374,7 +375,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
         /// <param name="configurations">The configuration of the tasks</param>
         /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
-        public ElasticOperator Iterate(IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        public ElasticOperator Iterate(IFailureStateMachine failureMachine, Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             return EnumerableIterate(MasterId, failureMachine, checkpointLevel, configurations);
         }
@@ -387,7 +388,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
         public ElasticOperator Iterate(params IConfiguration[] configurations)
         {
-            return EnumerableIterate(MasterId, _failureMachine.Clone(), CheckpointLevel.None, configurations);
+            return EnumerableIterate(MasterId, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -398,7 +399,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             throw new NotImplementedException();
         }
 
-        public void OnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
+        public void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
             var hasReacted = ReactOnTaskMessage(message, ref returnMessages);
 
@@ -410,7 +411,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public abstract void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
-        public abstract void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses);
+        public abstract void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses);
 
         /// <summary>
         /// Appends the Operator specific configuration for the input task to the input builder.
@@ -428,11 +429,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             PhysicalOperatorConfiguration(ref operatorBuilder);
 
             IConfiguration operatorConf = operatorBuilder
-                .BindNamedParameter<OperatorParameters.OperatorId, int>(
-                    GenericType<OperatorParameters.OperatorId>.Class,
+                .BindNamedParameter<OperatorId, int>(
+                    GenericType<OperatorId>.Class,
                     _id.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<OperatorParameters.Checkpointing, int>(
-                    GenericType<OperatorParameters.Checkpointing>.Class,
+                .BindNamedParameter<Checkpointing, int>(
+                    GenericType<Checkpointing>.Class,
                     ((int)_checkpointLevel).ToString(CultureInfo.InvariantCulture))
                 .Build();
 
@@ -463,8 +464,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 var genericTypes = operatorType.GenericTypeArguments;
                 var msgType = genericTypes[0];
-                confBuilder.BindNamedParameter<OperatorParameters.MessageType, string>(
-                    GenericType<OperatorParameters.MessageType>.Class, msgType.AssemblyQualifiedName);
+                confBuilder.BindNamedParameter<MessageType, string>(
+                    GenericType<MessageType>.Class, msgType.AssemblyQualifiedName);
             }
         }
 
@@ -497,7 +498,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="message">Incoming message from a task</param>
         /// <param name="returnMessages">Zero or more reply messages for the task</param>
         /// <returns>True if the operator has reacted to the task message</returns>
-        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref List<IDriverMessage> returnMessages)
+        protected virtual bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
             return false;
         }

@@ -21,6 +21,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -38,13 +39,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="innerIterator">The inner enumerator implementing the iterator</param>
         [Inject]
         private DefaultEnumerableIterator(
-            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
-            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
+            [Parameter(typeof(OperatorId))] int id,
+            [Parameter(typeof(Checkpointing))] int level,
             ForLoopEnumerator innerIterator)
         {
             OperatorName = Constants.Iterate;
             OperatorId = id;
-            CheckpointLevel = (CheckpointLevel)level;
+            CheckpointLevel = (Failures.CheckpointLevel)level;
             _inner = innerIterator;
         }
 

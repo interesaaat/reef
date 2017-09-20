@@ -17,33 +17,30 @@
 
 using Org.Apache.REEF.Tang.Annotations;
 
-namespace Org.Apache.REEF.Network.Elastic.Config
+namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
 {
-    public class OperatorParameters
+    [NamedParameter("Operator Name")]
+    public sealed class OperatorType : Name<string>
     {
-        [NamedParameter("Operator Name")]
-        public class OperatorType : Name<string>
-        {
-        }
+    }
 
-        [NamedParameter("Type of the message")]
-        public class MessageType : Name<string>
-        {
-        }
+    [NamedParameter("Type of the message")]
+    public sealed class MessageType : Name<string>
+    {
+    }
 
-        [NamedParameter("Operator Id")]
-        public class OperatorId : Name<int>
-        {
-        }
+    [NamedParameter("Operator Id")]
+    public sealed class OperatorId : Name<int>
+    {
+    }
 
-        [NamedParameter("Number of iterations")]
-        public class NumIterations : Name<int>
-        {
-        }
+    [NamedParameter("Number of iterations")]
+    public sealed class NumIterations : Name<int>
+    {
+    }
 
-        [NamedParameter("Checkpointing", defaultValue: "0")]
-        public class Checkpointing : Name<int>
-        {
-        }
+    [NamedParameter("Checkpoint level", defaultValue: "0")]
+    public sealed class Checkpointing : Name<int>
+    {
     }
 }

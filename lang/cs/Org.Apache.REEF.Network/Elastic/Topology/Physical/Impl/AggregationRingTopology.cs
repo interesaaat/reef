@@ -30,6 +30,7 @@ using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -45,7 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
+            [Parameter(typeof(OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
@@ -74,12 +75,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             switch (state.Level)
             {
-                case CheckpointLevel.None:
+                case Failures.CheckpointLevel.None:
                     break;
-                case CheckpointLevel.Ephemeral:
+                case Failures.CheckpointLevel.Ephemeral:
                     InternalCheckpoint = state;
                     break;
-                case CheckpointLevel.PersistentMemoryMaster:
+                case Failures.CheckpointLevel.PersistentMemoryMaster:
                     if (_taskId == _rootTaskId)
                     {
                         state.OperatorId = OperatorId;
@@ -87,7 +88,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         Service.Checkpoint(state); 
                     }
                     break;
-                case CheckpointLevel.PersistentMemoryAll:
+                case Failures.CheckpointLevel.PersistentMemoryAll:
                     state.OperatorId = OperatorId;
                     state.SubscriptionName = SubscriptionName;
                     Service.Checkpoint(state);

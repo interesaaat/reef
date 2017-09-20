@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             if (value.Message.IsPresent())
             {
-                var message = DriverMessage.From(value.Message.Value);
+                var message = ElasticDriverMessageImpl.From(value.Message.Value);
 
                 DriverAwareOperatorTopology observer;
                 _messageObservers.TryGetValue(message.Destination, out observer);

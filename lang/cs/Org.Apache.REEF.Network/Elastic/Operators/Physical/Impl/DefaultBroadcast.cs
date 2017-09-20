@@ -22,6 +22,7 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -41,8 +42,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="topology">The operator topology layer</param>
         [Inject]
         private DefaultBroadcast(
-            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
-            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
+            [Parameter(typeof(OperatorId))] int id,
+            [Parameter(typeof(Checkpointing))] int level,
             BroadcastTopology topology)
         {
             OperatorName = Constants.Broadcast;
@@ -104,7 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitCompletionBeforeDisposing()
         {
-            if (CheckpointLevel > CheckpointLevel.None)
+            if (CheckpointLevel > Failures.CheckpointLevel.None)
             {
                 _topology.WaitCompletionBeforeDisposing();
             }

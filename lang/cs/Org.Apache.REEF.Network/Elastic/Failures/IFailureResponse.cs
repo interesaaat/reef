@@ -44,6 +44,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <param name="event">The failure event to react upon</param>
         /// <param name="failureResponses">A list of messages containing the recovery instructions for the tasks still alive</param>
         /// <returns>Zero or more messages for the tasks</returns>
-        void EventDispatcher(IFailureEvent @event, ref List<IDriverMessage> failureResponses);
+        void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses);
     }
 }
