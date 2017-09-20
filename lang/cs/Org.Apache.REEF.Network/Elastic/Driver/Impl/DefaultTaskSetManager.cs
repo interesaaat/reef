@@ -90,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
              return _contextsAdded < _numTasks;
         }
 
-        public string GetNextTaskContextId(IAllocatedEvaluator evaluator = null)
+        public string GetNextTaskContextId(IAllocatedEvaluator evaluator)
         {
             if (_contextsAdded > _numTasks)
             {
@@ -98,6 +98,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
 
             int id = Interlocked.Increment(ref _contextsAdded);
+            return Utils.BuildTaskId(SubscriptionsId, id);
+        }
+
+        public string GetNextTaskId(IActiveContext context)
+        {
+            var id = Utils.GetContextNum(context);
             return Utils.BuildTaskId(SubscriptionsId, id);
         }
 
@@ -112,12 +118,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 return _subscriptions.Keys.Aggregate((current, next) => current + "+" + next);
             }
-        }
-
-        public string GetNextTaskId(IActiveContext context)
-        {
-            var id = Utils.GetContextNum(context);
-            return Utils.BuildTaskId(SubscriptionsId, id);
         }
 
         public IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext activeContext)
