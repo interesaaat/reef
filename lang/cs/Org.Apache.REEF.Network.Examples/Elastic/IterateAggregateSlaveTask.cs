@@ -58,15 +58,20 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.AggregationRing:
-                                var aggregator = workflow.Current as IElasticAggregationRing<int>;
+                                var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
                                 System.Threading.Thread.Sleep(rand.Next(5000));
 
                                 var rec = aggregator.Receive(_cancellationSource);
 
-                                Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
+                                Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
 
-                                System.Threading.Thread.Sleep(rand.Next(1000));
+                                // Update the model, die in case
+                                for (int i = 0; i < rec.Length; i++)
+                                {
+                                    rec[i]++;
+                                    System.Threading.Thread.Sleep(rand.Next(100));
+                                }
 
                                 if (rand.Next(100) < 5)
                                 {
@@ -75,9 +80,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     throw new Exception("Die");
                                 }
 
-                                aggregator.Send(rec + 1, _cancellationSource);
+                                aggregator.Send(rec, _cancellationSource);
 
-                                Console.WriteLine("Slave has sent {0} in iteration {1}", rec + 1, workflow.Iteration);
+                                Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");

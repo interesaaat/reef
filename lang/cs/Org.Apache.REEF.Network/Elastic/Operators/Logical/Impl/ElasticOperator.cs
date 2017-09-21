@@ -174,8 +174,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same finalized Operator</returns>
         public virtual ElasticOperator Build()
         {
-            Console.WriteLine("Operator {0} id {1}", OperatorName, _id);
-
             if (_operatorFinalized == true)
             {
                 throw new IllegalStateException("Operator cannot be built more than once");

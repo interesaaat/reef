@@ -57,8 +57,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task
                 Type groupCommOperatorInterface = groupCommOperatorGenericInterface.MakeGenericType(Type.GetType(msgType));
                 var operatorObj = operatorInjector.GetInstance(groupCommOperatorInterface);
 
-                Logger.Log(Level.Info, "Operator {0} id {1}", ((IElasticOperator)operatorObj).OperatorName, ((IElasticOperator)operatorObj).OperatorId);
-
                 Workflow.Add(operatorObj as IElasticOperator);
             }
         }
