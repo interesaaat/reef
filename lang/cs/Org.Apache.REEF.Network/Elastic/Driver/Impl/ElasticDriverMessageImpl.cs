@@ -38,15 +38,21 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <param name="message">The message</param>
         public ElasticDriverMessageImpl(
             string destinationTaskId,
+            int operatorId,
             IDriverMessagePayload message)
         {
             Destination = destinationTaskId;
+            OperatorId = operatorId;
             Message = message;
         }
 
         /// <summary>
-        /// Returns the Subscription
+        /// The destination task of the message
         public string Destination { get; private set; }
+
+        /// <summary>
+        /// The target operator foofr the message
+        public int OperatorId { get; private set; }
 
         /// <summary>
         /// Returns the Operator id.
@@ -61,6 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             buffer.Add(BitConverter.GetBytes(destinationBytes.Length));
             buffer.Add(destinationBytes);
+            buffer.Add(BitConverter.GetBytes(OperatorId));
             buffer.Add(BitConverter.GetBytes((short)Message.MessageType));
             buffer.Add(Message.Serialize());
 
@@ -73,6 +80,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             int offset = 4;
             string destination = ByteUtilities.ByteArraysToString(data.Skip(offset).Take(destinationLength).ToArray());
             offset += destinationLength;
+
+            int operatorId = BitConverter.ToInt32(data, offset);
+            offset += 4;
 
             DriverMessageType type = (DriverMessageType)BitConverter.ToUInt16(data, offset);
             offset += sizeof(ushort);
@@ -91,7 +101,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     throw new IllegalStateException("Message type not recognized");
             }
 
-            return new ElasticDriverMessageImpl(destination, payload);
+            return new ElasticDriverMessageImpl(destination, operatorId, payload);
         }
     }
 }

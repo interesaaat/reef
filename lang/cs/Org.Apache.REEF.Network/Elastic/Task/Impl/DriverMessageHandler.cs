@@ -37,12 +37,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         internal void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
         {
-            if (_messageObservers.ContainsKey(taskDestinationId))
+            string id = taskDestinationId + operatorObserver.OperatorId;
+            if (_messageObservers.ContainsKey(id))
             {
                 throw new IllegalStateException("Task " + taskDestinationId + " already added among listeners");
             }
 
-            _messageObservers.TryAdd(taskDestinationId, operatorObserver);
+            _messageObservers.TryAdd(id, operatorObserver);
         }
 
         public void Handle(IDriverMessage value)
@@ -52,7 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 var message = ElasticDriverMessageImpl.From(value.Message.Value);
 
                 DriverAwareOperatorTopology observer;
-                _messageObservers.TryGetValue(message.Destination, out observer);
+                _messageObservers.TryGetValue(message.Destination+message.OperatorId, out observer);
 
                 if (observer == null)
                 {

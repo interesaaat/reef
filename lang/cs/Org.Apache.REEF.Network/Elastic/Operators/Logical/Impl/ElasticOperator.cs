@@ -82,6 +82,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _failureMachine = failureMachine;
             _checkpointLevel = checkpointLevel;
             _configurations = configurations;
+
+            _topology.OperatorId = _id;
         }
 
         /// <summary>

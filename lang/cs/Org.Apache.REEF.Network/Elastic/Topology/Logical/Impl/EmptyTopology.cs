@@ -29,7 +29,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         public EmptyTopology()
         {
             _finalized = false;
+            OperatorId = -1;
         }
+
+        public int OperatorId { get; set; }
 
         public int AddTask(string taskId)
         {
@@ -46,6 +49,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             if (_finalized == true)
             {
                 throw new IllegalStateException("Topology cannot be built more than once");
+            }
+
+            if (OperatorId <= 0)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
             _finalized = true;

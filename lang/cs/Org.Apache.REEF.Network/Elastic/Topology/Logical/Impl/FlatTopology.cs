@@ -44,9 +44,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _rootId = rootId;
             _finalized = false;
             _sorted = sorted;
+            OperatorId = -1;
 
             _nodes = new Dictionary<int, DataNode>();
         }
+
+        public int OperatorId { get; set; }
 
         public int AddTask(string taskId)
         {
@@ -111,6 +114,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             if (!_nodes.ContainsKey(_rootId))
             {
                 throw new IllegalStateException("Topology cannot be built becasue the root node is missing");
+            }
+
+            if (OperatorId <= 0)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
             BuildTopology();

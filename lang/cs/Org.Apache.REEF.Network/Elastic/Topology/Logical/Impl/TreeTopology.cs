@@ -23,7 +23,6 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Tang.Exceptions;
 using System.Linq;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
@@ -45,9 +44,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _rootId = rootId;
             _sorted = sorted;
             _degree = degree;
+            OperatorId = -1;
 
             _nodes = new Dictionary<int, DataNode>();
         }
+
+        public int OperatorId { get; set; }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
@@ -162,10 +164,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Topology cannot be built because the root node is missing");
             }
 
+            if (OperatorId <= 0)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any operator");
+            }
+
             IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
             Queue<DataNode> parents = new Queue<DataNode>();
             var root = _nodes[_rootId];
             parents.Enqueue(root);
+
             BuildTopology(ref parents, ref iter);
 
             _finalized = true;

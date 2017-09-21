@@ -26,6 +26,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
     /// </summary>
     public interface ITopology
     {
+        // TODO
+        int OperatorId { get; set; }
+
         /// <summary>
         /// Adds a new task to the topology.
         /// When called before Build() actually adds the task to the topology.
