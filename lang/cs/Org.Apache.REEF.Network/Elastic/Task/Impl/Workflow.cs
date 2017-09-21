@@ -53,7 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _operators.Add(op);
 
-            _position++;
+            ////_position++;
 
             if (op.OperatorName == Constants.Iterate)
             {
@@ -65,11 +65,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             if (_failed)
             {
-                _position = -1;
+                _position++;
                 return false;
             }
 
-            _position--;
+            _position++;
 
             if (_position == _iteratorPosition)
             {
@@ -77,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 if (iteratorOperator.MoveNext())
                 {
-                    _position--;
+                    _position++;
 
                     Iteration = iteratorOperator.Current;
 
@@ -89,7 +89,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
             }
 
-            if (-1 == _position)
+            if (_operators.Count == _position)
             {
                 if (_iteratorPosition == -1)
                 {
@@ -97,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 else
                 {
-                    _position = _iteratorPosition + 1;
+                    _position = _iteratorPosition;
 
                     return MoveNext();
                 }
