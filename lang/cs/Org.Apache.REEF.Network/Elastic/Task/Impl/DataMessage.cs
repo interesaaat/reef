@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
+
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
@@ -38,5 +40,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         internal T Data { get; set; }
+
+        // The assumption is that messages are immutable therefore there is no need to clone them
+        override public object Clone()
+        {
+            return this;
+        }
     }
 }

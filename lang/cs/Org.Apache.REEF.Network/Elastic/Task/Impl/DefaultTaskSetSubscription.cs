@@ -52,12 +52,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task
                 IInjector operatorInjector = injector.ForkInjector(operatorConfig);
                 string msgType = operatorInjector.GetNamedInstance<MessageType, string>(
                     GenericType<MessageType>.Class);
-                int id = operatorInjector.GetNamedInstance<OperatorId, int>(
-                    GenericType<OperatorId>.Class);
 
                 Type groupCommOperatorGenericInterface = typeof(IElasticTypedOperator<>);
                 Type groupCommOperatorInterface = groupCommOperatorGenericInterface.MakeGenericType(Type.GetType(msgType));
                 var operatorObj = operatorInjector.GetInstance(groupCommOperatorInterface);
+
+                Logger.Log(Level.Info, "Operator {0} id {1}", ((IElasticOperator)operatorObj).OperatorName, ((IElasticOperator)operatorObj).OperatorId);
 
                 Workflow.Add(operatorObj as IElasticOperator);
             }

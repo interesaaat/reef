@@ -185,9 +185,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             var destMessage = message as FailureMessagePayload;
             var state = GetCheckpoint().State;
             
-            if (state.GetType() == typeof(List<GroupCommunicationMessage>))
+            if (state.GetType() == typeof(GroupCommunicationMessage[]))
             {
-                foreach (var data in state as List<GroupCommunicationMessage>)
+                foreach (var data in state as GroupCommunicationMessage[])
                 {
                     _commLayer.Send(destMessage.NextTaskId, data);
                 }

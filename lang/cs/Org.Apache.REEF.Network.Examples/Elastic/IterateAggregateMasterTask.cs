@@ -46,6 +46,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
+            Thread.Sleep(20000);
+
             var rand = new Random();
 
             using (var workflow = _subscriptionClient.Workflow)

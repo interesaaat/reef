@@ -56,7 +56,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
              return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
         }
 
-        internal virtual void Send(List<GroupCommunicationMessage> messages, CancellationTokenSource cancellationSource)
+        internal virtual void Send(GroupCommunicationMessage[] messages, CancellationTokenSource cancellationSource)
         {
             foreach (var message in messages)
             {

@@ -15,13 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    // If the object is an enumerable the inner objects will not be cloned. Gotta fix this
+    // Is users duty to make sure that if T is an IEnumerable type, the inner objects are clonable as well
     public class CheckpointableObject<T> : ICheckpointableState where T : ICloneable
     {
         [Inject]

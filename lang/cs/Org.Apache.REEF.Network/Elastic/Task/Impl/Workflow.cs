@@ -34,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(Workflow));
 
-        private int _position = 0;
+        private int _position = -1;
         private bool _failed;
         private readonly IList<IElasticOperator> _operators;
         private int _iteratorPosition = -1; // For the moment we are not considering nested iterators
@@ -63,13 +63,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public bool MoveNext()
         {
+            _position++;
+
             if (_failed)
             {
-                _position++;
                 return false;
             }
-
-            _position++;
 
             if (_position == _iteratorPosition)
             {
@@ -97,7 +96,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 else
                 {
-                    _position = _iteratorPosition;
+                    _position = _iteratorPosition - 1;
 
                     return MoveNext();
                 }

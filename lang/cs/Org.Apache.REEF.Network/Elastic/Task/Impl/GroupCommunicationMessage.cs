@@ -15,13 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
+
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    public abstract class GroupCommunicationMessage
+    public abstract class GroupCommunicationMessage : ICloneable
     {
         /// <summary>
         /// Create new CommunicationGroupMessage.
@@ -46,5 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// Returns the Operator id.
         /// </summary>
         internal int OperatorId { get; private set; }
+
+        public abstract object Clone();
     }
 }

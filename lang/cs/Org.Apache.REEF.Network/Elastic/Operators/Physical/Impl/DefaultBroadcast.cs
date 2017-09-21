@@ -17,7 +17,6 @@
 
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
@@ -93,7 +92,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
 
-            _topology.Send(new List<GroupCommunicationMessage> { message }, cancellationSource);
+            _topology.Send(new GroupCommunicationMessage[] { message }, cancellationSource);
 
             _position = PositionTracker.AfterSendBeforeReceive;
         }
@@ -105,7 +104,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitCompletionBeforeDisposing()
         {
-            if (CheckpointLevel > Failures.CheckpointLevel.None)
+            if (CheckpointLevel > CheckpointLevel.None)
             {
                 _topology.WaitCompletionBeforeDisposing();
             }

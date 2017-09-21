@@ -22,6 +22,8 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using System;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -93,11 +95,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             _position = PositionTracker.InSend;
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
-            var messages = new List<GroupCommunicationMessage> { message };
+            var messages = new GroupCommunicationMessage[] { message };
 
             Checkpoint(messages);
 
-            _topology.Send(new List<GroupCommunicationMessage> { message }, cancellationSource);
+            _topology.Send(messages, cancellationSource);
             _position = PositionTracker.AfterSendBeforeReceive;
         }
 
@@ -119,7 +121,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal void Checkpoint(List<GroupCommunicationMessage> data)
+        internal void Checkpoint(GroupCommunicationMessage[] data)
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
@@ -128,10 +130,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                     Level = CheckpointLevel,
                 };
 
-                state.MakeCheckpointable(data.ToArray());
+                state.MakeCheckpointable(data);
 
                 _topology.Checkpoint(state, _iterationNumber + 1);
             }
+        }
+    }
+
+    static class Extensions
+    {
+        public static IList<T> Clone<T>(this IList<T> listToClone) where T : ICloneable
+        {
+            return listToClone.Select(item => (T)item.Clone()).ToList();
         }
     }
 }
