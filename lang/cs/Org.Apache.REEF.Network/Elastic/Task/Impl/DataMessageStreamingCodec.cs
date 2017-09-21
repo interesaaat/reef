@@ -70,9 +70,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public void Write(DataMessage<T> obj, IDataWriter writer)
         {
             byte[] encodedMetadata = GenerateMetaDataEncoding(obj);
-            byte[] encodedInt = BitConverter.GetBytes(encodedMetadata.Length);
-            byte[] totalEncoding = encodedInt.Concat(encodedMetadata).ToArray();
-            writer.Write(totalEncoding, 0, totalEncoding.Length);
+
+            Array.Copy(BitConverter.GetBytes(encodedMetadata.Length - 4), 0, encodedMetadata, 0, 4);
+   
+            writer.Write(encodedMetadata, 0, encodedMetadata.Length);
 
             _codec.Write(obj.Data, writer);
         }
@@ -106,25 +107,31 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public async System.Threading.Tasks.Task WriteAsync(DataMessage<T> obj, IDataWriter writer, CancellationToken token)
         {
             byte[] encodedMetadata = GenerateMetaDataEncoding(obj);
-            byte[] encodedInt = BitConverter.GetBytes(encodedMetadata.Length);
-            byte[] totalEncoding = encodedInt.Concat(encodedMetadata).ToArray();
-            await writer.WriteAsync(totalEncoding, 0, totalEncoding.Length, token);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(encodedMetadata.Length - sizeof(int)), 0, encodedMetadata, 0, sizeof(int));
+
+            await writer.WriteAsync(encodedMetadata, 0, encodedMetadata.Length, token);
 
             await _codec.WriteAsync(obj.Data, writer, token);
         }
 
         private static byte[] GenerateMetaDataEncoding(DataMessage<T> obj)
         {
-            List<byte[]> metadataBytes = new List<byte[]>();
-
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
-            byte[] operatorBytes = BitConverter.GetBytes(obj.OperatorId);
+            var length = subscriptionBytes.Length;
+            //// Here we also add 4 byte at the beginning of the array for the total metadata lenght
+            byte[] metadataBytes = new byte[length + sizeof(int) + sizeof(int) + sizeof(int)];
+            int offset = sizeof(int);
 
-            metadataBytes.Add(BitConverter.GetBytes(subscriptionBytes.Length));
-            metadataBytes.Add(subscriptionBytes);
-            metadataBytes.Add(operatorBytes);
+            Buffer.BlockCopy(BitConverter.GetBytes(length), 0, metadataBytes, offset, sizeof(int));
+            offset += sizeof(int);
 
-            return metadataBytes.SelectMany(i => i).ToArray();
+            Buffer.BlockCopy(subscriptionBytes, 0, metadataBytes, offset, length);
+            offset += length;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, metadataBytes, offset, sizeof(int));
+
+            return metadataBytes;
         }
 
         private static Tuple<string, int> GenerateMetaDataDecoding(byte[] obj)
@@ -132,7 +139,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             int subscriptionLength = BitConverter.ToInt32(obj, 0);
             int offset = sizeof(int);
 
-            string subscriptionString = ByteUtilities.ByteArraysToString(obj.Skip(offset).Take(subscriptionLength).ToArray());
+            string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
             offset += subscriptionLength;
             int operatorInt = BitConverter.ToInt32(obj, offset);
 
