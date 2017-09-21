@@ -107,17 +107,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         private void Checkpoint()
         {
-            if (CheckpointState.Level > CheckpointLevel.None)
-            {
-                var state = new CheckpointState<object>()
-                {
-                    Iteration = _inner.Current,
-                    Level = CheckpointState.Level,
-                    State = CheckpointState.Checkpoint()
-                };
-
-                _topology.Checkpoint(state);
-            }
+            _topology.Checkpoint(CheckpointState, _inner.Current);
         }
     }
 }

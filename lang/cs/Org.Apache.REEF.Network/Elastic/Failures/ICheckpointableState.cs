@@ -31,6 +31,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         void MakeCheckpointable(object state);
 
-        ICheckpointState Checkpoint();
+        CheckpointState Checkpoint();
     }
 }

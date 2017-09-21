@@ -20,42 +20,12 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    public class CheckpointableModel<T> : ICheckpointableState where T : struct 
+    public class CheckpointableModel<T> : CheckpointableObject<T[]> where T : struct 
     {
         [Inject]
         public CheckpointableModel([Parameter(typeof(Checkpointing))] int level)
         {
             Level = (CheckpointLevel)level;
-        }
-
-        private T[] State { get; set; }
-
-        public CheckpointLevel Level { get; protected set; }
-
-        public void MakeCheckpointable(T[] model)
-        {
-            State = model;
-        }
-
-        void ICheckpointableState.MakeCheckpointable(object model)
-        {
-            MakeCheckpointable(model as T[]);
-        }
-
-        // Create a copy of the state
-        internal ICheckpointState GetState()
-        {
-            return new CheckpointState<T[]>
-            {
-                Level = Level,
-                
-                State = (T[])State.Clone()
-            };
-        }
-
-        ICheckpointState ICheckpointableState.Checkpoint()
-        {
-            return GetState();
         }
     }
 }

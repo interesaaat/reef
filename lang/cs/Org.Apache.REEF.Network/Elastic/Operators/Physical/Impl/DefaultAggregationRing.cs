@@ -123,14 +123,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
-                var state = new CheckpointState<List<GroupCommunicationMessage>>()
+                var state = new CheckpointableObject<GroupCommunicationMessage[]>()
                 {
-                    Iteration = _iterationNumber + 1,
                     Level = CheckpointLevel,
-                    State = data
                 };
 
-                _topology.Checkpoint(state);
+                state.MakeCheckpointable(data.ToArray());
+
+                _topology.Checkpoint(state, _iterationNumber + 1);
             }
         }
     }

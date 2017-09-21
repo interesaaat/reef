@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CheckpointService));
 
-        public readonly Dictionary<int, SortedDictionary<int, ICheckpointState>> _checkpoints;
+        public readonly Dictionary<int, SortedDictionary<int, CheckpointState>> _checkpoints;
         private readonly int _limit;
 
         [Inject]
@@ -39,10 +39,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num)
         {
             _limit = num;
-            _checkpoints = new Dictionary<int, SortedDictionary<int, ICheckpointState>>();
+            _checkpoints = new Dictionary<int, SortedDictionary<int, CheckpointState>>();
         }
 
-        public ICheckpointState GetCheckpoint(int operatorId, int iteration = -1)
+        public CheckpointState GetCheckpoint(int operatorId, int iteration = -1)
         {
             if (!_checkpoints.ContainsKey(operatorId))
             {
@@ -56,11 +56,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
             return checkpoints[iteration];
         }
 
-        public void Checkpoint(ICheckpointState state)
+        public void Checkpoint(CheckpointState state)
         {   
             if (!_checkpoints.ContainsKey(state.OperatorId))
             {
-                _checkpoints.Add(state.OperatorId, new SortedDictionary<int, ICheckpointState>());
+                _checkpoints.Add(state.OperatorId, new SortedDictionary<int, CheckpointState>());
             }
 
             var checkpoint = _checkpoints[state.OperatorId];
@@ -78,7 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
             }
         }
 
-        private void CheckSize(SortedDictionary<int, ICheckpointState> checkpoint)
+        private void CheckSize(SortedDictionary<int, CheckpointState> checkpoint)
         {
             if (checkpoint.Keys.Count > _limit)
             {

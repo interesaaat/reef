@@ -55,42 +55,58 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public CheckpointService Service { get; private set; }
 
-        public ICheckpointState InternalCheckpoint { get; private set; }
+        public CheckpointState InternalCheckpoint { get; private set; }
 
-        public void Checkpoint(ICheckpointState state)
+        public void Checkpoint(ICheckpointableState state, int iteration)
         {
+            CheckpointState checkpoint;
+
             switch (state.Level)
             {
                 case CheckpointLevel.None:
                     break;
                 case CheckpointLevel.EphemeralMaster:
-                    InternalCheckpoint = state;
+                    if (_taskId == _rootTaskId)
+                    {
+                        checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint());
+                        InternalCheckpoint = checkpoint;
+                    }
+                    break;
+                case CheckpointLevel.EphemeralAll:
+                    checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint());
+                    InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
                     if (_taskId == _rootTaskId)
                     {
-                        state.OperatorId = OperatorId;
-                        state.SubscriptionName = SubscriptionName;
-                        Service.Checkpoint(state);
+                        checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint())
+                        {
+                            OperatorId = OperatorId,
+                            SubscriptionName = SubscriptionName
+                        };
+                        Service.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
-                    state.OperatorId = OperatorId;
-                    state.SubscriptionName = SubscriptionName;
-                    Service.Checkpoint(state);
+                    checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint())
+                    {
+                        OperatorId = OperatorId,
+                        SubscriptionName = SubscriptionName
+                    };
+                    Service.Checkpoint(checkpoint);
                     break;
                 default:
                     throw new IllegalStateException("Checkpoint level not supported");
             }
         }
 
-        public ICheckpointState GetCheckpoint(int iteration = -1)
+        public CheckpointState GetCheckpoint(int iteration = -1)
         {
             if (InternalCheckpoint != null && (iteration == -1 || InternalCheckpoint.Iteration == iteration))
             {
                 return InternalCheckpoint;
             }
-            return Service.GetCheckpoint(iteration) as CheckpointState<List<GroupCommunicationMessage>>;
+            return Service.GetCheckpoint(iteration);
         }
 
         public override void WaitCompletionBeforeDisposing()

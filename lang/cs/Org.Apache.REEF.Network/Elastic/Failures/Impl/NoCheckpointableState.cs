@@ -35,9 +35,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
         }
  
-        public ICheckpointState Checkpoint()
+        public CheckpointState Checkpoint()
         {
-            return new CheckpointState<object>();
+            return new CheckpointState();
         }
     }
 }
