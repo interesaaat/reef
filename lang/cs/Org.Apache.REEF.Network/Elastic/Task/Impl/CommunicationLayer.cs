@@ -29,6 +29,9 @@ using System.Threading;
 using System.Runtime.Remoting;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Common.Tasks;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -37,7 +40,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Writable version
     /// </summary>
     internal sealed class CommunicationLayer : 
-        IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
+        IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>,
+        IDriverMessageHandler
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
@@ -46,13 +50,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
         private readonly RingTaskMessageSource _ringMessageSource;
-        private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
 
         private bool _disposed;
 
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>> _messageObservers =
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>> _groupMessageObservers =
             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>>();
+
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> _driverMessageObservers =
+             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>>();
 
         private readonly ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>> _registeredConnections = 
             new ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>>();
@@ -67,7 +73,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             RingTaskMessageSource ringMessageSource,
-            DriverMessageHandler driverMessagesHandler,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -75,7 +80,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _sleepTime = sleepTime;
             _networkService = networkService;
             _ringMessageSource = ringMessageSource;
-            _driverMessagesHandler = driverMessagesHandler;
             _idFactory = idFactory;
 
             _disposed = false;
@@ -94,12 +98,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> taskObservers;
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
-            _messageObservers.TryGetValue(taskSourceId, out taskObservers);
+            _groupMessageObservers.TryGetValue(taskSourceId, out taskObservers);
 
             if (taskObservers == null)
             {
                 taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
-                _messageObservers.TryAdd(taskSourceId, taskObservers);
+                _groupMessageObservers.TryAdd(taskSourceId, taskObservers);
             }
 
             if (taskObservers.ContainsKey(id))
@@ -110,9 +114,26 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             taskObservers.TryAdd(id, operatorObserver);
         }
 
-        public void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
+        internal void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
         {
-            _driverMessagesHandler.RegisterOperatorTopologyForDriver(taskDestinationId, operatorObserver);
+            // Add a TaskMessage observer for each upstream/downstream source.
+            ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> taskObservers;
+            var id = NodeObserverIdentifier.FromObserver(operatorObserver);
+
+            _driverMessageObservers.TryGetValue(taskDestinationId, out taskObservers);
+
+            if (taskObservers == null)
+            {
+                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
+                _driverMessageObservers.TryAdd(taskDestinationId, taskObservers);
+            }
+
+            if (taskObservers.ContainsKey(id))
+            {
+                throw new IllegalStateException("Topology for id " + id + " already added among driver listeners");
+            }
+
+            taskObservers.TryAdd(id, operatorObserver);
         }
 
         /// <summary>
@@ -156,7 +177,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             OperatorTopologyWithCommunication operatorObserver;
             ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
 
-            if (!_messageObservers.TryGetValue(gcMessageTaskSource, out observers))
+            if (!_groupMessageObservers.TryGetValue(gcMessageTaskSource, out observers))
             {
                 throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
                     gcMessageTaskSource + ".");
@@ -169,6 +190,35 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             operatorObserver.OnNext(nsMessage);
+        }
+
+        public void Handle(IDriverMessage value)
+        {
+            if (value.Message.IsPresent())
+            {
+                var edm = ElasticDriverMessageImpl.From(value.Message.Value);
+                var id = NodeObserverIdentifier.FromMessage(edm.Message);
+                ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> observers;
+                DriverAwareOperatorTopology operatorObserver;
+
+                if (!_driverMessageObservers.TryGetValue(edm.Destination, out observers))
+                {
+                    throw new KeyNotFoundException("Unable to find registered task Observer for source Task " +
+                        edm.Destination + ".");
+                }
+
+                if (!observers.TryGetValue(id, out operatorObserver))
+                {
+                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
+                        edm.Message.SubscriptionName + " operator " + edm.Message.OperatorId);
+                }
+
+                operatorObserver.OnNext(edm.Message);
+            }
+            else
+            {
+                throw new IllegalStateException("Received message with no payload");
+            }
         }
 
         public void JoinTheRing(string taskId)
@@ -187,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void OnCompleted()
         {
-            foreach (var observers in _messageObservers.Values)
+            foreach (var observers in _groupMessageObservers.Values)
             {
                 foreach (var observer in observers.Values)
                 {
@@ -195,7 +245,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
             }
 
-            _messageObservers.Clear();
+            _groupMessageObservers.Clear();
         }
 
         public void Dispose()
@@ -210,7 +260,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     }
                 }
 
-                foreach (var observers in _messageObservers.Values)
+                foreach (var observers in _groupMessageObservers.Values)
                 {
                     foreach (var observer in observers.Values)
                     {

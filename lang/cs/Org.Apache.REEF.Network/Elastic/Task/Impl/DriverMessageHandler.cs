@@ -62,33 +62,24 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             if (value.Message.IsPresent())
             {
-                var gcm = ElasticDriverMessageImpl.From(value.Message.Value);
-                var id = NodeObserverIdentifier.FromMessage(gcm.Message);
+                var edm = ElasticDriverMessageImpl.From(value.Message.Value);
+                var id = NodeObserverIdentifier.FromMessage(edm.Message);
                 ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> observers;
                 DriverAwareOperatorTopology operatorObserver;
 
-                if (!_messageObservers.TryGetValue(message.Destination, out observers))
+                if (!_messageObservers.TryGetValue(edm.Destination, out observers))
                 {
                     throw new KeyNotFoundException("Unable to find registered task Observer for source Task " +
-                        message.Destination + ".");
+                        edm.Destination + ".");
                 }
 
                 if (!observers.TryGetValue(id, out operatorObserver))
                 {
                     throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
-                        message.SubscriptionName + " operator " + gcm.OperatorId);
+                        edm.Message.SubscriptionName + " operator " + edm.Message.OperatorId);
                 }
 
-               
-                var id = NodeObserverIdentifier.FromMessage(message);
-                _messageObservers.TryGetValue(message.Destination + message.OperatorId, out observer);
-
-                if (observer == null)
-                {
-                    throw new IllegalStateException("Observer for task " + message.Destination + " not found");
-                }
-
-                observer.OnNext(message.Message);
+                operatorObserver.OnNext(edm.Message);
             }
             else
             {
