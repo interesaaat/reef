@@ -44,10 +44,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         internal override byte[] Serialize()
         {
             byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
-            byte[] subscription = ByteUtilities.StringToByteArrays(SubscriptionName);
+            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
             int offset = 0;
 
-            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscription.Length + sizeof(int)];
+            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscriptionBytes.Length + sizeof(int) + sizeof(int)];
 
             Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -55,11 +55,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
             offset += nextBytes.Length;
 
-            Buffer.BlockCopy(BitConverter.GetBytes(subscription.Length), 0, buffer, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscription, 0, buffer, offset, subscription.Length);
-            offset += subscription.Length;
+            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
+            offset += subscriptionBytes.Length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
