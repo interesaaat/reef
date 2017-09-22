@@ -28,35 +28,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     public class DriverMessageHandler : IDriverMessageHandler
     {
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> _messageObservers =
-             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>>();
-
         [Inject]
         public DriverMessageHandler()
         {
         }
 
-        internal void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
-        {
-            // Add a TaskMessage observer for each upstream/downstream source.
-            ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> taskObservers;
-            var id = NodeObserverIdentifier.FromObserver(operatorObserver);
-
-            _messageObservers.TryGetValue(taskDestinationId, out taskObservers);
-
-            if (taskObservers == null)
-            {
-                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
-                _messageObservers.TryAdd(taskDestinationId, taskObservers);
-            }
-
-            if (taskObservers.ContainsKey(id))
-            {
-                throw new IllegalStateException("Topology for id " + id + " already added among driver listeners");
-            }
-
-            taskObservers.TryAdd(id, operatorObserver);
-        }
+        internal ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> DriverMessageObservers { get; set; }
 
         public void Handle(IDriverMessage value)
         {
@@ -67,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> observers;
                 DriverAwareOperatorTopology operatorObserver;
 
-                if (!_messageObservers.TryGetValue(edm.Destination, out observers))
+                if (!DriverMessageObservers.TryGetValue(edm.Destination, out observers))
                 {
                     throw new KeyNotFoundException("Unable to find registered task Observer for source Task " +
                         edm.Destination + ".");

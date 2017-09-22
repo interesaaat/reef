@@ -29,9 +29,6 @@ using System.Threading;
 using System.Runtime.Remoting;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
-using Org.Apache.REEF.Common.Tasks.Events;
-using Org.Apache.REEF.Common.Tasks;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -40,8 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Writable version
     /// </summary>
     internal sealed class CommunicationLayer : 
-        IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>,
-        IDriverMessageHandler
+        IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
@@ -50,6 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
         private readonly RingTaskMessageSource _ringMessageSource;
+        private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
 
         private bool _disposed;
@@ -73,6 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             RingTaskMessageSource ringMessageSource,
+            DriverMessageHandler driverMessagesHandler,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -80,11 +78,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _sleepTime = sleepTime;
             _networkService = networkService;
             _ringMessageSource = ringMessageSource;
+            _driverMessagesHandler = driverMessagesHandler;
             _idFactory = idFactory;
 
             _disposed = false;
 
             _networkService.RemoteManager.RegisterObserver(this);
+            _driverMessagesHandler.DriverMessageObservers = _driverMessageObservers;
         }
 
         /// <summary>
@@ -190,35 +190,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             operatorObserver.OnNext(nsMessage);
-        }
-
-        public void Handle(IDriverMessage value)
-        {
-            if (value.Message.IsPresent())
-            {
-                var edm = ElasticDriverMessageImpl.From(value.Message.Value);
-                var id = NodeObserverIdentifier.FromMessage(edm.Message);
-                ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> observers;
-                DriverAwareOperatorTopology operatorObserver;
-
-                if (!_driverMessageObservers.TryGetValue(edm.Destination, out observers))
-                {
-                    throw new KeyNotFoundException("Unable to find registered task Observer for source Task " +
-                        edm.Destination + ".");
-                }
-
-                if (!observers.TryGetValue(id, out operatorObserver))
-                {
-                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
-                        edm.Message.SubscriptionName + " operator " + edm.Message.OperatorId);
-                }
-
-                operatorObserver.OnNext(edm.Message);
-            }
-            else
-            {
-                throw new IllegalStateException("Received message with no payload");
-            }
         }
 
         public void JoinTheRing(string taskId)
