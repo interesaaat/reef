@@ -24,15 +24,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     public interface IElasticDriverMessage
     {
         /// <summary>
-        /// The destionation task of the message
+        /// The destination task of the message
         string Destination { get; }
 
         /// <summary>
-        /// The destionation operator of the message
+        /// The destination operator of the message
         int OperatorId { get; }
 
         /// <summary>
-        /// Operator and situation specifyc payload of the message
+        /// Operator and situation specific payload of the message
         /// </summary>
         IDriverMessagePayload Message { get; }
 

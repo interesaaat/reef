@@ -84,6 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _configurations = configurations;
 
             _topology.OperatorId = _id;
+            _topology.SubscriptionName = Subscription.SubscriptionName;
         }
 
         /// <summary>

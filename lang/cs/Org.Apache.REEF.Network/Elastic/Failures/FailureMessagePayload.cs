@@ -27,43 +27,69 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    public sealed class FailureMessagePayload : IDriverMessagePayload
+    internal sealed class FailureMessagePayload : IDriverMessagePayload
     {
-        public FailureMessagePayload(string nextTaskId, int iteration)
+        public FailureMessagePayload(string nextTaskId, int iteration, string subscriptionName, int operatorId)
+            : base(subscriptionName, operatorId)
         {
             NextTaskId = nextTaskId;
             Iteration = iteration;
             MessageType = DriverMessageType.Failure;
         }
 
-        public DriverMessageType MessageType { get; private set; }
+        internal string NextTaskId { get; private set; }
 
-        public string NextTaskId { get; private set; }
+        internal int Iteration { get; private set; }
 
-        public int Iteration { get; private set; }
-
-        public byte[] Serialize()
+        internal override byte[] Serialize()
         {
-            List<byte[]> buffer = new List<byte[]>();
-
             byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
+            byte[] subscription = ByteUtilities.StringToByteArrays(SubscriptionName);
+            int offset = 0;
 
-            buffer.Add(BitConverter.GetBytes(nextBytes.Length));
-            buffer.Add(nextBytes);
-            buffer.Add(BitConverter.GetBytes(Iteration));
+            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscription.Length + sizeof(int)];
 
-            return buffer.SelectMany(i => i).ToArray();
+            Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
+            offset += nextBytes.Length;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(subscription.Length), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(subscription, 0, buffer, offset, subscription.Length);
+            offset += subscription.Length;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
+
+            return buffer;
         }
 
-        public static IDriverMessagePayload From(byte[] data, int offset = 0)
+        internal static IDriverMessagePayload From(byte[] data, int offset = 0)
         {
-            int destinationLength = BitConverter.ToInt32(data, offset);
-            offset += 4;
-            string destination = ByteUtilities.ByteArraysToString(data.Skip(offset).Take(destinationLength).ToArray());
-            offset += destinationLength;
+            int length = BitConverter.ToInt32(data, offset);
+            offset += sizeof(int);
+            string destination = ByteUtilities.ByteArraysToString(data, offset, length);
+            offset += length;
+
+            length = BitConverter.ToInt32(data, offset);
+            offset += sizeof(int);
+            string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
+            offset += length;
+
+            int operatorId = BitConverter.ToInt32(data, offset);
+            offset += sizeof(int);
             int iteration = BitConverter.ToInt32(data, offset);
 
-            return new FailureMessagePayload(destination, iteration);
+            return new FailureMessagePayload(destination, iteration, subscription, operatorId);
+        }
+
+        public override object Clone()
+        {
+            return this;
         }
     }
 }

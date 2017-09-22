@@ -27,37 +27,62 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    public sealed class RingMessagePayload : IDriverMessagePayload
+    internal sealed class RingMessagePayload : IDriverMessagePayload
     {
-        public RingMessagePayload(string nextTaskId)
+        public RingMessagePayload(string nextTaskId, string subscriptionName, int operatorId)
+            : base(subscriptionName, operatorId)
         {
             NextTaskId = nextTaskId;
             MessageType = DriverMessageType.Ring;
         }
 
-        public DriverMessageType MessageType { get; private set; }
+        internal string NextTaskId { get; private set; }
 
-        public string NextTaskId { get; private set; }
-
-        public byte[] Serialize()
+        internal override byte[] Serialize()
         {
-            List<byte[]> buffer = new List<byte[]>();
-
             byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
-           
-            buffer.Add(BitConverter.GetBytes(nextBytes.Length));
-            buffer.Add(nextBytes);
+            byte[] subscription = ByteUtilities.StringToByteArrays(SubscriptionName);
+            int offset = 0;
 
-            return buffer.SelectMany(i => i).ToArray();
+            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscription.Length + sizeof(int)];
+
+            Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
+            offset += nextBytes.Length;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(subscription.Length), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(subscription, 0, buffer, offset, subscription.Length);
+            offset += subscription.Length;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
+
+            return buffer;
         }
 
-        public static IDriverMessagePayload From(byte[] data, int offset = 0)
+        internal static IDriverMessagePayload From(byte[] data, int offset = 0)
         {
-            int destinationLength = BitConverter.ToInt32(data, offset);
+            int length = BitConverter.ToInt32(data, offset);
             offset += 4;
-            string destination = ByteUtilities.ByteArraysToString(data.Skip(offset).Take(destinationLength).ToArray());
+            string destination = ByteUtilities.ByteArraysToString(data, offset, length);
+            offset += length;
 
-            return new RingMessagePayload(destination);
+            length = BitConverter.ToInt32(data, offset);
+            offset += 4;
+            string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
+            offset += length;
+
+            int operatorId = BitConverter.ToInt32(data, offset);
+
+            return new RingMessagePayload(destination, subscription, operatorId);
+        }
+
+        public override object Clone()
+        {
+            return this;
         }
     }
 }

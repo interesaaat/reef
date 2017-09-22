@@ -29,6 +29,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         // TODO
         int OperatorId { get; set; }
 
+        // TODO
+        string SubscriptionName { get; set; }
+
         /// <summary>
         /// Adds a new task to the topology.
         /// When called before Build() actually adds the task to the topology.

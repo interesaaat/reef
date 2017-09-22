@@ -15,21 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
+
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
     /// Payload of Driver messages.
     /// </summary>
-    public interface IDriverMessagePayload
+    public abstract class IDriverMessagePayload : GroupCommunicationMessage
     {
+        public IDriverMessagePayload(string subscriptionName, int operatorId)
+            : base(subscriptionName, operatorId)
+        {
+        }
+
         /// <summary>
         /// The type of payload
         /// </summary>
-        DriverMessageType MessageType { get; }
+       internal DriverMessageType MessageType { get; set; }
 
         /// <summary>
         /// Utility method to serialize the payload for communication
         /// </summary>
-        byte[] Serialize();
+        internal abstract byte[] Serialize();
     }
 }

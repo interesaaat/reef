@@ -158,7 +158,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             if (!_messageObservers.TryGetValue(gcMessageTaskSource, out observers))
             {
-                throw new KeyNotFoundException("Unable to find registered NodeMessageObserver for source Task " +
+                throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
                     gcMessageTaskSource + ".");
             }
 

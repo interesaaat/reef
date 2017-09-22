@@ -38,6 +38,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
+        /// Creates a NodeObserverIdentifier from an observer.
+        /// </summary>
+        public static NodeObserverIdentifier FromObserver(DriverAwareOperatorTopology observer)
+        {
+            return new NodeObserverIdentifier(observer.SubscriptionName, observer.OperatorId);
+        }
+
+        /// <summary>
         /// Creates a NodeObserverIdentifier from a group communication message.
         /// </summary>
         public static NodeObserverIdentifier FromMessage(GroupCommunicationMessage message)

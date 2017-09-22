@@ -34,6 +34,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public int OperatorId { get; set; }
 
+        public string SubscriptionName { get; set; }
+
         public int AddTask(string taskId)
         {
             return 1;

@@ -18,21 +18,21 @@
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Interface wrapping an event rised by a transition to a new failure
-    /// state. The event speicifies which action have to be executed in response
+    /// Interface wrapping an event raised by a transition to a new failure
+    /// state. The event specifies which action have to be executed in response
     /// to the change in the failure state.
     /// </summary>
     public interface IFailureEvent
     {
         /// <summary>
-        /// The event / action rised by the transition to the new failure state.
-        /// It is assumed that the result encodes the magnituted of the action, 
+        /// The event / action raised by the transition to the new failure state.
+        /// It is assumed that the result encodes the magnitude of the action, 
         /// e.g., smaller number, less demanding action.
         /// </summary>
         int FailureEvent { get; }
 
         /// <summary>
-        /// The Task id where the failur occurred
+        /// The Task id where the failure occurred
         /// </summary>
         string TaskId { get; }
 

@@ -22,13 +22,14 @@ using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     public class DriverMessageHandler : IDriverMessageHandler
     {
-        private readonly ConcurrentDictionary<string, DriverAwareOperatorTopology> _messageObservers =
-                new ConcurrentDictionary<string, DriverAwareOperatorTopology>();
+        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> _messageObservers =
+             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>>();
 
         [Inject]
         public DriverMessageHandler()
@@ -37,22 +38,49 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         internal void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
         {
-            string id = taskDestinationId + operatorObserver.OperatorId;
-            if (_messageObservers.ContainsKey(id))
+            // Add a TaskMessage observer for each upstream/downstream source.
+            ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> taskObservers;
+            var id = NodeObserverIdentifier.FromObserver(operatorObserver);
+
+            _messageObservers.TryGetValue(taskDestinationId, out taskObservers);
+
+            if (taskObservers == null)
             {
-                throw new IllegalStateException("Task " + taskDestinationId + " already added among listeners");
+                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
+                _messageObservers.TryAdd(taskDestinationId, taskObservers);
             }
 
-            _messageObservers.TryAdd(id, operatorObserver);
+            if (taskObservers.ContainsKey(id))
+            {
+                throw new IllegalStateException("Topology for id " + id + " already added among driver listeners");
+            }
+
+            taskObservers.TryAdd(id, operatorObserver);
         }
 
         public void Handle(IDriverMessage value)
         {
             if (value.Message.IsPresent())
             {
-                var message = ElasticDriverMessageImpl.From(value.Message.Value);
+                var gcm = ElasticDriverMessageImpl.From(value.Message.Value);
+                var id = NodeObserverIdentifier.FromMessage(gcm.Message);
+                ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> observers;
+                DriverAwareOperatorTopology operatorObserver;
 
-                DriverAwareOperatorTopology observer;
+                if (!_messageObservers.TryGetValue(message.Destination, out observers))
+                {
+                    throw new KeyNotFoundException("Unable to find registered task Observer for source Task " +
+                        message.Destination + ".");
+                }
+
+                if (!observers.TryGetValue(id, out operatorObserver))
+                {
+                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
+                        message.SubscriptionName + " operator " + gcm.OperatorId);
+                }
+
+               
+                var id = NodeObserverIdentifier.FromMessage(message);
                 _messageObservers.TryGetValue(message.Destination + message.OperatorId, out observer);
 
                 if (observer == null)
