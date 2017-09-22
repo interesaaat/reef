@@ -116,7 +116,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
             var length = subscriptionBytes.Length;
-            byte[] metadataBytes = new byte[length + sizeof(int) + sizeof(int)];
+            byte[] metadataBytes = new byte[sizeof(int) + length + sizeof(int)];
             int offset = 0;
 
             Buffer.BlockCopy(BitConverter.GetBytes(length), 0, metadataBytes, offset, sizeof(int));
@@ -132,11 +132,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private static Tuple<string, int> GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
         {
-            int offset = sizeof(int);
-
-            string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
-            offset += subscriptionLength;
-            int operatorInt = BitConverter.ToInt32(obj, offset);
+            string subscriptionString = ByteUtilities.ByteArraysToString(obj, 0, subscriptionLength);
+            int operatorInt = BitConverter.ToInt32(obj, subscriptionLength);
 
             return new Tuple<string, int>(subscriptionString, operatorInt);
         }
