@@ -49,6 +49,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         internal int OperatorId { get; private set; }
 
-        public abstract object Clone();
+        public virtual object Clone()
+        {
+            return this;
+        }
     }
 }

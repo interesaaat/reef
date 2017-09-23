@@ -90,7 +90,7 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\NoEvent.cs" />
     <Compile Include="Elastic\Failures\Impl\FailEvent.cs" />
     <Compile Include="Elastic\Failures\ICheckpointableState.cs" />
-    <Compile Include="Elastic\Failures\Interface1.cs" />
+    <Compile Include="Elastic\Failures\ICheckpointState.cs" />
     <Compile Include="Elastic\Failures\IStop.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\RingMessagePayload.cs" />
     <Compile Include="Elastic\Driver\ITaskMessageResponse.cs" />
@@ -109,6 +109,7 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\IElasticTypedOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticTypedIterator.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointIdentifier.cs" />
+    <Compile Include="Elastic\Task\Impl\CheckpointMessageRequest.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessageStreamingCodec.cs" />
     <Compile Include="Elastic\Task\RingTaskMessageType.cs" />
