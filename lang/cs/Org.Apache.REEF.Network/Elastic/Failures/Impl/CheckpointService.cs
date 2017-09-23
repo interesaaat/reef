@@ -16,8 +16,14 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Wake.Remote;
+using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -31,51 +37,83 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CheckpointService));
 
-        public readonly Dictionary<int, SortedDictionary<int, CheckpointState>> _checkpoints;
+        public readonly ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, CheckpointState>> _checkpoints;
+        public readonly ConcurrentDictionary<CheckpointIdentifier, string> _roots;
+
         private readonly int _limit;
+
+        private CommunicationLayer _communicationLayer;
 
         [Inject]
         public CheckpointService(
-            [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num)
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num,
+            StreamingNetworkService<GroupCommunicationMessage> networkService)
         {
             _limit = num;
-            _checkpoints = new Dictionary<int, SortedDictionary<int, CheckpointState>>();
+            _checkpoints = new ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, CheckpointState>>();
+            _roots = new ConcurrentDictionary<CheckpointIdentifier, string>();
         }
 
-        public CheckpointState GetCheckpoint(int operatorId, int iteration = -1)
+        public CommunicationLayer CommunicationLayer
         {
-            if (!_checkpoints.ContainsKey(operatorId))
+            set { _communicationLayer = value; }
+        }
+
+        public void RegisterOperatorRoot(string subscriptionName, int operatorId, string rootTaskId, bool amIRoot)
+        {
+            var id = new CheckpointIdentifier(string.Empty, subscriptionName, operatorId);
+            if (!_roots.ContainsKey(id))
             {
-                Logger.Log(Level.Warning, "Asking for checkpoint not in the service");
+                _roots.TryAdd(id, amIRoot ? string.Empty : rootTaskId);
+            }
+        }
+
+        public CheckpointState GetCheckpoint(string taskId, string subscriptionName, int operatorId, int iteration = -1)
+        {
+            SortedDictionary<int, CheckpointState> checkpoints;
+            var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
+            if (!_checkpoints.TryGetValue(id, out checkpoints))
+            {
+                Logger.Log(Level.Warning, "Asking for a checkpoint not in the service");
+
+                var id2 = new CheckpointIdentifier(string.Empty, subscriptionName, operatorId);
+                string rootTaskId;
+
+                if (!_roots.TryGetValue(id2, out rootTaskId))
+                {
+                    throw new IllegalStateException("Trying to recover from a non existing checkpoint");
+                }
+
+                Logger.Log(Level.Warning, "Retrieving the checkpoint from {0}", rootTaskId);
+                var cpm = new CheckpointMessage(subscriptionName, operatorId, iteration);
+
+                _communicationLayer.Send(rootTaskId, cpm);
             }
 
-            var checkpoints = _checkpoints[operatorId];
-
-            iteration = iteration < 0 ? _checkpoints.Keys.Last() : iteration;
+            iteration = iteration < 0 ? checkpoints.Keys.Last() : iteration;
 
             return checkpoints[iteration];
         }
 
         public void Checkpoint(CheckpointState state)
-        {   
-            if (!_checkpoints.ContainsKey(state.OperatorId))
+        {
+            SortedDictionary<int, CheckpointState> checkpoints;
+            var id = new CheckpointIdentifier(state.TaskId, state.SubscriptionName, state.OperatorId);
+            if (_checkpoints.TryGetValue(id, out checkpoints))
             {
-                _checkpoints.Add(state.OperatorId, new SortedDictionary<int, CheckpointState>());
+                _checkpoints.TryAdd(id, new SortedDictionary<int, CheckpointState>());
             }
 
-            var checkpoint = _checkpoints[state.OperatorId];
+            checkpoints.Add(state.Iteration, state);
 
-            checkpoint.Add(state.Iteration, state);
-
-            CheckSize(checkpoint);
+            CheckSize(checkpoints);
         }
         
-        public void RemoveCheckpoint(int operatorId)
+        public void RemoveCheckpoint(string taskId, string subscriptionName, int operatorId)
         {
-            if (_checkpoints.ContainsKey(operatorId))
-            {
-                _checkpoints.Remove(operatorId);
-            }
+            var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
+            SortedDictionary<int, CheckpointState> checkpoints;
+            _checkpoints.TryRemove(id, out checkpoints);
         }
 
         private void CheckSize(SortedDictionary<int, CheckpointState> checkpoint)

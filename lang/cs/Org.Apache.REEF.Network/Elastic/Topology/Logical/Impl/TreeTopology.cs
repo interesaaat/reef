@@ -171,6 +171,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
+            if (SubscriptionName == string.Empty)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any subscription");
+            }
+
             IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
             Queue<DataNode> parents = new Queue<DataNode>();
             var root = _nodes[_rootId];

@@ -29,6 +29,7 @@ using System.Threading;
 using System.Runtime.Remoting;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -48,6 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly RingTaskMessageSource _ringMessageSource;
         private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
+        private readonly CheckpointService _checkpointService;
 
         private bool _disposed;
 
@@ -71,6 +73,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             RingTaskMessageSource ringMessageSource,
             DriverMessageHandler driverMessagesHandler,
+            CheckpointService checkpointService,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -79,6 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _networkService = networkService;
             _ringMessageSource = ringMessageSource;
             _driverMessagesHandler = driverMessagesHandler;
+            _checkpointService = checkpointService;
             _idFactory = idFactory;
 
             _disposed = false;
@@ -173,23 +177,44 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var nsMessage = remoteMessage.Message;
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
-            var id = NodeObserverIdentifier.FromMessage(gcm);
-            OperatorTopologyWithCommunication operatorObserver;
-            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
 
-            if (!_groupMessageObservers.TryGetValue(gcMessageTaskSource, out observers))
+            if (gcm.GetType() == typeof(CheckpointMessage))
             {
-                throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
-                    gcMessageTaskSource + ".");
-            }
+                var cpm = gcm as CheckpointMessage;
+                if (cpm.IsNull)
+                {
+                    var checkpoint = _checkpointService.GetCheckpoint(nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration);
+                    var returnMessage = new CheckpointMessage(cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration);
 
-            if (!observers.TryGetValue(id, out operatorObserver))
+                    returnMessage.Payload = checkpoint;
+
+                    Send(gcMessageTaskSource, returnMessage);
+                }
+                else
+                {
+                    _checkpointService.Checkpoint(cpm.Payload);
+                }
+            }
+            else
             {
-                throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
-                    gcm.SubscriptionName + " operator " + gcm.OperatorId);
-            }
+                var id = NodeObserverIdentifier.FromMessage(gcm);
+                OperatorTopologyWithCommunication operatorObserver;
+                ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
 
-            operatorObserver.OnNext(nsMessage);
+                if (!_groupMessageObservers.TryGetValue(gcMessageTaskSource, out observers))
+                {
+                    throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
+                        gcMessageTaskSource + ".");
+                }
+
+                if (!observers.TryGetValue(id, out operatorObserver))
+                {
+                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
+                        gcm.SubscriptionName + " operator " + gcm.OperatorId);
+                }
+
+                operatorObserver.OnNext(nsMessage);
+            }
         }
 
         public void JoinTheRing(string taskId)

@@ -5,9 +5,9 @@
 // to you under the Apache License, Version 2.0 (the
 // "License"); you may not use this file except in compliance
 // with the License.  You may obtain a copy of the License at
-// 
+//
 //   http://www.apache.org/licenses/LICENSE-2.0
-// 
+//
 // Unless required by applicable law or agreed to in writing,
 // software distributed under the License is distributed on an
 // "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -15,37 +15,38 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
+using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Interface for checkpointing some task state
-    /// Clients can implement this interface and inject it into context service and task function to save the current task state
+    /// Messages sent by MPI Operators. This is the class inherited by 
+    /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    public class CheckpointState<T> : ICheckpointState
+    internal sealed class CheckpointMessage<T> : GroupCommunicationMessage
     {
-        public CheckpointState()
+        public CheckpointMessage(
+           string subscriptionName,
+           int operatorId,
+           int iteration) : base(subscriptionName, operatorId)
         {
+            Payload = default(T);
+            Iteration = iteration;
         }
 
-        public CheckpointState(CheckpointLevel level, int iteration, T state)
-        {
-            Level = level;
-            Iteration = iteration;
-            State = state;
-        }
+        public T Payload { get; set; }
 
         public int Iteration { get; set; }
 
-        public int OperatorId { get; set; }
+        public bool IsNull
+        {
+            get { return EqualityComparer<T>.Default.Equals(Payload, default(T)); }
+        }
 
-        public string SubscriptionName { get; set; }
-
-        public string TaskId { get; set; }
-
-        public CheckpointLevel Level { get; set; }
-
-        public T State { get; }
+        // The assumption is that messages are immutable therefore there is no need to clone them
+        public override object Clone()
+        {
+            return this;
+        }
     }
 }

@@ -170,6 +170,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
+            if (SubscriptionName == string.Empty)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any subscription");
+            }
+
             _rootTaskId = Utils.BuildTaskId(_taskSubscription, _rootId);
             _tasksInRing = new HashSet<string> { { _rootTaskId } };
             _currentRingHead = new RingNode(_rootTaskId, _iteration);
@@ -290,7 +295,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     {
                         var dest = _currentRingTail.TaskId;
                         var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(nextTask, _currentRingTail.Iteration, SubscriptionName, OperatorId);
-                        var returnMessage = new ElasticDriverMessageImpl(dest, OperatorId, data);
+                        var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                         messages.Add(returnMessage);
                         _currentRingTail.Next = new RingNode(nextTask, _iteration, _currentRingTail);
@@ -306,7 +311,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 {
                     var dest = _currentRingTail.TaskId;
                     var data = _currentRingTail.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _currentRingTail.Iteration, SubscriptionName, OperatorId);
-                    var returnMessage = new ElasticDriverMessageImpl(dest, OperatorId, data);
+                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                     messages.Add(returnMessage);
                     LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, LogTopologyState(), _rootTaskId);
@@ -398,7 +403,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 _lastToken = _prevRingTail;
 
                                 var data = new FailureMessagePayload(_currentRingHead.TaskId, _currentRingHead.Iteration, SubscriptionName, OperatorId);
-                                var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, OperatorId, data);
+                                var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, data);
                                 messages.Add(returnMessage);
                             }
                         }
@@ -413,7 +418,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             nextNode.Prev = _lastToken;
 
                             var data = new FailureMessagePayload(nextNode.TaskId, nextNode.Iteration, SubscriptionName, OperatorId);
-                            var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, OperatorId, data);
+                            var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, data);
                             messages.Add(returnMessage);
                         }
                     }

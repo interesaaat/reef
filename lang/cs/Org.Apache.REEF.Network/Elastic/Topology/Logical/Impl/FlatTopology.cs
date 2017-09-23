@@ -115,12 +115,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             if (!_nodes.ContainsKey(_rootId))
             {
-                throw new IllegalStateException("Topology cannot be built becasue the root node is missing");
+                throw new IllegalStateException("Topology cannot be built because the root node is missing");
             }
 
             if (OperatorId <= 0)
             {
                 throw new IllegalStateException("Topology cannot be built because not linked to any operator");
+            }
+
+            if (SubscriptionName == string.Empty)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any subscription");
             }
 
             BuildTopology();

@@ -58,6 +58,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
+            if (SubscriptionName == string.Empty)
+            {
+                throw new IllegalStateException("Topology cannot be built because not linked to any subscription");
+            }
+
             _finalized = true;
 
             return this;

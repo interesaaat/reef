@@ -40,6 +40,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         private BlockingCollection<string> _next;
 
+        private readonly CheckpointService _checkpointService;
+
         [Inject]
         private AggregationRingTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
@@ -64,10 +66,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
 
-            Service = checkpointService;
+            _checkpointService = checkpointService;
         }
-
-        public CheckpointService Service { get; private set; }
 
         public CheckpointState InternalCheckpoint { get; private set; }
 
@@ -95,14 +95,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.SubscriptionName = SubscriptionName;
-                        Service.Checkpoint(checkpoint);
+                        _checkpointService.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
                     OperatorId = OperatorId;
                     SubscriptionName = SubscriptionName;
-                    Service.Checkpoint(checkpoint);
+                    _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
                     throw new IllegalStateException("Checkpoint level not supported");
@@ -115,7 +115,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 return InternalCheckpoint;
             }
-            return Service.GetCheckpoint(iteration);
+            return _checkpointService.GetCheckpoint(_taskId, SubscriptionName, OperatorId, iteration);
         }
 
         public override void WaitCompletionBeforeDisposing()
@@ -164,7 +164,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             base.Dispose();
 
-            Service.RemoveCheckpoint(OperatorId);
+            _checkpointService.RemoveCheckpoint(_taskId, SubscriptionName, OperatorId);
         }
 
         internal override void OnMessageFromDriver(IDriverMessagePayload message)

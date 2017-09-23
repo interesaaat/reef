@@ -68,31 +68,33 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 case CheckpointLevel.EphemeralMaster:
                     if (_taskId == _rootTaskId)
                     {
-                        checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint());
+                        checkpoint = state.Checkpoint();
+                        checkpoint.Iteration = iteration;
                         InternalCheckpoint = checkpoint;
                     }
                     break;
                 case CheckpointLevel.EphemeralAll:
-                    checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint());
+                    checkpoint = state.Checkpoint();
+                    checkpoint.Iteration = iteration;
                     InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
                     if (_taskId == _rootTaskId)
                     {
-                        checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint())
-                        {
-                            OperatorId = OperatorId,
-                            SubscriptionName = SubscriptionName
-                        };
+                        checkpoint = state.Checkpoint();
+                        checkpoint.Iteration = iteration;
+                        checkpoint.TaskId = _taskId;
+                        checkpoint.OperatorId = OperatorId;
+                        checkpoint.SubscriptionName = SubscriptionName;
                         Service.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
-                    checkpoint = new CheckpointState(state.Level, iteration, state.Checkpoint())
-                    {
-                        OperatorId = OperatorId,
-                        SubscriptionName = SubscriptionName
-                    };
+                    checkpoint = state.Checkpoint();
+                    checkpoint.Iteration = iteration;
+                    checkpoint.TaskId = _taskId;
+                    checkpoint.OperatorId = OperatorId;
+                    checkpoint.SubscriptionName = SubscriptionName;
                     Service.Checkpoint(checkpoint);
                     break;
                 default:
@@ -106,7 +108,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 return InternalCheckpoint;
             }
-            return Service.GetCheckpoint(iteration);
+            return Service.GetCheckpoint(_taskId, SubscriptionName, OperatorId, iteration);
         }
 
         public override void WaitCompletionBeforeDisposing()
@@ -122,7 +124,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public void Dispose()
         {
-            Service.RemoveCheckpoint(OperatorId);
+            Service.RemoveCheckpoint(_taskId, SubscriptionName, OperatorId);
         }
 
         internal override void OnMessageFromDriver(IDriverMessagePayload message)

@@ -28,10 +28,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         string Destination { get; }
 
         /// <summary>
-        /// The destination operator of the message
-        int OperatorId { get; }
-
-        /// <summary>
         /// Operator and situation specific payload of the message
         /// </summary>
         IDriverMessagePayload Message { get; }

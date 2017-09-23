@@ -24,39 +24,25 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// A node is uniquely identifiable by a combination of its Task ID, 
     /// <see cref="SubscriptionName"/>, and <see cref="OperatorName"/>.
     /// </summary>
-    internal sealed class NodeObserverIdentifier
+    internal sealed class CheckpointIdentifier
     {
+        private readonly string _taskId;
         private readonly string _subscriptionName;
         private readonly int _operatorId;
 
-        /// <summary>
-        /// Creates a NodeObserverIdentifier from an observer.
-        /// </summary>
-        public static NodeObserverIdentifier FromObserver(OperatorTopologyWithCommunication observer)
+        public CheckpointIdentifier(string taskId, string subscriptionName, int operatorName)
         {
-            return new NodeObserverIdentifier(observer.SubscriptionName, observer.OperatorId);
-        }
-
-        /// <summary>
-        /// Creates a NodeObserverIdentifier from an observer.
-        /// </summary>
-        public static NodeObserverIdentifier FromObserver(DriverAwareOperatorTopology observer)
-        {
-            return new NodeObserverIdentifier(observer.SubscriptionName, observer.OperatorId);
-        }
-
-        /// <summary>
-        /// Creates a NodeObserverIdentifier from a group communication message.
-        /// </summary>
-        public static NodeObserverIdentifier FromMessage(GroupCommunicationMessage message)
-        {
-            return new NodeObserverIdentifier(message.SubscriptionName, message.OperatorId);
-        }
-
-        private NodeObserverIdentifier(string subscriptionName, int operatorName)
-        {
+            _taskId = taskId;
             _subscriptionName = subscriptionName;
             _operatorId = operatorName;
+        }
+
+        /// <summary>
+        /// The operator name of the node.
+        /// </summary>
+        public string TaskId
+        {
+            get { return _taskId; }
         }
 
         /// <summary>
@@ -99,6 +85,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public override int GetHashCode()
         {
             int hash = 17;
+            hash = (hash * 31) + _taskId.GetHashCode();
             hash = (hash * 31) + _subscriptionName.GetHashCode();
             return (hash * 31) + _operatorId.GetHashCode();
         }
@@ -106,9 +93,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Compare equality of instance fields.
         /// </summary>
-        private bool Equals(NodeObserverIdentifier other)
+        private bool Equals(CheckpointIdentifier other)
         {
-            return _subscriptionName.Equals(other.SubscriptionName) &&
+            return _taskId.Equals(other.TaskId) &&
+                _subscriptionName.Equals(other.SubscriptionName) &&
                 _operatorId.Equals(other.OperatorId);
         }
     }

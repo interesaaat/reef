@@ -45,22 +45,22 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         }
 
         // Create a copy of the state
-        internal CheckpointState GetState()
+        internal CheckpointState<T> GetState()
         {
             switch (Level)
             {
                 case CheckpointLevel.EphemeralMaster:
                 case CheckpointLevel.EphemeralAll:
-                    return new CheckpointState(Level, Iteration, State);
+                    return new CheckpointState<T>(Level, Iteration, State);
                 case CheckpointLevel.PersistentMemoryMaster:
                 case CheckpointLevel.PersistentMemoryAll:
-                    return new CheckpointState(Level, Iteration, State.Clone());
+                    return new CheckpointState<T>(Level, Iteration, (T)State.Clone());
                 default:
-                    return new CheckpointState();
+                    return new CheckpointState<T>();
             }
         }
 
-        CheckpointState ICheckpointableState.Checkpoint()
+        ICheckpointState ICheckpointableState.Checkpoint()
         {
             return GetState();
         }
