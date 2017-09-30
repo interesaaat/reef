@@ -34,11 +34,5 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         public int Iteration { get; set; }
-
-        // The assumption is that messages are immutable therefore there is no need to clone them
-        public override object Clone()
-        {
-            return this;
-        }
     }
 }

@@ -178,22 +178,20 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
 
+            if (gcm.GetType() == typeof(CheckpointMessageRequest))
+            {
+                var cpm = gcm as CheckpointMessageRequest;
+                var checkpoint = _checkpointService.GetCheckpoint(nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration);
+                var returnMessage = checkpoint.ToMessage();
+
+                returnMessage.Payload = checkpoint;
+
+                Send(gcMessageTaskSource, returnMessage);
+            }
             if (gcm.GetType() == typeof(CheckpointMessage))
             {
                 var cpm = gcm as CheckpointMessage;
-                if (cpm.IsNull)
-                {
-                    var checkpoint = _checkpointService.GetCheckpoint(nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration);
-                    var returnMessage = new CheckpointMessage(cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration);
-
-                    returnMessage.Payload = checkpoint;
-
-                    Send(gcMessageTaskSource, returnMessage);
-                }
-                else
-                {
-                    _checkpointService.Checkpoint(cpm.Payload);
-                }
+                _checkpointService.Checkpoint(cpm.Payload);
             }
             else
             {

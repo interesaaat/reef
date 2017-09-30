@@ -167,6 +167,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SubmitTasks()
         {
+            System.Threading.Thread.Sleep(30000);
+
             for (int i = 0; i < _numTasks; i++)
             {
                 var subs = _taskInfos[i].Subscriptions;

@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Wake.StreamingCodec;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -24,15 +25,28 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     public class CheckpointableObject<T> : ICheckpointableState where T : ICloneable
     {
         [Inject]
-        public CheckpointableObject()
+        internal CheckpointableObject()
         {
+        }
+
+        [Inject]
+        private CheckpointableObject(IStreamingCodec<T> codec)
+        {
+            Codec = codec;
         }
 
         protected T State { get; set; }
 
+        internal IStreamingCodec<T> Codec { get; set; }
+
         public CheckpointLevel Level { get; internal set; }
 
         public int Iteration { get; internal set; }
+
+        IStreamingCodec<object> ICheckpointableState.Codec
+        {
+            get { return (IStreamingCodec<object>)Codec; }
+        }
 
         public void MakeCheckpointable(T model)
         {

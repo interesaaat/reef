@@ -372,6 +372,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             head = head.Next;
                         }
 
+                        if (head == null)
+                        {
+                            Console.WriteLine("Ops");
+                            Console.WriteLine(_lastToken.Iteration);
+                            Console.WriteLine(currentIteration);
+                            Console.WriteLine(_iteration);
+                        }
+
                         _lastToken = head;
 
                         _tasksInRing.Remove(_lastToken.TaskId);

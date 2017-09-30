@@ -15,13 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Interface for checkpointing some task state
     /// Clients can implement this interface and inject it into context service and task function to save the current task state
     /// </summary>
-    internal class ICheckpointState
+    public abstract class ICheckpointState
     {
         internal int Iteration { get; set; }
 
@@ -31,6 +33,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         internal string TaskId { get; set; }
 
-        internal object State { get; }
+        internal virtual object State { get; }
+
+        internal abstract CheckpointMessage ToMessage();
     }
 }

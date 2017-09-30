@@ -55,11 +55,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public CheckpointService Service { get; private set; }
 
-        public CheckpointState InternalCheckpoint { get; private set; }
+        public ICheckpointState InternalCheckpoint { get; private set; }
 
         public void Checkpoint(ICheckpointableState state, int iteration)
         {
-            CheckpointState checkpoint;
+            ICheckpointState checkpoint;
 
             switch (state.Level)
             {
@@ -102,7 +102,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public CheckpointState GetCheckpoint(int iteration = -1)
+        public ICheckpointState GetCheckpoint(int iteration = -1)
         {
             if (InternalCheckpoint != null && (iteration == -1 || InternalCheckpoint.Iteration == iteration))
             {

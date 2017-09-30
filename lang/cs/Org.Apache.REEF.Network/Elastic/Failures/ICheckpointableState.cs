@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Wake.StreamingCodec;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -32,5 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         void MakeCheckpointable(object state);
 
         ICheckpointState Checkpoint();
+
+        IStreamingCodec<object> Codec { get; }
     }
 }

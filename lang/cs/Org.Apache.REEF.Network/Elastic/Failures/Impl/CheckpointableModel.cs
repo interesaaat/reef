@@ -17,15 +17,18 @@
 
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Wake.StreamingCodec;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     public class CheckpointableModel<T> : CheckpointableObject<T[]> where T : struct 
     {
         [Inject]
-        public CheckpointableModel([Parameter(typeof(Checkpointing))] int level)
+        private CheckpointableModel([Parameter(typeof(Checkpointing))] int level,
+            IStreamingCodec<T[]> codec)
         {
             Level = (CheckpointLevel)level;
+            Codec = codec;
         }
     }
 }

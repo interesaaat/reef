@@ -16,6 +16,7 @@
 // under the License.
 
 using System;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -25,23 +26,29 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public class CheckpointState<T> : ICheckpointState
     {
+        public CheckpointState()
+        {
+        }
+
         public CheckpointState(CheckpointLevel level, int iteration, T state)
         {
             Level = level;
             Iteration = iteration;
-            State = state;
+            SubState = state;
         }
-
-        public int Iteration { get; set; }
-
-        public int OperatorId { get; set; }
-
-        public string SubscriptionName { get; set; }
-
-        public string TaskId { get; set; }
 
         public CheckpointLevel Level { get; set; }
 
-        public T State { get; }
+        T SubState { get; }
+
+        internal override object State
+        {
+            get { return SubState; }
+        }
+
+        internal override CheckpointMessage ToMessage()
+        {
+            return new CheckpointMessage(this);
+        }
     }
 }

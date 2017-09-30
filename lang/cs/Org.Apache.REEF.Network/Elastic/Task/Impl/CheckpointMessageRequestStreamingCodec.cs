@@ -22,24 +22,20 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Wake.StreamingCodec;
 using Org.Apache.REEF.Utilities;
-using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
     /// Streaming Codec for the Group Communication Message
     /// </summary>
-    internal sealed class CheckpointMessageStreamingCodec<T> : IStreamingCodec<CheckpointMessage>
+    internal sealed class CheckpointMessageRequestStreamingCodec : IStreamingCodec<CheckpointMessageRequest>
     {
-        private readonly IStreamingCodec<T> _codec;
-
         /// <summary>
         /// Empty constructor to allow instantiation by reflection
         /// </summary>
         [Inject]
-        private CheckpointMessageStreamingCodec(IStreamingCodec<T> codec)
+        private CheckpointMessageRequestStreamingCodec()
         {
-            _codec = codec;
         }
 
         /// <summary>
@@ -47,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="reader">The reader from which to read </param>
         /// <returns>The Group Communication Message</returns>
-        public CheckpointMessage Read(IDataReader reader)
+        public CheckpointMessageRequest Read(IDataReader reader)
         {
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
@@ -57,10 +53,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             string subscriptionName = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
-            var data = _codec.Read(reader);
-            var payload = new CheckpointState<T>(0, iteration, data);
 
-            return new CheckpointMessage(payload);
+            return new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
         }
 
         /// <summary>
@@ -68,13 +62,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="obj">The message to write</param>
         /// <param name="writer">The writer to which to write</param>
-        public void Write(CheckpointMessage obj, IDataWriter writer)
+        public void Write(CheckpointMessageRequest obj, IDataWriter writer)
         {
             byte[] encodedMetadata = GenerateMetaDataEncoding(obj);
    
             writer.Write(encodedMetadata, 0, encodedMetadata.Length);
-
-            _codec.Write((T)obj.Payload.State, writer);
         }
 
         /// <summary>
@@ -83,7 +75,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="reader">The reader from which to read </param>
         /// <param name="token">The cancellation token</param>
         /// <returns>The Group Communication Message</returns>
-        public async Task<CheckpointMessage> ReadAsync(IDataReader reader,
+        public async Task<CheckpointMessageRequest> ReadAsync(IDataReader reader,
             CancellationToken token)
         {
             int metadataSize = reader.ReadInt32() + sizeof(int);
@@ -91,13 +83,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             await reader.ReadAsync(metadata, 0, metadataSize, token);
             var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int));
             
-            var data = await _codec.ReadAsync(reader, token);
             string subscriptionString = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
-            var payload = new CheckpointState<T>(0, iteration, data);
 
-            return new CheckpointMessage(payload);
+            return new CheckpointMessageRequest(subscriptionString, operatorId, iteration);
         }
 
         /// <summary>
@@ -106,16 +96,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="obj">The message to write</param>
         /// <param name="writer">The writer to which to write</param>
         /// <param name="token">The cancellation token</param>
-        public async System.Threading.Tasks.Task WriteAsync(CheckpointMessage obj, IDataWriter writer, CancellationToken token)
+        public async System.Threading.Tasks.Task WriteAsync(CheckpointMessageRequest obj, IDataWriter writer, CancellationToken token)
         {
             byte[] encodedMetadata = GenerateMetaDataEncoding(obj);
 
             await writer.WriteAsync(encodedMetadata, 0, encodedMetadata.Length, token);
-
-            await _codec.WriteAsync((T)obj.Payload.State, writer, token);
         }
 
-        private static byte[] GenerateMetaDataEncoding(CheckpointMessage obj)
+        private static byte[] GenerateMetaDataEncoding(CheckpointMessageRequest obj)
         {
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
             var length = subscriptionBytes.Length;
@@ -131,7 +119,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, metadataBytes, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(BitConverter.GetBytes(obj.Payload.Iteration), 0, metadataBytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(obj.Iteration), 0, metadataBytes, offset, sizeof(int));
 
             return metadataBytes;
         }

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -23,30 +23,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    internal sealed class CheckpointMessage<T> : GroupCommunicationMessage
+    internal sealed class CheckpointMessage : GroupCommunicationMessage
     {
-        public CheckpointMessage(
-           string subscriptionName,
-           int operatorId,
-           int iteration) : base(subscriptionName, operatorId)
+        public CheckpointMessage(ICheckpointState payload) : base(payload.SubscriptionName, payload.OperatorId)
         {
-            Payload = default(T);
-            Iteration = iteration;
+            Payload = payload;
         }
 
-        public T Payload { get; set; }
-
-        public int Iteration { get; set; }
-
-        public bool IsNull
-        {
-            get { return EqualityComparer<T>.Default.Equals(Payload, default(T)); }
-        }
-
-        // The assumption is that messages are immutable therefore there is no need to clone them
-        public override object Clone()
-        {
-            return this;
-        }
+        public ICheckpointState Payload { get; set; }
     }
 }

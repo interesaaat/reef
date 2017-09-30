@@ -111,6 +111,7 @@ under the License.
     <Compile Include="Elastic\Task\Impl\CheckpointIdentifier.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessageRequest.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessage.cs" />
+    <Compile Include="Elastic\Task\Impl\CheckpointMessageRequestStreamingCodec.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessageStreamingCodec.cs" />
     <Compile Include="Elastic\Task\RingTaskMessageType.cs" />
     <Compile Include="Elastic\Task\Impl\DriverMessageHandler.cs" />

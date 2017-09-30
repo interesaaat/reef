@@ -15,7 +15,10 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Wake.StreamingCodec;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
@@ -31,13 +34,18 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             get { return CheckpointLevel.None; }
         }
 
+        public IStreamingCodec<object> Codec
+        {
+            get { throw new IllegalStateException("Trying to serialize an empty state"); }
+        }
+
         public void MakeCheckpointable(object state)
         {
         }
  
-        public CheckpointState Checkpoint()
+        public ICheckpointState Checkpoint()
         {
-            return new CheckpointState();
+            return new CheckpointState<object>();
         }
     }
 }
