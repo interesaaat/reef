@@ -39,8 +39,18 @@ namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
     {
     }
 
+    [NamedParameter("Iteration number to begin with", defaultValue: "0")]
+    public sealed class StartIteration : Name<int>
+    {
+    }
+
     [NamedParameter("Checkpoint level", defaultValue: "0")]
     public sealed class Checkpointing : Name<int>
+    {
+    }
+
+    [NamedParameter("Restore computation from a previous checkpoint", defaultValue: "false")]
+    public sealed class Restore : Name<bool>
     {
     }
 }
