@@ -29,12 +29,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     {
         private string _taskId;
         private string _taskIdWithToken;
-        private int _iterationNumber;
 
         private readonly HeartBeatReference _heartBeatManager;
 
         private readonly byte[] _message1 = BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing);
-        private readonly byte[] _message2 = BitConverter.GetBytes((ushort)TaskMessageType.TokenReceived);
+        ////private readonly byte[] _message2 = BitConverter.GetBytes((ushort)TaskMessageType.TokenReceived);
 
         [Inject]
         private RingTaskMessageSource(HeartBeatReference heartBeatManager)
@@ -52,12 +51,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _heartBeatManager.Heartbeat();
         }
 
-        public void TokenReceived(string taskId, int iterationNumber)
-        {
-            _taskIdWithToken = taskId;
-            _iterationNumber = iterationNumber;
-        }
-
         public Optional<TaskMessage> Message
         {
             get
@@ -69,18 +62,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                     return Optional<TaskMessage>.Of(message);
                 }
-                if (_taskIdWithToken != string.Empty)
-                {
-                    List<byte[]> buffer = new List<byte[]>(2)
-                    {
-                        _message2,
-                        BitConverter.GetBytes(_iterationNumber)
-                    };
-                    var message = TaskMessage.From(_taskIdWithToken, buffer.SelectMany(i => i).ToArray());
-                    _taskIdWithToken = string.Empty;
+                ////if (_taskIdWithToken != string.Empty)
+                ////{
+                ////    List<byte[]> buffer = new List<byte[]>(2)
+                ////    {
+                ////        _message2,
+                ////        BitConverter.GetBytes(_iterationNumber)
+                ////    };
+                ////    var message = TaskMessage.From(_taskIdWithToken, buffer.SelectMany(i => i).ToArray());
+                ////    _taskIdWithToken = string.Empty;
 
-                    return Optional<TaskMessage>.Of(message);
-                }
+                ////    return Optional<TaskMessage>.Of(message);
+                ////}
 
                 return Optional<TaskMessage>.Empty();
             }

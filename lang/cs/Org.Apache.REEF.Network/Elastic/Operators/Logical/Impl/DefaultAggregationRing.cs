@@ -83,10 +83,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
 
                     return true;
-                case TaskMessageType.TokenReceived:
-                    var iteration = BitConverter.ToInt32(message.Message, 2);
-                    RingTopology.UpdateTokenPosition(message.TaskId, iteration);
-                    return true;
                 default:
                     return false;
             }

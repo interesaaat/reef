@@ -21,13 +21,14 @@ using System.Collections;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
     /// Default Group Communication Operator used to iterate over a fixed set of ints.
     /// </summary>
-    public sealed class DefaultEnumerableIterator : CheckpointingOperator, IElasticTypedIterator<int>
+    public sealed class DefaultEnumerableIterator : ICheckpointingOperator, IElasticTypedIterator<int>
     {
         private readonly ElasticIteratorEnumerator<int> _inner;
         private readonly IterateTopology _topology;
@@ -57,17 +58,26 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public int Current
         {
-            get { return _inner.Current; }
+            get
+            {
+                if (_inner.Current == 5)
+                {
+                    Console.WriteLine("Try to fetch a remote checkpoint");
+                    _topology.GetCheckpoint();
+                }
+
+                return _inner.Current;
+            }
         }
 
         object IEnumerator.Current
         {
-            get { return _inner.Current; }
+            get { return Current; }
         }
 
         object IElasticIterator.Current
         {
-            get { return _inner.Current; }
+            get { return Current; }
         }
 
         public string FailureInfo

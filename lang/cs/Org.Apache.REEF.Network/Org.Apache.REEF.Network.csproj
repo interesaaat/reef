@@ -100,7 +100,6 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultConditionalIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\PositionTracker.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticAggregationRing.cs" />
-    <Compile Include="Elastic\Operators\Physical\Impl\CheckpointingOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultEnumerableIterator.cs" />
@@ -108,6 +107,7 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\ElasticIteratorEnumerator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticTypedOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticTypedIterator.cs" />
+    <Compile Include="Elastic\Operators\Physical\ICheckpointingOperator.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointIdentifier.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessageRequest.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointMessage.cs" />

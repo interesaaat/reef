@@ -85,7 +85,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
 
-            _topology.TokenReceived(_iterationNumber);
             _position = PositionTracker.AfterReceiveBeforeSend;
 
             return message.Data;
@@ -132,7 +131,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
                 state.MakeCheckpointable(data);
 
-                _topology.Checkpoint(state, _iterationNumber + 1);
+                _topology.Checkpoint(state);
             }
         }
     }

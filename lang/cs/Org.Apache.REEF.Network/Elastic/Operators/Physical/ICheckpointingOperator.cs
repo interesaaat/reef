@@ -17,12 +17,12 @@
 
 using Org.Apache.REEF.Network.Elastic.Failures;
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
+namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
     /// Group Communication operator used to receive and send messages.
     /// </summary>
-    internal interface CheckpointingOperator
+    internal interface ICheckpointingOperator
     {
         ICheckpointableState CheckpointState { get; set; }
     }

@@ -28,10 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             SubscriptionName = subscription;
             OperatorId = operatorId;
 
-            if (rootId >= 0)
-            {
-                _rootTaskId = Utils.BuildTaskId(SubscriptionName, rootId);
-            }
+            _rootTaskId = Utils.BuildTaskId(SubscriptionName, rootId);
         }
 
         internal string SubscriptionName { get; set; }

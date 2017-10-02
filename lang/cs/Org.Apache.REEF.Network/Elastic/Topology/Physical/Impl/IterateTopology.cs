@@ -51,13 +51,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
 
             Service = checkpointService;
+
+            Service.RegisterOperatorRoot(subscription, operatorId, _rootTaskId, _rootTaskId == taskId);
         }
 
         public CheckpointService Service { get; private set; }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
-        public void Checkpoint(ICheckpointableState state, int iteration)
+        public void Checkpoint(ICheckpointableState state, int? iteration)
         {
             ICheckpointState checkpoint;
 
@@ -69,20 +71,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     if (_taskId == _rootTaskId)
                     {
                         checkpoint = state.Checkpoint();
-                        checkpoint.Iteration = iteration;
+                        checkpoint.Iteration = iteration ?? -1;
                         InternalCheckpoint = checkpoint;
                     }
                     break;
                 case CheckpointLevel.EphemeralAll:
                     checkpoint = state.Checkpoint();
-                    checkpoint.Iteration = iteration;
+                    checkpoint.Iteration = iteration ?? -1;
                     InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
                     if (_taskId == _rootTaskId)
                     {
                         checkpoint = state.Checkpoint();
-                        checkpoint.Iteration = iteration;
+                        checkpoint.Iteration = iteration ?? -1;
                         checkpoint.TaskId = _taskId;
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.SubscriptionName = SubscriptionName;
@@ -91,7 +93,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
-                    checkpoint.Iteration = iteration;
+                    checkpoint.Iteration = iteration ?? -1;
                     checkpoint.TaskId = _taskId;
                     checkpoint.OperatorId = OperatorId;
                     checkpoint.SubscriptionName = SubscriptionName;

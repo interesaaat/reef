@@ -74,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 return true;
             }
 
-            return obj is NodeObserverIdentifier && Equals((NodeObserverIdentifier)obj);
+            return obj is CheckpointIdentifier && Equals((CheckpointIdentifier)obj);
         }
 
         /// <summary>

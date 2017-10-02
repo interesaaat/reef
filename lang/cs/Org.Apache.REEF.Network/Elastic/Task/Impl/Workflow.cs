@@ -53,8 +53,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _operators.Add(op);
 
-            ////_position++;
-
             if (op.OperatorName == Constants.Iterate)
             {
                 _iteratorPosition = _operators.Count - 1;
@@ -125,9 +123,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public ICheckpointableState GetCheckpointableState()
         {
-            if (_iteratorPosition != -1 && _operators[_iteratorPosition] is CheckpointingOperator)
+            if (_iteratorPosition != -1 && _operators[_iteratorPosition] is ICheckpointingOperator)
             {
-                var checkpointable = (_operators[_iteratorPosition] as CheckpointingOperator).CheckpointState;
+                var checkpointable = (_operators[_iteratorPosition] as ICheckpointingOperator).CheckpointState;
 
                 if (!(checkpointable is NoCheckpointableState))
                 {

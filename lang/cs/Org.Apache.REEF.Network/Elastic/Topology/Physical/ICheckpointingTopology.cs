@@ -25,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
     /// </summary>
     internal interface ICheckpointingTopology : IDisposable
     {
-        void Checkpoint(ICheckpointableState state, int iteration);
+        void Checkpoint(ICheckpointableState state, int? iteration);
 
         ICheckpointState GetCheckpoint(int iteration = -1);
 

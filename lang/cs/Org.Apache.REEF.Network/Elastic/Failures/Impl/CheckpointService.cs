@@ -62,9 +62,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         public void RegisterOperatorRoot(string subscriptionName, int operatorId, string rootTaskId, bool amIRoot)
         {
             var id = new CheckpointIdentifier(string.Empty, subscriptionName, operatorId);
-            if (!_roots.ContainsKey(id))
+            if (!_roots.ContainsKey(id) && !amIRoot)
             {
-                _roots.TryAdd(id, amIRoot ? string.Empty : rootTaskId);
+                _roots.TryAdd(id, rootTaskId);
             }
         }
 
@@ -81,7 +81,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
                 if (!_roots.TryGetValue(id2, out rootTaskId))
                 {
-                    throw new IllegalStateException("Trying to recover from a non existing checkpoint");
+                    // I am in root, try to fetch as root
+                    if (!_checkpoints.TryGetValue(id, out checkpoints))
+                    {
+                        throw new IllegalStateException("Trying to recover from a non existing checkpoint");
+                    }
                 }
 
                 Logger.Log(Level.Warning, "Retrieving the checkpoint from {0}", rootTaskId);
@@ -99,9 +103,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
             var id = new CheckpointIdentifier(state.TaskId, state.SubscriptionName, state.OperatorId);
-            if (_checkpoints.TryGetValue(id, out checkpoints))
+            if (!_checkpoints.TryGetValue(id, out checkpoints))
             {
-                _checkpoints.TryAdd(id, new SortedDictionary<int, ICheckpointState>());
+                checkpoints = new SortedDictionary<int, ICheckpointState>();
+                _checkpoints.TryAdd(id, checkpoints);
             }
 
             checkpoints.Add(state.Iteration, state);

@@ -287,6 +287,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     failureEvents = failureEvents ?? new List<IFailureEvent>();
 
+                    LOGGER.Log(Level.Info, "Received an Operator Exception " + info.AsError());
+
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
                        sub.OnTaskFailure(info, ref failureEvents);

@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
             CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
         {
-            if (rootId >= 0)
+            if (taskId != _rootTaskId)
             {
                 _commLayer.RegisterOperatorTopologyForTask(_rootTaskId, this);
             }

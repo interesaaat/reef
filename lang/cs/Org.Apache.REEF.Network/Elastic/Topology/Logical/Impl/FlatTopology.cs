@@ -24,7 +24,6 @@ using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Driver;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
@@ -170,12 +169,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     }
                 }
             }
-            else
-            {
-                confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
-                        GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
-                        _rootId.ToString(CultureInfo.InvariantCulture));
-            }
+            confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
+                    GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
+                    _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
         private void BuildTopology()

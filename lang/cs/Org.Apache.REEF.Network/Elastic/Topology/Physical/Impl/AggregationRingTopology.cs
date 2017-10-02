@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
-        public void Checkpoint(ICheckpointableState state, int iteration)
+        public void Checkpoint(ICheckpointableState state, int? iteration = null)
         {
             ICheckpointState checkpoint;
 
@@ -204,11 +204,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 _commLayer.JoinTheRing(_taskId);
             }
-        }
-
-        internal void TokenReceived(int iterationNumber)
-        {
-            _commLayer.TokenReceived(_taskId, iterationNumber);
         }
 
         protected override void Send(CancellationTokenSource cancellationSource)

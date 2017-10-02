@@ -53,10 +53,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private RingNode _currentRingTail;
         private RingNode _prevRingTail;
         private StringBuilder _ringPrint;
-        private RingNode _lastToken;
+
         private string _rootTaskId;
         private string _taskSubscription;
-        private int _iteration;
+        private volatile int _iteration;
 
         private int _rootId;
         private bool _finalized;
@@ -179,7 +179,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _tasksInRing = new HashSet<string> { { _rootTaskId } };
             _currentRingHead = new RingNode(_rootTaskId, _iteration);
             _currentRingTail = _currentRingHead;
-            _lastToken = _currentRingHead;
             _ringPrint.Append(_rootTaskId);
 
             _finalized = true;
@@ -232,58 +231,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return messages;
         }
 
-        internal void UpdateTokenPosition(string taskId, int iterationNumber)
-        {
-            lock (_lock)
-            {
-                // The taskId can be:
-                // 1) in tasksInRing, in which case we are working on the current ring;
-                // 2) in prevRing if we are constructing the ring of the successive iteration;
-                // 3) if it is neither in tasksInRing nor in prevRing it must be a late token message therefore we can ignore it.
-                if (taskId == _rootTaskId)
-                {
-                    // We are at the end of previous ring
-                    if (_lastToken.Iteration == iterationNumber)
-                    {
-                        _lastToken = _currentRingHead;
-                        Console.WriteLine("Token at " + taskId + " iteration " + _lastToken.Iteration);
-                    }
-                }
-                else
-                {
-                    var head = _lastToken;
-
-                    if (iterationNumber == _lastToken.Iteration)
-                    {
-                        while (head != null && head.TaskId != taskId)
-                        {
-                            head = head.Next;
-                        }
-
-                        _lastToken = head ?? _lastToken;
-                    }
-                    else if (iterationNumber == _iteration)
-                    {
-                        head = _currentRingHead;
-
-                        while (head != null && head.TaskId != taskId)
-                        {
-                            head = head.Next;
-                        }
-
-                        if (head == null)
-                        {
-                            throw new ArgumentNullException("Token in a not identified position in the ring");
-                        }
-                        else
-                        {
-                            _lastToken = head;
-                        }
-                    }
-                }
-            }
-        }
-
         internal void SubmitNextNodes(ref IList<ElasticDriverMessageImpl> messages)
         {
             lock (_lock)
@@ -303,7 +250,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         _tasksInRing.Add(nextTask);
                         _currentWaitingList.Remove(nextTask);
 
-                        _ringPrint.Append("<-" + nextTask);
+                        _ringPrint.Append("->" + nextTask);
                     }
                 }
 
@@ -359,13 +306,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 case (int)PositionTracker.AfterReceiveBeforeSend:
                     lock (_lock)
                     {
-                        // Position at the right ring
-                        if (_lastToken.Iteration < currentIteration)
-                        {
-                            _lastToken = _currentRingHead;
-                        }
+                        var head = _prevRingHead ?? _currentRingHead;
 
-                        var head = _lastToken;
+                        // Position at the right ring
+                        if (head.Iteration < currentIteration)
+                        {
+                            head = _currentRingHead;
+                        }
 
                         while (head != null && head.TaskId != taskId)
                         {
@@ -375,32 +322,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         if (head == null)
                         {
                             Console.WriteLine("Ops");
-                            Console.WriteLine(_lastToken.Iteration);
                             Console.WriteLine(currentIteration);
                             Console.WriteLine(_iteration);
                         }
 
-                        _lastToken = head;
-
-                        _tasksInRing.Remove(_lastToken.TaskId);
-                        _currentWaitingList.Remove(_lastToken.TaskId);
-                        _nextWaitingList.Remove(_lastToken.TaskId);
+                        _tasksInRing.Remove(head.TaskId);
+                        _currentWaitingList.Remove(head.TaskId);
+                        _nextWaitingList.Remove(head.TaskId);
 
                         // Get the last available checkpointed node
-                        var lastCheckpoint = _lastToken.Prev;
-                        var nextNode = _lastToken.Next;
-                        _lastToken.Prev = null;
+                        var lastCheckpoint = head.Prev;
+                        var nextNode = head.Next;
+                        head.Prev = null;
 
                         // We are at the end of the ring
                         if (nextNode == null)
                         {
                             // We are on the current ring
-                            if (_lastToken.Iteration == _iteration)
+                            if (head.Iteration == _iteration)
                             {
                                 _currentRingTail = lastCheckpoint;
                                 _currentRingTail.Next = null;
                                 _currentRingTail.Type = DriverMessageType.Failure;
-                                _lastToken = _currentRingTail;
+                                head = _currentRingTail;
                             }
                             else
                             {
@@ -408,30 +352,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 _prevRingTail = lastCheckpoint;
                                 _prevRingTail.Next = null;
                                 _prevRingTail.Type = DriverMessageType.Failure;
-                                _lastToken = _prevRingTail;
+                                head = _prevRingTail;
 
                                 var data = new FailureMessagePayload(_currentRingHead.TaskId, _currentRingHead.Iteration, SubscriptionName, OperatorId);
-                                var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, data);
+                                var returnMessage = new ElasticDriverMessageImpl(head.TaskId, data);
                                 messages.Add(returnMessage);
                             }
                         }
                         else
                         {
-                            _tasksInRing.Remove(_lastToken.TaskId);
-                            _currentWaitingList.Remove(_lastToken.TaskId);
-                            _nextWaitingList.Remove(_lastToken.TaskId);
-                            _lastToken.Next = null;
-                            _lastToken = lastCheckpoint;
-                            _lastToken.Next = nextNode;
-                            nextNode.Prev = _lastToken;
+                            _tasksInRing.Remove(head.TaskId);
+                            _currentWaitingList.Remove(head.TaskId);
+                            _nextWaitingList.Remove(head.TaskId);
+                            head.Next = null;
+                            head = lastCheckpoint;
+                            head.Next = nextNode;
+                            nextNode.Prev = head;
 
                             var data = new FailureMessagePayload(nextNode.TaskId, nextNode.Iteration, SubscriptionName, OperatorId);
-                            var returnMessage = new ElasticDriverMessageImpl(_lastToken.TaskId, data);
+                            var returnMessage = new ElasticDriverMessageImpl(head.TaskId, data);
                             messages.Add(returnMessage);
                         }
+                        LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", head.TaskId);
                     }
-
-                    LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", _lastToken.TaskId);
 
                     _ringPrint.Replace(taskId, "X");
 

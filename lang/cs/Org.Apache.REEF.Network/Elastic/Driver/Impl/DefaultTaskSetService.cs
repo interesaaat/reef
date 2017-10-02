@@ -35,6 +35,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Tang.Implementations.Configuration;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -149,7 +150,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     GenericType<StreamingNetworkService<GroupCommunicationMessage>>.Class)
                 .Build();
 
-            return TangFactory.GetTang().NewConfigurationBuilder(serviceConfig)
+            IConfiguration codecConfig = StreamingCodecConfiguration<CheckpointMessageRequest>.Conf
+                .Set(StreamingCodecConfiguration<CheckpointMessageRequest>.Codec, 
+                GenericType<CheckpointMessageRequestStreamingCodec>.Class)
+                .Build();
+
+            var finalConfig = Configurations.Merge(serviceConfig, codecConfig);
+
+            return TangFactory.GetTang().NewConfigurationBuilder(finalConfig)
                 .BindNamedParameter<NamingConfigurationOptions.NameServerAddress, string>(
                     GenericType<NamingConfigurationOptions.NameServerAddress>.Class,
                     _nameServerAddr)
@@ -158,6 +166,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     _nameServerPort.ToString(CultureInfo.InvariantCulture))
                 .BindImplementation(GenericType<INameClient>.Class,
                     GenericType<NameClient>.Class)
+
                 .Build();
         }
 

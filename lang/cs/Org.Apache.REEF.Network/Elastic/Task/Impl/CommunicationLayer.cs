@@ -83,6 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource = ringMessageSource;
             _driverMessagesHandler = driverMessagesHandler;
             _checkpointService = checkpointService;
+            _checkpointService.CommunicationLayer = this;
             _idFactory = idFactory;
 
             _disposed = false;
@@ -218,11 +219,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public void JoinTheRing(string taskId)
         {
             _ringMessageSource.JoinTheRing(taskId);
-        }
-
-        public void TokenReceived(string taskId, int iterationNumber)
-        {
-            _ringMessageSource.TokenReceived(taskId, iterationNumber);
         }
 
         public void OnError(Exception error)
