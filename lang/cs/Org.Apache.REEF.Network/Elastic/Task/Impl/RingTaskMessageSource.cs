@@ -19,9 +19,8 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Org.Apache.REEF.Common.Runtime.Evaluator;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {

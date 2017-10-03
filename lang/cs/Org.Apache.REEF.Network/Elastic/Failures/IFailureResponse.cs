@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using System.Collections.Generic;
 

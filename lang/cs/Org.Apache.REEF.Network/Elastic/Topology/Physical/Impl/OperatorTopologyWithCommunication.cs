@@ -24,6 +24,7 @@ using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {

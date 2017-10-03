@@ -21,7 +21,6 @@ using System.Collections;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {

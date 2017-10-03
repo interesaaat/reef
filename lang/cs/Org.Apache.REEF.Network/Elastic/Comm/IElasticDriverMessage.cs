@@ -15,36 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
-namespace Org.Apache.REEF.Network.Elastic.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
-    /// Messages sent by MPI Operators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by Network Service
+    /// Message sent by the driver to operators on running tasks. 
+    /// This message contains instructions from the Driver to Tasks.
     /// </summary>
-    public sealed class DataMessage<T> : GroupCommunicationMessage
+    public interface IElasticDriverMessage
     {
-        public DataMessage(
-            string subscriptionName,
-            int operatorId,
-            T data) : base(subscriptionName, operatorId)
-        {
-            Data = data;
-        }
+        /// <summary>
+        /// The destination task of the message
+        string Destination { get; }
 
-        public DataMessage(
-           string subscriptionName,
-           int operatorId) : base(subscriptionName, operatorId)
-        {
-        }
+        /// <summary>
+        /// Operator and situation specific payload of the message
+        /// </summary>
+        IDriverMessagePayload Message { get; }
 
-        internal T Data { get; set; }
-
-        // The assumption is that messages are immutable therefore there is no need to clone them
-        override public object Clone()
-        {
-            return this;
-        }
+        /// <summary>
+        /// Utility method to serialize the message for communication
+        /// </summary>
+        byte[] Serialize();
     }
 }

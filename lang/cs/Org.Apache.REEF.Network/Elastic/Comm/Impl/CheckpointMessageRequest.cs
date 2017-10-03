@@ -15,21 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Failures;
-
-namespace Org.Apache.REEF.Network.Elastic.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    public sealed class CheckpointMessage : GroupCommunicationMessage
+    internal sealed class CheckpointMessageRequest : GroupCommunicationMessage
     {
-        public CheckpointMessage(ICheckpointState payload) : base(payload.SubscriptionName, payload.OperatorId)
+        public CheckpointMessageRequest(
+           string subscriptionName,
+           int operatorId,
+           int iteration) : base(subscriptionName, operatorId)
         {
-            Payload = payload;
+            Iteration = iteration;
         }
 
-        public ICheckpointState Payload { get; set; }
+        public int Iteration { get; set; }
     }
 }

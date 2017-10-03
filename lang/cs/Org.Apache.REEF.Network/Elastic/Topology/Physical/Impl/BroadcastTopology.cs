@@ -23,6 +23,7 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using System;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -38,10 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
             CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
         {
-            if (taskId != _rootTaskId)
-            {
-                _commLayer.RegisterOperatorTopologyForTask(_rootTaskId, this);
-            }
+            _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
 
             foreach (var child in children)
             {

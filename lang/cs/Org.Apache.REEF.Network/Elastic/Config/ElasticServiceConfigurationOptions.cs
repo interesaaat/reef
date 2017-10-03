@@ -32,7 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Number of Workes")]
+        [NamedParameter("Number of Workers")]
         public class NumWorkers : Name<int>
         {
         }

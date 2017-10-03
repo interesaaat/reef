@@ -25,7 +25,7 @@ using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Wake.StreamingCodec;
 using Org.Apache.REEF.Utilities;
 
-namespace Org.Apache.REEF.Network.Elastic.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
     /// Streaming Codec for the Group Communication Message

@@ -15,15 +15,28 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+
+namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
-    /// Possible types of Driver message payloads
+    /// Payload of Driver messages.
     /// </summary>
-    public enum DriverMessageType : ushort
+    public abstract class IDriverMessagePayload : GroupCommunicationMessage
     {
-        Failure = 1,
+        public IDriverMessagePayload(string subscriptionName, int operatorId)
+            : base(subscriptionName, operatorId)
+        {
+        }
 
-        Ring = 2
+        /// <summary>
+        /// The type of payload
+        /// </summary>
+       internal DriverMessageType MessageType { get; set; }
+
+        /// <summary>
+        /// Utility method to serialize the payload for communication
+        /// </summary>
+        internal abstract byte[] Serialize();
     }
 }

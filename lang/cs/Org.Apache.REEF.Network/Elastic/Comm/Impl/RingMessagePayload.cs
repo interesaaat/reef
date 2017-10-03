@@ -15,39 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Utilities;
 using System;
-using System.Collections.Generic;
-using System.Linq;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
+namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    internal sealed class FailureMessagePayload : IDriverMessagePayload
+    internal sealed class RingMessagePayload : IDriverMessagePayload
     {
-        public FailureMessagePayload(string nextTaskId, int iteration, string subscriptionName, int operatorId)
+        public RingMessagePayload(string nextTaskId, string subscriptionName, int operatorId)
             : base(subscriptionName, operatorId)
         {
             NextTaskId = nextTaskId;
-            Iteration = iteration;
-            MessageType = DriverMessageType.Failure;
+            MessageType = DriverMessageType.Ring;
         }
 
         internal string NextTaskId { get; private set; }
 
-        internal int Iteration { get; private set; }
-
         internal override byte[] Serialize()
         {
             byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
+            byte[] subscription = ByteUtilities.StringToByteArrays(SubscriptionName);
             int offset = 0;
 
-            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscriptionBytes.Length + sizeof(int) + sizeof(int)];
+            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscription.Length + sizeof(int)];
 
             Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -55,15 +49,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
             offset += nextBytes.Length;
 
-            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(subscription.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
-            offset += subscriptionBytes.Length;
+            Buffer.BlockCopy(subscription, 0, buffer, offset, subscription.Length);
+            offset += subscription.Length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
 
             return buffer;
         }
@@ -71,20 +63,18 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         internal static IDriverMessagePayload From(byte[] data, int offset = 0)
         {
             int length = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
+            offset += 4;
             string destination = ByteUtilities.ByteArraysToString(data, offset, length);
             offset += length;
 
             length = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
+            offset += 4;
             string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
             offset += length;
 
             int operatorId = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            int iteration = BitConverter.ToInt32(data, offset);
 
-            return new FailureMessagePayload(destination, iteration, subscription, operatorId);
+            return new RingMessagePayload(destination, subscription, operatorId);
         }
 
         public override object Clone()

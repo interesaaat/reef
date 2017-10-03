@@ -15,26 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Driver
+using Org.Apache.REEF.Network.Elastic.Failures;
+
+namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Message sent by the driver to operators on running tasks. 
-    /// This message contains instructions from the Driver to Tasks.
+    /// Messages sent by MPI Operators. This is the class inherited by 
+    /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    public interface IElasticDriverMessage
+    internal sealed class CheckpointMessage : GroupCommunicationMessage
     {
-        /// <summary>
-        /// The destination task of the message
-        string Destination { get; }
+        public CheckpointMessage(ICheckpointState payload) : base(payload.SubscriptionName, payload.OperatorId)
+        {
+            Payload = payload;
+        }
 
-        /// <summary>
-        /// Operator and situation specific payload of the message
-        /// </summary>
-        IDriverMessagePayload Message { get; }
-
-        /// <summary>
-        /// Utility method to serialize the message for communication
-        /// </summary>
-        byte[] Serialize();
+        public ICheckpointState Payload { get; set; }
     }
 }

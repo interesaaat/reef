@@ -30,6 +30,7 @@ using System.Runtime.Remoting;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -93,22 +94,19 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// Registers a <see cref="OperatorTopologyWithCommunication"/> for a given <see cref="taskSourceId"/>.
+        /// Registers a <see cref="OperatorTopologyWithCommunication"/> for a given <see cref="taskDestinationId"/>.
         /// If the <see cref="OperatorTopologyWithCommunication"/> has already been initialized, it will return
         /// the existing one.
         /// </summary>
-        public void RegisterOperatorTopologyForTask(string taskSourceId, OperatorTopologyWithCommunication operatorObserver)
+        public void RegisterOperatorTopologyForTask(string taskDestinationId, OperatorTopologyWithCommunication operatorObserver)
         {
-            // Add a TaskMessage observer for each upstream/downstream source.
             ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> taskObservers;
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
-            _groupMessageObservers.TryGetValue(taskSourceId, out taskObservers);
-
-            if (taskObservers == null)
+            if (!_groupMessageObservers.TryGetValue(taskDestinationId, out taskObservers))
             {
                 taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
-                _groupMessageObservers.TryAdd(taskSourceId, taskObservers);
+                _groupMessageObservers.TryAdd(taskDestinationId, taskObservers);
             }
 
             if (taskObservers.ContainsKey(id))
@@ -204,10 +202,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             OperatorTopologyWithCommunication operatorObserver;
             ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
 
-            if (!_groupMessageObservers.TryGetValue(gcMessageTaskSource, out observers))
+            if (!_groupMessageObservers.TryGetValue(nsMessage.DestId.ToString(), out observers))
             {
-                throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
-                    gcMessageTaskSource + ".");
+                throw new KeyNotFoundException("Unable to find registered task Observe for destination Task " +
+                    nsMessage.DestId + ".");
             }
 
             if (!observers.TryGetValue(id, out operatorObserver))

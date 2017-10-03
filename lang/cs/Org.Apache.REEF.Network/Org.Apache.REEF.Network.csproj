@@ -78,12 +78,12 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
-    <Compile Include="Elastic\Driver\IDriverMessagePayload.cs" />
-    <Compile Include="Elastic\Driver\IElasticDriverMessage.cs" />
-    <Compile Include="Elastic\Failures\Impl\CheckpointService.cs" />
+    <Compile Include="Elastic\Comm\IDriverMessagePayload.cs" />
+    <Compile Include="Elastic\Comm\IElasticDriverMessage.cs" />
+    <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
-    <Compile Include="Elastic\Failures\FailureMessagePayload.cs" />
-    <Compile Include="Elastic\Driver\Impl\ElasticDriverMessageImpl.cs" />
+    <Compile Include="Elastic\Comm\Impl\FailureMessagePayload.cs" />
+    <Compile Include="Elastic\Comm\Impl\ElasticDriverMessageImpl.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointableModel.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointableObject.cs" />
     <Compile Include="Elastic\Failures\Impl\NoCheckpointableState.cs" />
@@ -92,9 +92,9 @@ under the License.
     <Compile Include="Elastic\Failures\ICheckpointableState.cs" />
     <Compile Include="Elastic\Failures\ICheckpointState.cs" />
     <Compile Include="Elastic\Failures\IStop.cs" />
-    <Compile Include="Elastic\Operators\Physical\Impl\RingMessagePayload.cs" />
+    <Compile Include="Elastic\Comm\Impl\RingMessagePayload.cs" />
     <Compile Include="Elastic\Driver\ITaskMessageResponse.cs" />
-    <Compile Include="Elastic\Driver\DriverMessageType.cs" />
+    <Compile Include="Elastic\Comm\DriverMessageType.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultConditionalIterator.cs" />
@@ -109,15 +109,15 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\IElasticTypedIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\ICheckpointingOperator.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointIdentifier.cs" />
-    <Compile Include="Elastic\Task\Impl\CheckpointMessageRequest.cs" />
-    <Compile Include="Elastic\Task\Impl\CheckpointMessage.cs" />
-    <Compile Include="Elastic\Task\Impl\CheckpointMessageRequestStreamingCodec.cs" />
-    <Compile Include="Elastic\Task\Impl\CheckpointMessageStreamingCodec.cs" />
-    <Compile Include="Elastic\Task\RingTaskMessageType.cs" />
+    <Compile Include="Elastic\Comm\Impl\CheckpointMessageRequest.cs" />
+    <Compile Include="Elastic\Comm\Impl\CheckpointMessage.cs" />
+    <Compile Include="Elastic\Comm\Impl\CheckpointMessageRequestStreamingCodec.cs" />
+    <Compile Include="Elastic\Comm\Impl\CheckpointMessageStreamingCodec.cs" />
+    <Compile Include="Elastic\Comm\RingTaskMessageType.cs" />
     <Compile Include="Elastic\Task\Impl\DriverMessageHandler.cs" />
-    <Compile Include="Elastic\Task\Impl\DataMessage.cs" />
+    <Compile Include="Elastic\Comm\Impl\DataMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />
-    <Compile Include="Elastic\Task\Impl\DataMessageStreamingCodec.cs" />
+    <Compile Include="Elastic\Comm\Impl\DataMessageStreamingCodec.cs" />
     <Compile Include="Elastic\Task\Impl\Workflow.cs" />
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
     <Compile Include="Elastic\Task\IWaitForTaskRegistration.cs" />
@@ -131,7 +131,7 @@ under the License.
     <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopology.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetSubscription.cs" />
     <Compile Include="Elastic\Task\Impl\DefaultTaskSetService.cs" />
-    <Compile Include="Elastic\Task\Impl\GroupCommunicationMessage.cs" />
+    <Compile Include="Elastic\Comm\Impl\GroupCommunicationMessage.cs" />
     <Compile Include="Elastic\Config\OperatorParameters.cs" />
     <Compile Include="Elastic\Config\ElasticServiceConfigurationOptions.cs" />
     <Compile Include="Elastic\Config\GroupCommunicationConfigurationOptions.cs" />

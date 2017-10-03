@@ -15,24 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
-
-namespace Org.Apache.REEF.Network.Elastic.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
-    /// Messages sent by MPI Operators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by Network Service
+    /// Possible types of Driver message payloads
     /// </summary>
-    internal sealed class CheckpointMessageRequest : GroupCommunicationMessage
+    public enum DriverMessageType : ushort
     {
-        public CheckpointMessageRequest(
-           string subscriptionName,
-           int operatorId,
-           int iteration) : base(subscriptionName, operatorId)
-        {
-            Iteration = iteration;
-        }
+        Failure = 1,
 
-        public int Iteration { get; set; }
+        Ring = 2
     }
 }

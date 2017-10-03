@@ -15,41 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-
-namespace Org.Apache.REEF.Network.Elastic.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    public abstract class GroupCommunicationMessage : ICloneable
+    internal sealed class DataMessage<T> : GroupCommunicationMessage
     {
-        /// <summary>
-        /// Create new CommunicationGroupMessage.
-        /// </summary>
-        /// <param name="operatorName">The name of the MPI operator</param>
-        /// <param name="source">The message source</param>
-        /// <param name="destination">The message destination</param>
-        /// <param name="messageType">The type of the GC message</param>
-        protected GroupCommunicationMessage(
+        public DataMessage(
             string subscriptionName,
-            int operatorId)
+            int operatorId,
+            T data) : base(subscriptionName, operatorId)
         {
-            SubscriptionName = subscriptionName;
-            OperatorId = operatorId;
+            Data = data;
         }
 
-        /// <summary>
-        /// Returns the Subscription
-        internal string SubscriptionName { get; private set; }
+        public DataMessage(
+           string subscriptionName,
+           int operatorId) : base(subscriptionName, operatorId)
+        {
+        }
 
-        /// <summary>
-        /// Returns the Operator id.
-        /// </summary>
-        internal int OperatorId { get; private set; }
+        internal T Data { get; set; }
 
-        public virtual object Clone()
+        // The assumption is that messages are immutable therefore there is no need to clone them
+        override public object Clone()
         {
             return this;
         }

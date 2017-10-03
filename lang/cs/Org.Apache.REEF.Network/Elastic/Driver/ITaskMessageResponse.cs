@@ -16,11 +16,10 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
+using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
     /// Used to propagate task messages through operators and subscriptions.
