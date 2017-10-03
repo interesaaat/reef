@@ -58,16 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public int Current
         {
-            get
-            {
-                if (_inner.Current == 5)
-                {
-                    Console.WriteLine("Try to fetch a remote checkpoint");
-                    _topology.GetCheckpoint();
-                }
-
-                return _inner.Current;
-            }
+            get { return _inner.Current; }
         }
 
         object IEnumerator.Current
@@ -104,11 +95,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public bool MoveNext()
         {
-            var result = _inner.MoveNext();
+            if (_inner.MoveNext())
+            {
+                Checkpoint();
+                return true;
+            }
 
-            Checkpoint();
-
-            return result;
+            return false;
         }
 
         public void Reset()

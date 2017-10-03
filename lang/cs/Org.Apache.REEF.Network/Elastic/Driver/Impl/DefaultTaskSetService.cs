@@ -150,14 +150,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     GenericType<StreamingNetworkService<GroupCommunicationMessage>>.Class)
                 .Build();
 
-            IConfiguration codecConfig = StreamingCodecConfiguration<CheckpointMessageRequest>.Conf
-                .Set(StreamingCodecConfiguration<CheckpointMessageRequest>.Codec, 
-                GenericType<CheckpointMessageRequestStreamingCodec>.Class)
-                .Build();
+            ////IConfiguration ckpntReqCodecConfig = StreamingCodecConfiguration<CheckpointMessageRequest>.Conf
+            ////    .Set(StreamingCodecConfiguration<CheckpointMessageRequest>.Codec,
+            ////    GenericType<CheckpointMessageRequestStreamingCodec>.Class)
+            ////    .Build();
 
-            var finalConfig = Configurations.Merge(serviceConfig, codecConfig);
+            ////var finalConfig = Configurations.Merge(serviceConfig, ckpntReqCodecConfig);
 
-            return TangFactory.GetTang().NewConfigurationBuilder(finalConfig)
+            return TangFactory.GetTang().NewConfigurationBuilder(serviceConfig)
                 .BindNamedParameter<NamingConfigurationOptions.NameServerAddress, string>(
                     GenericType<NamingConfigurationOptions.NameServerAddress>.Class,
                     _nameServerAddr)

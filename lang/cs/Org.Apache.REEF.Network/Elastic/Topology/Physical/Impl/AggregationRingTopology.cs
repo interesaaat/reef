@@ -183,18 +183,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
 
             var destMessage = message as FailureMessagePayload;
-            var state = GetCheckpoint().State;
-            
-            if (state.GetType() == typeof(GroupCommunicationMessage[]))
+            var checkpoint = GetCheckpoint();
+
+            if (checkpoint == null || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
             {
-                foreach (var data in state as GroupCommunicationMessage[])
-                {
-                    _commLayer.Send(destMessage.NextTaskId, data);
-                }
+                throw new IllegalStateException("Failure recovery from state not available");
             }
-            else
+            
+            foreach (var data in checkpoint.State as GroupCommunicationMessage[])
             {
-                throw new IllegalStateException("Failure recovery from state not supported");
+                _commLayer.Send(destMessage.NextTaskId, data);
             }
         }
 

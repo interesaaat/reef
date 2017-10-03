@@ -88,10 +88,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
                     }
                 }
 
-                Logger.Log(Level.Warning, "Retrieving the checkpoint from {0}", rootTaskId);
+                Logger.Log(Level.Info, "Retrieving the checkpoint from {0}", rootTaskId);
                 var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
 
                 _communicationLayer.Send(rootTaskId, cpm);
+                
+                while (!_checkpoints.TryGetValue(id, out checkpoints))
+                {
+                    System.Threading.Thread.Sleep(100);
+                }
             }
 
             iteration = iteration < 0 ? checkpoints.Keys.Last() : iteration;

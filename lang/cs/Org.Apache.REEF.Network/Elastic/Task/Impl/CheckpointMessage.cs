@@ -23,7 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    internal sealed class CheckpointMessage : GroupCommunicationMessage
+    public sealed class CheckpointMessage : GroupCommunicationMessage
     {
         public CheckpointMessage(ICheckpointState payload) : base(payload.SubscriptionName, payload.OperatorId)
         {

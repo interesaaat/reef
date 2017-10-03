@@ -34,17 +34,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         {
             Level = level;
             Iteration = iteration;
-            SubState = state;
+            State = state;
         }
 
         public CheckpointLevel Level { get; set; }
 
-        T SubState { get; }
-
-        internal override object State
-        {
-            get { return SubState; }
-        }
+        internal override object State { get; }
 
         internal override CheckpointMessage ToMessage()
         {

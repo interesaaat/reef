@@ -188,32 +188,35 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 returnMessage.Payload = checkpoint;
 
                 Send(gcMessageTaskSource, returnMessage);
+                return;
             }
             if (gcm.GetType() == typeof(CheckpointMessage))
             {
+                Logger.Log(Level.Info, "Received checkpoint from " + gcMessageTaskSource);
                 var cpm = gcm as CheckpointMessage;
+                cpm.Payload.TaskId = nsMessage.DestId.ToString();
                 _checkpointService.Checkpoint(cpm.Payload);
+                return;
             }
-            else
+            
+            // Data message
+            var id = NodeObserverIdentifier.FromMessage(gcm);
+            OperatorTopologyWithCommunication operatorObserver;
+            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
+
+            if (!_groupMessageObservers.TryGetValue(gcMessageTaskSource, out observers))
             {
-                var id = NodeObserverIdentifier.FromMessage(gcm);
-                OperatorTopologyWithCommunication operatorObserver;
-                ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
-
-                if (!_groupMessageObservers.TryGetValue(gcMessageTaskSource, out observers))
-                {
-                    throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
-                        gcMessageTaskSource + ".");
-                }
-
-                if (!observers.TryGetValue(id, out operatorObserver))
-                {
-                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
-                        gcm.SubscriptionName + " operator " + gcm.OperatorId);
-                }
-
-                operatorObserver.OnNext(nsMessage);
+                throw new KeyNotFoundException("Unable to find registered task Observe for source Task " +
+                    gcMessageTaskSource + ".");
             }
+
+            if (!observers.TryGetValue(id, out operatorObserver))
+            {
+                throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
+                    gcm.SubscriptionName + " operator " + gcm.OperatorId);
+            }
+
+            operatorObserver.OnNext(nsMessage);
         }
 
         public void JoinTheRing(string taskId)

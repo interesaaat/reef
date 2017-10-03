@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// <summary>
     /// Streaming Codec for the Group Communication Message
     /// </summary>
-    internal sealed class CheckpointMessageStreamingCodec<T> : IStreamingCodec<CheckpointMessage>
+    public sealed class CheckpointMessageStreamingCodec<T> : IStreamingCodec<CheckpointMessage>
     {
         private readonly IStreamingCodec<T> _codec;
 
@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             reader.Read(ref metadata, 0, metadataSize);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int));
+            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
 
             string subscriptionName = res.Item1;
             int operatorId = res.Item2;
@@ -86,16 +86,17 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public async Task<CheckpointMessage> ReadAsync(IDataReader reader,
             CancellationToken token)
         {
-            int metadataSize = reader.ReadInt32() + sizeof(int);
+            int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int));
+            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             
             var data = await _codec.ReadAsync(reader, token);
-            string subscriptionString = res.Item1;
-            int operatorId = res.Item2;
             int iteration = res.Item3;
             var payload = new CheckpointState<T>(0, iteration, data);
+            payload.SubscriptionName = res.Item1;
+            payload.OperatorId = res.Item2;
+            payload.Iteration = iteration;
 
             return new CheckpointMessage(payload);
         }

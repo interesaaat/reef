@@ -16,7 +16,9 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.StreamingCodec;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -24,11 +26,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     public class CheckpointableModel<T> : CheckpointableObject<T[]> where T : struct 
     {
         [Inject]
-        private CheckpointableModel([Parameter(typeof(Checkpointing))] int level,
-            IStreamingCodec<T[]> codec)
+        private CheckpointableModel(
+            [Parameter(typeof(Checkpointing))] int level)
+            ////IInjector injector,
+            ////CheckpointMessageStreamingCodec<T[]> codec) : base(injector, codec)
         {
             Level = (CheckpointLevel)level;
-            Codec = codec;
         }
     }
 }

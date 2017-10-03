@@ -34,11 +34,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             get { return CheckpointLevel.None; }
         }
 
-        public IStreamingCodec<object> Codec
-        {
-            get { throw new IllegalStateException("Trying to serialize an empty state"); }
-        }
-
         public void MakeCheckpointable(object state)
         {
         }

@@ -64,6 +64,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
+        ////private readonly IConfiguration _ckpntMsgCodecConfig;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
         private readonly IElasticTaskSetService _service;
@@ -94,6 +95,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _codecConfig = StreamingCodecConfiguration<int[]>.Conf
                 .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
                 .Build();
+
+            ////_ckpntMsgCodecConfig = StreamingCodecConfiguration<CheckpointMessage>.Conf
+            ////    .Set(StreamingCodecConfiguration<CheckpointMessage>.Codec,
+            ////        GenericType<CheckpointMessageStreamingCodec<int[]>>.Class)
+            ////    .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,

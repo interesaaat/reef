@@ -33,7 +33,5 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         void MakeCheckpointable(object state);
 
         ICheckpointState Checkpoint();
-
-        IStreamingCodec<object> Codec { get; }
     }
 }

@@ -21,7 +21,6 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
@@ -35,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             int masterTaskId,
             ElasticOperator prev,
             IFailureStateMachine failureMachine,
-            Failures.CheckpointLevel checkpointLevel,
+            CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 

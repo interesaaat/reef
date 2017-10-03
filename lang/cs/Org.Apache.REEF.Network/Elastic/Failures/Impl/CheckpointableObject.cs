@@ -15,7 +15,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Wake.StreamingCodec;
 using System;
 
@@ -29,11 +33,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         {
         }
 
-        [Inject]
-        private CheckpointableObject(IStreamingCodec<T> codec)
-        {
-            Codec = codec;
-        }
+        ////[Inject]
+        ////internal CheckpointableObject(IInjector injector, CheckpointMessageStreamingCodec<T> codec)
+        ////{
+        ////    ////var ckpntMsgCodecConfig = StreamingCodecConfiguration<CheckpointMessage>.Conf
+        ////    ////    .Set(StreamingCodecConfiguration<CheckpointMessage>.Codec,
+        ////    ////        GenericType<CheckpointMessageStreamingCodec<T>>.Class)
+        ////    ////    .Build();
+        ////    ////injector.BindVolatileInstance(GenericType<IStreamingCodec<CheckpointMessage>>.Class, codec);
+        ////}
 
         protected T State { get; set; }
 
@@ -42,11 +50,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         public CheckpointLevel Level { get; internal set; }
 
         public int Iteration { get; internal set; }
-
-        IStreamingCodec<object> ICheckpointableState.Codec
-        {
-            get { return (IStreamingCodec<object>)Codec; }
-        }
 
         public void MakeCheckpointable(T model)
         {
