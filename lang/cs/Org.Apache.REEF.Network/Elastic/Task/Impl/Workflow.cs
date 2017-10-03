@@ -53,6 +53,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _operators.Add(op);
 
+            if (_iteratorPosition >= 0)
+            {
+                op.IteratorReference = _operators[_iteratorPosition] as IElasticIterator;
+            }
+
             if (op.OperatorName == Constants.Iterate)
             {
                 _iteratorPosition = _operators.Count - 1;

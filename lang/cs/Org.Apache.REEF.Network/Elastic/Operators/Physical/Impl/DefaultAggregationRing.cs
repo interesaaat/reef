@@ -35,7 +35,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     {
         private readonly AggregationRingTopology _topology;
         private PositionTracker _position;
-        private int _iterationNumber = 0;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -64,10 +63,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string FailureInfo
         {
-            get { return ((int)_position).ToString() + ":" + _iterationNumber; }
+            get
+            {
+                string iteration = IteratorReference == null ? "-1" : IteratorReference.Current.ToString();
+                return ((int)_position).ToString() + ":" + iteration;
+            }
         }
 
         internal CheckpointLevel CheckpointLevel { get; set; }
+
+        public IElasticIterator IteratorReference { private get;  set; }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.
@@ -76,7 +81,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
-            _iterationNumber++;
             _position = PositionTracker.InReceive;
             _topology.JoinTheRing();
 
@@ -100,6 +104,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             _topology.Send(messages, cancellationSource);
             _position = PositionTracker.AfterSendBeforeReceive;
+        }
+
+        public void ResetPosition()
+        {
+            _position = PositionTracker.Nil;
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)

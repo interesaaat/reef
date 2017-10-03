@@ -300,9 +300,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             int position = int.Parse(failureInfos[0]);
             int currentIteration = int.Parse(failureInfos[1]);
 
+            _ringPrint.Replace(taskId, "X");
+
             switch (position)
             {
+                // We are before receive, we should be ok
+                case (int)PositionTracker.Nil:
+                    LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
+                    return messages;
+
                 // The failure is on the node with token
+                case (int)PositionTracker.InReceive:
                 case (int)PositionTracker.AfterReceiveBeforeSend:
                     lock (_lock)
                     {
@@ -375,9 +383,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         }
                         LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", head.TaskId);
                     }
+                    return messages;
 
-                    _ringPrint.Replace(taskId, "X");
+                // The failure is on the node with token while sending
+                case (int)PositionTracker.InSend:
+                    // Need to check if successive node received message or not
+                    return messages;
 
+                // We are after send but before a new iteration starts
+                case (int)PositionTracker.AfterSendBeforeReceive:
+                    LOGGER.Log(Level.Info, "Node failed after communicating: no need to reconfigure");
                     return messages;
                 default:
                     return messages;

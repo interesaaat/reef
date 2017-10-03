@@ -87,6 +87,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public ICheckpointableState CheckpointState { get; set; }
 
+        public IElasticIterator IteratorReference { private get; set; }
+
+        public void ResetPosition()
+        {
+        }
+
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
         }

@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -68,6 +69,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get { return _position.ToString(); }
         }
 
+        public IElasticIterator IteratorReference { private get;  set; }
+
         /// <summary>
         /// Receive a message from neighbors broadcasters.
         /// </summary>
@@ -95,6 +98,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Send(new GroupCommunicationMessage[] { message }, cancellationSource);
 
             _position = PositionTracker.AfterSendBeforeReceive;
+        }
+
+        public void ResetPosition()
+        {
+            _position = PositionTracker.Nil;
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)

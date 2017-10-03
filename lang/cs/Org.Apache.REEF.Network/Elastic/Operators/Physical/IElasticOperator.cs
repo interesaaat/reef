@@ -41,9 +41,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         string FailureInfo { get; }
 
         /// <summary>
+        /// Get a reference of the iterator in the pipeline (if it exists)
+        /// </summary>
+        IElasticIterator IteratorReference { set; }
+
+        /// <summary>
         /// Wait until computation is globally completed for this operator 
         /// before disposing the object
         /// </summary>
         void WaitCompletionBeforeDisposing();
+
+        /// <summary>
+        /// Reset the internal position tracker. This should be called
+        /// every time a new iteration start in the workflow
+        /// </summary>
+        void ResetPosition();
     }
 }
