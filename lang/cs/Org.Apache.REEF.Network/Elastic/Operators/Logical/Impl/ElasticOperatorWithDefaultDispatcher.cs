@@ -91,7 +91,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         failureEvents.Add(new ReconfigureEvent(task, _id));
                         break;
                     case DefaultFailureStates.ContinueAndReschedule:
-                        failureEvents.Add(new RescheduleEvent(task.Id, _id));
+                        failureEvents.Add(new RescheduleEvent(task.Id, -1));
                         break;
                     case DefaultFailureStates.StopAndReschedule:
                         failureEvents.Add(new StopEvent(task.Id, _id));
@@ -114,7 +114,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
         {
-            if (@event.OperatorId == _id)
+            if (@event.OperatorId == _id || @event.OperatorId < 0)
             {
                 switch ((DefaultFailureStateEvents)@event.FailureEvent)
                 {

@@ -22,6 +22,10 @@ using Org.Apache.REEF.Tang.Util;
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
+using Org.Apache.REEF.Network.Elastic.Comm;
+using System;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -30,6 +34,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// </summary>
     class DefaultEnumerableIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultEnumerableIterator));
+
         public DefaultEnumerableIterator(
             int masterTaskId,
             ElasticOperator prev,
@@ -65,6 +71,28 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             confBuilder
                 .BindImplementation(GenericType<IElasticTypedOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator>.Class);
             SetMessageType(typeof(IElasticTypedOperator<int>), ref confBuilder);
+        }
+
+        public override List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        {
+            LOGGER.Log(Level.Info, "Going to reschedule task " + rescheduleEvent.TaskId);
+
+            if (_checkpointLevel > CheckpointLevel.None)
+            {
+                if (rescheduleEvent.FailedTask.AsError() is OperatorException)
+                {
+                    var exception = rescheduleEvent.FailedTask.AsError() as OperatorException;
+                    if (exception.OperatorId == _id)
+                    {
+                        return _topology.Reconfigure(rescheduleEvent.FailedTask.Id, exception.AdditionalInfo);
+                    }
+                    else
+                    {
+                        throw new NotImplementedException("root: Future work");
+                    }
+                }
+            }
+            throw new NotImplementedException("Future work");
         }
     }
 }

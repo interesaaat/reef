@@ -26,10 +26,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private int _iterations;
 
         [Inject]
-        private ForLoopEnumerator([Parameter(typeof(NumIterations))] int iterations)
+        private ForLoopEnumerator(
+            [Parameter(typeof(NumIterations))] int iterations,
+            [Parameter(typeof(StartIteration))] int start)
         {
             _iterations = iterations;
-            State = 0;
+            State = start - 1;
         }
 
         public override bool MoveNext()
