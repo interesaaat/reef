@@ -82,6 +82,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                     Iteration = iteratorOperator.Current;
 
+                    ResetOperatorPositions();
+
                     return true;
                 }
                 else
@@ -185,6 +187,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             catch (OperationCanceledException e)
             {
                 throw e;
+            }
+        }
+
+        private void ResetOperatorPositions()
+        {
+            for (int pos = _position; pos < _operators.Count; pos++)
+            {
+                _operators[pos].ResetPosition();
             }
         }
     }

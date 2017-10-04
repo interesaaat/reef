@@ -84,6 +84,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
                 case DriverMessageType.Failure:
                     payload = FailureMessagePayload.From(data, offset);
                     break;
+                case DriverMessageType.Request:
+                    payload = TokenReceivedRequest.From(data, offset);
+                    break;
                 case DriverMessageType.Ring:
                     payload = RingMessagePayload.From(data, offset);
                     break;

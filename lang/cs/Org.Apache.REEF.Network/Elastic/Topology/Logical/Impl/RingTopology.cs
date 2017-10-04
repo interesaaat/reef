@@ -54,7 +54,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private RingNode _prevRingHead;
         private RingNode _currentRingTail;
         private RingNode _prevRingTail;
-        private StringBuilder _ringPrint;
+        private volatile StringBuilder _ringPrint;
 
         private string _rootTaskId;
         private string _taskSubscription;
@@ -377,7 +377,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 // The failure is on the node with token while sending
                 case (int)PositionTracker.InSend:
-                // We are after send but before a new iteration starts. Data may or may not have reached the next node
+                    // We are after send but before a new iteration starts 
+                    // Data may or may not have reached the next node
                 case (int)PositionTracker.AfterSendBeforeReceive:
                     lock (_lock)
                     {
@@ -426,11 +427,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 lastCheckpoint.Next = null;
                                 _currentRingHead.Type = DriverMessageType.Request;
 
-                                var data = new TokenReceivedRequest(_currentRingHead.Iteration, SubscriptionName, OperatorId);
+                                var data = new TokenReceivedRequest(currentIteration, SubscriptionName, OperatorId);
                                 var returnMessage = new ElasticDriverMessageImpl(_currentRingHead.TaskId, data);
                                 messages.Add(returnMessage);
 
-                                LOGGER.Log(Level.Info, "Sending request token message to node {0}", _currentRingHead.TaskId);
+                                LOGGER.Log(Level.Info, "Sending request token message to node {0} for iteration {1}", _currentRingHead.TaskId, currentIteration);
                             }
                         }
                         else
@@ -441,11 +442,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             nextNode.Prev = head;
                             nextNode.Type = DriverMessageType.Request;
 
-                            var data = new TokenReceivedRequest(nextNode.Iteration, SubscriptionName, OperatorId);
+                            var data = new TokenReceivedRequest(currentIteration, SubscriptionName, OperatorId);
                             var returnMessage = new ElasticDriverMessageImpl(nextNode.TaskId, data);
                             messages.Add(returnMessage);
 
-                            LOGGER.Log(Level.Info, "Sending request token message to node {0}", nextNode.TaskId);
+                            LOGGER.Log(Level.Info, "Sending request token message to node {0} for iteration {1}", nextNode.TaskId, currentIteration);
                         }
                     }
 
@@ -487,13 +488,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 {
                     lastCheckpoint = _prevRingTail;
                 }
-                else
-                {
-                    var data = new FailureMessagePayload(head.TaskId, head.Iteration, SubscriptionName, OperatorId);
-                    var returnMessage = new ElasticDriverMessageImpl(lastCheckpoint.TaskId, data);
-                    messages.Add(returnMessage);
-                }
-                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", head.TaskId);
+
+                var data = new FailureMessagePayload(head.TaskId, head.Iteration, SubscriptionName, OperatorId);
+                var returnMessage = new ElasticDriverMessageImpl(lastCheckpoint.TaskId, data);
+                messages.Add(returnMessage);
+
+                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", lastCheckpoint.TaskId);
             }
             return messages;
         }

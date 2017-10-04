@@ -105,6 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             Checkpoint(messages);
 
             _topology.Send(messages, cancellationSource);
+
             _position = PositionTracker.AfterSendBeforeReceive;
         }
 

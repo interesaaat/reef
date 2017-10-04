@@ -27,7 +27,7 @@ using Org.Apache.REEF.Wake.Time.Event;
 namespace Org.Apache.REEF.Common.Poison
 {
     /// <summary>
-    /// Handler to process an event in a way that has certain probability of failure within certain inverval of time.
+    /// Handler to process an event in a way that has certain probability of failure within certain interval of time.
     /// </summary>
     /// <typeparam name="T">The type of event</typeparam>
     [Private]

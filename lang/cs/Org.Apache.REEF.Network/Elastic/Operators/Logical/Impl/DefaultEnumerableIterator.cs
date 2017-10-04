@@ -79,12 +79,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_checkpointLevel > CheckpointLevel.None)
             {
-                if (rescheduleEvent.FailedTask.AsError() is OperatorException)
+                if (rescheduleEvent.FailedTask.Value.AsError() is OperatorException)
                 {
-                    var exception = rescheduleEvent.FailedTask.AsError() as OperatorException;
+                    var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        return _topology.Reconfigure(rescheduleEvent.FailedTask.Id, exception.AdditionalInfo);
+                        return _topology.Reconfigure(rescheduleEvent.FailedTask.Value.Id, exception.AdditionalInfo);
                     }
                     else
                     {

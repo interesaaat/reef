@@ -101,11 +101,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                                 throw new NotImplementedException("Future work");
                             }
                         }
+                        else
+                        {
+                            LOGGER.Log(Level.Info, "Node {0} received token: no need to reconfigure", message.TaskId);
+                        }
 
                         return true;
                     }
                 default:
-                    return false;
+                    throw new NotImplementedException("Message type not recognized");
             }
         }
 
@@ -124,7 +128,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                     else
                     {
-                        throw new NotImplementedException("root: Future work");
+                        throw new NotImplementedException("Future work");
                     }
                 }
             }

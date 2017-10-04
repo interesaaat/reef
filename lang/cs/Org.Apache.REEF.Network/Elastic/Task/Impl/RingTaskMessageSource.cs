@@ -31,6 +31,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private readonly HeartBeatReference _heartBeatManager;
 
+        private readonly object _lock;
+
         private byte[] _message;
         private readonly byte[] _message1 = new byte[2];
         private readonly byte[] _message2 = new byte[3];
@@ -44,13 +46,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskIdWithToken = string.Empty;
             _message = null;
 
+            _lock = new object();
+
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, _message1, 0, sizeof(ushort));
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenRequest), 0, _message2, 0, sizeof(ushort));
         }
 
         public void JoinTheRing(string taskId)
         {
-            lock (_message)
+            lock (_lock)
             {
                 _taskId = taskId;
                 _message = _message1;
@@ -61,7 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void TokenResponse(string taskId, bool response)
         {
-            lock (_message)
+            lock (_lock)
             {
                 _taskId = taskId;
                 _message = _message2;
