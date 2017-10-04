@@ -105,7 +105,7 @@ under the License.
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultAggregationRing.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultEnumerableIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\ForLoopEnumerator.cs" />
-    <Compile Include="Elastic\Operators\Physical\ElasticIteratorEnumerator.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\ElasticIteratorEnumerator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticTypedOperator.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticTypedIterator.cs" />
     <Compile Include="Elastic\Operators\Physical\ICheckpointingOperator.cs" />

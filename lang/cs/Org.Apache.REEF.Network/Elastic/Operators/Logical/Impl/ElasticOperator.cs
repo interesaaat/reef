@@ -429,7 +429,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             PhysicalOperatorConfiguration(ref operatorBuilder);
 
-            IConfiguration operatorConf = operatorBuilder
+            operatorBuilder
                 .BindNamedParameter<OperatorId, int>(
                     GenericType<OperatorId>.Class,
                     _id.ToString(CultureInfo.InvariantCulture))
@@ -437,6 +437,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     GenericType<Checkpointing>.Class,
                     ((int)_checkpointLevel).ToString(CultureInfo.InvariantCulture))
                 .Build();
+
+            if (taskId == 3 && _id == 1)
+            {
+                operatorBuilder.BindNamedParameter<StartIteration, int>(
+                GenericType<StartIteration>.Class,
+                0.ToString(CultureInfo.InvariantCulture));
+            }
+
+            IConfiguration operatorConf = operatorBuilder.Build();
 
             foreach (var conf in _configurations)
             {

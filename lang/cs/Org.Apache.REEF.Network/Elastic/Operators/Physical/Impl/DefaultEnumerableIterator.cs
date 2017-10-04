@@ -21,6 +21,7 @@ using System.Collections;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -49,6 +50,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             CheckpointState = state;
             _inner = innerIterator;
             _topology = topology;
+
+            ResumeFromCheckpoint();
         }
 
         public int OperatorId { get; private set; }
@@ -60,6 +63,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get { return _inner.Current; }
         }
 
+        public string FailureInfo
+        {
+            get { return PositionTracker.Nil.ToString(); }
+        }
+
+        public ICheckpointableState CheckpointState { get; set; }
+
+        public IElasticIterator IteratorReference { private get; set; }
+
         object IEnumerator.Current
         {
             get { return Current; }
@@ -69,15 +81,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             get { return Current; }
         }
-
-        public string FailureInfo
-        {
-            get { return PositionTracker.Nil.ToString(); }
-        }
-
-        public ICheckpointableState CheckpointState { get; set; }
-
-        public IElasticIterator IteratorReference { private get; set; }
 
         public void ResetPosition()
         {
@@ -89,7 +92,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitCompletionBeforeDisposing()
         {
-            return;
         }
 
         public bool MoveNext()
@@ -111,6 +113,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Dispose()
         {
             _inner.Dispose();
+        }
+
+        private void ResumeFromCheckpoint()
+        {
+            if (_inner.Current != 0)
+            {
+                _topology.GetCheckpoint(_inner.Current);
+            }
         }
 
         private void Checkpoint()
