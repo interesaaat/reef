@@ -433,9 +433,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     {
                         throw new ArgumentNullException("Task Info");
                     }
-                    if (_taskInfos[destination].TaskRunner == null)
+                    if (_taskInfos[destination].TaskStatus != TaskStatus.Running  || 
+                        _taskInfos[destination].TaskRunner == null)
                     {
-                        throw new ArgumentNullException("Task Runner");
+                        var msg = "Cannot send message type " + returnMessage.Message.MessageType;
+                        msg += " to " + destination + ": failing silently";
+
+                        LOGGER.Log(Level.Warning, msg);
                     }
 
                     _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());

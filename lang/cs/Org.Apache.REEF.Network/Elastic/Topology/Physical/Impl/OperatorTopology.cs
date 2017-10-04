@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal abstract class OperatorTopology
@@ -34,6 +36,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         internal string SubscriptionName { get; set; }
 
         internal int OperatorId { get; set; }
+
+        internal IElasticOperator Operator { get; set; }
 
         public virtual void WaitCompletionBeforeDisposing()
         {

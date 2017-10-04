@@ -21,6 +21,6 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     {
         JoinTheRing = 1,
 
-        TokenReceived = 2
+        TokenRequest = 2
     }
 }

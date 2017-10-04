@@ -33,11 +33,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             switch (message.MessageType)
             {
-                case DriverMessageType.Failure:
-                    OnFailureResponseMessageFromDriver(message);
+                case DriverMessageType.Ring:
+                    OnMessageFromDriver(message);
                     break;
                 default:
-                    OnMessageFromDriver(message);
+                    OnFailureResponseMessageFromDriver(message);
                     break;
             }
         }
