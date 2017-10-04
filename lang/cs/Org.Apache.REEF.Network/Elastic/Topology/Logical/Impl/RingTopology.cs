@@ -101,7 +101,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
 
             var id = Utils.GetTaskNum(taskId);
-            
+
             if (_nodes.ContainsKey(id))
             {
                 if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
@@ -329,13 +329,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             head = head.Next;
                         }
 
-                        if (head == null)
-                        {
-                            Console.WriteLine("Ops");
-                            Console.WriteLine(currentIteration);
-                            Console.WriteLine(_iteration);
-                        }
-
                         _tasksInRing.Remove(head.TaskId);
                         _currentWaitingList.Remove(head.TaskId);
                         _nextWaitingList.Remove(head.TaskId);
@@ -354,14 +347,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 _currentRingTail = lastCheckpoint;
                                 _currentRingTail.Next = null;
                                 _currentRingTail.Type = DriverMessageType.Failure;
-                                head = _currentRingTail;
                             }
                             else
                             {
                                 // We are on the prev ring
                                 _prevRingTail = lastCheckpoint;
                                 _prevRingTail.Next = null;
-                                _prevRingTail.Type = DriverMessageType.Failure;
                                 head = _prevRingTail;
 
                                 var data = new FailureMessagePayload(_currentRingHead.TaskId, _currentRingHead.Iteration, SubscriptionName, OperatorId);
@@ -371,9 +362,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         }
                         else
                         {
-                            _tasksInRing.Remove(head.TaskId);
-                            _currentWaitingList.Remove(head.TaskId);
-                            _nextWaitingList.Remove(head.TaskId);
                             head.Next = null;
                             head = lastCheckpoint;
                             head.Next = nextNode;
@@ -389,16 +377,125 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 // The failure is on the node with token while sending
                 case (int)PositionTracker.InSend:
-                    // Need to check if successive node received message or not
-                    return messages;
-
-                // We are after send but before a new iteration starts
+                // We are after send but before a new iteration starts. Data may or may not have reached the next node
                 case (int)PositionTracker.AfterSendBeforeReceive:
-                    LOGGER.Log(Level.Info, "Node failed after communicating: no need to reconfigure");
+                    lock (_lock)
+                    {
+                        // Need to check if successive node received message or not
+                        var head = _prevRingHead ?? _currentRingHead;
+
+                        // Position at the right ring
+                        if (head.Iteration < currentIteration)
+                        {
+                            head = _currentRingHead;
+                        }
+
+                        while (head != null && head.TaskId != taskId)
+                        {
+                            head = head.Next;
+                        }
+
+                        // Get the last available checkpointed node
+                        var lastCheckpoint = head.Prev;
+                        var nextNode = head.Next;
+                        head.Prev = null;
+
+                        // We are at the end of the ring
+                        if (nextNode == null)
+                        {
+                            // We are on the current ring and the receiving node is death
+                            // We can fix the ring right away in this case
+                            if (head.Iteration == _iteration)
+                            {
+                                lock (_lock)
+                                {
+                                    head.Prev = null;
+                                    _tasksInRing.Remove(head.TaskId);
+                                    _currentWaitingList.Remove(head.TaskId);
+                                    _nextWaitingList.Remove(head.TaskId);
+
+                                    _currentRingTail = lastCheckpoint;
+                                    _currentRingTail.Next = null;
+                                    _currentRingTail.Type = DriverMessageType.Failure;
+                                }
+                            }
+                            else
+                            {
+                                // We are on the prev ring
+                                _prevRingTail = lastCheckpoint;
+                                lastCheckpoint.Next = null;
+                                _currentRingHead.Type = DriverMessageType.Request;
+
+                                var data = new TokenReceivedRequest(_currentRingHead.Iteration, SubscriptionName, OperatorId);
+                                var returnMessage = new ElasticDriverMessageImpl(_currentRingHead.TaskId, data);
+                                messages.Add(returnMessage);
+
+                                LOGGER.Log(Level.Info, "Sending request token message to node {0}", _currentRingHead.TaskId);
+                            }
+                        }
+                        else
+                        {
+                            head.Next = null;
+                            head = lastCheckpoint;
+                            head.Next = nextNode;
+                            nextNode.Prev = head;
+                            nextNode.Type = DriverMessageType.Request;
+
+                            var data = new TokenReceivedRequest(nextNode.Iteration, SubscriptionName, OperatorId);
+                            var returnMessage = new ElasticDriverMessageImpl(nextNode.TaskId, data);
+                            messages.Add(returnMessage);
+
+                            LOGGER.Log(Level.Info, "Sending request token message to node {0}", nextNode.TaskId);
+                        }
+                    }
+
                     return messages;
                 default:
                     return messages;
             }
+        }
+
+        public List<IElasticDriverMessage> ResumeRingFromCheckpoint(string taskId)
+        {
+            var messages = new List<IElasticDriverMessage>();
+
+            lock (_lock)
+            {
+                var head = _prevRingHead ?? _currentRingHead;
+
+                while (head != null && head.TaskId != taskId && head.Type != DriverMessageType.Request)
+                {
+                    head = head.Next;
+                }
+
+                if (head == null)
+                {
+                    head = _currentRingHead;
+
+                    while (head != null && head.TaskId != taskId && head.Type != DriverMessageType.Request)
+                    {
+                        head = head.Next;
+                    }
+                }
+
+                // Get the last available checkpointed node
+                var lastCheckpoint = head.Prev;
+                head.Type = DriverMessageType.Ring;
+
+                // We are at the beginning of the ring
+                if (lastCheckpoint == null)
+                {
+                    lastCheckpoint = _prevRingTail;
+                }
+                else
+                {
+                    var data = new FailureMessagePayload(head.TaskId, head.Iteration, SubscriptionName, OperatorId);
+                    var returnMessage = new ElasticDriverMessageImpl(lastCheckpoint.TaskId, data);
+                    messages.Add(returnMessage);
+                }
+                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", head.TaskId);
+            }
+            return messages;
         }
     }
 

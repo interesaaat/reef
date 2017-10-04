@@ -222,6 +222,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.JoinTheRing(taskId);
         }
 
+        public void TokenResponse(string taskId, bool isTokenReceived)
+        {
+            _ringMessageSource.TokenResponse(taskId, isTokenReceived);
+        }
+
         public void OnError(Exception error)
         {
         }

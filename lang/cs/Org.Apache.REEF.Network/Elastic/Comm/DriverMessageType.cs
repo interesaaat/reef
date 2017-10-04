@@ -24,6 +24,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     {
         Failure = 1,
 
-        Ring = 2
+        Ring = 2,
+
+        Request = 3
     }
 }

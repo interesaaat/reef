@@ -27,12 +27,11 @@ using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
-using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -182,19 +181,32 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
         {
-            Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
-
-            var destMessage = message as FailureMessagePayload;
-            var checkpoint = GetCheckpoint();
-
-            if (checkpoint == null || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+            if (message.MessageType == DriverMessageType.Request)
             {
-                throw new IllegalStateException("Failure recovery from state not available");
+                Logger.Log(Level.Info, "Received failure request");
+
+                var destMessage = message as TokenReceivedRequest;
+                var str = (int)PositionTracker.InReceive + ":" + destMessage.Iteration;
+
+                _commLayer.TokenResponse(_taskId, Operator.FailureInfo != str);
             }
-            
-            foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+
+            if (message.MessageType == DriverMessageType.Failure)
             {
-                _commLayer.Send(destMessage.NextTaskId, data);
+                Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
+
+                var destMessage = message as FailureMessagePayload;
+                var checkpoint = GetCheckpoint();
+
+                if (checkpoint == null || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                {
+                    throw new IllegalStateException("Failure recovery from state not available");
+                }
+
+                foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                {
+                    _commLayer.Send(destMessage.NextTaskId, data);
+                }
             }
         }
 

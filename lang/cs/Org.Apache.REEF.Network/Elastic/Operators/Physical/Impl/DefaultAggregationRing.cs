@@ -50,8 +50,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
-            _topology = topology;
             _position = PositionTracker.Nil;
+
+            _topology = topology;
+            _topology.Operator = this;
         }
 
         /// <summary>

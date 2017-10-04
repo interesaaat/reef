@@ -73,17 +73,39 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             switch (msgReceived)
             {
                 case TaskMessageType.JoinTheRing:
-
-                    RingTopology.AddTaskIdToRing(message.TaskId);
-
-                    var nextTasksMessages = RingTopology.GetNextTasksInRing();
-
-                    foreach (var next in nextTasksMessages)
                     {
-                        returnMessages.Add(next);
-                    }
+                        RingTopology.AddTaskIdToRing(message.TaskId);
 
-                    return true;
+                        var nextTasksMessages = RingTopology.GetNextTasksInRing();
+
+                        foreach (var next in nextTasksMessages)
+                        {
+                            returnMessages.Add(next);
+                        }
+
+                        return true;
+                    }
+                case TaskMessageType.TokenRequest:
+                    {
+                        if (message.Message[2] == 0)
+                        {
+                            if (_checkpointLevel > CheckpointLevel.None)
+                            {
+                                var nextTasksMessages = RingTopology.ResumeRingFromCheckpoint(message.TaskId);
+
+                                foreach (var next in nextTasksMessages)
+                                {
+                                    returnMessages.Add(next);
+                                }
+                            }
+                            else
+                            {
+                                throw new NotImplementedException("Future work");
+                            }
+                        }
+
+                        return true;
+                    }
                 default:
                     return false;
             }
