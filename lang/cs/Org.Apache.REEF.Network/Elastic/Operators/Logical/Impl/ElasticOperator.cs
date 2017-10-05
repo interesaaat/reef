@@ -57,7 +57,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
-        protected IConfiguration[] _configurations;
+        protected IList<IConfiguration> _configurations;
 
         /// <summary>
         /// Specification for generic Elastic Operators
@@ -412,7 +412,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public abstract void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
-        public abstract void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses);
+        public abstract void EventDispatcher(ref IFailureEvent @event);
 
         /// <summary>
         /// Appends the Operator specific configuration for the input task to the input builder.
@@ -429,7 +429,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             PhysicalOperatorConfiguration(ref operatorBuilder);
 
-            operatorBuilder
+            IConfiguration operatorConf = operatorBuilder
                 .BindNamedParameter<OperatorId, int>(
                     GenericType<OperatorId>.Class,
                     _id.ToString(CultureInfo.InvariantCulture))
@@ -437,15 +437,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     GenericType<Checkpointing>.Class,
                     ((int)_checkpointLevel).ToString(CultureInfo.InvariantCulture))
                 .Build();
-
-            if (taskId == 3 && _id == 1)
-            {
-                operatorBuilder.BindNamedParameter<StartIteration, int>(
-                GenericType<StartIteration>.Class,
-                0.ToString(CultureInfo.InvariantCulture));
-            }
-
-            IConfiguration operatorConf = operatorBuilder.Build();
 
             foreach (var conf in _configurations)
             {

@@ -26,6 +26,9 @@ using Org.Apache.REEF.Network.Elastic.Comm;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Tang.Implementations.Tang;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using System.Globalization;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -73,26 +76,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(IElasticTypedOperator<int>), ref confBuilder);
         }
 
-        public override List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public override void OnReschedule(ref IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule task " + rescheduleEvent.TaskId);
 
-            if (_checkpointLevel > CheckpointLevel.None)
+            if (_checkpointLevel == CheckpointLevel.None)
             {
-                if (rescheduleEvent.FailedTask.Value.AsError() is OperatorException)
-                {
-                    var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
-                    if (exception.OperatorId == _id)
-                    {
-                        return _topology.Reconfigure(rescheduleEvent.FailedTask.Value.Id, exception.AdditionalInfo);
-                    }
-                    else
-                    {
-                        throw new NotImplementedException("root: Future work");
-                    }
-                }
+                throw new NotImplementedException("Future work");
             }
-            throw new NotImplementedException("Future work");
+
+            var checkpointConf = TangFactory.GetTang().NewConfigurationBuilder()
+                .BindNamedParameter<StartIteration, int>(
+                    GenericType<StartIteration>.Class,
+                    0.ToString(CultureInfo.InvariantCulture))
+                .Build();
+
+            _configurations.Add(checkpointConf);
         }
     }
 }

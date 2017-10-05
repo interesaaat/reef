@@ -33,19 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         {
         }
 
-        ////[Inject]
-        ////internal CheckpointableObject(IInjector injector, CheckpointMessageStreamingCodec<T> codec)
-        ////{
-        ////    ////var ckpntMsgCodecConfig = StreamingCodecConfiguration<CheckpointMessage>.Conf
-        ////    ////    .Set(StreamingCodecConfiguration<CheckpointMessage>.Codec,
-        ////    ////        GenericType<CheckpointMessageStreamingCodec<T>>.Class)
-        ////    ////    .Build();
-        ////    ////injector.BindVolatileInstance(GenericType<IStreamingCodec<CheckpointMessage>>.Class, codec);
-        ////}
-
         protected T State { get; set; }
-
-        internal IStreamingCodec<T> Codec { get; set; }
 
         public CheckpointLevel Level { get; internal set; }
 

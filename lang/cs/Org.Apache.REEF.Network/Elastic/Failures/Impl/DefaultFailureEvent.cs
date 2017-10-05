@@ -20,21 +20,6 @@
 /////// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-////    public class DefaultFailureEvent : IFailureEvent
-////    {
-////        public DefaultFailureEvent()
-////        {
-////            FailureEvent = (int)DefaultFailureStateEvents.Continue;
-////        }
-
-////        public DefaultFailureEvent(int @event)
-////        {
-////            FailureEvent = @event;
-////        }
-
-////        public int FailureEvent { get; set; }
-////    }
-
     public enum DefaultFailureStateEvents : int
     {
         Continue = 1,

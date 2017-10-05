@@ -38,13 +38,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
         /// <summary>
-        /// When a new failure state is rised, this method is used to dispatch
+        /// When a new failure state is raised, this method is used to dispatch
         /// such event to the proper failure mitigation logic.
         /// It gets a failure event as input and produces zero or more failure response messages for tasks
         /// </summary>
         /// <param name="event">The failure event to react upon</param>
-        /// <param name="failureResponses">A list of messages containing the recovery instructions for the tasks still alive</param>
-        /// <returns>Zero or more messages for the tasks</returns>
-        void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses);
+        /// <returns>Zero or more events for the tasks</returns>
+        void EventDispatcher(ref IFailureEvent @event);
     }
 }

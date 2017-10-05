@@ -113,7 +113,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override List<IElasticDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public override void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
             LOGGER.Log(Level.Info, "Going to reconfigure the ring");
 
@@ -124,15 +124,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var exception = reconfigureEvent.FailedTask.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        return RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo);
+                        reconfigureEvent.FailureResponse.AddRange(RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo));
                     }
                     else
                     {
-                        throw new NotImplementedException("Future work");
+                        throw new NotImplementedException("Different operator id is Future work");
                     }
                 }
             }
-            throw new NotImplementedException("Future work");
+            else
+            {
+                throw new NotImplementedException("No catching is Future work");
+            }
         }
     }
 }

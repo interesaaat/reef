@@ -20,6 +20,7 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
@@ -32,6 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             TaskId = taskId;
             OperatorId = operatorId;
+            FailureResponse = new List<IElasticDriverMessage>();
         }
 
         public int FailureEvent
@@ -57,5 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public string TaskId { get; private set; }
 
         public int OperatorId { get; private set; }
+
+        public List<IElasticDriverMessage> FailureResponse { get; private set; }
     }
 }

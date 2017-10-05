@@ -15,7 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Comm;
 using System;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
@@ -37,6 +39,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public int OperatorId
         {
             get { return -1; }
+        }
+
+        public List<IElasticDriverMessage> FailureResponse
+        {
+            get { return new List<IElasticDriverMessage>(); }
         }
     }
 }

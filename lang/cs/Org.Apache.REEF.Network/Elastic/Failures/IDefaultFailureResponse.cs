@@ -16,8 +16,6 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -28,10 +26,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface IDefaultFailureEventResponse
     {
-        List<IElasticDriverMessage> OnReconfigure(IReconfigure reconfigureEvent);
+        void OnReconfigure(ref IReconfigure reconfigureEvent);
 
-        List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent);
+        void OnReschedule(ref IReschedule rescheduleEvent);
 
-        List<IElasticDriverMessage> OnStop(IStop stopEvent);
+        void OnStop(ref IStop stopEvent);
     }
 }

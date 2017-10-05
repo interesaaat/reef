@@ -15,6 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Comm;
+using System.Collections.Generic;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
@@ -25,6 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public FailEvent(string taskId)
         {
             TaskId = taskId;
+            FailureResponse = new List<IElasticDriverMessage>();
         }
 
         public int FailureEvent
@@ -38,5 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             get { return -1; }
         }
+
+        public List<IElasticDriverMessage> FailureResponse { get; private set; }
     }
 }

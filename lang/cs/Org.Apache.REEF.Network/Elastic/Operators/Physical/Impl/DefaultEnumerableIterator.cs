@@ -21,7 +21,6 @@ using System.Collections;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -32,6 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     {
         private readonly ElasticIteratorEnumerator<int> _inner;
         private readonly IterateTopology _topology;
+        private ICheckpointableState _checkpointState;
 
         /// <summary>
         /// Creates a new Enumerable Iterator.
@@ -47,11 +47,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             OperatorName = Constants.Iterate;
             OperatorId = id;
-            CheckpointState = state;
+            _checkpointState = state;
             _inner = innerIterator;
             _topology = topology;
-
-            ResumeFromCheckpoint();
         }
 
         public int OperatorId { get; private set; }
@@ -68,7 +66,30 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get { return PositionTracker.Nil.ToString(); }
         }
 
-        public ICheckpointableState CheckpointState { get; set; }
+        public ICheckpointableState CheckpointState
+        {
+            get
+            {
+                // Check if the state have to be resumed from a checkpoint
+                if (_inner.IsStart && _inner.Current != 0)
+                {
+                    var checkpoint = _topology.GetCheckpoint(_inner.Current);
+                    if (_inner.Current < 0)
+                    {
+                        while (_inner.Current < checkpoint.Iteration - 1)
+                        {
+                            _inner.MoveNext();
+                        }
+                    }
+                    _checkpointState.MakeCheckpointable(checkpoint.State);
+                }
+                return _checkpointState;
+            }
+            set
+            {
+                _checkpointState = value;
+            }
+        }
 
         public IElasticIterator IteratorReference { private get; set; }
 
@@ -113,14 +134,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Dispose()
         {
             _inner.Dispose();
-        }
-
-        private void ResumeFromCheckpoint()
-        {
-            if (_inner.Current != 0)
-            {
-                _topology.GetCheckpoint(_inner.Current);
-            }
         }
 
         private void Checkpoint()

@@ -16,9 +16,9 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
@@ -78,6 +78,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// <param name="taskId">The task id responsible for the topology change</param>
         /// <param name="info">Some additional topology-specific information</param>
         /// <returns>One or more messages for reconfiguring the Tasks</returns>
-        List<IElasticDriverMessage> Reconfigure(string taskId, string info);
+        IList<IElasticDriverMessage> Reconfigure(string taskId, string info);
     }
 }

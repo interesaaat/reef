@@ -53,6 +53,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 try
                 {
+                    var checkpointable = workflow.GetCheckpointableState();
+
                     while (workflow.MoveNext())
                     {
                         switch (workflow.Current.OperatorName)
@@ -62,7 +64,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 System.Threading.Thread.Sleep(rand.Next(1000));
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 2)
                                 {
                                     Console.WriteLine("I die. Bye.");
 
@@ -80,7 +82,21 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     System.Threading.Thread.Sleep(rand.Next(100));
                                 }
 
+                                if (rand.Next(100) < 2)
+                                {
+                                    Console.WriteLine("I die. Bye.");
+
+                                    throw new Exception("Die. Token");
+                                }
+
                                 aggregator.Send(rec, _cancellationSource);
+
+                                if (rand.Next(100) < 2)
+                                {
+                                    Console.WriteLine("I die. Bye.");
+
+                                    throw new Exception("Die. After Token");
+                                }
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
                                 break;

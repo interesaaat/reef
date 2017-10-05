@@ -16,6 +16,8 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Network.Elastic.Comm;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
@@ -28,6 +30,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             FailedTask = failedTask;
             OperatorId = opertorId;
+            FailureResponse = new List<IElasticDriverMessage>();
         }
 
         public int FailureEvent
@@ -43,5 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         public int OperatorId { get; private set; }
+
+        public List<IElasticDriverMessage> FailureResponse { get; private set; }
     }
 }

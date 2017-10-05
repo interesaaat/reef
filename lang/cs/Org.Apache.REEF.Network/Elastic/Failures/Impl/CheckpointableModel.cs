@@ -26,10 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     public class CheckpointableModel<T> : CheckpointableObject<T[]> where T : struct 
     {
         [Inject]
-        private CheckpointableModel(
-            [Parameter(typeof(Checkpointing))] int level)
-            ////IInjector injector,
-            ////CheckpointMessageStreamingCodec<T[]> codec) : base(injector, codec)
+        private CheckpointableModel([Parameter(typeof(Checkpointing))] int level)
         {
             Level = (CheckpointLevel)level;
         }

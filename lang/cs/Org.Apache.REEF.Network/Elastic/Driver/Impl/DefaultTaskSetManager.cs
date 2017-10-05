@@ -172,25 +172,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             for (int i = 0; i < _numTasks; i++)
             {
-                var subs = _taskInfos[i].Subscriptions;
-                ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
-
-                foreach (var sub in subs)
-                {
-                    ICsConfigurationBuilder confSubBuilder = TangFactory.GetTang().NewConfigurationBuilder();
-
-                    sub.GetTaskConfiguration(ref confSubBuilder, i + 1);
-
-                   _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSubBuilder.Build());
-                }
-
-                IConfiguration serviceConf = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
-
-                IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[i].TaskConfiguration, serviceConf);
-
-                _taskInfos[i].ActiveContext.SubmitTask(mergedTaskConf);
-
-                _taskInfos[i].TaskStatus = TaskStatus.Submitted;
+                SubmitTask(i);
             }
         }
 
@@ -304,14 +286,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     }
                     else
                     {
-                        var failureResponses = new List<IElasticDriverMessage>();
-
-                        foreach (var failureEvent in failureEvents)
+                        for (int i = 0; i < failureEvents.Count; i++)
                         {
-                            EventDispatcher(failureEvent, ref failureResponses);
+                            var @event = failureEvents[i];
+                            EventDispatcher(ref @event);
                         }
-
-                        SendToTasks(failureResponses);
                     }  
                 }
                 else
@@ -328,34 +307,37 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             throw new NotImplementedException();
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
+        public void EventDispatcher(ref IFailureEvent @event)
         {
             var id = Utils.GetTaskNum(@event.TaskId) - 1;
 
-            _taskInfos[id].Subscriptions.First().Service.EventDispatcher(@event, ref failureResponses);
+            _taskInfos[id].Subscriptions.First().Service.EventDispatcher(ref @event);
 
             foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
             {
-                sub.EventDispatcher(@event, ref failureResponses);
+                sub.EventDispatcher(ref @event);
             }
 
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    OnReconfigure(@event as IReconfigure);
+                    var rec = @event as IReconfigure;
+                    OnReconfigure(ref rec);
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    OnReschedule(@event as IReschedule);
+                    var res = @event as IReschedule;
+                    OnReschedule(ref res);
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    OnStop(@event as IStop);
+                    var stp = @event as IStop;
+                    OnStop(ref stp);
                     break;
                 default:
                     break;
             }
         }
 
-        public List<IElasticDriverMessage> OnReconfigure(IReconfigure info)
+        public void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
             LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
 
@@ -364,10 +346,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
 
-            return null;
+            SendToTasks(reconfigureEvent.FailureResponse);
         }
 
-        public List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public void OnReschedule(ref IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task");
 
@@ -376,10 +358,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
 
-            return null;
+            SendToTasks(rescheduleEvent.FailureResponse);
         }
 
-        public List<IElasticDriverMessage> OnStop(IStop stopEvent)
+        public void OnStop(ref IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
 
@@ -388,7 +370,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
             }
 
-            return null;
+            SendToTasks(stopEvent.FailureResponse);
         }
 
         public void OnFail(string taskId)
@@ -417,6 +399,29 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        private void SubmitTask(int id)
+        {
+            var subs = _taskInfos[id].Subscriptions;
+            ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+
+            foreach (var sub in subs)
+            {
+                ICsConfigurationBuilder confSubBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+
+                sub.GetTaskConfiguration(ref confSubBuilder, id + 1);
+
+                _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSubBuilder.Build());
+            }
+
+            IConfiguration serviceConf = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
+
+            IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[id].TaskConfiguration, serviceConf);
+
+            _taskInfos[id].ActiveContext.SubmitTask(mergedTaskConf);
+
+            _taskInfos[id].TaskStatus = TaskStatus.Submitted;
+        }
+
         private bool BelongsTo(string id)
         {
             return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
@@ -437,9 +442,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         _taskInfos[destination].TaskRunner == null)
                     {
                         var msg = "Cannot send message type " + returnMessage.Message.MessageType;
-                        msg += " to " + destination + ": failing silently";
+                        msg += " to " + (destination + 1) + ": failing";
 
-                        LOGGER.Log(Level.Warning, msg);
+                        throw new IllegalStateException(msg);
                     }
 
                     _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());

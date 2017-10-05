@@ -34,13 +34,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public abstract T Current { get; }
 
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
+        public abstract bool IsStart { get; }
 
         public void Dispose()
         {
+        }
+
+        object IEnumerator.Current
+        {
+            get { return Current; }
         }
     }
 }

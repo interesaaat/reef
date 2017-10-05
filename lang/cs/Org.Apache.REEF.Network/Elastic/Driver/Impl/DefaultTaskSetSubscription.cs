@@ -174,25 +174,30 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator.OnTaskFailure(task, ref failureEvents);
         }
 
-        public void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
+        public void EventDispatcher(ref IFailureEvent @event)
         {
-            RootOperator.EventDispatcher(@event, ref failureResponses);
-
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
             {
                 case DefaultFailureStateEvents.Reconfigure:
-                    failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
+                    var rec = @event as IReconfigure;
+                    OnReconfigure(ref rec);
                     break;
                 case DefaultFailureStateEvents.Reschedule:
-                    failureResponses.AddRange(OnReschedule(@event as IReschedule));
+                    var res = @event as IReschedule;
+                    OnReschedule(ref res);
                     break;
                 case DefaultFailureStateEvents.Stop:
-                    failureResponses.AddRange(OnStop(@event as IStop));
+                    var stp = @event as IStop;
+                    OnStop(ref stp);
+                    break;
+                default:
                     break;
             }
+
+            RootOperator.EventDispatcher(ref @event);
         }
 
-        public List<IElasticDriverMessage> OnReconfigure(IReconfigure info)
+        public void OnReconfigure(ref IReconfigure info)
         {
             LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
 
@@ -200,11 +205,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
-
-            return new List<IElasticDriverMessage>();
         }
 
-        public List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public void OnReschedule(ref IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
 
@@ -212,11 +215,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
-
-            return new List<IElasticDriverMessage>();
         }
 
-        public List<IElasticDriverMessage> OnStop(IStop stopEvent)
+        public void OnStop(ref IStop stopEvent)
         {
             LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
 
@@ -224,8 +225,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
             }
-
-            return new List<IElasticDriverMessage>();
         }
     }
 }

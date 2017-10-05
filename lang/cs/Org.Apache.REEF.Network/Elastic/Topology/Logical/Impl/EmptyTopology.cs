@@ -78,7 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return "empty";
         }
 
-        public List<IElasticDriverMessage> Reconfigure(string taskId, string info)
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
             return new List<IElasticDriverMessage>();
         }

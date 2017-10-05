@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
@@ -26,6 +25,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -37,10 +37,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CheckpointService));
 
-        public readonly ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>> _checkpoints;
-        public readonly ConcurrentDictionary<CheckpointIdentifier, string> _roots;
+        private readonly ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>> _checkpoints;
+        private readonly ConcurrentDictionary<CheckpointIdentifier, string> _roots;
 
         private readonly int _limit;
+
+        private readonly ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent> _checkpointsWaiting;
 
         private CommunicationLayer _communicationLayer;
 
@@ -52,6 +54,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _limit = num;
             _checkpoints = new ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>>();
             _roots = new ConcurrentDictionary<CheckpointIdentifier, string>();
+
+            _checkpointsWaiting = new ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent>();
         }
 
         public CommunicationLayer CommunicationLayer
@@ -92,10 +96,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
 
                 _communicationLayer.Send(rootTaskId, cpm);
-                
-                while (!_checkpoints.TryGetValue(id, out checkpoints))
+
+                var received = new ManualResetEvent(false);
+
+                _checkpointsWaiting.TryAdd(id, received);
+
+                received.WaitOne();
+
+                if (!_checkpoints.TryGetValue(id, out checkpoints))
                 {
-                    System.Threading.Thread.Sleep(100);
+                    throw new IllegalStateException("Checkpoint not retrieved");
                 }
             }
 
@@ -108,6 +118,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
             var id = new CheckpointIdentifier(state.TaskId, state.SubscriptionName, state.OperatorId);
+            ManualResetEvent waiting;
+
             if (!_checkpoints.TryGetValue(id, out checkpoints))
             {
                 checkpoints = new SortedDictionary<int, ICheckpointState>();
@@ -115,6 +127,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             checkpoints.Add(state.Iteration, state);
+
+            if (_checkpointsWaiting.TryRemove(id, out waiting))
+            {
+                waiting.Set();
+            }
 
             CheckSize(checkpoints);
         }

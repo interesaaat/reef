@@ -25,7 +25,6 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -94,7 +93,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         failureEvents.Add(new RescheduleEvent(task.Id, -1));
                         break;
                     case DefaultFailureStates.StopAndReschedule:
-                        failureEvents.Add(new StopEvent(task.Id, _id));
+                        failureEvents.Add(new StopEvent(task.Id, -1));
                         break;
                     case DefaultFailureStates.Fail:
                         failureEvents.Add(new FailEvent(task.Id));
@@ -112,20 +111,23 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void EventDispatcher(IFailureEvent @event, ref List<IElasticDriverMessage> failureResponses)
+        public override void EventDispatcher(ref IFailureEvent @event)
         {
             if (@event.OperatorId == _id || @event.OperatorId < 0)
             {
                 switch ((DefaultFailureStateEvents)@event.FailureEvent)
                 {
                     case DefaultFailureStateEvents.Reconfigure:
-                        failureResponses.AddRange(OnReconfigure(@event as IReconfigure));
+                        var rec = @event as IReconfigure;
+                        OnReconfigure(ref rec);
                         break;
                     case DefaultFailureStateEvents.Reschedule:
-                        failureResponses.AddRange(OnReschedule(@event as IReschedule));
+                        var res = @event as IReschedule;
+                        OnReschedule(ref res);
                         break;
                     case DefaultFailureStateEvents.Stop:
-                        failureResponses.AddRange(OnStop(@event as IStop));
+                        var stp = @event as IStop;
+                        OnStop(ref stp);
                         break;
                     default:
                         break;
@@ -134,23 +136,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_next != null && @event.OperatorId > _id)
             {
-                _next.EventDispatcher(@event, ref failureResponses);
+                _next.EventDispatcher(ref @event);
             }
         }
 
-        public virtual List<IElasticDriverMessage> OnReconfigure(IReconfigure reconfigureEvent)
+        public virtual void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
-            return new List<IElasticDriverMessage>();
         }
 
-        public virtual List<IElasticDriverMessage> OnReschedule(IReschedule rescheduleEvent)
+        public virtual void OnReschedule(ref IReschedule rescheduleEvent)
         {
-            return new List<IElasticDriverMessage>();
         }
 
-        public virtual List<IElasticDriverMessage> OnStop(IStop stopEvent)
+        public virtual void OnStop(ref IStop stopEvent)
         {
-            return new List<IElasticDriverMessage>();
         }
 
         protected override bool PropagateFailureDownstream()

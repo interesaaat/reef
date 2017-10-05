@@ -307,15 +307,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     if (foundList.Count == identifiers.Count)
                     {
                         Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, found all {0} dependent ids at loop {1}.", foundList.Count, i);
-                        return;
+                        return; //// new List<string>();
                     }
 
                     Thread.Sleep(_sleepTime);
                 }
 
-                var leftOver = foundList.Count == 0 ? string.Join(",", identifiers) : string.Join(",", identifiers.Where(e => !foundList.Contains(e)));
-                Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", leftOver);
+                var leftOvers = foundList.Count == 0 ? identifiers : identifiers.Where(e => !foundList.Contains(e)).ToList();
+                var msg = string.Join(",", leftOvers);
+
+                Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);
                 throw new RemotingException("Failed to find parent/children nodes");
+                ////return leftOvers;
             }
         }
 

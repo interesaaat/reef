@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Tang.Annotations;
 
@@ -24,6 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     public class ForLoopEnumerator : ElasticIteratorEnumerator<int>
     {
         private int _iterations;
+        private readonly int _start;
 
         [Inject]
         private ForLoopEnumerator(
@@ -31,7 +31,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             [Parameter(typeof(StartIteration))] int start)
         {
             _iterations = iterations;
-            State = start - 1;
+            _start = start - 1;
+            State = _start;
         }
 
         public override bool MoveNext()
@@ -49,6 +50,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public override int Current
         {
             get { return State; }
+        }
+
+        public override bool IsStart
+        {
+            get { return Current == _start; }
         }
     }
 }

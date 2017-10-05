@@ -224,16 +224,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        internal IList<ElasticDriverMessageImpl> GetNextTasksInRing()
+        internal IList<IElasticDriverMessage> GetNextTasksInRing()
         {
-            IList<ElasticDriverMessageImpl> messages = new List<ElasticDriverMessageImpl>();
+            IList<IElasticDriverMessage> messages = new List<IElasticDriverMessage>();
 
             SubmitNextNodes(ref messages);
 
             return messages;
         }
 
-        internal void SubmitNextNodes(ref IList<ElasticDriverMessageImpl> messages)
+        internal void SubmitNextNodes(ref IList<IElasticDriverMessage> messages)
         {
             lock (_lock)
             {
@@ -256,6 +256,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     }
                 }
 
+                CloseRing(ref messages);
+            }
+
+            // Continuously build the ring until there is some node waiting
+            if (_currentWaitingList.Count > 0)
+            {
+                SubmitNextNodes(ref messages);
+            }
+        }
+
+        internal void CloseRing(ref IList<IElasticDriverMessage> messages)
+        {
+            lock (_lock)
+            {
                 if (_availableDataPoints <= _tasksInRing.Count)
                 {
                     var dest = _currentRingTail.TaskId;
@@ -282,22 +296,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _ringPrint = new StringBuilder(_rootTaskId);
                 }
             }
-
-            // Continuously build the ring until there is some node waiting
-            if (_currentWaitingList.Count > 0)
-            {
-                SubmitNextNodes(ref messages);
-            }
         }
 
-        public List<IElasticDriverMessage> Reconfigure(string taskId, string info)
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
             if (taskId == _rootTaskId)
             {
                 throw new NotImplementedException("Failure on master not supported yet");
             }
 
-            var messages = new List<IElasticDriverMessage>();
+            IList<IElasticDriverMessage> messages = new List<IElasticDriverMessage>();
             var failureInfos = info.Split(':');
             int position = int.Parse(failureInfos[0]);
             int currentIteration = int.Parse(failureInfos[1]);
@@ -308,7 +316,36 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 // We are before receive, we should be ok
                 case (int)PositionTracker.Nil:
-                    LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
+                    lock (_lock)
+                    {
+                        var head = _prevRingHead ?? _currentRingHead;
+
+                        // Position at the right ring
+                        if (head.Iteration < currentIteration - 1)
+                        {
+                            head = _currentRingHead;
+                        }
+
+                        while (head != null && head.TaskId != taskId)
+                        {
+                            head = head.Next;
+                        }
+
+                        if (head != null)
+                        {
+                            _tasksInRing.Remove(head.TaskId);
+                            _currentWaitingList.Remove(head.TaskId);
+                            _nextWaitingList.Remove(head.TaskId);
+
+                            if (head.Type == DriverMessageType.Failure)
+                            {
+                                LOGGER.Log(Level.Warning, "Possible deadlock in Nil");
+                            }
+
+                            CloseRing(ref messages);
+                        }
+                        LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
+                    }
                     return messages;
 
                 // The failure is on the node with token
@@ -338,6 +375,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         var nextNode = head.Next;
                         head.Prev = null;
 
+                        if (head.Type == DriverMessageType.Failure)
+                        {
+                            LOGGER.Log(Level.Warning, "Possible deadlock in AfterReceiveBeforeSend");
+                        }
+
                         // We are at the end of the ring
                         if (nextNode == null)
                         {
@@ -347,6 +389,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 _currentRingTail = lastCheckpoint;
                                 _currentRingTail.Next = null;
                                 _currentRingTail.Type = DriverMessageType.Failure;
+                                CloseRing(ref messages);
                             }
                             else
                             {
@@ -396,6 +439,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             head = head.Next;
                         }
 
+                        _tasksInRing.Remove(head.TaskId);
+                        _currentWaitingList.Remove(head.TaskId);
+                        _nextWaitingList.Remove(head.TaskId);
+
                         // Get the last available checkpointed node
                         var lastCheckpoint = head.Prev;
                         var nextNode = head.Next;
@@ -408,17 +455,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             // We can fix the ring right away in this case
                             if (head.Iteration == _iteration)
                             {
-                                lock (_lock)
-                                {
-                                    head.Prev = null;
-                                    _tasksInRing.Remove(head.TaskId);
-                                    _currentWaitingList.Remove(head.TaskId);
-                                    _nextWaitingList.Remove(head.TaskId);
-
-                                    _currentRingTail = lastCheckpoint;
-                                    _currentRingTail.Next = null;
-                                    _currentRingTail.Type = DriverMessageType.Failure;
-                                }
+                                _currentRingTail = lastCheckpoint;
+                                _currentRingTail.Next = null;
+                                _currentRingTail.Type = DriverMessageType.Failure;
+                                CloseRing(ref messages);
                             }
                             else
                             {

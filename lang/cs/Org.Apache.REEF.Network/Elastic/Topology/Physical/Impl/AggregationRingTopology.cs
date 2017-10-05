@@ -132,15 +132,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            try
-            {
-                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
-            }
-            catch (Exception e)
-            {
-                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
-            }
-
             _initialized = true;
         }
 
