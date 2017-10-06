@@ -83,8 +83,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive(CancellationTokenSource cancellationSource)
         {
-            _position = PositionTracker.InReceive;
             _topology.JoinTheRing();
+
+            _position = PositionTracker.InReceive;
 
             var objs = _topology.Receive(cancellationSource);
 
@@ -99,6 +100,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Send(T data, CancellationTokenSource cancellationSource)
         {
             _position = PositionTracker.InSend;
+
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
             var messages = new GroupCommunicationMessage[] { message };
 

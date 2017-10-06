@@ -92,6 +92,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool AddTask(string taskId)
         {
+            if (RootOperator.StateFinalized)
+            {
+                RootOperator.AddTask(taskId);
+
+                return true;
+            }
+
             if (!_finalized)
             {
                 throw new IllegalStateException(
@@ -199,8 +206,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReconfigure(ref IReconfigure info)
         {
-            LOGGER.Log(Level.Info, "Reconfiguring subscription " + SubscriptionName);
-
             lock (_statusLock)
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
@@ -209,8 +214,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReschedule(ref IReschedule rescheduleEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reschedule a task for subscription " + SubscriptionName);
-
             lock (_statusLock)
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
@@ -219,8 +222,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnStop(ref IStop stopEvent)
         {
-            LOGGER.Log(Level.Info, "Going to stop subscription" + SubscriptionName + " and reschedule a task");
-
             lock (_statusLock)
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));

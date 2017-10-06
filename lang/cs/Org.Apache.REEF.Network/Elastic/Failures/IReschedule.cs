@@ -18,7 +18,7 @@
 using Org.Apache.REEF.Utilities;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -27,10 +27,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface IReschedule : IFailureEvent
     {
-        Optional<IActiveContext> ActiveContext { get; }
-
-        IList<IFailedContext> FailedContexts { get; }
-
         Optional<IFailedTask> FailedTask { get; }
+
+        IList<IConfiguration> TaskConfigurations { get; }
     }
 }

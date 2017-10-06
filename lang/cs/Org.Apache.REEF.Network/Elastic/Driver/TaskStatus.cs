@@ -23,10 +23,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         Submitted = 2,
 
-        Running = 3,
+        Resubmitted = 3,
 
-        Failed = 4,
+        Running = 4,
 
-        Completed = 5
+        Failed = 5,
+
+        Completed = 6
     }
 }

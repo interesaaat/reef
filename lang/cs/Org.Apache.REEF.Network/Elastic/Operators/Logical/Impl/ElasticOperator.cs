@@ -51,13 +51,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected CheckpointLevel _checkpointLevel;
         protected ITopology _topology;
 
-        protected bool _stateFinalized = false;
         protected bool _operatorFinalized = false;
 
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
 
-        protected IList<IConfiguration> _configurations;
+        protected IConfiguration[] _configurations;
 
         /// <summary>
         /// Specification for generic Elastic Operators
@@ -119,6 +118,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        internal bool StateFinalized { get; private set; }
+
         /// <summary>
         /// Add a task to the Operator.
         /// The Operator must have called Build() before adding tasks.
@@ -132,10 +133,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new IllegalStateException("Operator needs to be built before adding tasks");
             }
 
-            _topology.AddTask(taskId);
-
-            // The assumption is that only one data point is added for each task
-            _failureMachine.AddDataPoints(1);
+            var addedDataPoints = _topology.AddTask(taskId);
+            _failureMachine.AddDataPoints(addedDataPoints);
 
             if (_next != null)
             {
@@ -155,7 +154,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The configuration for the Task with added Operators information</returns>
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
-            if (_operatorFinalized && _stateFinalized)
+            if (_operatorFinalized && StateFinalized)
             {
                 GetOperatorConfiguration(ref builder, taskId);
 
@@ -198,12 +197,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same Operator with the finalized state</returns>
         public virtual ElasticOperator BuildState()
         {
-            if (_stateFinalized == true)
+            if (StateFinalized)
             {
                 throw new IllegalStateException("Operator cannot be built more than once");
             }
 
-            if (_operatorFinalized != true)
+            if (!_operatorFinalized)
             {
                 throw new IllegalStateException("Operator need to be build before finalizing its state");
             }
@@ -218,7 +217,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             LogOperatorState();
 
-            _stateFinalized = true;
+            StateFinalized = true;
            
             return this;
         }

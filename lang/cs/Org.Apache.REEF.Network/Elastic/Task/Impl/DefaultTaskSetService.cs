@@ -27,6 +27,9 @@ using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Tang.Util;
+using System.Globalization;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -67,6 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 IConfiguration subscriptionConfig = configSerializer.FromString(serializedGroupConfig);
                 IInjector subInjector = injector.ForkInjector(subscriptionConfig);
+
                 var subscriptionClient = subInjector.GetInstance<IElasticTaskSetSubscription>();
 
                 _subscriptions[subscriptionClient.SubscriptionName] = subscriptionClient;
@@ -117,7 +121,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             _networkService.Unregister();
-            _networkService.Dispose();
         }
     }
 }

@@ -50,6 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         internal int NumRetry { get; set; }
 
         internal bool IsDisposed { get; private set; }
+
         public void Dispose()
         {
             if (!IsDisposed)

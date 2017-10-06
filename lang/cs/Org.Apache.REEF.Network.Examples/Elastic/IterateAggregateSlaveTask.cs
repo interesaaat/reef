@@ -64,13 +64,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 System.Threading.Thread.Sleep(rand.Next(1000));
 
-                                if (rand.Next(100) < 2)
-                                {
-                                    Console.WriteLine("I die. Bye.");
-
-                                    throw new Exception("Die.");
-                                }
-
                                 var rec = aggregator.Receive(_cancellationSource);
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
@@ -82,21 +75,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     System.Threading.Thread.Sleep(rand.Next(100));
                                 }
 
-                                if (rand.Next(100) < 2)
+                                if (rand.Next(100) < 5)
                                 {
                                     Console.WriteLine("I die. Bye.");
 
-                                    throw new Exception("Die. Token");
+                                    throw new Exception("Die.");
                                 }
 
                                 aggregator.Send(rec, _cancellationSource);
-
-                                if (rand.Next(100) < 2)
-                                {
-                                    Console.WriteLine("I die. Bye.");
-
-                                    throw new Exception("Die. After Token");
-                                }
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
                                 break;

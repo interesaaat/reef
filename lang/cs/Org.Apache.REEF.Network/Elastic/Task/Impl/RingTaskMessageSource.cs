@@ -34,8 +34,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly object _lock;
 
         private byte[] _message;
-        private readonly byte[] _message1 = new byte[2];
-        private readonly byte[] _message2 = new byte[3];
+        private readonly byte[] _messageType1 = new byte[2];
+        private readonly byte[] _messageType2 = new byte[3];
+        private readonly byte[] _messageType3 = new byte[6];
 
         [Inject]
         private RingTaskMessageSource(HeartBeatReference heartBeatManager)
@@ -48,8 +49,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             _lock = new object();
 
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, _message1, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenRequest), 0, _message2, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, _messageType1, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenRequest), 0, _messageType2, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.IterationNumber), 0, _messageType3, 0, sizeof(ushort));
+        }
+
+        public void IterationNumber(string taskId, int iteration)
+        {
+            lock (_lock)
+            {
+                _taskId = taskId;
+                _message = _messageType3;
+                Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, _message, 2, sizeof(int));
+
+                _heartBeatManager.Heartbeat();
+            }
         }
 
         public void JoinTheRing(string taskId)
@@ -57,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             lock (_lock)
             {
                 _taskId = taskId;
-                _message = _message1;
+                _message = _messageType1;
 
                 _heartBeatManager.Heartbeat();
             }
@@ -68,8 +82,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             lock (_lock)
             {
                 _taskId = taskId;
-                _message = _message2;
-                _message2[2] = response ? (byte)1 : (byte)0;
+                _message = _messageType2;
+                _messageType2[2] = response ? (byte)1 : (byte)0;
 
                 _heartBeatManager.Heartbeat();
             }

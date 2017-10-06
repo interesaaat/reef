@@ -21,6 +21,7 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
@@ -34,6 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             TaskId = taskId;
             OperatorId = operatorId;
             FailureResponse = new List<IElasticDriverMessage>();
+            TaskConfigurations = new List<IConfiguration>();
         }
 
         public int FailureEvent
@@ -41,25 +43,14 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             get { return (int)DefaultFailureStateEvents.Reschedule; }
         }
 
-        public Optional<IActiveContext> ActiveContext
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public IList<IFailedContext> FailedContexts
-        {
-            get { throw new NotImplementedException(); }
-        }
-
-        public Optional<IFailedTask> FailedTask
-        {
-            get { throw new NotImplementedException(); }
-        }
+        public Optional<IFailedTask> FailedTask { get; set; }
 
         public string TaskId { get; private set; }
 
         public int OperatorId { get; private set; }
 
         public List<IElasticDriverMessage> FailureResponse { get; private set; }
+
+        public IList<IConfiguration> TaskConfigurations { get; private set; }
     }
 }

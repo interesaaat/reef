@@ -21,6 +21,7 @@ using System.Collections;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -29,6 +30,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// </summary>
     public sealed class DefaultEnumerableIterator : ICheckpointingOperator, IElasticTypedIterator<int>
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultEnumerableIterator));
+
         private readonly ElasticIteratorEnumerator<int> _inner;
         private readonly IterateTopology _topology;
         private ICheckpointableState _checkpointState;
@@ -76,7 +79,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                     var checkpoint = _topology.GetCheckpoint(_inner.Current);
                     if (_inner.Current < 0)
                     {
-                        while (_inner.Current < checkpoint.Iteration - 1)
+                        LOGGER.Log(Level.Info, "Fast forward to iteration {0}", checkpoint.Iteration + 1);
+                        while (_inner.Current < checkpoint.Iteration)
                         {
                             _inner.MoveNext();
                         }
@@ -119,7 +123,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_inner.MoveNext())
             {
+                _topology.IterationNumber(Current);
+
                 Checkpoint();
+
                 return true;
             }
 

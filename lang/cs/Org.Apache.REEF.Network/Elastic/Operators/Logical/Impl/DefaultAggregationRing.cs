@@ -109,7 +109,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         return true;
                     }
                 default:
-                    throw new NotImplementedException("Message type not recognized");
+                    return false;
             }
         }
 
@@ -135,6 +135,27 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             else
             {
                 throw new NotImplementedException("No catching is Future work");
+            }
+        }
+
+        public override void OnReschedule(ref IReschedule rescheduleEvent)
+        {
+            LOGGER.Log(Level.Info, "Going to reconfigure the ring");
+
+            if (_checkpointLevel > CheckpointLevel.None)
+            {
+                if (rescheduleEvent.FailedTask.IsPresent() && rescheduleEvent.FailedTask.Value.AsError() is OperatorException)
+                {
+                    var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
+                    if (exception.OperatorId == _id)
+                    {
+                        rescheduleEvent.FailureResponse.AddRange(RingTopology.Reconfigure(rescheduleEvent.TaskId, exception.AdditionalInfo));
+                    }
+                }
+            }
+            else
+            {
+                throw new NotImplementedException("No caching is Future work");
             }
         }
     }

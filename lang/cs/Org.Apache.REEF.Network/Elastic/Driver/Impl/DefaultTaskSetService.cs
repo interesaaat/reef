@@ -152,13 +152,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     GenericType<StreamingNetworkService<GroupCommunicationMessage>>.Class)
                 .Build();
 
-            ////IConfiguration ckpntReqCodecConfig = StreamingCodecConfiguration<CheckpointMessageRequest>.Conf
-            ////    .Set(StreamingCodecConfiguration<CheckpointMessageRequest>.Codec,
-            ////    GenericType<CheckpointMessageRequestStreamingCodec>.Class)
-            ////    .Build();
-
-            ////var finalConfig = Configurations.Merge(serviceConfig, ckpntReqCodecConfig);
-
             return TangFactory.GetTang().NewConfigurationBuilder(serviceConfig)
                 .BindNamedParameter<NamingConfigurationOptions.NameServerAddress, string>(
                     GenericType<NamingConfigurationOptions.NameServerAddress>.Class,
@@ -222,8 +215,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReconfigure(ref IReconfigure info)
         {
-            LOGGER.Log(Level.Info, "Reconfiguring the service");
-
             lock (_statusLock)
             {
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
@@ -232,8 +223,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReschedule(ref IReschedule rescheduleEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reschedule a task");
-
             lock (_statusLock)
             {
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
@@ -242,8 +231,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnStop(ref IStop stopEvent)
         {
-            LOGGER.Log(Level.Info, "Going to stop the service and reschedule a task");
-
             lock (_statusLock)
             {
                 _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));

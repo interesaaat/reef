@@ -96,11 +96,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
                 .Build();
 
-            ////_ckpntMsgCodecConfig = StreamingCodecConfiguration<CheckpointMessage>.Conf
-            ////    .Set(StreamingCodecConfiguration<CheckpointMessage>.Codec,
-            ////        GenericType<CheckpointMessageStreamingCodec<int[]>>.Class)
-            ////    .Build();
-
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))

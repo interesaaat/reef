@@ -197,8 +197,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 lock (_taskLock)
                 {
-                    if (_taskInfos[id].TaskStatus <= TaskStatus.Submitted)
+                    if (_taskInfos[id].TaskStatus == TaskStatus.Completed)
                     {
+                        LOGGER.Log(Level.Info, "Received running from task {0} which is completed: ignoring");
+                        return;
+                    }
+
+                    if (_taskInfos[id].TaskStatus != TaskStatus.Running)
+                    {
+                        if (_taskInfos[id].TaskStatus == TaskStatus.Resubmitted)
+                        {
+                            foreach (var sub in _subscriptions)
+                            {
+                                sub.Value.AddTask(task.Id);
+                            }
+                        }
+
                         _taskInfos[id].TaskStatus = TaskStatus.Running;
                         _taskInfos[id].TaskRunner = task;
                     }
@@ -339,8 +353,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
-            LOGGER.Log(Level.Info, "Reconfiguring the task set manager");
-
             lock (_statusLock)
             {
                 _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
@@ -351,20 +363,36 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnReschedule(ref IReschedule rescheduleEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reschedule a task");
-
             lock (_statusLock)
             {
                 _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
 
             SendToTasks(rescheduleEvent.FailureResponse);
+
+            var id = Utils.GetTaskNum(rescheduleEvent.TaskId) - 1;
+            _taskInfos[id].NumRetry++;
+
+            if (_taskInfos[id].TaskRunner != null)
+            {
+                _taskInfos[id].TaskRunner.Dispose();
+                _taskInfos[id].TaskRunner = null;
+
+                var resubmitConf = rescheduleEvent.TaskConfigurations.ToArray();
+
+                // When we resubmit the task need to be reconfigured
+                // If there is no reconfiguration, the task doesn't need to be rescheduled
+                if (resubmitConf.Length > 0)
+                {
+                    LOGGER.Log(Level.Info, "Going to reschedule task {0}", rescheduleEvent.TaskId);
+
+                    SubmitTask(id, rescheduleEvent.TaskConfigurations.ToArray());
+                }
+            }
         }
 
         public void OnStop(ref IStop stopEvent)
         {
-            LOGGER.Log(Level.Info, "Going to stop the execution and reschedule a task");
-
             lock (_statusLock)
             {
                 _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
@@ -399,7 +427,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        private void SubmitTask(int id)
+        private void SubmitTask(int id, params IConfiguration[] additonalConfs)
         {
             var subs = _taskInfos[id].Subscriptions;
             ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
@@ -410,7 +438,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 sub.GetTaskConfiguration(ref confSubBuilder, id + 1);
 
-                _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSubBuilder.Build());
+                var confSub = confSubBuilder.Build();
+
+                foreach (var additionalConf in additonalConfs)
+                {
+                    confSub = Configurations.Merge(confSub, additionalConf);
+                }
+
+                _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSub);
             }
 
             IConfiguration serviceConf = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
@@ -419,7 +454,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             _taskInfos[id].ActiveContext.SubmitTask(mergedTaskConf);
 
-            _taskInfos[id].TaskStatus = TaskStatus.Submitted;
+            if (_taskInfos[id].TaskStatus == TaskStatus.Failed)
+            {
+                _taskInfos[id].TaskStatus = TaskStatus.Resubmitted;
+            }
+            else
+            {
+                _taskInfos[id].TaskStatus = TaskStatus.Submitted;
+            }
         }
 
         private bool BelongsTo(string id)

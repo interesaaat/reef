@@ -61,6 +61,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
+        public void IterationNumber(int iteration)
+        {
+            if (_taskId == _rootTaskId)
+            {
+                _commLayer.IterationNumber(_taskId, iteration);
+            }
+        }
+
         public void Checkpoint(ICheckpointableState state, int? iteration)
         {
             ICheckpointState checkpoint;

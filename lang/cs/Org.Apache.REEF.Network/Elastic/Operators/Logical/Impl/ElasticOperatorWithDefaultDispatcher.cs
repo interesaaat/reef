@@ -25,6 +25,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -90,7 +91,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         failureEvents.Add(new ReconfigureEvent(task, _id));
                         break;
                     case DefaultFailureStates.ContinueAndReschedule:
-                        failureEvents.Add(new RescheduleEvent(task.Id, -1));
+                        var @event = new RescheduleEvent(task.Id, -1);
+                        @event.FailedTask = Optional<IFailedTask>.Of(task);
+                        failureEvents.Add(@event);
                         break;
                     case DefaultFailureStates.StopAndReschedule:
                         failureEvents.Add(new StopEvent(task.Id, -1));
@@ -134,7 +137,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 }
             }
 
-            if (_next != null && @event.OperatorId > _id)
+            if (_next != null && (@event.OperatorId == -1 || @event.OperatorId > _id))
             {
                 _next.EventDispatcher(ref @event);
             }

@@ -19,6 +19,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     public enum TaskMessageType : ushort
     {
+        IterationNumber = 0,
+
         JoinTheRing = 1,
 
         TokenRequest = 2

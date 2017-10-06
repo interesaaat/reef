@@ -29,6 +29,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
+using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Tang.Types;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -38,6 +40,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     class DefaultEnumerableIterator : ElasticOperatorWithDefaultDispatcher, IElasticIterator
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultEnumerableIterator));
+
+        private int _iteration;
 
         public DefaultEnumerableIterator(
             int masterTaskId,
@@ -54,6 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = masterTaskId;
             OperatorName = Constants.Iterate;
+            _iteration = 0;
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
@@ -76,6 +81,37 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             SetMessageType(typeof(IElasticTypedOperator<int>), ref confBuilder);
         }
 
+        protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
+        {
+            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
+
+            switch (msgReceived)
+            {
+                case TaskMessageType.IterationNumber:
+                    _iteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, 2));
+
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
+        {
+            var exception = task.AsError() as OperatorException;
+
+            if (exception.OperatorId >= _id)
+            {
+                int lostDataPoints = _topology.RemoveTask(task.Id);
+                var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
+            }
+
+            if (PropagateFailureDownstream() && _next != null)
+            {
+                _next.OnTaskFailure(task, ref failureEvents);
+            }
+        }
+
         public override void OnReschedule(ref IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule task " + rescheduleEvent.TaskId);
@@ -85,13 +121,33 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new NotImplementedException("Future work");
             }
 
-            var checkpointConf = TangFactory.GetTang().NewConfigurationBuilder()
+            var numIterProp = typeof(NumIterations).FullName;
+
+            bool reschedule = false;
+            foreach (var conf in _configurations)
+            {
+                foreach (INamedParameterNode opt in conf.GetNamedParameters())
+                {
+                    if (opt.GetName() == numIterProp)
+                    {
+                        if (_iteration < int.Parse(conf.GetNamedParameter(opt)))
+                        {
+                            reschedule = true;
+                        }
+                    }
+                }
+            }
+
+            if (reschedule)
+            {
+                var checkpointConf = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<StartIteration, int>(
                     GenericType<StartIteration>.Class,
                     0.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _configurations.Add(checkpointConf);
+                rescheduleEvent.TaskConfigurations.Add(checkpointConf);
+            }
         }
     }
 }
