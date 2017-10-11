@@ -25,11 +25,7 @@ using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
-using Org.Apache.REEF.Tang.Util;
-using System.Globalization;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -42,6 +38,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly string _taskId;
 
         private readonly INetworkService<GroupCommunicationMessage> _networkService;
+
+        private readonly object _lock;
+        private bool _disposed;
 
         /// <summary>
         /// Creates a new DefaultTaskSetService and registers the task ID with the Name Server.
@@ -66,6 +65,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _networkService = networkService;
             _taskId = taskId;
 
+            _disposed = false;
+            _lock = new object();
+
             foreach (string serializedGroupConfig in subscriptionConfigs)
             {
                 IConfiguration subscriptionConfig = configSerializer.FromString(serializedGroupConfig);
@@ -78,6 +80,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             _networkService.Register(new StringIdentifier(_taskId));
         }
+
+        public CancellationTokenSource CancellationSource { get; set; }
 
         /// <summary>
         /// This is to ensure all the nodes in the groups are registered before starting communications.
@@ -115,12 +119,22 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         public void Dispose()
         {
-            foreach (var sub in _subscriptions.Values)
+            lock (_lock)
             {
-                sub.Dispose();
-            }
+                if (!_disposed)
+                {
+                    foreach (var sub in _subscriptions.Values)
+                    {
+                        sub.Dispose();
+                    }
 
-            _networkService.Unregister();
+                    _networkService.Unregister();
+
+                    Console.WriteLine("Elastic Communication Service disposed.");
+
+                    _disposed = true;
+                }
+            }
         }
     }
 }

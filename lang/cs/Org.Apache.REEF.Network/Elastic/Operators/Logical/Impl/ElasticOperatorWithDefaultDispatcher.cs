@@ -32,7 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// <summary>
     /// Empty operator implementing the default failure logic. To use only as root.
     /// </summary>
-    abstract class ElasticOperatorWithDefaultDispatcher : ElasticOperator, IDefaultFailureEventResponse
+    internal abstract class ElasticOperatorWithDefaultDispatcher : ElasticOperator, IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticOperatorWithDefaultDispatcher));
 

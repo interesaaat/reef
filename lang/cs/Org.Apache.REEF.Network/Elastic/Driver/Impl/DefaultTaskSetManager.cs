@@ -40,6 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetManager));
 
         private bool _finalized;
+        private bool _disposed;
 
         private int _contextsAdded;
         private int _tasksAdded;
@@ -57,6 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public DefaultTaskSetManager(int numTasks)
         {
             _finalized = false;
+            _disposed = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
@@ -95,11 +97,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (_contextsAdded > _numTasks)
             {
-                throw new IllegalStateException("Trying to schedule too many contextes");
+                throw new IllegalStateException("Trying to schedule too many contexts");
             }
 
             int id = Interlocked.Increment(ref _contextsAdded);
-            return Utils.BuildTaskId(SubscriptionsId, id);
+            return Utils.BuildContextId(SubscriptionsId, id);
         }
 
         public string GetNextTaskId(IActiveContext context)
@@ -168,7 +170,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SubmitTasks()
         {
-            System.Threading.Thread.Sleep(30000);
+            ////System.Threading.Thread.Sleep(30000);
 
             for (int i = 0; i < _numTasks; i++)
             {
@@ -205,7 +207,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     if (_taskInfos[id].TaskStatus != TaskStatus.Running)
                     {
-                        if (_taskInfos[id].TaskStatus == TaskStatus.Resubmitted)
+                        if (_taskInfos[id].TaskStatus == TaskStatus.Recovering)
                         {
                             foreach (var sub in _subscriptions)
                             {
@@ -230,8 +232,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 lock (_taskLock)
                 {
                     _taskInfos[id].TaskStatus = TaskStatus.Completed;
-                    _taskInfos[id].TaskRunner.Dispose();
                     _taskInfos[id].TaskRunner = null;
+                }
+
+                if (Completed())
+                {
+                    lock (_taskLock)
+                    {
+                        foreach (var info in _taskInfos.Where(info => info.TaskRunner != null))
+                        {
+                            info.TaskRunner.Dispose();
+                            info.TaskRunner = null;
+                        }
+                    }
                 }
             }
         }
@@ -248,13 +261,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             SendToTasks(returnMessages);
         }
 
+        public bool Completed()
+        {
+            return _subscriptions.Select(sub => sub.Value.Completed).Aggregate((com1, com2) => com1 && com2);
+        }
+
         /// <summary>
-        /// A task set is done when we have no more tasks running and the failure state is
+        /// A task set is done when all subscriptions are completed ore we have no more tasks running and the failure state is
         /// not stop and reschedule
         /// </summary>
         public bool Done()
-        {
-            return _tasksRunning == 0
+        { 
+            return Completed() && _tasksRunning == 0
                 && !_taskInfos.Any(info => info.TaskStatus < TaskStatus.Failed)
                 && (DefaultFailureStates)_failureStatus.FailureState < DefaultFailureStates.StopAndReschedule;
         }
@@ -417,12 +435,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_taskLock)
             {
-                foreach (var info in _taskInfos)
+                if (!_disposed)
                 {
-                    if (info != null)
+                    foreach (var info in _taskInfos)
                     {
-                        info.Dispose();
+                        if (info != null)
+                        {
+                            info.Dispose();
+                        }
                     }
+
+                    _disposed = true;
                 }
             }
         }
@@ -456,7 +479,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             if (_taskInfos[id].TaskStatus == TaskStatus.Failed)
             {
-                _taskInfos[id].TaskStatus = TaskStatus.Resubmitted;
+                _taskInfos[id].TaskStatus = TaskStatus.Recovering;
             }
             else
             {
@@ -484,9 +507,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         _taskInfos[destination].TaskRunner == null)
                     {
                         var msg = "Cannot send message type " + returnMessage.Message.MessageType;
-                        msg += " to " + (destination + 1) + ": failing";
+                        msg += " to " + (destination + 1) + ": Task Status is " + _taskInfos[destination].TaskStatus;
 
-                        throw new IllegalStateException(msg);
+                        LOGGER.Log(Level.Warning, msg);
                     }
 
                     _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());

@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -72,13 +73,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 case TaskMessageType.JoinTheRing:
                     {
-                        RingTopology.AddTaskIdToRing(message.TaskId);
-
-                        var nextTasksMessages = RingTopology.GetNextTasksInRing();
-
-                        foreach (var next in nextTasksMessages)
+                        if (!Subscription.Completed)
                         {
-                            returnMessages.Add(next);
+                            var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId);
+                            _failureMachine.AddDataPoints(addedDataPoints);
+
+                            var nextTasksMessages = RingTopology.GetNextTasksInRing();
+
+                            foreach (var next in nextTasksMessages)
+                            {
+                                returnMessages.Add(next);
+                            }
                         }
 
                         return true;

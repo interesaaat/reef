@@ -63,7 +63,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var sender = workflow.Current as IElasticBroadcast<int>;
 
-                                sender.Send(number, _cancellationSource);
+                                sender.Send(number);
 
                                 Console.WriteLine("Master has sent {0}", number);
                                 break;

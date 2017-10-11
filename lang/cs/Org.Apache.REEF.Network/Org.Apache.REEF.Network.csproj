@@ -78,8 +78,10 @@ under the License.
     <Compile Include="$(SolutionDir)\SharedAssemblyInfo.cs">
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
+    <Compile Include="Elastic\Comm\ControlMessageType.cs" />
     <Compile Include="Elastic\Comm\IDriverMessagePayload.cs" />
     <Compile Include="Elastic\Comm\IElasticDriverMessage.cs" />
+    <Compile Include="Elastic\Comm\Impl\ControlMessage.cs" />
     <Compile Include="Elastic\Comm\Impl\FailureMessageRequest.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
@@ -115,6 +117,7 @@ under the License.
     <Compile Include="Elastic\Comm\Impl\CheckpointMessageRequestStreamingCodec.cs" />
     <Compile Include="Elastic\Comm\Impl\CheckpointMessageStreamingCodec.cs" />
     <Compile Include="Elastic\Comm\RingTaskMessageType.cs" />
+    <Compile Include="Elastic\Task\Impl\CancellationSource.cs" />
     <Compile Include="Elastic\Task\Impl\DriverMessageHandler.cs" />
     <Compile Include="Elastic\Comm\Impl\DataMessage.cs" />
     <Compile Include="Elastic\Task\Impl\CommunicationLayer.cs" />

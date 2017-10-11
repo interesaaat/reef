@@ -18,6 +18,7 @@
 using System;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {

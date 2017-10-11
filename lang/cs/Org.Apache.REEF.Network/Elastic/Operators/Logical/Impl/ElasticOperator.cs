@@ -31,6 +31,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -142,6 +143,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
 
             return true;
+        }
+
+        internal bool Done()
+        {
+            if (_next != null)
+            {
+                return _next.Done();
+            }
+            else
+            {
+                return false;
+            }
         }
 
         /// <summary>

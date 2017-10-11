@@ -42,6 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultEnumerableIterator));
 
         private int _iteration;
+        private int _numIterations;
 
         public DefaultEnumerableIterator(
             int masterTaskId,
@@ -59,6 +60,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             MasterId = masterTaskId;
             OperatorName = Constants.Iterate;
             _iteration = 0;
+
+            foreach (var conf in _configurations)
+            {
+                foreach (INamedParameterNode opt in conf.GetNamedParameters())
+                {
+                    if (opt.GetName() == typeof(NumIterations).FullName)
+                    {
+                        _numIterations = int.Parse(conf.GetNamedParameter(opt));
+                    }
+                }
+            }
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
@@ -89,6 +101,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 case TaskMessageType.IterationNumber:
                     _iteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, 2));
+
+                    if (_iteration > _numIterations)
+                    {
+                        Subscription.Completed = true;
+                    }
 
                     return true;
                 default:
@@ -121,24 +138,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new NotImplementedException("Future work");
             }
 
-            var numIterProp = typeof(NumIterations).FullName;
-
-            bool reschedule = false;
-            foreach (var conf in _configurations)
-            {
-                foreach (INamedParameterNode opt in conf.GetNamedParameters())
-                {
-                    if (opt.GetName() == numIterProp)
-                    {
-                        if (_iteration < int.Parse(conf.GetNamedParameter(opt)))
-                        {
-                            reschedule = true;
-                        }
-                    }
-                }
-            }
-
-            if (reschedule)
+            if (_iteration < _numIterations)
             {
                 var checkpointConf = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<StartIteration, int>(

@@ -19,17 +19,15 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
-using System.Collections.Generic;
 using System.Threading;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.NetworkService;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -60,6 +58,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         public CheckpointService Service { get; private set; }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
+
+        public bool IsRoot
+        {
+            get { return _rootTaskId == _taskId; }
+        }
 
         public void IterationNumber(int iteration)
         {

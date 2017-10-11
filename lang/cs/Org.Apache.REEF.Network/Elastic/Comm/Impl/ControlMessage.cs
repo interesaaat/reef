@@ -15,27 +15,33 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System.Collections.Generic;
+
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    internal sealed class DataMessage<T> : GroupCommunicationMessage
+    internal sealed class ControlMessage<T> : GroupCommunicationMessage
     {
-        public DataMessage(
-            string subscriptionName,
-            int operatorId,
-            int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
-            T data) : base(subscriptionName, operatorId)
+        public ControlMessage(
+           string subscriptionName,
+           int operatorId,
+           ControlMessageType type) : base(subscriptionName, operatorId)
         {
-            Data = data;
-            Iteration = iteration;
+            Type = Type;
+            Payload = default(T);
         }
 
-        internal int Iteration { get; private set; }
+        internal ControlMessageType Type { get; set; }
 
-        internal T Data { get; set; }
+        internal bool WithPayload
+        {
+            get { return EqualityComparer<T>.Default.Equals(Payload, default(T)); }
+        }
+
+        internal T Payload { get; set; }
 
         // The assumption is that messages are immutable therefore there is no need to clone them
         override public object Clone()

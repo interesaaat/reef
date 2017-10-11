@@ -29,7 +29,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// Send the data to all child receivers.
         /// </summary>
         /// <param name="data">The data to send</param>
-        /// <param name="cancellationSource">The cancellation token</param>
-        void Send(T data, CancellationTokenSource cancellationSource);
+        void Send(T data);
     }
 }

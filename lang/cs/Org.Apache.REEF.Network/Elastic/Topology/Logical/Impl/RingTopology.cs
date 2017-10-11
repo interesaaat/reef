@@ -23,13 +23,9 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Network.Elastic.Driver;
 using System.Text;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 
@@ -65,7 +61,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private readonly Dictionary<int, DataNode> _nodes;
 
-        private int _availableDataPoints;
+        private HashSet<string> _failedNodesWaiting;
+
+        private volatile int _availableDataPoints;
 
         private readonly object _lock;
 
@@ -81,6 +79,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             _currentWaitingList = new HashSet<string>();
             _nextWaitingList = new HashSet<string>();
+            _failedNodesWaiting = new HashSet<string>();
             _ringPrint = new StringBuilder();
             _rootTaskId = string.Empty;
             _taskSubscription = string.Empty;
@@ -106,10 +105,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
                 {
-                    _nodes[id].FailState = DataNodeState.Reachable;
-                    _availableDataPoints++;
+                    lock (_lock)
+                    {
+                        _failedNodesWaiting.Add(taskId);
+                        _nodes[id].FailState = DataNodeState.Unreachable;
+                    }
 
-                    return 1;
+                    return 0;
                 }
 
                 throw new ArgumentException("Task has already been added to the topology");
@@ -209,10 +211,22 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        internal void AddTaskIdToRing(string taskId)
+        internal int AddTaskIdToRing(string taskId)
         {
+            var addedReachableNodes = 0;
+
             lock (_lock)
             {
+                if (_failedNodesWaiting.Contains(taskId))
+                {
+                    var id = Utils.GetTaskNum(taskId);
+
+                    _availableDataPoints++;
+                    _failedNodesWaiting.Remove(taskId);
+                    _nodes[id].FailState = DataNodeState.Reachable;
+                    addedReachableNodes++;
+                }
+
                 if (_currentWaitingList.Contains(taskId) || _tasksInRing.Contains(taskId))
                 {
                     _nextWaitingList.Add(taskId);
@@ -222,6 +236,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _currentWaitingList.Add(taskId);
                 }
             }
+
+            return addedReachableNodes;
         }
 
         internal IList<IElasticDriverMessage> GetNextTasksInRing()

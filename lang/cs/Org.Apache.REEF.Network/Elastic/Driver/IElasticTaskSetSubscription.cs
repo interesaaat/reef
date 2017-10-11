@@ -19,14 +19,13 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Operators.Logical;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
     /// Used to group operators in logical units.
     /// All operators in the same Subscription share similar semantics
-    /// and behaviour under failures.
+    /// and behavior under failures.
     /// </summary>
     public interface IElasticTaskSetSubscription : IFailureResponse, ITaskMessageResponse
     {
@@ -49,6 +48,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// The Service managing the Subscription.
         /// </summary>
         IElasticTaskSetService Service { get; }
+
+        /// <summary>
+        /// TODO.
+        /// </summary>
+        bool Completed { get; set; }
 
         /// <summary>
         /// Generates an id to uniquely identify operators in the Subscription.

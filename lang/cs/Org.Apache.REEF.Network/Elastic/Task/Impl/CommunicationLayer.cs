@@ -271,7 +271,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 _disposed = true;
 
-                Logger.Log(Level.Info, "Disposed of group communication layer");
+                Logger.Log(Level.Info, "Group communication layer disposed.");
             }
         }
 

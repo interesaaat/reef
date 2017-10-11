@@ -50,16 +50,17 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// <returns>The Group Communication Message</returns>
         public DataMessage<T> Read(IDataReader reader)
         {
-            int metadataSize = reader.ReadInt32() + sizeof(int);
+            int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             reader.Read(ref metadata, 0, metadataSize);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int));
+            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
 
             string subscriptionName = res.Item1;
             int operatorId = res.Item2;
+            int iteration = res.Item3;
             var data = _codec.Read(reader);
 
-            return new DataMessage<T>(subscriptionName, operatorId, data);
+            return new DataMessage<T>(subscriptionName, operatorId, iteration, data);
         }
 
         /// <summary>
@@ -85,16 +86,17 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         public async Task<DataMessage<T>> ReadAsync(IDataReader reader,
             CancellationToken token)
         {
-            int metadataSize = reader.ReadInt32() + sizeof(int);
+            int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int));
+            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             
             var data = await _codec.ReadAsync(reader, token);
             string subscriptionString = res.Item1;
             int operatorId = res.Item2;
+            int iteration = res.Item3;
 
-            return new DataMessage<T>(subscriptionString, operatorId, data);
+            return new DataMessage<T>(subscriptionString, operatorId, iteration, data);
         }
 
         /// <summary>
@@ -116,7 +118,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         {
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
             var length = subscriptionBytes.Length;
-            byte[] metadataBytes = new byte[sizeof(int) + length + sizeof(int)];
+            byte[] metadataBytes = new byte[sizeof(int) + length + sizeof(int) + sizeof(int)];
             int offset = 0;
 
             Buffer.BlockCopy(BitConverter.GetBytes(length), 0, metadataBytes, offset, sizeof(int));
@@ -126,16 +128,25 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             offset += length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, metadataBytes, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(obj.Iteration), 0, metadataBytes, offset, sizeof(int));
 
             return metadataBytes;
         }
 
-        private static Tuple<string, int> GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
+        private static Tuple<string, int, int> GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
         {
-            string subscriptionString = ByteUtilities.ByteArraysToString(obj, 0, subscriptionLength);
-            int operatorInt = BitConverter.ToInt32(obj, subscriptionLength);
+            int offset = 0;
+            string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
+            offset += subscriptionLength;
 
-            return new Tuple<string, int>(subscriptionString, operatorInt);
+            int operatorInt = BitConverter.ToInt32(obj, offset);
+            offset += sizeof(int);
+
+            int iterationInt = BitConverter.ToInt32(obj, offset);
+
+            return new Tuple<string, int, int>(subscriptionString, operatorInt, iterationInt);
         }
     }
 }

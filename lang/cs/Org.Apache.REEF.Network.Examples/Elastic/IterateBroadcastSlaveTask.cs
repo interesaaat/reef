@@ -26,26 +26,23 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastSlaveTask : ITask
+    public class IterateBroadcastSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
-
-        private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
         public IterateBroadcastSlaveTask(
             IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
-            _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.WaitForTaskRegistration(_cancellationSource);
+            _serviceClient.WaitForTaskRegistration();
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -58,7 +55,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                                var rec = receiver.Receive(_cancellationSource);
+                                var rec = receiver.Receive();
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
                                 break;
@@ -82,10 +79,23 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void Dispose()
         {
-            _cancellationSource.Cancel();
+            _subscriptionClient.Cancel();
             _serviceClient.Dispose();
 
             Console.WriteLine("Disposed.");
+        }
+
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

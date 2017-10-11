@@ -38,7 +38,6 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
@@ -64,7 +63,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
-        ////private readonly IConfiguration _ckpntMsgCodecConfig;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
         private readonly IElasticTaskSetService _service;
@@ -166,6 +164,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
                         .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
                         .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
+                        .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateMasterTask>.Class)
                         .Build())
                     .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                         GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -180,6 +179,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
                         .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
                         .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
+                        .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateSlaveTask>.Class)
                         .Build())
                     .Build();
             }

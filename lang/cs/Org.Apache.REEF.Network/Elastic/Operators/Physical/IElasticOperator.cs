@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Task;
 using System;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
@@ -44,6 +45,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// Get a reference of the iterator in the pipeline (if it exists)
         /// </summary>
         IElasticIterator IteratorReference { set; }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        CancellationTokenSource CancellationSource { get; set; }
 
         /// <summary>
         /// Wait until computation is globally completed for this operator 

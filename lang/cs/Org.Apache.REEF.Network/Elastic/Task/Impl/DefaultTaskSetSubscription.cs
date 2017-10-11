@@ -34,6 +34,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
+        private readonly CancellationSource _cancellationSource;
+
+        private readonly object _lock;
+        private bool _disposed;
+
         [Inject]
         private DefaultTaskSetSubscription(
            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscriptionName,
@@ -41,10 +46,17 @@ namespace Org.Apache.REEF.Network.Elastic.Task
            [Parameter(typeof(StartIteration))] int startIteration,
            AvroConfigurationSerializer configSerializer,
            Workflow workflow,
+           CancellationSource cancellationSource,
            IInjector injector)
         {
             SubscriptionName = subscriptionName;
             Workflow = workflow;
+
+            _cancellationSource = cancellationSource;
+            _disposed = false;
+            _lock = new object();
+
+            Workflow.CancellationSource = _cancellationSource;
 
             foreach (string operatorConfigStr in operatorConfigs)
             {
@@ -64,11 +76,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task
 
         public string SubscriptionName { get; private set; }
 
-        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
+        public Workflow Workflow { get; private set; }
+
+        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
             try
             {
-                Workflow.WaitForTaskRegistration(cancellationSource);
+                Workflow.WaitForTaskRegistration(cancellationSource ?? _cancellationSource.Source);
             }
             catch (OperationCanceledException e)
             {
@@ -77,14 +91,29 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
         }
 
-        public Workflow Workflow { get; private set; }
-
         public void Dispose()
         {
-            if (Workflow != null)
+            lock (_lock)
             {
-                Workflow.Dispose();
-            }
+                if (!_disposed)
+                {
+                    if (Workflow != null)
+                    {
+                        Workflow.Dispose();
+                    }
+
+                    Console.WriteLine("Subscription {0} disposed.", SubscriptionName);
+
+                    _disposed = true;
+                }
+            }  
+        }
+
+        public void Cancel()
+        {
+            Logger.Log(Level.Warning, "Going to close Subscription", SubscriptionName);
+
+            _cancellationSource.Cancel();
         }
     }
 }

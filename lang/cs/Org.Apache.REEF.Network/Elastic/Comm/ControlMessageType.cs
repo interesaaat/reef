@@ -15,12 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
+namespace Org.Apache.REEF.Network.Elastic.Comm
 {
-    /// <summary>
-    /// Operator used for managing logical iterations (not physical iterations over data).
-    /// </summary>
-    public interface IElasticIterator
+    public enum ControlMessageType : ushort
     {
+        SyncIterationRequest = 0,
+
+        SyncIterationResponse = 1
     }
 }

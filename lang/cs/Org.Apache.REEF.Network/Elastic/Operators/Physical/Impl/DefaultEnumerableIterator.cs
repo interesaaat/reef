@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Utilities.Logging;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -79,11 +80,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                     var checkpoint = _topology.GetCheckpoint(_inner.Current);
                     if (_inner.Current < 0)
                     {
-                        LOGGER.Log(Level.Info, "Fast forward to iteration {0}", checkpoint.Iteration + 1);
-                        while (_inner.Current < checkpoint.Iteration)
-                        {
-                            _inner.MoveNext();
-                        }
+                        LOGGER.Log(Level.Info, "Fast forward to checkpointed iteration {0}", checkpoint.Iteration + 1);
+
+                        FastForward(checkpoint.Iteration);
                     }
                     _checkpointState.MakeCheckpointable(checkpoint.State);
                 }
@@ -107,6 +106,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get { return Current; }
         }
 
+        public CancellationTokenSource CancellationSource { get; set; }
+
         public void ResetPosition()
         {
         }
@@ -121,10 +122,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public bool MoveNext()
         {
+            _topology.IterationNumber(Current + 1);
+
             if (_inner.MoveNext())
             {
-                _topology.IterationNumber(Current);
-
                 Checkpoint();
 
                 return true;
@@ -146,6 +147,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private void Checkpoint()
         {
             _topology.Checkpoint(CheckpointState, _inner.Current);
+        }
+
+        void IElasticIterator.SyncIteration(int iteration)
+        {
+            if (_inner.Current < iteration && !_topology.IsRoot)
+            {
+                LOGGER.Log(Level.Info, "Fast forward to iteration {0}", iteration);
+
+                FastForward(iteration);
+            }
+        }
+
+        private void FastForward(int iteration)
+        {
+            while (_inner.Current < iteration && !CancellationSource.IsCancellationRequested)
+            {
+                _inner.MoveNext();
+            }
         }
     }
 }

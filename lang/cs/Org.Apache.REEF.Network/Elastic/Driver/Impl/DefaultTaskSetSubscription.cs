@@ -44,8 +44,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly int _numTasks;
         private int _tasksAdded;
         private HashSet<string> _missingMasterTasks;
-
         private IFailureStateMachine _defaultFailureMachine;
+
         private int _numOperators;
 
         private readonly object _tasksLock;
@@ -64,6 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _numTasks = numTasks;
             _tasksAdded = 0;
             _missingMasterTasks = new HashSet<string>();
+            Completed = false;
             Service = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
             FailureStatus = new DefaultFailureState();
@@ -84,6 +85,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public bool IsIterative { get; set; }
 
         public IFailureState FailureStatus { get; private set; }
+
+        public bool Completed { get; set; }
 
         public int GetNextOperatorId()
         {

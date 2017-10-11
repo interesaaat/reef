@@ -76,37 +76,41 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public IElasticIterator IteratorReference { private get;  set; }
 
+        public CancellationTokenSource CancellationSource { get; set; }
+
         /// <summary>
         /// Receive a message from neighbors broadcasters.
         /// </summary>
         /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
         /// <returns>The incoming data</returns>
-        public T Receive(CancellationTokenSource cancellationSource)
+        public T Receive()
         {
             _topology.JoinTheRing();
 
             _position = PositionTracker.InReceive;
 
-            var objs = _topology.Receive(cancellationSource);
+            var objs = _topology.Receive(CancellationSource);
 
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
+
+            IteratorReference.SyncIteration(message.Iteration);
 
             _position = PositionTracker.AfterReceiveBeforeSend;
 
             return message.Data;
         }
 
-        public void Send(T data, CancellationTokenSource cancellationSource)
+        public void Send(T data)
         {
             _position = PositionTracker.InSend;
 
-            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, data);
+            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
             var messages = new GroupCommunicationMessage[] { message };
 
             Checkpoint(messages);
 
-            _topology.Send(messages, cancellationSource);
+            _topology.Send(messages, CancellationSource);
 
             _position = PositionTracker.AfterSendBeforeReceive;
         }

@@ -28,8 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// <summary>
         /// Receive a message from sender.
         /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation</param>
         /// <returns>The incoming message</returns>
-        T Receive(CancellationTokenSource cancellationSource);
+        T Receive();
     }
 }

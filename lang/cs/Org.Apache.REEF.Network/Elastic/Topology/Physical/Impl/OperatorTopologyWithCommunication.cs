@@ -126,6 +126,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public void Dispose()
         {
+            _messageQueue.CompleteAdding();
+
             var elapsedTime = 0;
             while (_sendQueue.Count > 0 && elapsedTime < _timeout)
             {

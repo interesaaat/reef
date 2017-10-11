@@ -22,28 +22,26 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
+using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateAggregateMasterTask : ITask
+    public class IterateAggregateMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
-
-        private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
         public IterateAggregateMasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
-            _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateAggregate");
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.WaitForTaskRegistration(_cancellationSource);
+            _serviceClient.WaitForTaskRegistration();
 
             var rand = new Random();
             int n = 10;
@@ -69,11 +67,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
-                                aggregator.Send(model, _cancellationSource);
+                                aggregator.Send(model);
 
                                 Console.WriteLine("Master has sent {0} in iteration {1}", string.Join(",", model), workflow.Iteration);
 
-                                var update = aggregator.Receive(_cancellationSource);
+                                var update = aggregator.Receive();
 
                                 // Update the model
                                 for (int i = 0; i < n; i++)
@@ -97,12 +95,25 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
+        }
+
         public void Dispose()
         {
-            _cancellationSource.Cancel();
+            _subscriptionClient.Cancel();
             _serviceClient.Dispose();
 
             Console.WriteLine("Disposed.");
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

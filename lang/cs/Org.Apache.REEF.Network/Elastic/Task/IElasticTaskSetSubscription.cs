@@ -36,6 +36,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         string SubscriptionName { get; }
 
         /// <summary>
+        /// TODO
+        /// </summary>
+        void Cancel();
+
+        /// <summary>
         /// The workflow of operators
         /// </summary>
         Workflow Workflow { get; }

@@ -15,12 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
+using Org.Apache.REEF.Tang.Annotations;
+using System.Threading;
+
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    /// <summary>
-    /// Operator used for managing logical iterations (not physical iterations over data).
-    /// </summary>
-    public interface IElasticIterator
+    internal class CancellationSource
     {
+        [Inject]
+        public CancellationSource()
+        {
+            Source = new CancellationTokenSource();
+        }
+
+        public CancellationTokenSource Source { get; private set; }
+
+        public bool IsCancelled()
+        {
+            return Source.IsCancellationRequested;
+        }
+
+        public void Cancel()
+        {
+            Source.Cancel();
+        }
     }
 }

@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -102,6 +103,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 _checkpointsWaiting.TryAdd(id, received);
 
                 received.WaitOne();
+                System.Threading.Thread.Sleep(new Random().Next(15000));
 
                 if (!_checkpoints.TryGetValue(id, out checkpoints))
                 {

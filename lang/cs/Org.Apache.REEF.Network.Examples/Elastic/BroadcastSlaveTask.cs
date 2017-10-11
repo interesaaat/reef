@@ -57,7 +57,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                                var rec = receiver.Receive(_cancellationSource);
+                                var rec = receiver.Receive();
 
                                 Console.WriteLine("Slave has received {0}", rec);
                                 break;

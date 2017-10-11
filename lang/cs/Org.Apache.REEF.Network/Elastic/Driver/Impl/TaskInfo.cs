@@ -55,18 +55,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (!IsDisposed)
             {
-                IsDisposed = true;
+                if (TaskRunner != null)
+                {
+                    TaskRunner.Dispose();
+                    TaskRunner = null;
+                }
 
                 if (ActiveContext != null)
                 {
                     ActiveContext.Dispose();
                     ActiveContext = null;
                 }
-                if (TaskRunner != null)
-                {
-                    TaskRunner.Dispose();
-                    TaskRunner = null;
-                }
+
+                IsDisposed = true;
             }
         }
     }

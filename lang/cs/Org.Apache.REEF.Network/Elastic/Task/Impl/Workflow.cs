@@ -35,6 +35,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private int _position = -1;
         private bool _failed;
+        private bool _disposed;
+        private readonly object _lock;
+
         private readonly IList<IElasticOperator> _operators;
         private int _iteratorPosition = -1; // For the moment we are not considering nested iterators
 
@@ -42,14 +45,33 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private Workflow()
         {
             _operators = new List<IElasticOperator>();
-            Iteration = 0;
             _failed = false;
+            _disposed = false;
+            _lock = new object();
         }
 
-        public object Iteration { get; private set; }
+        public object Iteration
+        {
+            get
+            {
+                if (_iteratorPosition == -1)
+                {
+                    return 0;
+                }
+                else
+                {
+                    var iterator = _operators[_iteratorPosition] as IElasticIterator;
+                    return iterator.Current;
+                }
+            }
+        }
+
+        internal CancellationSource CancellationSource { get; set; }
 
         public void Add(IElasticOperator op)
         {
+            op.CancellationSource = CancellationSource.Source;
+
             _operators.Add(op);
 
             if (_iteratorPosition >= 0)
@@ -67,7 +89,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _position++;
 
-            if (_failed)
+            if (_failed || CancellationSource.IsCancelled())
             {
                 return false;
             }
@@ -79,8 +101,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 if (iteratorOperator.MoveNext())
                 {
                     _position++;
-
-                    Iteration = iteratorOperator.Current;
 
                     ResetOperatorPositions();
 
@@ -111,10 +131,17 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void Throw(Exception e)
         {
-            Logger.Log(Level.Error, "Workflow captured an Exception", e);
-            _failed = true;
-            throw new OperatorException(
-                "Workflow captured an Exception", Current.OperatorId, e, Current.FailureInfo);
+            if (CancellationSource.IsCancelled())
+            {
+                Logger.Log(Level.Warning, "Workflow captured an Exception while Cancellation Source is True", e);
+            }
+            else
+            {
+                Logger.Log(Level.Error, "Workflow captured an Exception", e);
+                _failed = true;
+                throw new OperatorException(
+                    "Workflow captured an Exception", Current.OperatorId, e, Current.FailureInfo);
+            }     
         }
 
         public void Reset()
@@ -149,28 +176,36 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void Dispose()
         {
-            if (_operators != null)
+            lock (_lock)
             {
-                // Clean dispose, check that the computation is completed
-                if (_failed == false)
+                if (!_disposed)
                 {
-                    foreach (var op in _operators)
+                    if (_operators != null)
                     {
-                        if (op != null)
+                        // Clean dispose, check that the computation is completed
+                        if (_failed == false)
                         {
-                            op.WaitCompletionBeforeDisposing();
+                            foreach (var op in _operators)
+                            {
+                                if (op != null)
+                                {
+                                    op.WaitCompletionBeforeDisposing();
+                                }
+                            }
+                        }
+
+                        foreach (var op in _operators)
+                        {
+                            if (op != null)
+                            {
+                                var disposableOperator = op as IDisposable;
+
+                                disposableOperator.Dispose();
+                            }
                         }
                     }
-                }
 
-                foreach (var op in _operators)
-                {
-                    if (op != null)
-                    {
-                        var disposableOperator = op as IDisposable;
-
-                        disposableOperator.Dispose();
-                    }
+                    _disposed = true;
                 }
             }
         }

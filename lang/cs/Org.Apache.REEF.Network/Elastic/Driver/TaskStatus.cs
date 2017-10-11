@@ -23,7 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
 
         Submitted = 2,
 
-        Resubmitted = 3,
+        Recovering = 3,
 
         Running = 4,
 

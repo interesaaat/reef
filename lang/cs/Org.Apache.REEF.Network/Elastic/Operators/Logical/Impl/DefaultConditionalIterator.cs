@@ -18,6 +18,7 @@
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -41,6 +42,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = coordinatortId;
             OperatorName = Constants.Iterate;
+        }
+
+        public object Iteration
+        {
+            get { throw new NotImplementedException(); }
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)

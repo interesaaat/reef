@@ -22,28 +22,26 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
+using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastMasterTask : ITask
+    public class IterateBroadcastMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
-
-        private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
         public IterateBroadcastMasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
-            _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.WaitForTaskRegistration(_cancellationSource);
+            _serviceClient.WaitForTaskRegistration();
 
             var rand = new Random();
             int number = 0;
@@ -61,7 +59,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var sender = workflow.Current as IElasticBroadcast<int>;
 
-                                sender.Send(number, _cancellationSource);
+                                sender.Send(number);
 
                                 Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
                                 break;
@@ -79,12 +77,25 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
+        }
+
         public void Dispose()
         {
-            _cancellationSource.Cancel();
+            _subscriptionClient.Cancel();
             _serviceClient.Dispose();
 
             Console.WriteLine("Disposed.");
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }
