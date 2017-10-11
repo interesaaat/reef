@@ -287,6 +287,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (BelongsTo(info.Id))
             {
+                if (Completed())
+                {
+                    LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is complete: ignoring the failure " + info.Id, info.AsError());
+
+                    return;
+                }
+
                 var id = Utils.GetTaskNum(info.Id) - 1;
                 Interlocked.Decrement(ref _tasksRunning);
 

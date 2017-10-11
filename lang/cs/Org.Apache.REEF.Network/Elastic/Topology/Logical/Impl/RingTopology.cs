@@ -28,6 +28,7 @@ using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -63,7 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private HashSet<string> _failedNodesWaiting;
 
-        private volatile int _availableDataPoints;
+        private int _availableDataPoints;
 
         private readonly object _lock;
 
@@ -101,25 +102,25 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             var id = Utils.GetTaskNum(taskId);
 
-            if (_nodes.ContainsKey(id))
+            lock (_lock)
             {
-                if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
+                if (_nodes.ContainsKey(id))
                 {
-                    lock (_lock)
+                    if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
                     {
                         _failedNodesWaiting.Add(taskId);
                         _nodes[id].FailState = DataNodeState.Unreachable;
+
+                        return 0;
                     }
 
-                    return 0;
+                    throw new ArgumentException("Task has already been added to the topology");
                 }
 
-                throw new ArgumentException("Task has already been added to the topology");
+                DataNode node = new DataNode(id, false);
+                _nodes[id] = node;
+                _availableDataPoints++;
             }
-
-            DataNode node = new DataNode(id, false);
-            _nodes[id] = node;
-            _availableDataPoints++;
 
             // This is required later in order to build the topology
             if (_taskSubscription == string.Empty)
@@ -146,13 +147,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             DataNode node = _nodes[id];
 
-            if (node.FailState == DataNodeState.Lost)
-            {
-                return 0;
-            }
+            lock (_lock)
+            { 
+                if (node.FailState == DataNodeState.Lost)
+                {
+                    return 0;
+                }
 
-            node.FailState = DataNodeState.Lost;
-            _availableDataPoints--;
+                node.FailState = DataNodeState.Lost;
+                _availableDataPoints--;
+            }
 
             return 1;
         }
@@ -268,7 +272,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         _tasksInRing.Add(nextTask);
                         _currentWaitingList.Remove(nextTask);
 
-                        _ringPrint.Append("->" + nextTask);
+                        _ringPrint.Append(" -> " + nextTask);
                     }
                 }
 
@@ -293,7 +297,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                     messages.Add(returnMessage);
-                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1}->{2}", _iteration, LogTopologyState(), _rootTaskId);
+                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed:\n {1} -> {2}", _iteration, LogTopologyState(), _rootTaskId);
 
                     _prevRingHead = _currentRingHead;
                     _prevRingTail = _currentRingTail;
@@ -326,7 +330,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             int position = int.Parse(failureInfos[0]);
             int currentIteration = int.Parse(failureInfos[1]);
 
-            _ringPrint.Replace(taskId, "X");
+            _ringPrint.Replace(taskId + " ", "X ");
 
             switch (position)
             {
@@ -349,6 +353,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                         if (head != null)
                         {
+                            var next = head.Next;
+                            if (next != null)
+                            {
+                                next.Prev = head.Prev;
+                            }
+                            head.Prev.Next = next;
+                            head.Next = null;
+                            head.Prev = null;
+
                             _tasksInRing.Remove(head.TaskId);
                             _currentWaitingList.Remove(head.TaskId);
                             _nextWaitingList.Remove(head.TaskId);
@@ -382,6 +395,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             head = head.Next;
                         }
 
+                        if (head == null)
+                        {
+                            Console.WriteLine("here");
+                        }
                         _tasksInRing.Remove(head.TaskId);
                         _currentWaitingList.Remove(head.TaskId);
                         _nextWaitingList.Remove(head.TaskId);

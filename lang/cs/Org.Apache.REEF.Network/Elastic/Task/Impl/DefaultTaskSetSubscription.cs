@@ -111,9 +111,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task
 
         public void Cancel()
         {
-            Logger.Log(Level.Warning, "Going to close Subscription", SubscriptionName);
+            if (!_cancellationSource.IsCancelled())
+            {
+                Logger.Log(Level.Warning, "Going to close Subscription", SubscriptionName);
 
-            _cancellationSource.Cancel();
+                _cancellationSource.Cancel();
+            }
         }
     }
 }

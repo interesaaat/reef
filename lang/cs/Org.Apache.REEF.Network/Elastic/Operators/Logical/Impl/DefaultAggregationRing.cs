@@ -163,5 +163,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new NotImplementedException("No caching is Future work");
             }
         }
+
+        public override void OnStop(ref IStop stopEvent)
+        {
+        }
     }
 }
