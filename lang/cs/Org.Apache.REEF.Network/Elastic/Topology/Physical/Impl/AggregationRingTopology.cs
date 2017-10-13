@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, disposeTimeout)
         {
-            _next = new BlockingCollection<string>();
+            _next = new BlockingCollection<string>(1);
 
             _retry = retry;
             _timeout = timeout;
@@ -180,7 +180,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             var data = message as RingMessagePayload;
-            _next.Add(data.NextTaskId);
+            _next.TryAdd(data.NextTaskId);
         }
 
         internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
@@ -233,7 +233,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 while (!_next.TryTake(out nextNode, _timeout, cancellationSource.Token))
                 {
                     retry++;
-                    _commLayer.NextTokenRequest(_taskId);
+                    var dm = message as DataMessage;
+                    _commLayer.NextTokenRequest(_taskId, dm.Iteration);
                     if (retry > _retry)
                     {
                         throw new Exception("Failed to send message to the next node in the ring");

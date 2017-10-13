@@ -31,6 +31,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Collections.Concurrent;
+using System.Threading.Tasks;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -68,6 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _numTasks = numTasks;
 
             _taskInfos = new List<TaskInfo>(numTasks);
+            _evaluators = new ConcurrentDictionary<string, IAllocatedEvaluator>();
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _failureStatus = new DefaultFailureState();
 
@@ -102,7 +104,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 throw new IllegalStateException("Trying to schedule too many contexts");
             }
 
-            evaluator.i
+            if (!_evaluators.ContainsKey(evaluator.Id))
+            {
+                _evaluators.TryAdd(evaluator.Id, evaluator);
+            }
 
             int id = Interlocked.Increment(ref _contextsAdded);
             return Utils.BuildContextId(SubscriptionsId, id);
@@ -529,7 +534,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
         }
 
-        private void SendToTasks(IList<IElasticDriverMessage> messages)
+        private void SendToTasks(IList<IElasticDriverMessage> messages, int retry = 0)
         {
             foreach (var returnMessage in messages)
             {
@@ -549,10 +554,20 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                             var msg = "Cannot send message to ";
                             msg += (destination + 1) + ": Task Status is " + _taskInfos[destination].TaskStatus;
 
+                            if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < 3)
+                            {
+                                LOGGER.Log(Level.Warning, msg + "\nRetry");
+                                System.Threading.Tasks.Task.Run(() => SendToTasks(new List<IElasticDriverMessage>() { returnMessage }, retry + 1));
+                            }
+
                             if (_taskInfos[destination].ActiveContext != null)
                             {
-                                LOGGER.Log(Level.Warning, msg + "\nGoing to kill the context");
+                                LOGGER.Log(Level.Warning, msg + "\nGoing to kill and resubmit the context");
+                                var evaluatorId = _taskInfos[destination].ActiveContext.EvaluatorId;
+                                var contextId = _taskInfos[destination].ActiveContext.Id;
                                 _taskInfos[destination].ActiveContext.Dispose();
+
+                                // Eventually will do the resubmit
                             }
                             else
                             {

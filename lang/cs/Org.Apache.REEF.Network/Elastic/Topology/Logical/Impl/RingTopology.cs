@@ -288,12 +288,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (_availableDataPoints <= _tasksInRing.Count)
                 {
                     var dest = _ringHead.TaskId;
-                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _ringHead.Iteration, SubscriptionName, OperatorId);
+                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _iteration, SubscriptionName, OperatorId);
                     var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                     messages.Add(returnMessage);
                     _timer.Stop();
-                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed in {1}:\n {2} -> {3}", _iteration, _timer.ElapsedMilliseconds, LogTopologyState(), _rootTaskId);
+                    LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed in {1}ms with {2} nodes:\n {3} -> {4}", _iteration, _timer.ElapsedMilliseconds, _tasksInRing.Count, LogTopologyState(), _rootTaskId);
 
                     _iteration++;
                     _ringHead.Next = new RingNode(_rootTaskId, _iteration);
@@ -303,18 +303,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _nextWaitingList = new HashSet<string>();
                     _tasksInRing = new HashSet<string> { { _rootTaskId } };
 
-                    foreach (var task in _currentWaitingList)
-                    {
-                        _tasksInRing.Add(task);
-                    }
-
                     _ringPrint = new StringBuilder(_rootTaskId);
                     _timer.Restart();
                 }
             }
         }
 
-        internal void RetrieveTokenFromRing(string taskId, ref List<IElasticDriverMessage> messages)
+        internal void RetrieveTokenFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
         {
             lock (_lock)
             {
@@ -327,11 +322,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         head = head.Prev;
                     }
 
-                    var dest = taskId;
-                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(head.Next.TaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(head.Next.TaskId, _iteration, SubscriptionName, OperatorId);
-                    messages.Add(new ElasticDriverMessageImpl(dest, data));
+                    if (head.Iteration == iteration)
+                    {
+                        var dest = taskId;
+                        var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(head.Next.TaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(head.Next.TaskId, _iteration, SubscriptionName, OperatorId);
+                        messages.Add(new ElasticDriverMessageImpl(dest, data));
 
-                    LOGGER.Log(Level.Info, "Next token is {0}", head.Next.TaskId);
+                        LOGGER.Log(Level.Info, "Next token is {0}", head.Next.TaskId);
+                    }
+                    else
+                    {
+                        LOGGER.Log(Level.Info, "Request for old iteration: ignoring");
+                    }
                 }
             }
         }

@@ -21,26 +21,34 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// Messages sent by MPI Operators. This is the class inherited by 
     /// GroupCommunicationMessage but seen by Network Service
     /// </summary>
-    internal sealed class DataMessage<T> : GroupCommunicationMessage
+    internal abstract class DataMessage : GroupCommunicationMessage
     {
-        public DataMessage(
-            string subscriptionName,
-            int operatorId,
-            int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
-            T data) : base(subscriptionName, operatorId)
+        public DataMessage(string subscriptionName, int operatorId, int iteration)
+            : base(subscriptionName, operatorId)
         {
-            Data = data;
             Iteration = iteration;
         }
 
-        internal int Iteration { get; private set; }
-
-        internal T Data { get; set; }
+        internal int Iteration { get; set; }
 
         // The assumption is that messages are immutable therefore there is no need to clone them
         override public object Clone()
         {
             return this;
         }
+    }
+
+    internal sealed class DataMessage<T> : DataMessage
+    {
+        public DataMessage(
+            string subscriptionName,
+            int operatorId,
+            int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
+            T data) : base(subscriptionName, operatorId, iteration)
+        {
+            Data = data;
+        }
+
+        internal T Data { get; set; }
     }
 }

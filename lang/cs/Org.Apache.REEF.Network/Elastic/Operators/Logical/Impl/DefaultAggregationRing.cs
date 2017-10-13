@@ -105,9 +105,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.NextTokenRequest:
                     {
-                        LOGGER.Log(Level.Info, "Received next token request from node", message.TaskId);
+                        var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
+                        LOGGER.Log(Level.Info, "Received next token request for iteration {0} from node {1}", iteration, message.TaskId);
 
-                        RingTopology.RetrieveTokenFromRing(message.TaskId, ref returnMessages);
+                        RingTopology.RetrieveTokenFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
                     }
                         default:

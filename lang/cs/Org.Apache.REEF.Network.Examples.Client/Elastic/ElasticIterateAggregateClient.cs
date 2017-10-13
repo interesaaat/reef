@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
         public void RunIterateAggregate(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 1000;
+            const int numIterations = 100;
             const string driverId = "ElasticIterateAggregateDriver";
             const string subscription = "IterateAggregate";
 

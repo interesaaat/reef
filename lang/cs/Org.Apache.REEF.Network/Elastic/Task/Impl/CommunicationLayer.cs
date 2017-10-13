@@ -217,9 +217,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             operatorObserver.OnNext(nsMessage);
         }
 
-        internal void NextTokenRequest(string taskId)
+        internal void NextTokenRequest(string taskId, int iteration)
         {
-            _ringMessageSource.NextTokenRequest(taskId);
+            _ringMessageSource.NextTokenRequest(taskId, iteration);
         }
 
         public void IterationNumber(string taskId, int iteration)
