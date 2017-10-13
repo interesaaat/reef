@@ -122,11 +122,5 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="evaluator">The failed evaluator</param>
         void OnEvaluatorFailure(IFailedEvaluator evaluator);
-
-        /// <summary>
-        /// Contains the logic to trigger when the execution fails.
-        /// </summary>
-        /// <param name="taskId">The id of the task triggering the fail</param>
-        void OnFail(string taskId);
     }
 }

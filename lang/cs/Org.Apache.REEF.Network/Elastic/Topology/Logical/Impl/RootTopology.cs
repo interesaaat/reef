@@ -15,21 +15,32 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
 using Org.Apache.REEF.Tang.Interface;
-using Org.Apache.REEF.Tang.Exceptions;
 using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Driver;
+using Org.Apache.REEF.Tang.Util;
+using Org.Apache.REEF.Network.Elastic.Config;
+using System.Globalization;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Utilities.Logging;
+using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
-    class EmptyTopology : ITopology
+    public class RootTopology : ITopology
     {
-        private bool _finalized;
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(RootTopology));
 
-        public EmptyTopology()
+        private int _rootId;
+        private bool _finalized;
+        private bool _hasRoot;
+
+        public RootTopology(int rootId)
         {
+            _rootId = rootId;
             _finalized = false;
+            _hasRoot = false;
             OperatorId = -1;
         }
 
@@ -39,12 +50,34 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public int AddTask(string taskId)
         {
-            return 0;
+            if (string.IsNullOrEmpty(taskId))
+            {
+                throw new ArgumentNullException("taskId");
+            }
+
+            var id = Utils.GetTaskNum(taskId);
+
+            if (id == _rootId)
+            {
+                if (_hasRoot)
+                {
+                    throw new IllegalStateException("Trying to add root node twice");
+                }
+
+                _hasRoot = true;
+            }
+
+            return 1;
         }
 
         public int RemoveTask(string taskId)
         {
-            return 0;
+            if (string.IsNullOrEmpty(taskId))
+            {
+                throw new ArgumentNullException("taskId");
+            }
+
+            return 1;
         }
 
         public ITopology Build()
@@ -52,6 +85,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             if (_finalized == true)
             {
                 throw new IllegalStateException("Topology cannot be built more than once");
+            }
+
+            if (!_hasRoot)
+            {
+                throw new IllegalStateException("Topology cannot be built because the root node is missing");
             }
 
             if (OperatorId <= 0)
@@ -69,18 +107,21 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return this;
         }
 
-        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
-        {
-        }
-
         public string LogTopologyState()
         {
-            return "empty";
+            return _rootId.ToString();
+        }
+
+        public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        {
+            confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
+                    GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
+                    _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
-            return new List<IElasticDriverMessage>();
+            throw new MissingMethodException("TODO");
         }
     }
 }

@@ -38,12 +38,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private readonly Dictionary<int, DataNode> _nodes;
 
+        private readonly object _lock;
+
         public FlatTopology(int rootId, bool sorted = false)
         {
             _rootId = rootId;
             _finalized = false;
             _sorted = sorted;
             OperatorId = -1;
+
+            _lock = new object();
 
             _nodes = new Dictionary<int, DataNode>();
         }
@@ -61,20 +65,26 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             var id = Utils.GetTaskNum(taskId);
 
-            if (_nodes.ContainsKey(id))
+            lock (_lock)
             {
-                if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
+                if (_nodes.ContainsKey(id))
                 {
-                    _nodes[id].FailState = DataNodeState.Reachable;
+                    if (_finalized)
+                    {
+                        if (_nodes[id].FailState != DataNodeState.Reachable)
+                        {
+                            _nodes[id].FailState = DataNodeState.Reachable;
+                        }
 
-                    return 1;
+                        return 0;
+                    }
+
+                    throw new ArgumentException("Task has already been added to the topology");
                 }
 
-                throw new ArgumentException("Task has already been added to the topology");
+                DataNode node = new DataNode(id, false);
+                _nodes[id] = node;
             }
-
-            DataNode node = new DataNode(id, false);
-            _nodes[id] = node;
 
             return 1;
         }
@@ -88,19 +98,22 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             var id = Utils.GetTaskNum(taskId);
 
-            if (!_nodes.ContainsKey(id))
+            lock (_lock)
             {
-                throw new ArgumentException("Task is not part of this topology");
+                if (!_nodes.ContainsKey(id))
+                {
+                    throw new ArgumentException("Task is not part of this topology");
+                }
+
+                DataNode node = _nodes[id];
+
+                if (node.FailState == DataNodeState.Lost)
+                {
+                    return 0;
+                }
+
+                node.FailState = DataNodeState.Lost;
             }
-
-            DataNode node = _nodes[id];
-
-            if (node.FailState == DataNodeState.Lost)
-            {
-                return 0;
-            }
-
-            node.FailState = DataNodeState.Lost;
 
             return 1;
         }

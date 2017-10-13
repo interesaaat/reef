@@ -50,7 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _lock = new object();
 
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, _messageType1, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenRequest), 0, _messageType2, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenResponse), 0, _messageType2, 0, sizeof(ushort));
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.IterationNumber), 0, _messageType3, 0, sizeof(ushort));
         }
 
@@ -89,6 +89,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        internal void NextTokenRequest(string taskId)
+        {
+            lock (_lock)
+            {
+                _taskId = taskId;
+                _message = new byte[2];
+                Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextTokenRequest), 0, _message, 0, sizeof(ushort));
+                _heartBeatManager.Heartbeat();
+            }
+        }
         public Optional<TaskMessage> Message
         {
             get

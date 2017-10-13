@@ -114,6 +114,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
+            _topology.WaitForTaskRegistration(cancellationSource);
         }
 
         public void WaitCompletionBeforeDisposing()

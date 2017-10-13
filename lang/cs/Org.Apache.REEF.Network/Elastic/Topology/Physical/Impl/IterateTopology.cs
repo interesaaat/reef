@@ -28,10 +28,12 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.NetworkService;
+using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class IterateTopology : DriverAwareOperatorTopology, IDisposable, ICheckpointingTopology
+    internal class IterateTopology : DriverAwareOperatorTopology, IDisposable, ICheckpointingTopology, IWaitForTaskRegistration
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(IterateTopology));
 
@@ -124,6 +126,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return InternalCheckpoint;
             }
             return Service.GetCheckpoint(_taskId, SubscriptionName, OperatorId, iteration);
+        }
+
+        public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
+        {
+            if (_rootTaskId != _taskId)
+            {
+                _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
+            }
         }
 
         public override void WaitCompletionBeforeDisposing()

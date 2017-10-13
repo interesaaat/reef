@@ -125,6 +125,7 @@ under the License.
     <Compile Include="Elastic\Task\Impl\Workflow.cs" />
     <Compile Include="Elastic\Task\Impl\NodeObserverIdentifier.cs" />
     <Compile Include="Elastic\Task\IWaitForTaskRegistration.cs" />
+    <Compile Include="Elastic\Topology\Logical\Impl\RootTopology.cs" />
     <Compile Include="Elastic\Topology\Logical\Impl\RingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\ICheckpointingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />

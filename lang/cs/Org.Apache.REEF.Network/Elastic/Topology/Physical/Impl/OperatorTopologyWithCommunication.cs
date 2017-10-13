@@ -34,14 +34,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected bool _initialized;
         internal CommunicationLayer _commLayer;
 
-        private readonly int _timeout;
+        private readonly int _disposeTimeout;
 
         protected ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
         internal OperatorTopologyWithCommunication(string taskId, int rootId, string subscription, int operatorId, CommunicationLayer commLayer,
-            int timeout) : base(taskId, rootId, subscription, operatorId)
+            int disposeTimeout) : base(taskId, rootId, subscription, operatorId)
         {
             _initialized = false;
             _commLayer = commLayer;
@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
 
-            _timeout = timeout;
+            _disposeTimeout = disposeTimeout;
         }
 
         internal IEnumerator<GroupCommunicationMessage> Receive(CancellationTokenSource cancellationSource)
@@ -129,7 +129,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _messageQueue.CompleteAdding();
 
             var elapsedTime = 0;
-            while (_sendQueue.Count > 0 && elapsedTime < _timeout)
+            while (_sendQueue.Count > 0 && elapsedTime < _disposeTimeout)
             {
                 // The topology is still trying to send messages, wait
                 Thread.Sleep(100);
@@ -141,16 +141,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         protected virtual void Send(CancellationTokenSource cancellationSource)
         {
-            while (_sendQueue.Count > 0 && !cancellationSource.IsCancellationRequested)
+            GroupCommunicationMessage message;
+            while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
-                GroupCommunicationMessage message;
-                _sendQueue.TryPeek(out message);
-
                 foreach (var child in _children.Values)
                 {
                     _commLayer.Send(child, message);
                 }
-                _sendQueue.TryDequeue(out message);
             }
         }
     }

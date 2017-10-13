@@ -73,33 +73,23 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 case TaskMessageType.JoinTheRing:
                     {
-                        if (!Subscription.Completed)
+                        if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId);
                             _failureMachine.AddDataPoints(addedDataPoints);
 
-                            var nextTasksMessages = RingTopology.GetNextTasksInRing();
-
-                            foreach (var next in nextTasksMessages)
-                            {
-                                returnMessages.Add(next);
-                            }
+                            RingTopology.GetNextTasksInRing(ref returnMessages);
                         }
 
                         return true;
                     }
-                case TaskMessageType.TokenRequest:
+                case TaskMessageType.TokenResponse:
                     {
                         if (message.Message[2] == 0)
                         {
                             if (_checkpointLevel > CheckpointLevel.None)
                             {
-                                var nextTasksMessages = RingTopology.ResumeRingFromCheckpoint(message.TaskId);
-
-                                foreach (var next in nextTasksMessages)
-                                {
-                                    returnMessages.Add(next);
-                                }
+                                RingTopology.ResumeRingFromCheckpoint(message.TaskId, ref returnMessages);
                             }
                             else
                             {
@@ -113,7 +103,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                         return true;
                     }
-                default:
+                case TaskMessageType.NextTokenRequest:
+                    {
+                        LOGGER.Log(Level.Info, "Received next token request from node", message.TaskId);
+
+                        RingTopology.RetrieveTokenFromRing(message.TaskId, ref returnMessages);
+                        return true;
+                    }
+                        default:
                     return false;
             }
         }

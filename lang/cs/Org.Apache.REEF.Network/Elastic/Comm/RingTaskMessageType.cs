@@ -23,6 +23,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
 
         JoinTheRing = 1,
 
-        TokenRequest = 2
+        TokenResponse = 2,
+
+        NextTokenRequest = 3
     }
 }

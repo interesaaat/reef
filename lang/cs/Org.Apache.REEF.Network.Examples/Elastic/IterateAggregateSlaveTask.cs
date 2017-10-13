@@ -59,14 +59,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
-                                if (rand.Next(100) < 4)
-                                {
-                                    Console.WriteLine("I die. Bye.");
+                                ////if (rand.Next(100) < 1)
+                                ////{
+                                ////    Console.WriteLine("I die. Bye.");
 
-                                    throw new Exception("Die. Before");
-                                }
+                                ////    throw new Exception("Die. Before");
+                                ////}
 
-                                System.Threading.Thread.Sleep(rand.Next(1000));
+                                ////System.Threading.Thread.Sleep(rand.Next(1000));
 
                                 var rec = aggregator.Receive();
 
@@ -76,24 +76,24 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 for (int i = 0; i < rec.Length; i++)
                                 {
                                     rec[i]++;
-                                    System.Threading.Thread.Sleep(rand.Next(100));
+                                    ////System.Threading.Thread.Sleep(rand.Next(100));
                                 }
 
-                                if (rand.Next(100) < 4)
-                                {
-                                    Console.WriteLine("I die. Bye.");
+                                ////if (rand.Next(100) < 5)
+                                ////{
+                                ////    Console.WriteLine("I die. Bye.");
 
-                                    throw new Exception("Die. Middle");
-                                }
+                                ////    throw new Exception("Die. Middle");
+                                ////}
 
                                 aggregator.Send(rec);
 
-                                if (rand.Next(100) < 4)
-                                {
-                                    Console.WriteLine("I die. Bye.");
+                                ////if (rand.Next(100) < 5)
+                                ////{
+                                ////    Console.WriteLine("I die. Bye.");
 
-                                    throw new Exception("Die. After");
-                                }
+                                ////    throw new Exception("Die. After");
+                                ////}
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
                                 break;
                             default:

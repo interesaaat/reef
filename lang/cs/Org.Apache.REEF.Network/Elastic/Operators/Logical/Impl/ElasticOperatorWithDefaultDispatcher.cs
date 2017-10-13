@@ -133,6 +133,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         OnStop(ref stp);
                         break;
                     default:
+                        OnFail();
                         break;
                 }
             }
@@ -152,6 +153,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         }
 
         public virtual void OnStop(ref IStop stopEvent)
+        {
+        }
+
+        public virtual void OnFail()
         {
         }
 

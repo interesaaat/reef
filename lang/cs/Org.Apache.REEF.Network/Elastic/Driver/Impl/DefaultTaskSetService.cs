@@ -56,7 +56,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private readonly AvroConfigurationSerializer _configSerializer;
-        private IFailureState _failureState;
+        private IFailureState _failureStatus;
         private readonly object _subsLock = new object();
         private readonly object _statusLock = new object();
 
@@ -74,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _defaultSubscriptionName = defaultSubscriptionName;
             _defaultFailureMachine = defaultFailureStateMachine;
 
-            _failureState = new DefaultFailureState();
+            _failureStatus = new DefaultFailureState();
             _configSerializer = configSerializer;
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 
@@ -209,6 +209,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     OnStop(ref stp);
                     break;
                 default:
+                    OnFail();
                     break;
             }
         }
@@ -217,7 +218,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
+                _failureStatus = _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
         }
 
@@ -225,7 +226,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
+                _failureStatus = _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
         }
 
@@ -233,7 +234,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                _failureState.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+                _failureStatus = _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+            }
+        }
+
+        public void OnFail()
+        {
+            lock (_statusLock)
+            {
+                _failureStatus = _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
             }
         }
     }

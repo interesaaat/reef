@@ -43,6 +43,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         private readonly CheckpointService _checkpointService;
 
+        private readonly int _retry;
+        private readonly int _timeout;
+
         [Inject]
         private AggregationRingTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
@@ -50,11 +53,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorId))] int operatorId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int timeout,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationLayer commLayer,
-            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, timeout)
+            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
+
+            _retry = retry;
+            _timeout = timeout;
 
             foreach (var child in children)
             {
@@ -132,6 +140,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
+            if (_rootTaskId != _taskId)
+            {
+                _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
+            }
+
             _initialized = true;
         }
 
@@ -211,13 +224,24 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         protected override void Send(CancellationTokenSource cancellationSource)
         {
+            int retry = 0;
             GroupCommunicationMessage message;
-            _sendQueue.TryPeek(out message);
+            string nextNode;
 
-            var nextNode = _next.Take();
+            if (_sendQueue.TryDequeue(out message))
+            {
+                while (!_next.TryTake(out nextNode, _timeout, cancellationSource.Token))
+                {
+                    retry++;
+                    _commLayer.NextTokenRequest(_taskId);
+                    if (retry > _retry)
+                    {
+                        throw new Exception("Failed to send message to the next node in the ring");
+                    }
+                }
 
-            _commLayer.Send(nextNode, message);
-            _sendQueue.TryDequeue(out message);
+                _commLayer.Send(nextNode, message);
+            }
         }
     }
 }

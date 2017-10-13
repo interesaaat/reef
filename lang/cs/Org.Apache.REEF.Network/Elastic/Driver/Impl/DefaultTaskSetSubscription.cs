@@ -95,6 +95,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool AddTask(string taskId)
         {
+            if (Completed || FailureStatus.FailureState == (int)DefaultFailureStates.Fail)
+            {
+                return false;
+            }
+
             if (RootOperator.StateFinalized)
             {
                 RootOperator.AddTask(taskId);
@@ -201,6 +206,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     OnStop(ref stp);
                     break;
                 default:
+                    OnFail();
                     break;
             }
 
@@ -228,6 +234,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             lock (_statusLock)
             {
                 FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+            }
+        }
+
+        public void OnFail()
+        {
+            lock (_statusLock)
+            {
+                FailureStatus = FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
             }
         }
     }

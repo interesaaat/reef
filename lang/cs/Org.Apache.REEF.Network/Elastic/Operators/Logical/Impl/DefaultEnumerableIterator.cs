@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 
-                new FlatTopology(masterTaskId), 
+                new RootTopology(masterTaskId), 
                 failureMachine,
                 checkpointLevel,
                 configurations)
