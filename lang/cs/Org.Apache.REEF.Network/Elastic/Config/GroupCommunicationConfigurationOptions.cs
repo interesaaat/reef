@@ -47,7 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Number of retry to send a message", defaultValue: "3")]
+        [NamedParameter("Number of retry to send a message", defaultValue: "15")]
         public class Retry : Name<int>
         {
         }

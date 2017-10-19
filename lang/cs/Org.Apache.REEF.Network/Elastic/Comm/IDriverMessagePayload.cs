@@ -16,6 +16,8 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Utilities;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm
 {
@@ -24,19 +26,27 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     /// </summary>
     public abstract class IDriverMessagePayload : GroupCommunicationMessage
     {
-        public IDriverMessagePayload(string subscriptionName, int operatorId)
+        public IDriverMessagePayload(string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId)
         {
+            Iteration = iteration;
         }
 
         /// <summary>
         /// The type of payload
         /// </summary>
-       internal DriverMessageType MessageType { get; set; }
+        internal DriverMessageType MessageType { get; set; }
+
+        internal int Iteration { get; private set; }
 
         /// <summary>
         /// Utility method to serialize the payload for communication
         /// </summary>
         internal abstract byte[] Serialize();
+
+        public override object Clone()
+        {
+            return this;
+        }
     }
 }

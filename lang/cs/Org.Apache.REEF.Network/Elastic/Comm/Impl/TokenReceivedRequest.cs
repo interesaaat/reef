@@ -27,13 +27,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     internal sealed class TokenReceivedRequest : IDriverMessagePayload
     {
         public TokenReceivedRequest(int iteration, string subscriptionName, int operatorId)
-            : base(subscriptionName, operatorId)
+            : base(subscriptionName, operatorId, iteration)
         {
-            Iteration = iteration;
             MessageType = DriverMessageType.Request;
         }
-
-        internal int Iteration { get; private set; }
 
         internal override byte[] Serialize()
         {

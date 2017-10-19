@@ -82,7 +82,8 @@ under the License.
     <Compile Include="Elastic\Comm\IDriverMessagePayload.cs" />
     <Compile Include="Elastic\Comm\IElasticDriverMessage.cs" />
     <Compile Include="Elastic\Comm\Impl\ControlMessage.cs" />
-    <Compile Include="Elastic\Comm\Impl\FailureMessageRequest.cs" />
+    <Compile Include="Elastic\Comm\Impl\TokenReceivedRequest.cs" />
+    <Compile Include="Elastic\Driver\Impl\TaskSetManagerParameters.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
     <Compile Include="Elastic\Comm\Impl\FailureMessagePayload.cs" />

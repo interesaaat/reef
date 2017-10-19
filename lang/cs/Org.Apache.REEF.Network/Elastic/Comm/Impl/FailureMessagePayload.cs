@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Utilities;
 using System;
 
@@ -28,16 +27,13 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     internal sealed class FailureMessagePayload : IDriverMessagePayload
     {
         public FailureMessagePayload(string nextTaskId, int iteration, string subscriptionName, int operatorId)
-            : base(subscriptionName, operatorId)
+            : base(subscriptionName, operatorId, iteration)
         {
-            NextTaskId = nextTaskId;
-            Iteration = iteration;
             MessageType = DriverMessageType.Failure;
+            NextTaskId = nextTaskId;
         }
 
         internal string NextTaskId { get; private set; }
-
-        internal int Iteration { get; private set; }
 
         internal override byte[] Serialize()
         {
@@ -83,11 +79,6 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int iteration = BitConverter.ToInt32(data, offset);
 
             return new FailureMessagePayload(destination, iteration, subscription, operatorId);
-        }
-
-        public override object Clone()
-        {
-            return this;
         }
     }
 }

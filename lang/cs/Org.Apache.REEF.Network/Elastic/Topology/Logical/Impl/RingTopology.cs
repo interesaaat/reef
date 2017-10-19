@@ -61,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private HashSet<string> _failedNodesWaiting;
 
-        private int _availableDataPoints;
+        private volatile int _availableDataPoints;
 
         private readonly object _lock;
 
@@ -158,6 +158,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 node.FailState = DataNodeState.Lost;
                 _availableDataPoints--;
+                _tasksInRing.Remove(taskId);
+                _currentWaitingList.Remove(taskId);
+                _nextWaitingList.Remove(taskId);
+                _ringPrint.Replace(taskId + " ", "X ");
             }
 
             return 1;
@@ -219,7 +223,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        internal int AddTaskIdToRing(string taskId)
+        internal int AddTaskIdToRing(string taskId, int iteration)
         {
             var addedReachableNodes = 0;
 
@@ -252,25 +256,26 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             lock (_lock)
             {
+                Console.WriteLine("Nodes in current list " + _currentWaitingList.Count);
+                Console.WriteLine("Nodes in next list " + _nextWaitingList.Count);
+                Console.WriteLine("Nodes in ring " + _tasksInRing.Count);
+                Console.WriteLine("Nodes in failing list " + _failedNodesWaiting.Count);
                 while (_currentWaitingList.Count > 0)
                 {
-                    var enumerator = _currentWaitingList.Take(1);
-                    foreach (var nextTask in enumerator)
-                    {
-                        var dest = _ringHead.TaskId;
-                        var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(nextTask, _iteration, SubscriptionName, OperatorId);
-                        var returnMessage = new ElasticDriverMessageImpl(dest, data);
+                    var nextTask = _currentWaitingList.First();
+                    var dest = _ringHead.TaskId;
+                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(nextTask, SubscriptionName, OperatorId, _iteration) : (IDriverMessagePayload)new FailureMessagePayload(nextTask, _iteration, SubscriptionName, OperatorId);
+                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
-                        messages.Add(returnMessage);
-                        _ringHead.Next = new RingNode(nextTask, _iteration, _ringHead);
-                        _ringHead.Next.Prev = _ringHead;
-                        _ringHead = _ringHead.Next;
-                        _tasksInRing.Add(nextTask);
-                        _currentWaitingList.Remove(nextTask);
-                        _ringPrint.Append(" -> " + nextTask);
+                    messages.Add(returnMessage);
+                    Console.WriteLine("Task {0} sends to {1} in iteration {2} in next", dest, nextTask, _iteration);
+                    _ringHead.Next = new RingNode(nextTask, _iteration, _ringHead);
+                    _ringHead = _ringHead.Next;
+                    _tasksInRing.Add(nextTask);
+                    _currentWaitingList.Remove(nextTask);
+                    _ringPrint.Append(" -> " + nextTask);
 
-                        CloseRing(ref messages);
-                    }
+                    CloseRing(ref messages);
                 }
             }
 
@@ -288,21 +293,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (_availableDataPoints <= _tasksInRing.Count)
                 {
                     var dest = _ringHead.TaskId;
-                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _iteration, SubscriptionName, OperatorId);
+                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId, _iteration) : (IDriverMessagePayload)new FailureMessagePayload(_rootTaskId, _iteration, SubscriptionName, OperatorId);
                     var returnMessage = new ElasticDriverMessageImpl(dest, data);
-
+                    Console.WriteLine("Task {0} sends to {1} in iteration {2} in close", dest, _rootTaskId, _iteration);
                     messages.Add(returnMessage);
                     _timer.Stop();
                     LOGGER.Log(Level.Info, "Ring in Iteration {0} is closed in {1}ms with {2} nodes:\n {3} -> {4}", _iteration, _timer.ElapsedMilliseconds, _tasksInRing.Count, LogTopologyState(), _rootTaskId);
 
-                    _iteration++;
-                    _ringHead.Next = new RingNode(_rootTaskId, _iteration);
-                    _ringHead.Next.Prev = _ringHead;
+                    _ringHead.Next = new RingNode(_rootTaskId, _iteration, _ringHead);
                     _ringHead = _ringHead.Next;
                     _currentWaitingList = _nextWaitingList;
                     _nextWaitingList = new HashSet<string>();
                     _tasksInRing = new HashSet<string> { { _rootTaskId } };
 
+                    _iteration++;
                     _ringPrint = new StringBuilder(_rootTaskId);
                     _timer.Restart();
                 }
@@ -313,26 +317,34 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             lock (_lock)
             {
-                if (_ringHead.TaskId != taskId)
+                var head = _ringHead;
+
+                while (head != null && head.TaskId != taskId && head.Iteration > iteration)
                 {
-                    var head = _ringHead;
+                    head = head.Prev;
+                }
 
-                    while (head != null && head.TaskId != taskId)
+                if (head != null && head.Iteration == iteration && head.Next != null)
+                {
+                    var dest = taskId;
+                    var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(head.Next.TaskId, SubscriptionName, OperatorId, head.Iteration) : (IDriverMessagePayload)new FailureMessagePayload(head.Next.TaskId, head.Iteration, SubscriptionName, OperatorId);
+                    messages.Add(new ElasticDriverMessageImpl(dest, data));
+                    Console.WriteLine("Task {0} sends to {1} in iteration {2} in retrieve", dest, head.Next.TaskId, head.Iteration);
+
+                    LOGGER.Log(Level.Info, "Next token is {0}", head.Next.TaskId);
+                }
+                else
+                {
+                    var msg = "Node not found ";
+                    if (_currentWaitingList.Count > 0 || _failedNodesWaiting.Count > 0)
                     {
-                        head = head.Prev;
-                    }
+                        LOGGER.Log(Level.Info, msg + "going to flush nodes in queue");
 
-                    if (head.Iteration == iteration)
-                    {
-                        var dest = taskId;
-                        var data = _ringHead.Type == DriverMessageType.Ring ? (IDriverMessagePayload)new RingMessagePayload(head.Next.TaskId, SubscriptionName, OperatorId) : (IDriverMessagePayload)new FailureMessagePayload(head.Next.TaskId, _iteration, SubscriptionName, OperatorId);
-                        messages.Add(new ElasticDriverMessageImpl(dest, data));
-
-                        LOGGER.Log(Level.Info, "Next token is {0}", head.Next.TaskId);
+                        GetNextTasksInRing(ref messages);
                     }
                     else
                     {
-                        LOGGER.Log(Level.Info, "Request for old iteration: ignoring");
+                        LOGGER.Log(Level.Info, msg + " waiting");
                     }
                 }
             }
@@ -352,41 +364,49 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             lock (_lock)
             {
-                _ringPrint.Replace(taskId + " ", "X ");
+                Console.WriteLine("Failure in {0} at iteration {1}", taskId, currentIteration);
+
                 var head = _ringHead;
 
-                while (head != null && head.TaskId != taskId)
+                while (head != null && (head.TaskId != taskId || head.Iteration > currentIteration))
                 {
                     head = head.Prev;
                 }
 
                 if (head == null)
                 {
-                    LOGGER.Log(Level.Warning, "Failure in a Task never added to the ring: ignore");
+                    LOGGER.Log(Level.Warning, "Failure in {0} that was never added to the ring: ignore", taskId);
                     return messages;
                 }
 
-                _tasksInRing.Remove(head.TaskId);
-                _currentWaitingList.Remove(head.TaskId);
-                _nextWaitingList.Remove(head.TaskId);
+                if (head.Iteration != currentIteration)
+                {
+                    LOGGER.Log(Level.Warning, "Failure in {0} in iteration {1} not recognized: ignore", taskId, currentIteration);
+                    return messages;
+                }
 
                 var next = head.Next;
                 var prev = head.Prev;
+                head.Next = null;
+                head.Prev = null;
 
                 if (next != null)
                 {
-                    next.Prev = head.Prev;
+                    next.Prev = prev;
                 }
 
-                head.Prev.Next = next;
-                head.Next = null;
-                head.Prev = null;
+                prev.Next = next;
 
                 switch (position)
                 {
                     // We are before receive, we should be ok
                     case (int)PositionTracker.Nil:
                         CloseRing(ref messages);
+
+                        if (head.Type != DriverMessageType.Ring)
+                        {
+                            Console.WriteLine("Task {0} died but was in state {1}", taskId, head.Type);
+                        }
 
                         LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
 
@@ -399,15 +419,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         if (next == null)
                         {
                             _ringHead = prev;
-                            _ringHead.Next = null;
                             _ringHead.Type = DriverMessageType.Failure;
                             CloseRing(ref messages);
                         }
                         else
                         {
-                            var data = new FailureMessagePayload(next.TaskId, next.Iteration, SubscriptionName, OperatorId);
+                            var data = new FailureMessagePayload(next.TaskId, prev.Iteration, SubscriptionName, OperatorId);
                             var returnMessage = new ElasticDriverMessageImpl(prev.TaskId, data);
                             messages.Add(returnMessage);
+                            Console.WriteLine("Task {0} sends to {1} in iteration {2} in receive", prev.TaskId, next.TaskId, prev.Iteration);
                         }
                         LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", head.TaskId);
 
@@ -422,7 +442,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         if (next == null)
                         {
                             _ringHead = prev;
-                            _ringHead.Next = null;
                             _ringHead.Type = DriverMessageType.Failure;
                             CloseRing(ref messages);
                         }
@@ -450,20 +469,26 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 var head = _ringHead;
 
-                while (head != null && head.TaskId != taskId && head.Type != DriverMessageType.Request)
+                while (head != null && head.TaskId != taskId)
                 {
                     head = head.Prev;
+                }
+
+                if (head.Prev.Type == DriverMessageType.Request)
+                {
+                    LOGGER.Log(Level.Info, "Trying to resume ring from node {0} which is also resuming: ignoring", head.TaskId);
                 }
 
                 // Get the last available checkpointed node
                 var lastCheckpoint = head.Prev;
                 head.Type = DriverMessageType.Ring;
 
-                var data = new FailureMessagePayload(head.TaskId, head.Iteration, SubscriptionName, OperatorId);
+                var data = new FailureMessagePayload(head.TaskId, lastCheckpoint.Iteration, SubscriptionName, OperatorId);
                 var returnMessage = new ElasticDriverMessageImpl(lastCheckpoint.TaskId, data);
                 messages.Add(returnMessage);
+                Console.WriteLine("Task {0} sends to {1} in iteration {2} in resume", lastCheckpoint.TaskId, head.TaskId, lastCheckpoint.Iteration);
 
-                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", lastCheckpoint.TaskId);
+                LOGGER.Log(Level.Info, "Resuming ring from node {0}", lastCheckpoint.TaskId);
             }
         }
     }

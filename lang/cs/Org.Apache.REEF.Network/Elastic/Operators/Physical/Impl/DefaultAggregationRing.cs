@@ -24,6 +24,7 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -33,6 +34,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <typeparam name="T">The type of message being sent.</typeparam>
     public sealed class DefaultAggregationRing<T> : IElasticAggregationRing<T>
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
+
         private readonly AggregationRingTopology _topology;
         private PositionTracker _position;
 
@@ -85,7 +88,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive()
         {
-            _topology.JoinTheRing();
+            _topology.JoinTheRing((int)IteratorReference.Current);
 
             _position = PositionTracker.InReceive;
 
@@ -93,6 +96,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             objs.MoveNext();
             var message = objs.Current as DataMessage<T>;
+
+            if (message.Iteration < (int)IteratorReference.Current)
+            {
+                LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
+                return Receive();
+            }
 
             IteratorReference.SyncIteration(message.Iteration);
 
@@ -108,7 +117,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
             var messages = new GroupCommunicationMessage[] { message };
 
-            Checkpoint(messages);
+            Checkpoint(messages, message.Iteration);
 
             _topology.Send(messages, CancellationSource);
 
@@ -138,13 +147,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal void Checkpoint(GroupCommunicationMessage[] data)
+        internal void Checkpoint(GroupCommunicationMessage[] data, int iteration)
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
                 var state = new CheckpointableObject<GroupCommunicationMessage[]>()
                 {
                     Level = CheckpointLevel,
+                    Iteration = iteration
                 };
 
                 state.MakeCheckpointable(data);

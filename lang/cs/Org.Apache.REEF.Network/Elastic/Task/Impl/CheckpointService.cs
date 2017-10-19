@@ -103,7 +103,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 _checkpointsWaiting.TryAdd(id, received);
 
                 received.WaitOne();
-                System.Threading.Thread.Sleep(new Random().Next(10000));
+                ////System.Threading.Thread.Sleep(new Random().Next(1000));
 
                 if (!_checkpoints.TryGetValue(id, out checkpoints))
                 {

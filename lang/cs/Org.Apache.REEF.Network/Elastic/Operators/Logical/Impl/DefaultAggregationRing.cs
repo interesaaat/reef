@@ -75,7 +75,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
-                            var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId);
+                            Console.WriteLine("Task {0} is going to join the ring", message.TaskId);
+                            var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
+                            var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId, iteration);
                             _failureMachine.AddDataPoints(addedDataPoints);
 
                             RingTopology.GetNextTasksInRing(ref returnMessages);

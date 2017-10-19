@@ -43,6 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private bool _finalized;
         private bool _disposed;
+        private readonly TaskSetManagerParameters _parameters;
 
         private int _contextsAdded;
         private int _tasksAdded;
@@ -58,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly object _taskLock;
         private readonly object _statusLock;
 
-        public DefaultTaskSetManager(int numTasks)
+        public DefaultTaskSetManager(int numTasks, params IConfiguration[] confs)
         {
             _finalized = false;
             _disposed = false;
@@ -80,6 +81,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 _taskInfos.Add(null);
             }
+
+            var injector = TangFactory.GetTang().NewInjector(confs);
+            Type parametersType = typeof(TaskSetManagerParameters);
+            _parameters = injector.GetInstance(parametersType) as TaskSetManagerParameters;
         }
 
         public void AddTaskSetSubscription(IElasticTaskSetSubscription subscription)
@@ -186,7 +191,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void SubmitTasks()
         {
             ////System.Threading.Thread.Sleep(30000);
-
             for (int i = 0; i < _numTasks; i++)
             {
                 SubmitTask(i);
@@ -359,6 +363,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
         {
+            Console.WriteLine("Failed Evaluator {0} with error {1}", evaluator.Id, evaluator.EvaluatorException);
             throw new NotImplementedException();
         }
 
@@ -417,6 +422,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 var id = Utils.GetTaskNum(rescheduleEvent.TaskId) - 1;
                 _taskInfos[id].NumRetry++;
 
+                if (_taskInfos[id].NumRetry > _parameters.Retry)
+                {
+                    LOGGER.Log(Level.Error, "Task {0} failed more than {0} times: Aborting", _parameters.Retry);
+                    OnFail();
+                }
+
                 if (_taskInfos[id].TaskRunner != null)
                 {
                     _taskInfos[id].TaskRunner.Dispose();
@@ -428,7 +439,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     // If there is no reconfiguration, the task doesn't need to be rescheduled
                     if (resubmitConf.Length > 0)
                     {
-                        LOGGER.Log(Level.Info, "Going to reschedule task {0}", rescheduleEvent.TaskId);
+                        LOGGER.Log(Level.Info, "Rescheduling task {0}", rescheduleEvent.TaskId);
 
                         SubmitTask(id, rescheduleEvent.TaskConfigurations.ToArray());
                     }
@@ -482,6 +493,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (Completed() || Failed())
             {
                 LOGGER.Log(Level.Warning, "Task submit for a completed or failed Task Set: ignoring");
+                _taskInfos[id].Dispose();
                 return;
             }
 
@@ -548,31 +560,43 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         {
                             throw new ArgumentNullException("Task Info");
                         }
+                        if (Completed() || Failed())
+                        {
+                            LOGGER.Log(Level.Warning, "Task submit for a completed or failed Task Set: ignoring");
+                            _taskInfos[destination].Dispose();
+
+                            return;
+                        }
                         if (_taskInfos[destination].TaskStatus != TaskStatus.Running ||
                             _taskInfos[destination].TaskRunner == null)
                         {
                             var msg = "Cannot send message to ";
                             msg += (destination + 1) + ": Task Status is " + _taskInfos[destination].TaskStatus;
 
-                            if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < 3)
+                            if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < _parameters.Retry)
                             {
                                 LOGGER.Log(Level.Warning, msg + "\nRetry");
                                 System.Threading.Tasks.Task.Run(() => SendToTasks(new List<IElasticDriverMessage>() { returnMessage }, retry + 1));
                             }
-
-                            if (_taskInfos[destination].ActiveContext != null)
+                            else if (retry >= _parameters.Retry)
                             {
-                                LOGGER.Log(Level.Warning, msg + "\nGoing to kill and resubmit the context");
-                                var evaluatorId = _taskInfos[destination].ActiveContext.EvaluatorId;
-                                var contextId = _taskInfos[destination].ActiveContext.Id;
-                                _taskInfos[destination].ActiveContext.Dispose();
-
-                                // Eventually will do the resubmit
+                                LOGGER.Log(Level.Warning, msg + "\nAborting");
+                                OnFail();
                             }
                             else
                             {
                                 LOGGER.Log(Level.Warning, msg + "\nIgnoring");
                             }
+
+                            ////else if (_taskInfos[destination].ActiveContext != null)
+                            ////{
+                            ////    LOGGER.Log(Level.Warning, msg + "\nGoing to kill and resubmit the context");
+                            ////    var evaluatorId = _taskInfos[destination].ActiveContext.EvaluatorId;
+                            ////    var contextId = _taskInfos[destination].ActiveContext.Id;
+                            ////    _taskInfos[destination].ActiveContext.Dispose();
+
+                            ////    // Eventually will do the resubmit
+                            ////}
                             return;
                         }
 

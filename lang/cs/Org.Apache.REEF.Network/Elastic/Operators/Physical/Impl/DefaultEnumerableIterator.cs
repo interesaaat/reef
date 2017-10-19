@@ -22,7 +22,6 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Utilities.Logging;
-using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -80,9 +79,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                     var checkpoint = _topology.GetCheckpoint(_inner.Current);
                     if (_inner.Current < 0)
                     {
-                        LOGGER.Log(Level.Info, "Fast forward to checkpointed iteration {0}", checkpoint.Iteration + 1);
+                        LOGGER.Log(Level.Info, "Fast forward to checkpointed iteration {0}", checkpoint.Iteration);
 
-                        FastForward(checkpoint.Iteration);
+                        FastForward(checkpoint.Iteration - 1);
                     }
                     _checkpointState.MakeCheckpointable(checkpoint.State);
                 }

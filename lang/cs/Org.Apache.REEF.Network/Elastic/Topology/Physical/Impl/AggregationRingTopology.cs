@@ -39,7 +39,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopologyWithCommunication));
 
-        private BlockingCollection<string> _next;
+        private ConcurrentDictionary<int, string> _next;
+        private readonly ManualResetEvent _mre;
 
         private readonly CheckpointService _checkpointService;
 
@@ -59,7 +60,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, disposeTimeout)
         {
-            _next = new BlockingCollection<string>(1);
+            _next = new ConcurrentDictionary<int, string>();
+
+            _mre = new ManualResetEvent(false);
 
             _retry = retry;
             _timeout = timeout;
@@ -159,6 +162,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             }
 
+            Console.WriteLine("Received from {0}", message.SourceId);
+
             foreach (var payload in message.Data)
             {
                 _messageQueue.Add(payload);
@@ -180,17 +185,33 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             var data = message as RingMessagePayload;
-            _next.TryAdd(data.NextTaskId);
+            string value;
+            if (_next.TryRemove(data.Iteration, out value))
+            {
+                Console.WriteLine("I was supposed to send to {0} in iteration {1}", data.Iteration, value);
+            }
+            _next.TryAdd(data.Iteration, data.NextTaskId);
+
+            Console.WriteLine("Going to send message to {0} in iteration {1}", data.NextTaskId, data.Iteration);
+
+            _mre.Set();
         }
 
         internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
         {
             if (message.MessageType == DriverMessageType.Request)
             {
-                Logger.Log(Level.Info, "Received failure request");
-
                 var destMessage = message as TokenReceivedRequest;
                 var str = (int)PositionTracker.InReceive + ":" + destMessage.Iteration;
+
+                if (Operator.FailureInfo != str)
+                {
+                    Logger.Log(Level.Info, "Received failure request for iteration {0}: I am ok", destMessage.Iteration);
+                }
+                else
+                {
+                    Logger.Log(Level.Info, "Received failure request for iteration {0}: I am blocked", destMessage.Iteration);
+                }
 
                 _commLayer.TokenResponse(_taskId, Operator.FailureInfo != str);
             }
@@ -214,11 +235,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        internal void JoinTheRing()
+        internal void JoinTheRing(int iteration)
         {
             if (_taskId != _rootTaskId)
             {
-                _commLayer.JoinTheRing(_taskId);
+                _commLayer.JoinTheRing(_taskId, iteration);
             }
         }
 
@@ -228,18 +249,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             GroupCommunicationMessage message;
             string nextNode;
 
+            Console.WriteLine("Sendqueue size is " + _sendQueue.Count());
             if (_sendQueue.TryDequeue(out message))
             {
-                while (!_next.TryTake(out nextNode, _timeout, cancellationSource.Token))
+                var dm = message as DataMessage;
+                while (!_next.TryGetValue(dm.Iteration, out nextNode))
                 {
-                    retry++;
-                    var dm = message as DataMessage;
-                    _commLayer.NextTokenRequest(_taskId, dm.Iteration);
-                    if (retry > _retry)
+                    _mre.Reset();
+                    Console.WriteLine("Waiting inside loop ");
+                    if (!_mre.WaitOne(_timeout))
                     {
-                        throw new Exception("Failed to send message to the next node in the ring");
+                        retry++;
+                        _commLayer.NextTokenRequest(_taskId, dm.Iteration);
+                        if (retry > _retry)
+                        {
+                            throw new Exception(string.Format(
+                                "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
+                        }
                     }
                 }
+
+                _mre.Reset();
+
+                Console.WriteLine("Sending to " + nextNode);
 
                 _commLayer.Send(nextNode, message);
             }

@@ -60,13 +60,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        public void JoinTheRing(string taskId)
+        public void JoinTheRing(string taskId, int iteration)
         {
             lock (_lock)
             {
                 _taskId = taskId;
-                _message = BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing);
-
+                _message = new byte[6];
+                Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, _message, 0, sizeof(ushort));
+                Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, _message, sizeof(ushort), sizeof(int));
                 _heartBeatManager.Heartbeat();
             }
         }
@@ -95,6 +96,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 _heartBeatManager.Heartbeat();
             }
         }
+
         public Optional<TaskMessage> Message
         {
             get

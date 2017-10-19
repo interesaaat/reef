@@ -86,7 +86,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 {
                     NumOfFailedDataPoints -= points;
 
-                    if (State.FailureState != (int)DefaultFailureStates.Continue)
+                    if (State.FailureState > (int)DefaultFailureStates.Continue && State.FailureState < (int)DefaultFailureStates.Fail)
                     {
                         float currentRate = NumOfFailedDataPoints / NumOfDataPoints;
 
@@ -128,12 +128,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
             if (level.FailureState == (int)DefaultFailureStates.Continue)
             {
-                throw new ArgumentException("Cannot change the threshould for Continue state");
+                throw new ArgumentException("Cannot change the threshold for Continue state");
             }
 
-            transitionWeights[(DefaultFailureStates)level.FailureState] = threshold;
+            lock (_statusLock)
+            {
+                transitionWeights[(DefaultFailureStates)level.FailureState] = threshold;
 
-            CheckConsistency();
+                CheckConsistency();
+            }
         }
 
         public void SetThreasholds(Tuple<IFailureState, float>[] weights)
@@ -145,15 +148,18 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
             if (weights.Any(weight => weight.Item1.FailureState == (int)DefaultFailureStates.Continue))
             {
-                throw new ArgumentException("Cannot change the threshould for Continue state");
+                throw new ArgumentException("Cannot change the threshold for Continue state");
             }
 
-            foreach (Tuple<IFailureState, float> weight in weights)
+            lock (_statusLock)
             {
-                transitionWeights[(DefaultFailureStates)weight.Item1.FailureState] = weight.Item2;
-            }
+                foreach (Tuple<IFailureState, float> weight in weights)
+                {
+                    transitionWeights[(DefaultFailureStates)weight.Item1.FailureState] = weight.Item2;
+                }
 
-            CheckConsistency();
+                CheckConsistency();
+            }
         }
 
         public IFailureStateMachine Build()
@@ -170,25 +176,28 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         private void CheckConsistency()
         {
-            var state = DefaultFailureStates.ContinueAndReconfigure;
-            float prevWeight = transitionWeights[state];
-            state = transitionMapUp[state];
-            float nextWeight = transitionWeights[state];
-
-            while (nextWeight >= 0)
+            lock (_statusLock)
             {
-                if (nextWeight < prevWeight)
-                {
-                    throw new IllegalStateException("State " + transitionMapDown[state] + " weight is bigger than state " + state);
-                }
-
-                prevWeight = nextWeight;
-                if (state == DefaultFailureStates.StopAndReschedule)
-                {
-                    return;
-                }
+                var state = DefaultFailureStates.ContinueAndReconfigure;
+                float prevWeight = transitionWeights[state];
                 state = transitionMapUp[state];
-                transitionWeights.TryGetValue(state, out nextWeight);
+                float nextWeight = transitionWeights[state];
+
+                while (nextWeight >= 0)
+                {
+                    if (nextWeight < prevWeight)
+                    {
+                        throw new IllegalStateException("State " + transitionMapDown[state] + " weight is bigger than state " + state);
+                    }
+
+                    prevWeight = nextWeight;
+                    if (state == DefaultFailureStates.StopAndReschedule)
+                    {
+                        return;
+                    }
+                    state = transitionMapUp[state];
+                    transitionWeights.TryGetValue(state, out nextWeight);
+                }
             }
         }
 

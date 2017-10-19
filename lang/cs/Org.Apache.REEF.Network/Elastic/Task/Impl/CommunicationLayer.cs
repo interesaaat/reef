@@ -164,6 +164,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 conn.Open();
             }
 
+            Console.WriteLine("Sending to node " + destination);
+
             conn.Write(message);
         }
 
@@ -227,9 +229,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.IterationNumber(taskId, iteration);
         }
 
-        public void JoinTheRing(string taskId)
+        public void JoinTheRing(string taskId, int iteration)
         {
-            _ringMessageSource.JoinTheRing(taskId);
+            _ringMessageSource.JoinTheRing(taskId, iteration);
         }
 
         public void TokenResponse(string taskId, bool isTokenReceived)

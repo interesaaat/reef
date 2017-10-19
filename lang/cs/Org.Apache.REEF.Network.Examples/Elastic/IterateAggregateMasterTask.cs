@@ -54,7 +54,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                     for (int i = 0; i < n; i++)
                     {
-                        model[i] = rand.Next();
+                        model[i] = 1;
                     }
 
                     var checkpointable = workflow.GetCheckpointableState();
@@ -73,13 +73,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 var update = aggregator.Receive();
 
-                                // Update the model
-                                for (int i = 0; i < n; i++)
-                                {
-                                    model[i] = update[i];
-                                }
+                                //// Update the model
 
                                 Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", model), workflow.Iteration);
+
+                                for (int i = 0; i < n; i++)
+                                {
+                                    model[i]++;
+                                }
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");
