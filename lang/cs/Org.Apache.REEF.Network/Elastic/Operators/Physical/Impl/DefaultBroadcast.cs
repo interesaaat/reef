@@ -82,10 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public T Receive()
         {
             _position = PositionTracker.InReceive;
-            var objs = _topology.Receive(CancellationSource);
-
-            objs.MoveNext();
-            var message = objs.Current as DataMessage<T>;
+            var message = _topology.Receive(CancellationSource) as DataMessage<T>;
 
             _position = PositionTracker.AfterReceiveBeforeSend;
 

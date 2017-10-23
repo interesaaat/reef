@@ -207,10 +207,10 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator
         /// </summary>
         public void OnNext()
         {
-            LOGGER.Log(Level.Verbose, "Before acquiring lock: HeartbeatManager::OnNext()");
+            LOGGER.Log(Level.Info, "Before acquiring lock: HeartbeatManager::OnNext()");
             lock (this)
             {
-                LOGGER.Log(Level.Verbose, "HeartbeatManager::OnNext()");
+                LOGGER.Log(Level.Info, "HeartbeatManager::OnNext()");
                 EvaluatorHeartbeatProto heartbeatProto = GetEvaluatorHeartbeatProto();
                 LOGGER.Log(Level.Info, string.Format(CultureInfo.InvariantCulture, "Triggered a heartbeat: {0}.", heartbeatProto));
                 Send(heartbeatProto);

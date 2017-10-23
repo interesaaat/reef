@@ -59,12 +59,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
-                                ////if (rand.Next(100) < 5)
-                                ////{
-                                ////    Console.WriteLine("I die. Bye.");
+                                if (rand.Next(100) < 5)
+                                {
+                                    Console.WriteLine("I die. Bye.");
 
-                                ////    throw new Exception("Die. Before");
-                                ////}
+                                    throw new Exception("Die. Before");
+                                }
 
                                 ////System.Threading.Thread.Sleep(rand.Next(1000));
                                 Console.WriteLine("Before receive");

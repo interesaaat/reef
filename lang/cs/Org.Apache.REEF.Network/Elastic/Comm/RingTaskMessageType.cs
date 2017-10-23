@@ -25,6 +25,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
 
         TokenResponse = 2,
 
-        NextTokenRequest = 3
+        NextTokenRequest = 3,
+
+        NextDataRequest = 4
     }
 }

@@ -123,9 +123,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
             }
 
-            LogOperatorState();
-
-            if (true && _next != null)
+            if (PropagateFailureDownstream() && _next != null)
             {
                 _next.OnTaskFailure(task, ref failureEvents);
             }
@@ -150,6 +148,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                 rescheduleEvent.TaskConfigurations.Add(checkpointConf);
             }
+        }
+
+        protected override bool PropagateFailureDownstream()
+        {
+            // We don't expect iterator operators to fails
+            return true;
         }
     }
 }

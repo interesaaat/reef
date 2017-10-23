@@ -26,7 +26,6 @@ using System.Collections.Generic;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -36,6 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     class DefaultAggregationRing<T> : ElasticOperatorWithDefaultDispatcher, IElasticAggregationRing
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
+        private volatile bool _stop;
 
         public DefaultAggregationRing(
             int coordinatorId,
@@ -52,6 +52,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = coordinatorId;
             OperatorName = Constants.AggregationRing;
+
+            _stop = false;
         }
 
         private RingTopology RingTopology
@@ -80,7 +82,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId, iteration);
                             _failureMachine.AddDataPoints(addedDataPoints);
 
-                            RingTopology.GetNextTasksInRing(ref returnMessages);
+                            if (!_stop)
+                            {
+                                RingTopology.GetNextTasksInRing(ref returnMessages);
+                            } 
                         }
 
                         return true;
@@ -114,7 +119,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         RingTopology.RetrieveTokenFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
                     }
-                        default:
+                case TaskMessageType.NextDataRequest:
+                    {
+                        LOGGER.Log(Level.Info, "Received next data request for iteration from node {1}", iteration, message.TaskId);
+
+                        RingTopology.RetrieveMissedDataFromRing(message.TaskId, ref returnMessages);
+                        return true;
+                    }
+                default:
                     return false;
             }
         }
@@ -122,6 +134,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public override void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
             LOGGER.Log(Level.Info, "Going to reconfigure the ring");
+
+            if (_stop)
+            {
+                _stop = false;
+            }
 
             if (_checkpointLevel > CheckpointLevel.None)
             {
@@ -148,6 +165,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             LOGGER.Log(Level.Info, "Going to reconfigure the ring");
 
+            if (_stop)
+            {
+                _stop = false;
+            }
+
             if (_checkpointLevel > CheckpointLevel.None)
             {
                 if (rescheduleEvent.FailedTask.IsPresent() && rescheduleEvent.FailedTask.Value.AsError() is OperatorException)
@@ -167,6 +189,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void OnStop(ref IStop stopEvent)
         {
+            if (!_stop)
+            {
+                _stop = true;
+            }
         }
     }
 }

@@ -372,6 +372,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             Console.WriteLine("done lock in retrieve");
         }
 
+        internal void RetrieveMissedDataFromRing(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        {
+            throw new NotImplementedException();
+        }
+
         public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
             if (taskId == _rootTaskId)
@@ -500,7 +505,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public void ResumeRingFromCheckpoint(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
+        internal void ResumeRingFromCheckpoint(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
         {
             Console.WriteLine("before lock in resume");
             lock (_lock)

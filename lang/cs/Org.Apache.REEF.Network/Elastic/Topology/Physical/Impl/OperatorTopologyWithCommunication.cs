@@ -25,22 +25,34 @@ using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal abstract class OperatorTopologyWithCommunication : DriverAwareOperatorTopology, IObserver<NsMessage<GroupCommunicationMessage>>, IWaitForTaskRegistration, IDisposable
     {
+        protected static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopologyWithCommunication));
+
         protected readonly ConcurrentDictionary<int, string> _children = new ConcurrentDictionary<int, string>();
         protected bool _initialized;
         internal CommunicationLayer _commLayer;
 
         private readonly int _disposeTimeout;
+        protected readonly int _timeout;
+        protected readonly int _retry;
 
         protected ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
 
         protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
 
-        internal OperatorTopologyWithCommunication(string taskId, int rootId, string subscription, int operatorId, CommunicationLayer commLayer,
+        internal OperatorTopologyWithCommunication(
+            string taskId, 
+            int rootId, 
+            string subscription, 
+            int operatorId, 
+            CommunicationLayer commLayer, 
+            int retry, 
+            int timeout, 
             int disposeTimeout) : base(taskId, rootId, subscription, operatorId)
         {
             _initialized = false;
@@ -49,12 +61,32 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
 
+            _retry = retry;
+            _timeout = timeout;
             _disposeTimeout = disposeTimeout;
         }
 
-        internal IEnumerator<GroupCommunicationMessage> Receive(CancellationTokenSource cancellationSource)
+        internal virtual GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
-             return _messageQueue.GetConsumingEnumerable(cancellationSource.Token).GetEnumerator();
+            GroupCommunicationMessage message;
+            int retry = 1;
+
+            while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
+            {
+                if (cancellationSource.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException("Received cancellation request: stop receiving");
+                }
+
+                _commLayer.NextDataRequest(_taskId);
+                if (retry++ > _retry)
+                {
+                    throw new Exception(string.Format(
+                        "Failed to receive message in the ring after {0} try", _retry));
+                }
+            }
+
+            return message;
         }
 
         internal virtual void Send(GroupCommunicationMessage[] messages, CancellationTokenSource cancellationSource)

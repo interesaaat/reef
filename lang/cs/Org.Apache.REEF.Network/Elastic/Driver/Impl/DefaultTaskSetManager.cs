@@ -342,7 +342,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     {
                         foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                         {
-                            Console.WriteLine("before subscruption for {0}", info.Id);
+                            Console.WriteLine("before subscription for {0}", info.Id);
                             sub.OnTaskFailure(info, ref failureEvents);
                         }
 
@@ -428,7 +428,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (_taskInfos[id].NumRetry > _parameters.Retry)
                 {
-                    LOGGER.Log(Level.Error, "Task {0} failed more than {0} times: Aborting", _parameters.Retry);
+                    LOGGER.Log(Level.Error, "Task {0} failed more than {1} times: Aborting", rescheduleEvent.TaskId, _parameters.Retry);
                     OnFail();
                 }
 

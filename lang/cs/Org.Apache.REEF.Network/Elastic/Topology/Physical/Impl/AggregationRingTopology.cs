@@ -37,15 +37,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal class AggregationRingTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(OperatorTopologyWithCommunication));
-
         private ConcurrentDictionary<int, string> _next;
-        private readonly ManualResetEvent _mre;
+        private readonly ManualResetEvent _sendmre;
 
         private readonly CheckpointService _checkpointService;
-
-        private readonly int _retry;
-        private readonly int _timeout;
 
         [Inject]
         private AggregationRingTopology(
@@ -54,18 +49,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorId))] int operatorId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationLayer commLayer,
-            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, disposeTimeout)
+            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new ConcurrentDictionary<int, string>();
 
-            _mre = new ManualResetEvent(false);
-
-            _retry = retry;
-            _timeout = timeout;
+            _sendmre = new ManualResetEvent(false);
 
             foreach (var child in children)
             {
@@ -194,7 +186,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             Console.WriteLine("Going to send message to {0} in iteration {1}", data.NextTaskId, data.Iteration);
 
-            _mre.Set();
+            _sendmre.Set();
         }
 
         internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
@@ -276,13 +268,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     if (cancellationSource.IsCancellationRequested)
                     {
-                        Logger.Log(Level.Warning, "Recevied cancellation request: stop sending");
+                        Logger.Log(Level.Warning, "Received cancellation request: stop sending");
                         return;
                     }
 
-                    _mre.Reset();
+                    _sendmre.Reset();
                     Console.WriteLine("Waiting inside loop ");
-                    if (!_mre.WaitOne(_timeout))
+                    if (!_sendmre.WaitOne(_timeout))
                     {
                         retry++;
                         _commLayer.NextTokenRequest(_taskId, dm.Iteration);
@@ -294,7 +286,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     }
                 }
 
-                _mre.Reset();
+                _sendmre.Reset();
 
                 _sendQueue.TryDequeue(out message);
 

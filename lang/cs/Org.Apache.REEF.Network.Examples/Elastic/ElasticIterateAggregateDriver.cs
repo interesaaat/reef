@@ -140,6 +140,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
+            Console.WriteLine("Context {0} in Evaluator {1}", identifier, allocatedEvaluator.Id);
+
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
                 .Build();
@@ -163,7 +165,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
                         .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
                         .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateMasterTask>.Class)
                         .Build())
                     .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
@@ -178,7 +179,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         .Set(TaskConfiguration.Identifier, taskId)
                         .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
                         .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnSendMessage, GenericType<RingTaskMessageSource>.Class)
                         .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateSlaveTask>.Class)
                         .Build())
                     .Build();
