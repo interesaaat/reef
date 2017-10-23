@@ -87,11 +87,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.TokenResponse:
                     {
-                        if (message.Message[2] == 0)
+                        if (message.Message[6] == 0)
                         {
                             if (_checkpointLevel > CheckpointLevel.None)
                             {
-                                RingTopology.ResumeRingFromCheckpoint(message.TaskId, ref returnMessages);
+                                var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
+                                RingTopology.ResumeRingFromCheckpoint(message.TaskId, iteration, ref returnMessages);
                             }
                             else
                             {

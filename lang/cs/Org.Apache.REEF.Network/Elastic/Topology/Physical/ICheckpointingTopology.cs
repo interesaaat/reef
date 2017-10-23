@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Failures;
 using System;
+using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
 {

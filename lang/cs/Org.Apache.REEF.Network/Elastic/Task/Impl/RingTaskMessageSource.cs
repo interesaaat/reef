@@ -17,100 +17,114 @@
 
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Utilities;
 using System;
 using Org.Apache.REEF.Common.Runtime.Evaluator;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Common.Protobuf.ReefProtocol;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    public class RingTaskMessageSource : ITaskMessageSource
+    public class RingTaskMessageSource
     {
-        private string _taskId;
-        private string _taskIdWithToken;
-
         private readonly HeartBeatReference _heartBeatManager;
 
         private readonly object _lock;
-
-        private byte[] _message;
 
         [Inject]
         private RingTaskMessageSource(HeartBeatReference heartBeatManager)
         {
             _heartBeatManager = heartBeatManager;
 
-            _taskId = string.Empty;
-            _taskIdWithToken = string.Empty;
-            _message = null;
-
             _lock = new object();
         }
 
         public void IterationNumber(string taskId, int iteration)
         {
-            lock (_lock)
+            TaskStatusProto taskStatusProto = new TaskStatusProto()
             {
-                _taskId = taskId;
-                _message = new byte[6];
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.IterationNumber), 0, _message, 0, sizeof(ushort));
-                Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, _message, sizeof(ushort), sizeof(int));
+                task_id = taskId,
+                context_id = Utils.GetContextIdFromTaskId(taskId)
+            };
 
-                _heartBeatManager.Heartbeat();
-            }
+            byte[] message = new byte[6];
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.IterationNumber), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+
+            TaskStatusProto.TaskMessageProto taskMessageProto = new TaskStatusProto.TaskMessageProto()
+            {
+                source_id = taskId,
+                message = message,
+            };
+            taskStatusProto.task_message.Add(taskMessageProto);
+
+            _heartBeatManager.Heartbeat(taskStatusProto);
         }
 
         public void JoinTheRing(string taskId, int iteration)
         {
-            lock (_lock)
+            TaskStatusProto taskStatusProto = new TaskStatusProto()
             {
-                _taskId = taskId;
-                _message = new byte[6];
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, _message, 0, sizeof(ushort));
-                Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, _message, sizeof(ushort), sizeof(int));
-                _heartBeatManager.Heartbeat();
-            }
+                task_id = taskId,
+                context_id = Utils.GetContextIdFromTaskId(taskId)
+            };
+
+            var message = new byte[6];
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+
+            TaskStatusProto.TaskMessageProto taskMessageProto = new TaskStatusProto.TaskMessageProto()
+            {
+                source_id = taskId,
+                message = message,
+            };
+            taskStatusProto.task_message.Add(taskMessageProto);
+
+            _heartBeatManager.Heartbeat(taskStatusProto);
         }
 
-        public void TokenResponse(string taskId, bool response)
+        public void TokenResponse(string taskId, int iteration, bool response)
         {
-            lock (_lock)
+            TaskStatusProto taskStatusProto = new TaskStatusProto()
             {
-                _taskId = taskId;
-                _message = new byte[3];
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenResponse), 0, _message, 0, sizeof(ushort));
-                _message[2] = response ? (byte)1 : (byte)0;
+                task_id = taskId,
+                context_id = Utils.GetContextIdFromTaskId(taskId)
+            };
 
-                _heartBeatManager.Heartbeat();
-            }
+            var message = new byte[7];
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenResponse), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+            message[6] = response ? (byte)1 : (byte)0;
+                
+            TaskStatusProto.TaskMessageProto taskMessageProto = new TaskStatusProto.TaskMessageProto()
+            {
+                source_id = taskId,
+                message = message,
+            };
+            taskStatusProto.task_message.Add(taskMessageProto);
+
+            _heartBeatManager.Heartbeat(taskStatusProto);
         }
 
         internal void NextTokenRequest(string taskId, int iteration)
         {
-            lock (_lock)
+            TaskStatusProto taskStatusProto = new TaskStatusProto()
             {
-                _taskId = taskId;
-                _message = new byte[6];
-                Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextTokenRequest), 0, _message, 0, sizeof(ushort));
-                Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, _message, sizeof(ushort), sizeof(int));
-                _heartBeatManager.Heartbeat();
-            }
-        }
+                task_id = taskId,
+                context_id = Utils.GetContextIdFromTaskId(taskId)
+            };
 
-        public Optional<TaskMessage> Message
-        {
-            get
+            var message = new byte[6];
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextTokenRequest), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+                
+            TaskStatusProto.TaskMessageProto taskMessageProto = new TaskStatusProto.TaskMessageProto()
             {
-                if (_message != null)
-                {
-                    var message = TaskMessage.From(_taskId, _message);
-                    _message = null;
+                source_id = taskId,
+                message = message,
+            };
+            taskStatusProto.task_message.Add(taskMessageProto);
 
-                    return Optional<TaskMessage>.Of(message);
-                }
-
-                return Optional<TaskMessage>.Empty();
-            }
+            _heartBeatManager.Heartbeat(taskStatusProto);
         }
     }
 }

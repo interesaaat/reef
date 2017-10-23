@@ -260,6 +260,18 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator.Context
         }
 
         /// <summary>
+        /// Get the state of the currently running task, if there is any
+        /// </summary>
+        /// <returns>the TaskStatusProto of the currently running task, if there is any</returns>
+        public Optional<State> GetTaskState()
+        {
+            lock (_contextLock)
+            {
+                return _topContext == null ? Optional<State>.Empty() : _topContext.GetTaskState();
+            }
+        }
+
+        /// <summary>
         /// get status of all contexts in the stack.
         /// </summary>
         /// <returns>the status of all contexts in the stack.</returns>

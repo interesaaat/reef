@@ -380,7 +380,7 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator.Task
             _heartBeatManager.OnNext(ToProto());
         }
 
-        private State GetProtoState()
+        internal State GetProtoState()
         {
             switch (_state)
             {

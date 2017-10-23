@@ -26,6 +26,8 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
+using System;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -79,11 +81,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var exception = task.AsError() as OperatorException;
-
+            Console.WriteLine("in task failure for {0}", task.Id);
+            Console.WriteLine("exception operator is {0}", exception.OperatorId);
+            Console.WriteLine("operator is {0}", _id);
             if (exception.OperatorId <= _id)
             {
+                Console.WriteLine("On Task failure before remove task {0}", task.Id);
                 int lostDataPoints = _topology.RemoveTask(task.Id);
+                Console.WriteLine("On Task failure after remove task {0}", task.Id);
                 var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
+                Console.WriteLine("On Task failure after failure machine {0}", task.Id);
 
                 switch ((DefaultFailureStates)failureState.FailureState)
                 {
@@ -102,11 +109,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         failureEvents.Add(new FailEvent(task.Id));
                         break;
                     default:
-                        break;
+                        throw new IllegalStateException("Failure state not recognized");
                 }
 
                 LogOperatorState();
             }
+
+            Console.WriteLine("Failure machine is in {0}", _failureMachine.State.FailureState);
 
             if (PropagateFailureDownstream() && _next != null)
             {

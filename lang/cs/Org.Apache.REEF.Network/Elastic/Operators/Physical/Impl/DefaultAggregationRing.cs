@@ -92,15 +92,29 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             _position = PositionTracker.InReceive;
 
-            var objs = _topology.Receive(CancellationSource);
+            var received = false;
+            DataMessage<T> message = null;
 
-            objs.MoveNext();
-            var message = objs.Current as DataMessage<T>;
-
-            if (message.Iteration < (int)IteratorReference.Current)
+            while (!received && !CancellationSource.IsCancellationRequested)
             {
-                LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
-                return Receive();
+                var objs = _topology.Receive(CancellationSource);
+
+                objs.MoveNext();
+                message = objs.Current as DataMessage<T>;
+
+                if (message.Iteration < (int)IteratorReference.Current)
+                {
+                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
+                }
+                else
+                {
+                    received = true;
+                }
+            }
+
+            if (message == null)
+            {
+                throw new OperationCanceledException("Impossible to receive messages: operation cancelled");
             }
 
             IteratorReference.SyncIteration(message.Iteration);

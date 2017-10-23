@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Common.Protobuf.ReefProtocol;
+using Org.Apache.REEF.Common.Runtime.Evaluator.Task;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Interface;
 
@@ -26,13 +27,20 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator
         private readonly IHeartBeatManager _heartBeatManager;
 
         [Inject]
-        public HeartBeatReference(IInjector subInjector)
+        internal HeartBeatReference(IInjector subInjector)
         {
             _heartBeatManager = subInjector.GetInstance<IHeartBeatManager>();
         }
 
         public void Heartbeat(TaskStatusProto proto)
         {
+            var state = _heartBeatManager.ContextManager.GetTaskState();
+
+            if (state.IsPresent())
+            {
+                proto.state = state.Value;
+            }
+
             _heartBeatManager.OnNext(proto);
         }
 

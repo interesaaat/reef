@@ -338,13 +338,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     LOGGER.Log(Level.Info, "Received an Operator Exception from Task " + info.Id, info.AsError());
 
-                    foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
+                    lock (_taskLock)
                     {
-                       sub.OnTaskFailure(info, ref failureEvents);
-                    }
+                        foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
+                        {
+                            Console.WriteLine("before subscruption for {0}", info.Id);
+                            sub.OnTaskFailure(info, ref failureEvents);
+                        }
 
-                    // Failures have to be propagated up to the service
-                    _taskInfos[id].Subscriptions.First().Service.OnTaskFailure(info, ref failureEvents);
+                        // Failures have to be propagated up to the service
+                        _taskInfos[id].Subscriptions.First().Service.OnTaskFailure(info, ref failureEvents);
+                    }
 
                     for (int i = 0; i < failureEvents.Count; i++)
                     {

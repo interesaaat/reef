@@ -204,6 +204,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 var destMessage = message as TokenReceivedRequest;
                 var str = (int)PositionTracker.InReceive + ":" + destMessage.Iteration;
 
+                Console.WriteLine(str);
+                Console.WriteLine(Operator.FailureInfo);
+
                 if (Operator.FailureInfo != str)
                 {
                     Logger.Log(Level.Info, "Received failure request for iteration {0}: I am ok", destMessage.Iteration);
@@ -213,24 +216,40 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     Logger.Log(Level.Info, "Received failure request for iteration {0}: I am blocked", destMessage.Iteration);
                 }
 
-                _commLayer.TokenResponse(_taskId, Operator.FailureInfo != str);
+                _commLayer.TokenResponse(_taskId, destMessage.Iteration, Operator.FailureInfo != str);
             }
 
             if (message.MessageType == DriverMessageType.Failure)
             {
-                Logger.Log(Level.Info, "Received failure recovery, going to resume ring computation from my checkpoint");
-
+                var msg = "Received failure recovery: ";
                 var destMessage = message as FailureMessagePayload;
-                var checkpoint = GetCheckpoint();
 
-                if (checkpoint == null || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                GroupCommunicationMessage gcm;
+                if (_sendQueue.TryPeek(out gcm))
                 {
-                    throw new IllegalStateException("Failure recovery from state not available");
+                    var dm = gcm as DataMessage;
+                    if (dm.Iteration == destMessage.Iteration)
+                    {
+                        Logger.Log(Level.Info, msg + "going to send message to " + destMessage.NextTaskId);
+
+                        _next.TryAdd(destMessage.Iteration, destMessage.NextTaskId);
+                    }
                 }
-
-                foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                else
                 {
-                    _commLayer.Send(destMessage.NextTaskId, data);
+                    Logger.Log(Level.Info, msg + "going to resume ring computation from my checkpoint");
+
+                    var checkpoint = GetCheckpoint();
+
+                    if (checkpoint == null || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                    {
+                        throw new IllegalStateException("Failure recovery from state not available");
+                    }
+
+                    foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                    {
+                        _commLayer.Send(destMessage.NextTaskId, data);
+                    }
                 }
             }
         }
@@ -250,11 +269,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             string nextNode;
 
             Console.WriteLine("Sendqueue size is " + _sendQueue.Count());
-            if (_sendQueue.TryDequeue(out message))
+            if (_sendQueue.TryPeek(out message))
             {
                 var dm = message as DataMessage;
                 while (!_next.TryGetValue(dm.Iteration, out nextNode))
                 {
+                    if (cancellationSource.IsCancellationRequested)
+                    {
+                        Logger.Log(Level.Warning, "Recevied cancellation request: stop sending");
+                        return;
+                    }
+
                     _mre.Reset();
                     Console.WriteLine("Waiting inside loop ");
                     if (!_mre.WaitOne(_timeout))
@@ -270,6 +295,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
 
                 _mre.Reset();
+
+                _sendQueue.TryDequeue(out message);
 
                 Console.WriteLine("Sending to " + nextNode);
 

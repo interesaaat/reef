@@ -446,6 +446,20 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator.Context
         /// get state of the running Task
         /// </summary>
         /// <returns> the state of the running Task, if one is running.</returns>
+        public Optional<State> GetTaskState()
+        {
+            if (!_task.IsPresent() || _task.Value.HasEnded())
+            {
+                return Optional<State>.Empty();
+            }
+
+            return Optional<State>.Of(_task.Value.GetState());
+        }
+
+        /// <summary>
+        /// get state of the running Task
+        /// </summary>
+        /// <returns> the state of the running Task, if one is running.</returns>
         public Optional<TaskStatusProto> GetTaskStatus()
         {
             lock (_contextLifeCycle)

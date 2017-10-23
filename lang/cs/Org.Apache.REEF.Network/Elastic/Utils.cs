@@ -106,6 +106,16 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
+        /// Gets the context associated with the Task id.
+        /// </summary>
+        /// <param name="taskId">The task id to check</param>
+        /// <returns>The context id associated with the task id</returns>
+        public static string GetContextIdFromTaskId(string taskId)
+        {
+            return taskId.Replace("Task", "Context");
+        }
+
+        /// <summary>
         /// Utility method returning an identifier by merging the input fields
         /// </summary>
         /// <param name="first">The first field</param>

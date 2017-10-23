@@ -182,6 +182,15 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator.Task
         /// <summary>
         /// Called by heartbeat manager
         /// </summary>
+        /// <returns>  current Task state </returns>
+        public State GetState()
+        {
+            return _currentStatus.GetProtoState();
+        }
+
+        /// <summary>
+        /// Called by heartbeat manager
+        /// </summary>
         /// <returns>  current TaskStatusProto </returns>
         public TaskStatusProto GetStatusProto()
         {

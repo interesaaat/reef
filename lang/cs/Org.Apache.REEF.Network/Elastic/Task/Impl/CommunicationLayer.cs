@@ -154,6 +154,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 throw new ArgumentException("Message destination cannot be null or empty");
             }
+            if (_disposed)
+            {
+                Logger.Log(Level.Warning, "Received send message request after disposing: Ignoring");
+                return;
+            }
 
             IIdentifier destId = _idFactory.Create(destination);
 
@@ -175,6 +180,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="remoteMessage"></param>
         public void OnNext(IRemoteMessage<NsMessage<GroupCommunicationMessage>> remoteMessage)
         {
+            if (_disposed)
+            {
+                Logger.Log(Level.Warning, "Received message after disposing: Ignoring");
+                return;
+            }
+
             var nsMessage = remoteMessage.Message;
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
@@ -234,9 +245,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.JoinTheRing(taskId, iteration);
         }
 
-        public void TokenResponse(string taskId, bool isTokenReceived)
+        public void TokenResponse(string taskId, int iteration, bool isTokenReceived)
         {
-            _ringMessageSource.TokenResponse(taskId, isTokenReceived);
+            _ringMessageSource.TokenResponse(taskId, iteration, isTokenReceived);
         }
 
         public void OnError(Exception error)
@@ -275,6 +286,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                         observer.OnCompleted();
                     }
                 }
+
+                _checkpointService.Dispose();
 
                 _disposed = true;
 
@@ -319,7 +332,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     if (foundList.Count == identifiers.Count)
                     {
                         Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, found all {0} dependent ids at loop {1}.", foundList.Count, i);
-                        return; //// new List<string>();
+                        return;
                     }
 
                     Thread.Sleep(_sleepTime);
@@ -330,7 +343,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);
                 throw new RemotingException("Failed to find parent/children nodes");
-                ////return leftOvers;
             }
         }
 

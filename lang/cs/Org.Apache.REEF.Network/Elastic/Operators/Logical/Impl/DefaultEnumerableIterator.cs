@@ -123,7 +123,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
             }
 
-            if (PropagateFailureDownstream() && _next != null)
+            LogOperatorState();
+
+            if (true && _next != null)
             {
                 _next.OnTaskFailure(task, ref failureEvents);
             }

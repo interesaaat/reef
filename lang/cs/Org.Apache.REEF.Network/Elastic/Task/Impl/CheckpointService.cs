@@ -34,16 +34,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Interface for checkpointing some task state
     /// Clients can implement this interface and inject it into context service and task function to save the current task state
     /// </summary>
-    internal class CheckpointService
+    internal class CheckpointService : IDisposable
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CheckpointService));
 
         private readonly ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>> _checkpoints;
         private readonly ConcurrentDictionary<CheckpointIdentifier, string> _roots;
+        private readonly ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent> _checkpointsWaiting;
 
         private readonly int _limit;
-
-        private readonly ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent> _checkpointsWaiting;
 
         private CommunicationLayer _communicationLayer;
 
@@ -53,9 +52,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             StreamingNetworkService<GroupCommunicationMessage> networkService)
         {
             _limit = num;
+
             _checkpoints = new ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>>();
             _roots = new ConcurrentDictionary<CheckpointIdentifier, string>();
-
             _checkpointsWaiting = new ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent>();
         }
 
@@ -103,7 +102,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 _checkpointsWaiting.TryAdd(id, received);
 
                 received.WaitOne();
-                ////System.Threading.Thread.Sleep(new Random().Next(1000));
 
                 if (!_checkpoints.TryGetValue(id, out checkpoints))
                 {
@@ -143,6 +141,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
             SortedDictionary<int, ICheckpointState> checkpoints;
             _checkpoints.TryRemove(id, out checkpoints);
+        }
+
+        public void Dispose()
+        {
+            foreach (var waiting in _checkpointsWaiting.Values)
+            {
+                waiting.Set();
+                waiting.Close();
+            }
         }
 
         private void CheckSize(SortedDictionary<int, ICheckpointState> checkpoint)
