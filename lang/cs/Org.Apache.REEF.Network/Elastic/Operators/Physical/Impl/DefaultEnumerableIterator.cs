@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -76,7 +77,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                 // Check if the state have to be resumed from a checkpoint
                 if (_inner.IsStart && _inner.Current != 0)
                 {
-                    var checkpoint = _topology.GetCheckpoint(_inner.Current);
+                    ICheckpointState checkpoint;
+                    if (!_topology.GetCheckpoint(out checkpoint, _inner.Current))
+                    {
+                        throw new IllegalStateException(string.Format(
+                            "Task cannot be resumed from checkpoint of iteration {0}", _inner.Current));
+                    }
+
                     if (_inner.Current < 0)
                     {
                         LOGGER.Log(Level.Info, "Fast forward to checkpointed iteration {0}", checkpoint.Iteration);

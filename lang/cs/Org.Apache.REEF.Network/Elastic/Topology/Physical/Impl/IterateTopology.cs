@@ -119,13 +119,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public ICheckpointState GetCheckpoint(int iteration = -1)
+        public bool GetCheckpoint(out ICheckpointState checkpoint, int iteration = -1)
         {
             if (InternalCheckpoint != null && (iteration == -1 || InternalCheckpoint.Iteration == iteration))
             {
-                return InternalCheckpoint;
+                checkpoint = InternalCheckpoint;
+                return true;
             }
-            return Service.GetCheckpoint(_taskId, SubscriptionName, OperatorId, iteration);
+
+            return Service.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration);
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
@@ -160,8 +162,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             Logger.Log(Level.Info, "Received failure recovery, going to resume computation from my checkpoint");
 
-            var destMessage = message as FailureMessagePayload;
-            InternalCheckpoint = GetCheckpoint();
+            ICheckpointState checkpoint;
+            if (GetCheckpoint(out checkpoint))
+            {
+                InternalCheckpoint = checkpoint;
+            }
         }
     }
 }

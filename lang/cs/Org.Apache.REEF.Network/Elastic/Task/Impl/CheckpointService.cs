@@ -72,10 +72,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        public ICheckpointState GetCheckpoint(string taskId, string subscriptionName, int operatorId, int iteration = -1)
+        public bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string subscriptionName, int operatorId, int iteration = -1)
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
             var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
+            checkpoint = null;
+
             if (!_checkpoints.TryGetValue(id, out checkpoints))
             {
                 Logger.Log(Level.Warning, "Asking for a checkpoint not in the service");
@@ -88,11 +90,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     // I am in root, try to fetch as root
                     if (!_checkpoints.TryGetValue(id, out checkpoints))
                     {
-                        throw new IllegalStateException("Trying to recover from a non existing checkpoint");
+                        Logger.Log(Level.Warning, "Trying to recover from a non existing checkpoint");
+                        return false;
                     }
                 }
 
-                Logger.Log(Level.Info, "Retrieving the checkpoint from {0}", rootTaskId);
+                Logger.Log(Level.Info, "Retrieving the checkpoint from " + rootTaskId);
                 var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
 
                 _communicationLayer.Send(rootTaskId, cpm);
@@ -105,13 +108,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 if (!_checkpoints.TryGetValue(id, out checkpoints))
                 {
-                    throw new IllegalStateException("Checkpoint not retrieved");
+                    Logger.Log(Level.Warning, "Checkpoint not retrieved");
+                    return false;
                 }
             }
 
             iteration = iteration < 0 ? checkpoints.Keys.Last() : iteration;
+            checkpoint = checkpoints[iteration];
 
-            return checkpoints[iteration];
+            return true;
         }
 
         public void Checkpoint(ICheckpointState state)

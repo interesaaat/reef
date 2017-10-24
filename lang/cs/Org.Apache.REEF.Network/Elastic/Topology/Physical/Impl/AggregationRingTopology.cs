@@ -75,6 +75,36 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
+        internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
+        {
+            GroupCommunicationMessage message;
+            int retry = 1;
+
+            while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
+            {
+                // Ask only if we are actually waiting for some data
+                if (!_next.IsEmpty)
+                {
+                    if (cancellationSource.IsCancellationRequested)
+                    {
+                        throw new OperationCanceledException("Received cancellation request: stop receiving");
+                    }
+
+                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data", _timeout);
+
+                    _commLayer.NextDataRequest(_taskId);
+
+                    if (retry++ > _retry)
+                    {
+                        throw new Exception(string.Format(
+                            "Failed to receive message in the ring after {0} try", _retry));
+                    }
+                }
+            }
+
+            return message;
+        }
+
         public void Checkpoint(ICheckpointableState state, int? iteration = null)
         {
             ICheckpointState checkpoint;
@@ -113,13 +143,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public ICheckpointState GetCheckpoint(int iteration = -1)
+        public bool GetCheckpoint(out ICheckpointState checkpoint, int iteration = -1)
         {
             if (InternalCheckpoint != null && (iteration == -1 || InternalCheckpoint.Iteration == iteration))
             {
-                return InternalCheckpoint;
+                checkpoint = InternalCheckpoint;
+                return true;
             }
-            return _checkpointService.GetCheckpoint(_taskId, SubscriptionName, OperatorId, iteration);
+
+            return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration);
         }
 
         public override void WaitCompletionBeforeDisposing()
@@ -229,13 +261,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
                 else
                 {
-                    Logger.Log(Level.Info, msg + "going to resume ring computation from my checkpoint");
+                    Logger.Log(Level.Info, msg + "going to resume ring computation from my checkpoint at iteration " + destMessage.Iteration);
 
-                    var checkpoint = GetCheckpoint();
+                    ICheckpointState checkpoint;
 
-                    if (checkpoint == null || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                    if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                     {
-                        throw new IllegalStateException("Failure recovery from state not available");
+                        Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
+                        return;
                     }
 
                     foreach (var data in checkpoint.State as GroupCommunicationMessage[])
@@ -292,7 +325,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 Console.WriteLine("Sending to " + nextNode);
 
-                _commLayer.Send(nextNode, message);
+                if (Utils.GetTaskNum(_taskId) != 3)
+                {
+                    _commLayer.Send(nextNode, message);
+                }
             }
         }
     }

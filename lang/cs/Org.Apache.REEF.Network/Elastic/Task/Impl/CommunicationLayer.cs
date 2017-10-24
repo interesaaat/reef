@@ -193,12 +193,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             if (gcm.GetType() == typeof(CheckpointMessageRequest))
             {
                 var cpm = gcm as CheckpointMessageRequest;
-                var checkpoint = _checkpointService.GetCheckpoint(nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration);
-                var returnMessage = checkpoint.ToMessage();
+                ICheckpointState checkpoint;
+                if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration))
+                {
+                    var returnMessage = checkpoint.ToMessage();
 
-                returnMessage.Payload = checkpoint;
+                    returnMessage.Payload = checkpoint;
 
-                Send(gcMessageTaskSource, returnMessage);
+                    Send(gcMessageTaskSource, returnMessage);
+                }
+
                 return;
             }
             if (gcm.GetType() == typeof(CheckpointMessage))
