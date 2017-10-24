@@ -20,11 +20,14 @@ using System;
 using Org.Apache.REEF.Common.Runtime.Evaluator;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Common.Protobuf.ReefProtocol;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     public class RingTaskMessageSource
     {
+        private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
+
         private readonly HeartBeatReference _heartBeatManager;
 
         [Inject]
@@ -39,6 +42,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.IterationNumber), 0, message, 0, sizeof(ushort));
             Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
 
+            Logger.Log(Level.Info, string.Format("Sending current iteration number ({0}) through heartbeat", iteration));
+
             Send(taskId, message);
         }
 
@@ -47,6 +52,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             var message = new byte[6];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, message, 0, sizeof(ushort));
             Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+
+            Logger.Log(Level.Info, "Going to request to join the ring through heartbeat");
 
             Send(taskId, message);
         }
@@ -58,6 +65,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
             message[6] = response ? (byte)1 : (byte)0;
 
+            Logger.Log(Level.Info, string.Format("Sending response message ({0} for iteration {1}) through heartbeat", response, iteration));
+
             Send(taskId, message);
         }
 
@@ -67,6 +76,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextTokenRequest), 0, message, 0, sizeof(ushort));
             Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
 
+            Logger.Log(Level.Info, string.Format("Sending request for next node in the ring at iteration {0} through heartbeat", iteration));
+
             Send(taskId, message);
         }
 
@@ -74,6 +85,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             var message = new byte[2];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextDataRequest), 0, message, 0, sizeof(ushort));
+
+            Logger.Log(Level.Info, "Sending request for data through heartbeat");
 
             Send(taskId, message);     
         }

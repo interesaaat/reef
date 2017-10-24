@@ -390,10 +390,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
                     Console.WriteLine("Task {0} sends to {1} in iteration {2} in resume data", dest, head.TaskId, head.Iteration);
                 }
-                else
-                {
-                    throw new IllegalStateException("Previous node in ring not found");
-                }
             }
         }
 
@@ -503,7 +499,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         {
                             _ringHead = prev;
                             _ringHead.Type = DriverMessageType.Failure;
-                            CloseRing(ref messages);
                         }
                         else
                         {
@@ -517,6 +512,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         }
 
                         Console.WriteLine("after lock in reconfigure");
+
+                        CloseRing(ref messages);
+
                         return messages;
                     default:
                         Console.WriteLine("after lock in reconfigure");

@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
     {
         void Checkpoint(ICheckpointableState state, int? iteration);
 
-        ICheckpointState GetCheckpoint(int iteration = -1);
+        bool GetCheckpoint(out ICheckpointState checkpoint, int iteration = -1);
 
         // For the moment the assumption is that only one object is stored
         ICheckpointState InternalCheckpoint { get; }

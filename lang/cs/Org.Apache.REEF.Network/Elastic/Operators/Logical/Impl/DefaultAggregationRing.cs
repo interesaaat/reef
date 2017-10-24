@@ -121,7 +121,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.NextDataRequest:
                     {
-                        LOGGER.Log(Level.Info, "Received next data request for iteration from node {0}", message.TaskId);
+                        LOGGER.Log(Level.Info, "Received next data request from node {0}", message.TaskId);
 
                         RingTopology.RetrieveMissedDataFromRing(message.TaskId, ref returnMessages);
                         return true;
