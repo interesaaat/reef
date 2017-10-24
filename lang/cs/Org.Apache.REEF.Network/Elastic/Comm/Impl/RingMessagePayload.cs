@@ -24,7 +24,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    internal sealed class RingMessagePayload : IDriverMessagePayload
+    internal sealed class RingMessagePayload : DriverMessagePayload
     {
         public RingMessagePayload(string nextTaskId, string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId, iteration)
@@ -62,7 +62,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return buffer;
         }
 
-        internal static IDriverMessagePayload From(byte[] data, int offset = 0)
+        internal static DriverMessagePayload From(byte[] data, int offset = 0)
         {
             int length = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);

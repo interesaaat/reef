@@ -81,10 +81,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Send(taskId, message);
         }
 
-        internal void NextDataRequest(string taskId)
+        internal void NextDataRequest(string taskId, int iteration)
         {
-            var message = new byte[2];
+            var message = new byte[6];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextDataRequest), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
 
             Logger.Log(Level.Info, "Sending request for data through heartbeat");
 

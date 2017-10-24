@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        public bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string subscriptionName, int operatorId, int iteration = -1)
+        public bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string subscriptionName, int operatorId, int iteration = -1, bool requestToMaster = true)
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
             var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
@@ -81,6 +81,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             if (!_checkpoints.TryGetValue(id, out checkpoints))
             {
                 Logger.Log(Level.Warning, "Asking for a checkpoint not in the service");
+
+                if (!requestToMaster)
+                {
+                    Logger.Log(Level.Warning, "Trying to recover from a non existing checkpoint");
+                    return false;
+                }
 
                 var id2 = new CheckpointIdentifier(string.Empty, subscriptionName, operatorId);
                 string rootTaskId;

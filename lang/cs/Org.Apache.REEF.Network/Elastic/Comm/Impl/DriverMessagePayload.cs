@@ -24,9 +24,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     /// <summary>
     /// Payload of Driver messages.
     /// </summary>
-    public abstract class IDriverMessagePayload : GroupCommunicationMessage
+    public abstract class DriverMessagePayload : GroupCommunicationMessage
     {
-        public IDriverMessagePayload(string subscriptionName, int operatorId, int iteration)
+        public DriverMessagePayload(string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId)
         {
             Iteration = iteration;

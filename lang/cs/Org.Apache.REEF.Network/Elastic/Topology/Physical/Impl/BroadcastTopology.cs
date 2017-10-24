@@ -51,12 +51,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload value)
+        internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload value)
         {
             throw new NotImplementedException();
         }
 
-        internal override void OnMessageFromDriver(IDriverMessagePayload value)
+        internal override void OnMessageFromDriver(DriverMessagePayload value)
         {
             throw new NotImplementedException();
         }

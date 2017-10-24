@@ -78,27 +78,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
             GroupCommunicationMessage message;
-            int retry = 1;
+            ////int retry = 1;
 
             while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
             {
                 // Ask only if we are actually waiting for some data
-                if (!_next.IsEmpty)
+                if (!_next.IsEmpty && _taskId == _rootTaskId)
                 {
                     if (cancellationSource.IsCancellationRequested)
                     {
                         throw new OperationCanceledException("Received cancellation request: stop receiving");
                     }
 
-                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data", _timeout);
+                    var iterationNumber = _next.Keys.OrderBy(x => x).First();
 
-                    _commLayer.NextDataRequest(_taskId);
+                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iterationNumber - 1);
 
-                    if (retry++ > _retry)
-                    {
-                        throw new Exception(string.Format(
-                            "Failed to receive message in the ring after {0} try", _retry));
-                    }
+                    _commLayer.NextDataRequest(_taskId, iterationNumber - 1);
+
+                    ////if (retry++ > _retry)
+                    ////{
+                    ////    throw new Exception(string.Format(
+                    ////        "Failed to receive message in the ring after {0} try", _retry));
+                    ////}
                 }
             }
 
@@ -151,7 +153,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration);
+            return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration, false);
         }
 
         public override void WaitCompletionBeforeDisposing()
@@ -201,7 +203,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _checkpointService.RemoveCheckpoint(_taskId, SubscriptionName, OperatorId);
         }
 
-        internal override void OnMessageFromDriver(IDriverMessagePayload message)
+        internal override void OnMessageFromDriver(DriverMessagePayload message)
         {
             if (message.MessageType != DriverMessageType.Ring)
             {
@@ -221,61 +223,103 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _sendmre.Set();
         }
 
-        internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
+        internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload message)
         {
-            if (message.MessageType == DriverMessageType.Request)
+            switch (message.MessageType)
             {
-                var destMessage = message as TokenReceivedRequest;
-                var str = (int)PositionTracker.InReceive + ":" + destMessage.Iteration;
-
-                Console.WriteLine(str);
-                Console.WriteLine(Operator.FailureInfo);
-
-                if (Operator.FailureInfo != str)
-                {
-                    Logger.Log(Level.Info, "Received failure request for iteration {0}: I am ok", destMessage.Iteration);
-                }
-                else
-                {
-                    Logger.Log(Level.Info, "Received failure request for iteration {0}: I am blocked", destMessage.Iteration);
-                }
-
-                _commLayer.TokenResponse(_taskId, destMessage.Iteration, Operator.FailureInfo != str);
-            }
-
-            if (message.MessageType == DriverMessageType.Failure)
-            {
-                var msg = "Received failure recovery: ";
-                var destMessage = message as FailureMessagePayload;
-
-                GroupCommunicationMessage gcm;
-                if (_sendQueue.TryPeek(out gcm))
-                {
-                    var dm = gcm as DataMessage;
-                    if (dm.Iteration == destMessage.Iteration)
+                case DriverMessageType.Request:
                     {
-                        Logger.Log(Level.Info, msg + "going to send message to " + destMessage.NextTaskId);
+                        var destMessage = message as TokenReceivedRequest;
+                        var str = (int)PositionTracker.InReceive + ":" + destMessage.Iteration;
 
-                        _next.TryAdd(destMessage.Iteration, destMessage.NextTaskId);
-                    }
-                }
-                else
-                {
-                    Logger.Log(Level.Info, msg + "going to resume ring computation from my checkpoint at iteration " + destMessage.Iteration);
+                        Console.WriteLine(str);
+                        Console.WriteLine(Operator.FailureInfo);
 
-                    ICheckpointState checkpoint;
+                        var splits = Operator.FailureInfo.Split(':');
+                        bool result = false;
 
-                    if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
-                    {
-                        Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
-                        return;
+                        if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
+                        {
+                            Logger.Log(Level.Info, "Received failure request for iteration {0}: I am blocked", destMessage.Iteration);
+                        }
+                        else
+                        {
+                            Logger.Log(Level.Info, "Received failure request for iteration {0}: I am ok", destMessage.Iteration);
+                            result = true;
+                        }
+
+                        _commLayer.TokenResponse(_taskId, destMessage.Iteration, result);
+                        break;
                     }
 
-                    foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                case DriverMessageType.Failure:
                     {
-                        _commLayer.Send(destMessage.NextTaskId, data);
+                        var msg = "Received failure recovery: ";
+                        var destMessage = message as FailureMessagePayload;
+
+                        GroupCommunicationMessage gcm;
+                        if (_sendQueue.TryPeek(out gcm))
+                        {
+                            var dm = gcm as DataMessage;
+                            if (dm.Iteration == destMessage.Iteration)
+                            {
+                                Logger.Log(Level.Info, msg + "going to send message to " + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
+
+                                _next.TryAdd(destMessage.Iteration, destMessage.NextTaskId);
+                            }
+                        }
+                        else
+                        {
+                            Logger.Log(Level.Info, msg + "going to resume ring computation for " + destMessage.NextTaskId);
+
+                            ICheckpointState checkpoint;
+
+                            if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                            {
+                                Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
+                                return;
+                            }
+
+                            foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                            {
+                                _commLayer.Send(destMessage.NextTaskId, data);
+                            }
+                        }
+                        break;
                     }
-                }
+                case DriverMessageType.Resume:
+                    {
+                        var msg = "Received resume message: going to resume ring computation for ";
+                        var destMessage = message as ResumeMessagePayload;
+
+                        Logger.Log(Level.Info, msg + destMessage.NextTaskId);
+
+                        ICheckpointState checkpoint;
+
+                        if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                        {
+                            var splits = Operator.FailureInfo.Split(':');
+
+                            if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
+                            {
+                                Logger.Log(Level.Warning, "Resume not available because I am blocked as well: going to propagate");
+                                _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
+                            }
+                            else
+                            {
+                                Logger.Log(Level.Warning, "Resume not available: ignoring");
+                            }
+                            
+                            return;
+                        }
+
+                        foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                        {
+                            _commLayer.Send(destMessage.NextTaskId, data);
+                        }
+
+                        break;
+                    }
             }
         }
 
@@ -322,13 +366,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _sendmre.Reset();
 
                 _sendQueue.TryDequeue(out message);
+                _next.TryRemove(dm.Iteration, out string tmp);
 
                 Console.WriteLine("Sending to " + nextNode);
 
-                if (Utils.GetTaskNum(_taskId) != 3)
-                {
-                    _commLayer.Send(nextNode, message);
-                }
+                _commLayer.Send(nextNode, message);
             }
         }
     }

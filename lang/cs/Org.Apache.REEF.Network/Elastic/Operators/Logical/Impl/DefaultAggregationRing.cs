@@ -69,6 +69,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
+            DrainGlobalEvents(ref returnMessages);
+
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
             switch (msgReceived)
@@ -121,9 +123,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.NextDataRequest:
                     {
-                        LOGGER.Log(Level.Info, "Received next data request from node {0}", message.TaskId);
+                        var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
+                        LOGGER.Log(Level.Info, "Received next data request from node {0} for iteration {1}", message.TaskId, iteration);
 
-                        RingTopology.RetrieveMissedDataFromRing(message.TaskId, ref returnMessages);
+                        RingTopology.RetrieveMissedDataFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
                     }
                 default:
@@ -192,6 +195,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             if (!_stop)
             {
                 _stop = true;
+            }
+        }
+
+        private void DrainGlobalEvents(ref List<IElasticDriverMessage> messages)
+        {
+            while (RingTopology.GlobalEvents.Count > 0)
+            {
+                IElasticDriverMessage msg;
+                RingTopology.GlobalEvents.TryDequeue(out msg);
+                messages.Add(msg);
             }
         }
     }

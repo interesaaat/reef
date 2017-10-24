@@ -239,9 +239,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.NextTokenRequest(taskId, iteration);
         }
 
-        internal void NextDataRequest(string taskId)
+        internal void NextDataRequest(string taskId, int iteration)
         {
-            _ringMessageSource.NextDataRequest(taskId);
+            _ringMessageSource.NextDataRequest(taskId, iteration);
         }
 
         public void IterationNumber(string taskId, int iteration)
