@@ -39,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer,retry, timeout, disposeTimeout)
+            CommunicationLayer commLayer) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
 

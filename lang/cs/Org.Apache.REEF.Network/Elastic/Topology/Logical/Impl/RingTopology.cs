@@ -374,7 +374,27 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal void RetrieveMissedDataFromRing(string taskId, ref List<IElasticDriverMessage> returnMessages)
         {
-            throw new NotImplementedException();
+            lock (_lock)
+            {
+                var head = _ringHead;
+
+                while (head != null && head.TaskId != taskId)
+                {
+                    head = head.Prev;
+                }
+
+                if (head != null && head.Prev != null)
+                {
+                    var dest = head.Prev.TaskId;
+                    var data = new FailureMessagePayload(head.TaskId, head.Iteration, SubscriptionName, OperatorId);
+                    returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
+                    Console.WriteLine("Task {0} sends to {1} in iteration {2} in resume data", dest, head.TaskId, head.Iteration);
+                }
+                else
+                {
+                    throw new IllegalStateException("Previous node in ring not found");
+                }
+            }
         }
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
