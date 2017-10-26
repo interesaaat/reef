@@ -43,15 +43,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent> _checkpointsWaiting;
 
         private readonly int _limit;
+        private readonly int _timeout;
+        private readonly int _retry;
 
         private CommunicationLayer _communicationLayer;
 
         [Inject]
         public CheckpointService(
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             StreamingNetworkService<GroupCommunicationMessage> networkService)
         {
             _limit = num;
+            _timeout = timeout;
+            _retry = retry;
 
             _checkpoints = new ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>>();
             _roots = new ConcurrentDictionary<CheckpointIdentifier, string>();
@@ -101,20 +107,25 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     }
                 }
 
-                Logger.Log(Level.Info, "Retrieving the checkpoint from " + rootTaskId);
-                var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
-
-                _communicationLayer.Send(rootTaskId, cpm);
-
                 var received = new ManualResetEvent(false);
+                var retry = 0;
 
-                _checkpointsWaiting.TryAdd(id, received);
+                do
+                {
+                    Logger.Log(Level.Info, "Retrieving the checkpoint from " + rootTaskId);
+                    var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
 
-                received.WaitOne();
+                    _communicationLayer.Send(rootTaskId, cpm);
+
+                    _checkpointsWaiting.TryAdd(id, received);
+                    retry++;
+                }
+                while (!received.WaitOne(_timeout) && retry < _retry);
 
                 if (!_checkpoints.TryGetValue(id, out checkpoints))
                 {
                     Logger.Log(Level.Warning, "Checkpoint not retrieved");
+                    _checkpointsWaiting.TryRemove(id, out received);
                     return false;
                 }
             }

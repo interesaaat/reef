@@ -187,7 +187,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             // Failure have to be propagated down to the operators
-            Console.WriteLine("in subscruption for {0}", task.Id);
+            Console.WriteLine("in subscription for {0}", task.Id);
             RootOperator.OnTaskFailure(task, ref failureEvents);
         }
 

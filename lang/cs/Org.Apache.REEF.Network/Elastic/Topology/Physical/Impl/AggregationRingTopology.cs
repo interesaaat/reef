@@ -78,29 +78,33 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
             GroupCommunicationMessage message;
-            ////int retry = 1;
+            int retry = 1;
 
             while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
             {
-                // Ask only if we are actually waiting for some data
-                if (!_next.IsEmpty && _taskId == _rootTaskId)
+                if (cancellationSource.IsCancellationRequested)
                 {
-                    if (cancellationSource.IsCancellationRequested)
-                    {
-                        throw new OperationCanceledException("Received cancellation request: stop receiving");
-                    }
+                    throw new OperationCanceledException("Received cancellation request: stop receiving");
+                }
 
+                // Ask only if we are actually waiting for some data
+                if (!_next.IsEmpty)
+                {
                     var iterationNumber = _next.Keys.OrderBy(x => x).First();
 
-                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iterationNumber - 1);
+                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iterationNumber);
 
-                    _commLayer.NextDataRequest(_taskId, iterationNumber - 1);
+                    _commLayer.NextDataRequest(_taskId, iterationNumber);
 
-                    ////if (retry++ > _retry)
-                    ////{
-                    ////    throw new Exception(string.Format(
-                    ////        "Failed to receive message in the ring after {0} try", _retry));
-                    ////}
+                    if (iterationNumber > 1 && retry++ > _retry)
+                    {
+                        throw new Exception(string.Format(
+                            "Failed to receive message in the ring after {0} try", _retry));
+                    }
+                }
+                else if (_taskId != _rootTaskId)
+                {
+                    Logger.Log(Level.Info, "Waiting to join the ring");
                 }
             }
 
@@ -276,7 +280,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                             {
-                                Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
+                                var splits = Operator.FailureInfo.Split(':');
+
+                                if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
+                                {
+                                    Logger.Log(Level.Warning, "Resume not available because I am blocked as well: going to propagate");
+                                    _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
+                                }
+                                else
+                                {
+                                    Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
+                                }
                                 return;
                             }
 
@@ -292,7 +306,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         var msg = "Received resume message: going to resume ring computation for ";
                         var destMessage = message as ResumeMessagePayload;
 
-                        Logger.Log(Level.Info, msg + destMessage.NextTaskId);
+                        Logger.Log(Level.Info, msg + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
 
                         ICheckpointState checkpoint;
 
@@ -302,8 +316,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
                             {
-                                Logger.Log(Level.Warning, "Resume not available because I am blocked as well: going to propagate");
-                                _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
+                                if (_next.IsEmpty)
+                                {
+                                    Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
+                                    _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
+                                }
+                                else
+                                {
+                                    Logger.Log(Level.Warning, "I am resuming as well: waiting");
+                                }
                             }
                             else
                             {
@@ -350,7 +371,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     }
 
                     _sendmre.Reset();
-                    Console.WriteLine("Waiting inside loop ");
+
                     if (!_sendmre.WaitOne(_timeout))
                     {
                         retry++;

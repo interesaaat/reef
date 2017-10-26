@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -150,7 +151,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var exception = reconfigureEvent.FailedTask.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        reconfigureEvent.FailureResponse.AddRange(RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo));
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo).ToList();
+                        DrainGlobalEvents(ref msg);
+                        reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                     else
                     {
@@ -180,7 +183,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        rescheduleEvent.FailureResponse.AddRange(RingTopology.Reconfigure(rescheduleEvent.TaskId, exception.AdditionalInfo));
+                        var msg = RingTopology.Reconfigure(rescheduleEvent.TaskId, exception.AdditionalInfo).ToList();
+                        DrainGlobalEvents(ref msg);
+                        rescheduleEvent.FailureResponse.AddRange(msg);
                     }
                 }
             }
@@ -200,12 +205,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         private void DrainGlobalEvents(ref List<IElasticDriverMessage> messages)
         {
-            while (RingTopology.GlobalEvents.Count > 0)
-            {
-                IElasticDriverMessage msg;
-                RingTopology.GlobalEvents.TryDequeue(out msg);
-                messages.Add(msg);
-            }
+            ////lock (RingTopology.GlobalEvents)
+            ////{
+            ////    while (RingTopology.GlobalEvents.Count > 0)
+            ////    {
+            ////        IElasticDriverMessage msg;
+            ////        RingTopology.GlobalEvents.TryDequeue(out msg);
+            ////        messages.Add(msg);
+            ////    }
+            ////}
         }
     }
 }
