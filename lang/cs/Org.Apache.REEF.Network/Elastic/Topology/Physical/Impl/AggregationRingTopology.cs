@@ -104,7 +104,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
                 else if (_taskId != _rootTaskId)
                 {
+                    if (retry++ > _retry)
+                    {
+                        throw new Exception(string.Format(
+                            "Failed to receive message in the ring after {0} try", _retry));
+                    }
+
                     Logger.Log(Level.Info, "Waiting to join the ring");
+
+                    _commLayer.JoinTheRing(_taskId, -1);
                 }
             }
 
@@ -296,6 +304,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                             {
+                                Console.WriteLine("Sending from failure recovery");
+
                                 _commLayer.Send(destMessage.NextTaskId, data);
                             }
                         }
@@ -336,6 +346,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                         foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                         {
+                            Console.WriteLine("Sending from resume");
+
                             _commLayer.Send(destMessage.NextTaskId, data);
                         }
 

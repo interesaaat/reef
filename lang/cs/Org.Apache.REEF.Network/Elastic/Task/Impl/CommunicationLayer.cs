@@ -180,7 +180,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             catch (Exception e)
             {
                 Logger.Log(Level.Warning, "Unable to send message to " + destId + " " + e.Message);
-                throw e;
             }
 
             Console.WriteLine("Message sent to node " + destination);
@@ -212,6 +211,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     var returnMessage = checkpoint.ToMessage();
 
                     returnMessage.Payload = checkpoint;
+
+                    Console.WriteLine("Sending from checkpint request");
 
                     Send(gcMessageTaskSource, returnMessage);
                 }

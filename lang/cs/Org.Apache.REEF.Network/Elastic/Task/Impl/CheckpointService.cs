@@ -115,6 +115,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Logger.Log(Level.Info, "Retrieving the checkpoint from " + rootTaskId);
                     var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
 
+                    Console.WriteLine("Sending from checkpint");
+
                     _communicationLayer.Send(rootTaskId, cpm);
 
                     _checkpointsWaiting.TryAdd(id, received);
