@@ -138,8 +138,13 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             }
             catch (Exception e)
             {
-                Logger.Log(Level.Warning, "StreamingTransportClient get exception in ResponseLoop: {0}.", e.GetType());
-                throw;
+                var msg = "StreamingTransportClient get exception in ResponseLoop: {0}.", e.GetType();
+                if (!_disposed)
+                {
+                    Logger.Log(Level.Warning, msg);
+                    throw;
+                }
+                Logger.Log(Level.Info, msg);
             }
         }
     }
