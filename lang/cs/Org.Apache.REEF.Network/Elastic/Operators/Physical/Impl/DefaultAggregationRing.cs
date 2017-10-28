@@ -97,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource) as DataMessage<T>;
+                message = _topology.Receive(CancellationSource, (int)IteratorReference.Current) as DataMessage<T>;
 
                 if (message.Iteration < (int)IteratorReference.Current)
                 {

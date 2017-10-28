@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
-                                if (rand.Next(100) < 6)
+                                if (rand.Next(100) < 15)
                                 {
                                     Console.WriteLine("I die. Bye.");
 
@@ -79,7 +79,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 ////    ////System.Threading.Thread.Sleep(rand.Next(100));
                                 ////}
 
-                                if (rand.Next(100) < 6)
+                                if (rand.Next(100) < 15)
                                 {
                                     Console.WriteLine("I die. Bye.");
 
@@ -88,7 +88,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 aggregator.Send(rec);
 
-                                if (rand.Next(100) < 6)
+                                if (rand.Next(100) < 15)
                                 {
                                     Console.WriteLine("I die. Bye.");
 

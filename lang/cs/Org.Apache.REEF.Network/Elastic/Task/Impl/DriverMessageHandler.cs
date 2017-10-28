@@ -34,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
         }
 
-        internal ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> DriverMessageObservers { get; set; }
+        internal ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> DriverMessageObservers { get; set; }
 
         public void Handle(IDriverMessage value)
         {
@@ -42,16 +42,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 var edm = ElasticDriverMessageImpl.From(value.Message.Value);
                 var id = NodeObserverIdentifier.FromMessage(edm.Message);
-                ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> observers;
                 DriverAwareOperatorTopology operatorObserver;
 
-                if (!DriverMessageObservers.TryGetValue(edm.Destination, out observers))
-                {
-                    throw new KeyNotFoundException("Unable to find registered task Observer for source Task " +
-                        edm.Destination + ".");
-                }
-
-                if (!observers.TryGetValue(id, out operatorObserver))
+                if (!DriverMessageObservers.TryGetValue(id, out operatorObserver))
                 {
                     throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
                         edm.Message.SubscriptionName + " operator " + edm.Message.OperatorId);

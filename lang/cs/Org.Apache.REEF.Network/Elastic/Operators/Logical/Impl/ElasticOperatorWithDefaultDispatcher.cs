@@ -85,17 +85,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
-            var exception = task.AsError() as OperatorException;
-            Console.WriteLine("in task failure for {0}", task.Id);
-            Console.WriteLine("exception operator is {0}", exception.OperatorId);
-            Console.WriteLine("operator is {0}", _id);
-            if (exception.OperatorId <= _id)
+            var failedOperatorId = -1;
+
+            if (task.AsError() is OperatorException)
             {
-                Console.WriteLine("On Task failure before remove task {0}", task.Id);
+                var opException = task.AsError() as OperatorException;
+                failedOperatorId = opException.OperatorId;
+            }
+
+            if (failedOperatorId <= _id)
+            {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
-                Console.WriteLine("On Task failure after remove task {0}", task.Id);
                 var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
-                Console.WriteLine("On Task failure after failure machine {0}", task.Id);
 
                 switch ((DefaultFailureStates)failureState.FailureState)
                 {

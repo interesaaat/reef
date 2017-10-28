@@ -56,11 +56,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private bool _disposed;
         private IDisposable _disposableObserver;
 
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>> _groupMessageObservers =
-            new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>>();
+        private readonly ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> _groupMessageObservers =
+            new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
 
-        private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> _driverMessageObservers =
-             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>>();
+        private readonly ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> _driverMessageObservers =
+             new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
 
         /// <summary>
         /// Creates a new GroupCommNetworkObserver.
@@ -99,43 +99,27 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         public void RegisterOperatorTopologyForTask(string taskDestinationId, OperatorTopologyWithCommunication operatorObserver)
         {
-            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> taskObservers;
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
-            if (!_groupMessageObservers.TryGetValue(taskDestinationId, out taskObservers))
-            {
-                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
-                _groupMessageObservers.TryAdd(taskDestinationId, taskObservers);
-            }
-
-            if (taskObservers.ContainsKey(id))
+            if (_groupMessageObservers.ContainsKey(id))
             {
                 throw new IllegalStateException("Topology for id " + id + " already added among listeners");
             }
 
-            taskObservers.TryAdd(id, operatorObserver);
+            _groupMessageObservers.TryAdd(id, operatorObserver);
         }
 
         internal void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
         {
             // Add a TaskMessage observer for each upstream/downstream source.
-            ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> taskObservers;
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
-            _driverMessageObservers.TryGetValue(taskDestinationId, out taskObservers);
-
-            if (taskObservers == null)
-            {
-                taskObservers = new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
-                _driverMessageObservers.TryAdd(taskDestinationId, taskObservers);
-            }
-
-            if (taskObservers.ContainsKey(id))
+            if (_driverMessageObservers.ContainsKey(id))
             {
                 throw new IllegalStateException("Topology for id " + id + " already added among driver listeners");
             }
 
-            taskObservers.TryAdd(id, operatorObserver);
+            _driverMessageObservers.TryAdd(id, operatorObserver);
         }
 
         /// <summary>
@@ -160,29 +144,30 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            var conn = _networkService.NewConnection(destId);
-
-            try
+            using (var conn = _networkService.NewConnection(destId))
             {
-                conn.Open();
-            }
-            catch (Exception)
-            {
-                throw new IllegalStateException("Unable to establish a connection to " + destId);
-            }
+                try
+                {
+                    conn.Open();
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException("Unable to establish a connection to " + destId + " " + e.Message);
+                }
 
-            Console.WriteLine("Sending to node " + destination);
+                Console.WriteLine("Sending to node " + destination);
 
-            try
-            {
-                conn.Write(message);
-            }
-            catch (Exception e)
-            {
-                Logger.Log(Level.Warning, "Unable to send message to " + destId + " " + e.Message);
-            }
+                try
+                {
+                    conn.Write(message);
+                }
+                catch (Exception e)
+                {
+                    throw new IllegalStateException("Unable to send message to " + destId + " " + e.Message);
+                }
 
-            Console.WriteLine("Message sent to node " + destination);
+                Console.WriteLine("Message sent to node " + destination);
+            }
         }
 
         /// <summary>
@@ -212,7 +197,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                     returnMessage.Payload = checkpoint;
 
-                    Console.WriteLine("Sending from checkpint request");
+                    Console.WriteLine("Sending from checkpoint request");
 
                     Send(gcMessageTaskSource, returnMessage);
                 }
@@ -231,15 +216,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             // Data message
             var id = NodeObserverIdentifier.FromMessage(gcm);
             OperatorTopologyWithCommunication operatorObserver;
-            ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> observers;
 
-            if (!_groupMessageObservers.TryGetValue(nsMessage.DestId.ToString(), out observers))
-            {
-                throw new KeyNotFoundException("Unable to find registered task Observe for destination Task " +
-                    nsMessage.DestId + ".");
-            }
-
-            if (!observers.TryGetValue(id, out operatorObserver))
+            if (!_groupMessageObservers.TryGetValue(id, out operatorObserver))
             {
                 throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
                     gcm.SubscriptionName + " operator " + gcm.OperatorId);
@@ -279,21 +257,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void OnCompleted()
         {
-            foreach (var observers in _groupMessageObservers.Values)
+            foreach (var observer in _groupMessageObservers.Values)
             {
-                foreach (var observer in observers.Values)
-                {
-                    observer.OnCompleted();
-                }
+                observer.OnCompleted();
             }
-
-            _groupMessageObservers.Clear();
         }
 
         public void Dispose()
         {
             if (!_disposed)
             {
+                OnCompleted();
+
                 _groupMessageObservers.Clear();
 
                 _checkpointService.Dispose();

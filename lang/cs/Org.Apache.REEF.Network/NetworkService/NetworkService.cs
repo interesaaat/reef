@@ -114,7 +114,7 @@ namespace Org.Apache.REEF.Network.NetworkService
             }
 
             connection = new NsConnection<T>(_localIdentifier, destinationId, 
-                NamingClient, _remoteManager, _connectionMap);
+                NamingClient, _remoteManager);
 
             _connectionMap[destinationId] = connection;
             return connection;

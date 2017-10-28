@@ -273,28 +273,28 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     addedReachableNodes++;
                 }
 
-                if (iteration == -1)
-                {
-                    int iter = _iteration;
-                    while (_ringNodes.TryGetValue(iter, out Dictionary<string, RingNode> dict))
-                    {
-                        if (dict.TryGetValue(taskId, out RingNode node))
-                        {
-                            if (node.Next != null)
-                            {
-                                var data = _ringHead.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(node.Next.TaskId, SubscriptionName, OperatorId, _iteration) : (DriverMessagePayload)new FailureMessagePayload(node.Next.TaskId, _iteration, SubscriptionName, OperatorId);
-                                var returnMessage = new ElasticDriverMessageImpl(node.TaskId, data);
+                ////if (iteration == -1)
+                ////{
+                ////    int iter = _iteration;
+                ////    while (_ringNodes.TryGetValue(iter--, out Dictionary<string, RingNode> dict))
+                ////    {
+                ////        if (dict.TryGetValue(taskId, out RingNode node))
+                ////        {
+                ////            if (node.Next != null)
+                ////            {
+                ////                var data = _ringHead.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(node.Next.TaskId, SubscriptionName, OperatorId, node.Next.Iteration) : (DriverMessagePayload)new FailureMessagePayload(node.Next.TaskId, node.Next.Iteration, SubscriptionName, OperatorId);
+                ////                var returnMessage = new ElasticDriverMessageImpl(node.TaskId, data);
 
-                                messages.Add(returnMessage);
-                            }
+                ////                Console.WriteLine("Task {0} sends to {1} in iteration {2} in next", node.TaskId, node.Next.TaskId, _iteration);
+                ////                messages.Add(returnMessage);
+                ////            }
 
-                            return 0;
-                        }
-                        iter--;
-                    }
+                ////            return 0;
+                ////        }
+                ////    }
 
-                    return 0;
-                }
+                ////    return 0;
+                ////}
 
                 if (_currentWaitingList.Contains(taskId) || _tasksInRing.Contains(taskId))
                 {
@@ -405,16 +405,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        internal void RetrieveMissedDataFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> returnMessages)
+        internal void RetrieveMissingDataFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> returnMessages)
         {
             lock (_lock)
             {
-                if (taskId == _rootTaskId)
-                {
-                    iteration -= 2;
-                }
+                Console.WriteLine("Last element in ring is " + _ringNodes.Keys.Last());
+
                 RingNode node;
-                if (_ringNodes[iteration].TryGetValue(taskId, out node) && node.Prev != null)
+                if (_ringNodes[iteration].TryGetValue(taskId, out node))
                 {
                     var dest = node.Prev.TaskId;
                     var data = new ResumeMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
@@ -458,96 +456,94 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new NotImplementedException("Failure on master not supported yet");
             }
 
-            PrintRing();
-
             List<IElasticDriverMessage> messages = new List<IElasticDriverMessage>();
-            var failureInfos = info.Split(':');
-            int position = int.Parse(failureInfos[0]);
-            int iteration = int.Parse(failureInfos[1]);
-
-            Console.WriteLine(taskId + " failure " + info);
 
             lock (_lock)
             {
-                Console.WriteLine("Failure in {0} at iteration {1}", taskId, iteration);
+                if (info != string.Empty)
+                { 
+                    var failureInfos = info.Split(':');
+                    int position = int.Parse(failureInfos[0]);
+                    int iteration = int.Parse(failureInfos[1]);
 
-                if (_ringNodes.TryGetValue(iteration, out Dictionary<string, RingNode> nodes))
-                {
-                    nodes.TryGetValue(taskId, out RingNode node);
-
-                    switch (position)
+                    if (_ringNodes.TryGetValue(iteration, out Dictionary<string, RingNode> nodes))
                     {
-                        // We are before receive, we should be ok
-                        case (int)PositionTracker.Nil:
-                            LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
+                        nodes.TryGetValue(taskId, out RingNode node);
 
-                            break;
+                        switch (position)
+                        {
+                            // We are before receive, we should be ok
+                            case (int)PositionTracker.Nil:
+                                LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
 
-                        // The failure is on the node with token
-                        case (int)PositionTracker.InReceive:
-                        case (int)PositionTracker.AfterReceiveBeforeSend:
-                            if (node == null)
-                            {
-                                if (!_ringNodes[_iteration].TryGetValue(taskId, out node))
+                                break;
+
+                            // The failure is on the node with token
+                            case (int)PositionTracker.InReceive:
+                            case (int)PositionTracker.AfterReceiveBeforeSend:
+                                if (node == null)
                                 {
-                                    throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized: current ring is in {2}", taskId, iteration, _iteration));
+                                    if (!_ringNodes[_iteration].TryGetValue(taskId, out node))
+                                    {
+                                        throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized: current ring is in {2}", taskId, iteration, _iteration));
+                                    }
                                 }
-                            }
 
-                            var next = node.Next;
-                            var prev = node.Prev;
+                                var next = node.Next;
+                                var prev = node.Prev;
 
-                            // We are at the end of the ring
-                            if (next == null)
-                            {
-                                _ringHead = prev;
-                                _ringHead.Type = DriverMessageType.Failure;
-                            }
-                            else
-                            {
-                                var data = new FailureMessagePayload(next.TaskId, prev.Iteration, SubscriptionName, OperatorId);
-                                var returnMessage = new ElasticDriverMessageImpl(prev.TaskId, data);
-                                messages.Add(returnMessage);
-                                Console.WriteLine("Task {0} sends to {1} in iteration {2} in receive", prev.TaskId, next.TaskId, prev.Iteration);
-                            }
-                            LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", node.TaskId);
-                            break;
-
-                        // The failure is on the node with token while sending
-                        case (int)PositionTracker.InSend:
-                        // We are after send but before a new iteration starts 
-                        // Data may or may not have reached the next node
-                        case (int)PositionTracker.AfterSendBeforeReceive:
-                            if (node == null)
-                            {
-                                if (!_ringNodes[_iteration].TryGetValue(taskId, out node))
+                                // We are at the end of the ring
+                                if (next == null)
                                 {
-                                    throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized: current ring is in {2}", taskId, iteration, _iteration));
+                                    _ringHead = prev;
+                                    _ringHead.Type = DriverMessageType.Failure;
                                 }
-                            }
+                                else
+                                {
+                                    var data = new FailureMessagePayload(next.TaskId, prev.Iteration, SubscriptionName, OperatorId);
+                                    var returnMessage = new ElasticDriverMessageImpl(prev.TaskId, data);
+                                    messages.Add(returnMessage);
+                                    Console.WriteLine("Task {0} sends to {1} in iteration {2} in receive", prev.TaskId, next.TaskId, prev.Iteration);
+                                }
+                                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", node.TaskId);
+                                break;
 
-                            next = node.Next;
-                            prev = node.Prev;
+                            // The failure is on the node with token while sending
+                            case (int)PositionTracker.InSend:
+                            // We are after send but before a new iteration starts 
+                            // Data may or may not have reached the next node
+                            case (int)PositionTracker.AfterSendBeforeReceive:
+                                if (node == null)
+                                {
+                                    if (!_ringNodes[_iteration].TryGetValue(taskId, out node))
+                                    {
+                                        throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized: current ring is in {2}", taskId, iteration, _iteration));
+                                    }
+                                }
 
-                            // We are at the end of the ring
-                            if (next == null)
-                            {
-                                _ringHead = prev;
-                                _ringHead.Type = DriverMessageType.Failure;
-                            }
-                            else
-                            {
-                                next.Type = DriverMessageType.Request;
+                                next = node.Next;
+                                prev = node.Prev;
 
-                                var data = new TokenReceivedRequest(iteration, SubscriptionName, OperatorId);
-                                var returnMessage = new ElasticDriverMessageImpl(next.TaskId, data);
-                                messages.Add(returnMessage);
+                                // We are at the end of the ring
+                                if (next == null)
+                                {
+                                    _ringHead = prev;
+                                    _ringHead.Type = DriverMessageType.Failure;
+                                }
+                                else
+                                {
+                                    next.Type = DriverMessageType.Request;
 
-                                LOGGER.Log(Level.Info, "Sending request token message to node {0} for iteration {1}", next.TaskId, iteration);
-                            }
-                            break;
-                        default:
-                            break;
+                                    var data = new TokenReceivedRequest(iteration, SubscriptionName, OperatorId);
+                                    var returnMessage = new ElasticDriverMessageImpl(next.TaskId, data);
+                                    messages.Add(returnMessage);
+
+                                    LOGGER.Log(Level.Info, "Sending request token message to node {0} for iteration {1}", next.TaskId, iteration);
+                                }
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
 
