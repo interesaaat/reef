@@ -124,7 +124,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
         {
             try
             {
-                while (!_cancellationSource.IsCancellationRequested)
+                while (!_cancellationSource.IsCancellationRequested && !_disposed)
                 {
                     T message = await _link.ReadAsync(_cancellationSource.Token);
                     if (message == null)

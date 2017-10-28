@@ -127,7 +127,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
                         LOGGER.Log(Level.Info, "Received next data request from node {0} for iteration {1}", message.TaskId, iteration);
 
-                        RingTopology.RetrieveMissedDataFromRing(message.TaskId, iteration, ref returnMessages);
+                        RingTopology.RetrieveMissingDataFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
                     }
                 default:
@@ -178,16 +178,25 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_checkpointLevel > CheckpointLevel.None)
             {
+                string additionalInfo = string.Empty;
+
                 if (rescheduleEvent.FailedTask.IsPresent() && rescheduleEvent.FailedTask.Value.AsError() is OperatorException)
                 {
                     var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        var msg = RingTopology.Reconfigure(rescheduleEvent.TaskId, exception.AdditionalInfo).ToList();
-                        DrainGlobalEvents(ref msg);
-                        rescheduleEvent.FailureResponse.AddRange(msg);
+                        additionalInfo = exception.AdditionalInfo;
+                    }
+                    else
+                    {
+                        // Failure occurred not in this operator
+                        return;
                     }
                 }
+
+                var msg = RingTopology.Reconfigure(rescheduleEvent.TaskId, additionalInfo).ToList();
+                DrainGlobalEvents(ref msg);
+                rescheduleEvent.FailureResponse.AddRange(msg);
             }
             else
             {

@@ -77,6 +77,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
+            return Receive(cancellationSource, null);
+        }
+
+        internal GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource, int? iteration)
+        {
             GroupCommunicationMessage message;
             int retry = 1;
 
@@ -90,7 +95,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 // Ask only if we are actually waiting for some data
                 if (!_next.IsEmpty)
                 {
-                    var iterationNumber = _next.Keys.OrderBy(x => x).First();
+                    var iterationNumber = _taskId != _rootTaskId ? _next.Keys.OrderBy(x => x).First() : iteration ?? -1;
 
                     Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iterationNumber);
 
@@ -102,18 +107,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Failed to receive message in the ring after {0} try", _retry));
                     }
                 }
-                else if (_taskId != _rootTaskId)
-                {
-                    if (retry++ > _retry)
-                    {
-                        throw new Exception(string.Format(
-                            "Failed to receive message in the ring after {0} try", _retry));
-                    }
+                ////else if (_taskId != _rootTaskId)
+                ////{
+                ////    if (retry++ > _retry)
+                ////    {
+                ////        throw new Exception(string.Format(
+                ////            "Failed to receive message in the ring after {0} try", _retry));
+                ////    }
 
-                    Logger.Log(Level.Info, "Waiting to join the ring");
+                ////    Logger.Log(Level.Info, "Waiting to join the ring");
 
-                    _commLayer.JoinTheRing(_taskId, -1);
-                }
+                ////    _commLayer.JoinTheRing(_taskId, -1);
+                ////}
             }
 
             return message;

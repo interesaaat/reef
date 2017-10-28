@@ -313,6 +313,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (BelongsTo(info.Id))
             {
+                LOGGER.Log(Level.Info, "Received a Failure from " + info.Id);
+
                 Interlocked.Decrement(ref _tasksRunning);
 
                 if (Completed())
@@ -332,35 +334,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     }
                 }
 
-                if (info.AsError() is OperatorException)
+                failureEvents = failureEvents ?? new List<IFailureEvent>();
+
+                LOGGER.Log(Level.Info, "Received an Operator Exception from Task " + info.Id, info.AsError());
+
+                lock (_taskLock)
                 {
-                    failureEvents = failureEvents ?? new List<IFailureEvent>();
-
-                    LOGGER.Log(Level.Info, "Received an Operator Exception from Task " + info.Id, info.AsError());
-
-                    lock (_taskLock)
+                    foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
-                        foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
-                        {
-                            Console.WriteLine("before subscription for {0}", info.Id);
-                            sub.OnTaskFailure(info, ref failureEvents);
-                        }
-
-                        // Failures have to be propagated up to the service
-                        _taskInfos[id].Subscriptions.First().Service.OnTaskFailure(info, ref failureEvents);
+                        Console.WriteLine("before subscription for {0}", info.Id);
+                        sub.OnTaskFailure(info, ref failureEvents);
                     }
 
-                    for (int i = 0; i < failureEvents.Count; i++)
-                    {
-                        var @event = failureEvents[i];
-                        EventDispatcher(ref @event);
-                    }
+                    // Failures have to be propagated up to the service
+                    _taskInfos[id].Subscriptions.First().Service.OnTaskFailure(info, ref failureEvents);
                 }
-                else
-                {
-                    LOGGER.Log(Level.Info, "Failure " + info.Message + " triggered a fail event");
 
-                    OnFail();
+                for (int i = 0; i < failureEvents.Count; i++)
+                {
+                    var @event = failureEvents[i];
+                    EventDispatcher(ref @event);
                 }
             }
         }

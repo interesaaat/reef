@@ -16,7 +16,6 @@
 // under the License.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -40,7 +39,6 @@ namespace Org.Apache.REEF.Network.NetworkService
         private readonly IIdentifier _destId;
         private readonly INameClient _nameClient;
         private readonly IRemoteManager<NsMessage<T>> _remoteManager;
-        private readonly Dictionary<IIdentifier, IConnection<T>> _connectionMap;
         private IObserver<NsMessage<T>> _remoteSender;
         private bool _isOpen;
 
@@ -57,14 +55,12 @@ namespace Org.Apache.REEF.Network.NetworkService
             IIdentifier sourceId, 
             IIdentifier destId, 
             INameClient nameClient,
-            IRemoteManager<NsMessage<T>> remoteManager,
-            Dictionary<IIdentifier, IConnection<T>> connectionMap)
+            IRemoteManager<NsMessage<T>> remoteManager)
         {
             _sourceId = sourceId;
             _destId = destId;
             _nameClient = nameClient;
             _remoteManager = remoteManager;
-            _connectionMap = connectionMap;
             _isOpen = false;
             IsOpen = _isOpen;
         }
@@ -93,13 +89,11 @@ namespace Org.Apache.REEF.Network.NetworkService
             catch (SocketException)
             {
                 LOGGER.Log(Level.Error, "Network Service cannot open connection to " + destAddr);
-                _connectionMap.Remove(_destId);
                 throw;
             }
             catch (ObjectDisposedException)
             {
                 LOGGER.Log(Level.Error, "Network Service cannot open connection to " + destAddr);
-                _connectionMap.Remove(_destId);
                 throw;
             }
         }
@@ -123,13 +117,11 @@ namespace Org.Apache.REEF.Network.NetworkService
             catch (IOException e)
             {
                 LOGGER.Log(Level.Error, "Network Service cannot write message to {0}", _destId);
-                _connectionMap.Remove(_destId);
                 throw e;
             }
             catch (ObjectDisposedException e)
             {
                 LOGGER.Log(Level.Error, "Object Disposed, Network Service cannot write message to {0}", _destId);
-                _connectionMap.Remove(_destId);
                 throw e;
             }
         }
@@ -139,8 +131,10 @@ namespace Org.Apache.REEF.Network.NetworkService
         /// </summary>
         public void Dispose()
         {
-            _remoteSender.OnCompleted();
-            _connectionMap.Remove(_destId);
+            if (_remoteSender != null)
+            {
+                _remoteSender.OnCompleted();
+            }
         }
     }
 }

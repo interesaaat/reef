@@ -114,7 +114,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             }
 
             ProxyObserver remoteObserver;
-            if (!_cachedClients.TryGetValue(remoteEndpoint, out remoteObserver))
+            if (!_cachedClients.TryGetValue(remoteEndpoint, out remoteObserver) || remoteObserver.Disposed)
             {
                 remoteObserver = CreateRemoteObserver(remoteEndpoint);
                 _cachedClients[remoteEndpoint] = remoteObserver;
@@ -275,6 +275,8 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 _client = client;
             }
 
+            public bool Disposed { get; private set; }
+
             /// <summary>
             /// Send the message to the remote host
             /// </summary>
@@ -293,7 +295,12 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             /// </summary>
             public void Dispose()
             {
-                _client.Dispose();
+                if (!Disposed)
+                {
+                    _client.Dispose();
+
+                    Disposed = true;
+                }
             }
 
             public void OnError(Exception error)
@@ -303,6 +310,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
 
             public void OnCompleted()
             {
+                Dispose();
             }
         }
     }
