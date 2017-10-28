@@ -32,7 +32,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateAggregateSlaveTask(
+        public IterateAggregateSlaveTask([Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
@@ -59,12 +59,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
-                                ////if (rand.Next(100) < 5)
-                                ////{
-                                ////    Console.WriteLine("I die. Bye.");
+                                if (rand.Next(100) < 6)
+                                {
+                                    Console.WriteLine("I die. Bye.");
 
-                                ////    throw new Exception("Die. Before");
-                                ////}
+                                    throw new Exception("Die. Before");
+                                }
 
                                 ////System.Threading.Thread.Sleep(rand.Next(1000));
                                 Console.WriteLine("Before receive");
@@ -79,16 +79,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 ////    ////System.Threading.Thread.Sleep(rand.Next(100));
                                 ////}
 
-                                ////if (rand.Next(100) < 10)
-                                ////{
-                                ////    Console.WriteLine("I die. Bye.");
+                                if (rand.Next(100) < 6)
+                                {
+                                    Console.WriteLine("I die. Bye.");
 
-                                ////    throw new Exception("Die. Middle");
-                                ////}
+                                    throw new Exception("Die. Middle");
+                                }
 
                                 aggregator.Send(rec);
 
-                                if (rand.Next(100) < 12)
+                                if (rand.Next(100) < 6)
                                 {
                                     Console.WriteLine("I die. Bye.");
 

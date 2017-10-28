@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using System;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 using System.Threading;
 using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
@@ -78,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     throw new OperationCanceledException("Received cancellation request: stop receiving");
                 }
 
-                _commLayer.NextDataRequest(_taskId);
+                _commLayer.NextDataRequest(_taskId, -1);
                 if (retry++ > _retry)
                 {
                     throw new Exception(string.Format(
@@ -178,6 +177,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 foreach (var child in _children.Values)
                 {
+                    Console.WriteLine("Sending from operator");
+
                     _commLayer.Send(child, message);
                 }
             }

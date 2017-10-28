@@ -30,8 +30,6 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// </summary>
         /// <param name="operatorName">The name of the MPI operator</param>
         /// <param name="source">The message source</param>
-        /// <param name="destination">The message destination</param>
-        /// <param name="messageType">The type of the GC message</param>
         protected GroupCommunicationMessage(
             string subscriptionName,
             int operatorId)

@@ -31,6 +31,7 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Common.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -53,15 +54,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly CheckpointService _checkpointService;
 
         private bool _disposed;
+        private IDisposable _disposableObserver;
 
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>> _groupMessageObservers =
             new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>>();
 
         private readonly ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>> _driverMessageObservers =
              new ConcurrentDictionary<string, ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>>();
-
-        private readonly ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>> _registeredConnections = 
-            new ConcurrentDictionary<IIdentifier, IConnection<GroupCommunicationMessage>>();
 
         /// <summary>
         /// Creates a new GroupCommNetworkObserver.
@@ -89,7 +88,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             _disposed = false;
 
-            _networkService.RemoteManager.RegisterObserver(this);
+            _disposableObserver = _networkService.RemoteManager.RegisterObserver(this);
             _driverMessagesHandler.DriverMessageObservers = _driverMessageObservers;
         }
 
@@ -161,17 +160,29 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
+            var conn = _networkService.NewConnection(destId);
 
-            var conn = _registeredConnections.GetOrAdd(destId, _networkService.NewConnection(destId));
-
-            if (!conn.IsOpen)
+            try
             {
                 conn.Open();
+            }
+            catch (Exception)
+            {
+                throw new IllegalStateException("Unable to establish a connection to " + destId);
             }
 
             Console.WriteLine("Sending to node " + destination);
 
-            conn.Write(message);
+            try
+            {
+                conn.Write(message);
+            }
+            catch (Exception e)
+            {
+                Logger.Log(Level.Warning, "Unable to send message to " + destId + " " + e.Message);
+            }
+
+            Console.WriteLine("Message sent to node " + destination);
         }
 
         /// <summary>
@@ -180,6 +191,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="remoteMessage"></param>
         public void OnNext(IRemoteMessage<NsMessage<GroupCommunicationMessage>> remoteMessage)
         {
+            Console.WriteLine("Received message from {0}", remoteMessage.Message.SourceId);
             if (_disposed)
             {
                 Logger.Log(Level.Warning, "Received message after disposing: Ignoring");
@@ -199,6 +211,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     var returnMessage = checkpoint.ToMessage();
 
                     returnMessage.Payload = checkpoint;
+
+                    Console.WriteLine("Sending from checkpint request");
 
                     Send(gcMessageTaskSource, returnMessage);
                 }
@@ -239,9 +253,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.NextTokenRequest(taskId, iteration);
         }
 
-        internal void NextDataRequest(string taskId)
+        internal void NextDataRequest(string taskId, int iteration)
         {
-            _ringMessageSource.NextDataRequest(taskId);
+            _ringMessageSource.NextDataRequest(taskId, iteration);
         }
 
         public void IterationNumber(string taskId, int iteration)
@@ -280,23 +294,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             if (!_disposed)
             {
-                foreach (var conn in _registeredConnections.Values)
-                {
-                    if (conn != null && conn.IsOpen)
-                    {
-                        conn.Dispose();
-                    }
-                }
-
-                foreach (var observers in _groupMessageObservers.Values)
-                {
-                    foreach (var observer in observers.Values)
-                    {
-                        observer.OnCompleted();
-                    }
-                }
+                _groupMessageObservers.Clear();
 
                 _checkpointService.Dispose();
+
+                _disposableObserver.Dispose();
 
                 _disposed = true;
 

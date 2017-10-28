@@ -30,7 +30,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
         /// <summary>
         /// Operator and situation specific payload of the message
         /// </summary>
-        IDriverMessagePayload Message { get; }
+        DriverMessagePayload Message { get; }
 
         /// <summary>
         /// Utility method to serialize the message for communication

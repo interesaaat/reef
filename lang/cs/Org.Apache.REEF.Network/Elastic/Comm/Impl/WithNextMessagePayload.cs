@@ -24,12 +24,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    internal sealed class FailureMessagePayload : DriverMessagePayload
+    internal abstract class WithNextMessagePayload : DriverMessagePayload
     {
-        public FailureMessagePayload(string nextTaskId, int iteration, string subscriptionName, int operatorId)
+        public WithNextMessagePayload(string nextTaskId, string subscriptionName, int iteration, int operatorId)
             : base(subscriptionName, operatorId, iteration)
         {
-            MessageType = DriverMessageType.Failure;
             NextTaskId = nextTaskId;
         }
 
@@ -60,25 +59,6 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
 
             return buffer;
-        }
-
-        internal static DriverMessagePayload From(byte[] data, int offset = 0)
-        {
-            int length = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            string destination = ByteUtilities.ByteArraysToString(data, offset, length);
-            offset += length;
-
-            length = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
-            offset += length;
-
-            int operatorId = BitConverter.ToInt32(data, offset);
-            offset += sizeof(int);
-            int iteration = BitConverter.ToInt32(data, offset);
-
-            return new FailureMessagePayload(destination, iteration, subscription, operatorId);
         }
     }
 }

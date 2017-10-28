@@ -154,11 +154,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             Service.RemoveCheckpoint(_taskId, SubscriptionName, OperatorId);
         }
 
-        internal override void OnMessageFromDriver(IDriverMessagePayload message)
+        internal override void OnMessageFromDriver(DriverMessagePayload message)
         {
         }
 
-        internal override void OnFailureResponseMessageFromDriver(IDriverMessagePayload message)
+        internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload message)
         {
             Logger.Log(Level.Info, "Received failure recovery, going to resume computation from my checkpoint");
 

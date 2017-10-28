@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// <param name="message">The message</param>
         public ElasticDriverMessageImpl(
             string destinationTaskId,
-            IDriverMessagePayload message)
+            DriverMessagePayload message)
         {
             Destination = destinationTaskId;
             Message = message;
@@ -51,7 +51,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// <summary>
         /// Returns the Operator id.
         /// </summary>
-        public IDriverMessagePayload Message { get; private set; }
+        public DriverMessagePayload Message { get; private set; }
 
         public byte[] Serialize()
         {
@@ -77,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             DriverMessageType type = (DriverMessageType)BitConverter.ToUInt16(data, offset);
             offset += sizeof(ushort);
 
-            IDriverMessagePayload payload = null;
+            DriverMessagePayload payload = null;
 
             switch (type)
             {
@@ -89,6 +89,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
                     break;
                 case DriverMessageType.Ring:
                     payload = RingMessagePayload.From(data, offset);
+                    break;
+                case DriverMessageType.Resume:
+                    payload = ResumeMessagePayload.From(data, offset);
                     break;
                 default:
                     throw new IllegalStateException("Message type not recognized");

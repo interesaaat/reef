@@ -56,6 +56,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
+            if (checkpointLevel > 0 && (int)checkpointLevel % 2 == 0)
+            {
+                throw new ArgumentException("Checkpoint level for Aggregation Ring operator must be All or None");
+            }
+
             _next = new DefaultAggregationRing<T>(coordinatorTaskId, this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
         }

@@ -26,6 +26,7 @@ using System.Collections.Generic;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -69,6 +70,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
+            DrainGlobalEvents(ref returnMessages);
+
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
             switch (msgReceived)
@@ -79,7 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         {
                             Console.WriteLine("Task {0} is going to join the ring", message.TaskId);
                             var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                            var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId, iteration);
+                            var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId, iteration, ref returnMessages);
                             _failureMachine.AddDataPoints(addedDataPoints);
 
                             if (!_stop)
@@ -121,9 +124,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.NextDataRequest:
                     {
-                        LOGGER.Log(Level.Info, "Received next data request from node {0}", message.TaskId);
+                        var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
+                        LOGGER.Log(Level.Info, "Received next data request from node {0} for iteration {1}", message.TaskId, iteration);
 
-                        RingTopology.RetrieveMissedDataFromRing(message.TaskId, ref returnMessages);
+                        RingTopology.RetrieveMissedDataFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
                     }
                 default:
@@ -147,7 +151,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var exception = reconfigureEvent.FailedTask.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        reconfigureEvent.FailureResponse.AddRange(RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo));
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo).ToList();
+                        DrainGlobalEvents(ref msg);
+                        reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                     else
                     {
@@ -177,7 +183,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
                     if (exception.OperatorId == _id)
                     {
-                        rescheduleEvent.FailureResponse.AddRange(RingTopology.Reconfigure(rescheduleEvent.TaskId, exception.AdditionalInfo));
+                        var msg = RingTopology.Reconfigure(rescheduleEvent.TaskId, exception.AdditionalInfo).ToList();
+                        DrainGlobalEvents(ref msg);
+                        rescheduleEvent.FailureResponse.AddRange(msg);
                     }
                 }
             }
@@ -193,6 +201,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 _stop = true;
             }
+        }
+
+        private void DrainGlobalEvents(ref List<IElasticDriverMessage> messages)
+        {
+            ////lock (RingTopology.GlobalEvents)
+            ////{
+            ////    while (RingTopology.GlobalEvents.Count > 0)
+            ////    {
+            ////        IElasticDriverMessage msg;
+            ////        RingTopology.GlobalEvents.TryDequeue(out msg);
+            ////        messages.Add(msg);
+            ////    }
+            ////}
         }
     }
 }

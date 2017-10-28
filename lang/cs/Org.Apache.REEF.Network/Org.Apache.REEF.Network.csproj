@@ -79,9 +79,11 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Elastic\Comm\ControlMessageType.cs" />
-    <Compile Include="Elastic\Comm\IDriverMessagePayload.cs" />
+    <Compile Include="Elastic\Comm\Impl\DriverMessagePayload.cs" />
     <Compile Include="Elastic\Comm\IElasticDriverMessage.cs" />
     <Compile Include="Elastic\Comm\Impl\ControlMessage.cs" />
+    <Compile Include="Elastic\Comm\Impl\WithNextMessagePayload.cs" />
+    <Compile Include="Elastic\Comm\Impl\ResumeMessagePayload.cs" />
     <Compile Include="Elastic\Comm\Impl\TokenReceivedRequest.cs" />
     <Compile Include="Elastic\Driver\Impl\TaskSetManagerParameters.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />

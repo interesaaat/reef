@@ -20,14 +20,14 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<IDriverMessagePayload>
+    internal abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<DriverMessagePayload>
     {
         internal DriverAwareOperatorTopology(string taskId, int rootId, string subscription, int operatorId)
             : base(taskId, rootId, subscription, operatorId)
         {
         }
 
-        public void OnNext(IDriverMessagePayload message)
+        public void OnNext(DriverMessagePayload message)
         {
             switch (message.MessageType)
             {
@@ -48,8 +48,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
         }
 
-        internal abstract void OnMessageFromDriver(IDriverMessagePayload value);
+        internal abstract void OnMessageFromDriver(DriverMessagePayload value);
 
-        internal abstract void OnFailureResponseMessageFromDriver(IDriverMessagePayload value);
+        internal abstract void OnFailureResponseMessageFromDriver(DriverMessagePayload value);
     }
 }

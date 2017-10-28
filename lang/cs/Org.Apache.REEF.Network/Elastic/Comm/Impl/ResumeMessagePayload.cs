@@ -24,42 +24,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// Messages sent by the driver to operators part of an aggregation ring. 
     /// This message tells the destination node who is the next step in the ring.
     /// </summary>
-    internal sealed class FailureMessagePayload : DriverMessagePayload
+    internal sealed class ResumeMessagePayload : WithNextMessagePayload
     {
-        public FailureMessagePayload(string nextTaskId, int iteration, string subscriptionName, int operatorId)
-            : base(subscriptionName, operatorId, iteration)
+        public ResumeMessagePayload(string nextTaskId, int iteration, string subscriptionName, int operatorId)
+            : base(nextTaskId, subscriptionName, operatorId, iteration)
         {
-            MessageType = DriverMessageType.Failure;
-            NextTaskId = nextTaskId;
-        }
-
-        internal string NextTaskId { get; private set; }
-
-        internal override byte[] Serialize()
-        {
-            byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
-            int offset = 0;
-
-            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscriptionBytes.Length + sizeof(int) + sizeof(int)];
-
-            Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-
-            Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
-            offset += nextBytes.Length;
-
-            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-
-            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
-            offset += subscriptionBytes.Length;
-
-            Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
-
-            return buffer;
+            MessageType = DriverMessageType.Resume;
         }
 
         internal static DriverMessagePayload From(byte[] data, int offset = 0)
@@ -78,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             offset += sizeof(int);
             int iteration = BitConverter.ToInt32(data, offset);
 
-            return new FailureMessagePayload(destination, iteration, subscription, operatorId);
+            return new ResumeMessagePayload(destination, iteration, subscription, operatorId);
         }
     }
 }

@@ -190,7 +190,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SubmitTasks()
         {
-            ////System.Threading.Thread.Sleep(30000);
+            ////System.Threading.Thread.Sleep(10000);
             for (int i = 0; i < _numTasks; i++)
             {
                 SubmitTask(i);
@@ -579,17 +579,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                             if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < _parameters.Retry)
                             {
-                                LOGGER.Log(Level.Warning, msg + "\nRetry");
+                                LOGGER.Log(Level.Warning, msg + " Retry");
                                 System.Threading.Tasks.Task.Run(() => SendToTasks(new List<IElasticDriverMessage>() { returnMessage }, retry + 1));
                             }
                             else if (retry >= _parameters.Retry)
                             {
-                                LOGGER.Log(Level.Warning, msg + "\nAborting");
+                                LOGGER.Log(Level.Warning, msg + " Aborting");
                                 OnFail();
                             }
                             else
                             {
-                                LOGGER.Log(Level.Warning, msg + "\nIgnoring");
+                                LOGGER.Log(Level.Warning, msg + " Ignoring");
                             }
 
                             ////else if (_taskInfos[destination].ActiveContext != null)
