@@ -152,7 +152,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 catch (Exception e)
                 {
-                    throw new IllegalStateException("Unable to establish a connection to " + destId + " " + e.Message);
+                    Logger.Log(Level.Warning, "Unable to establish a connection to " + destId + " " + e.Message);
                 }
 
                 Console.WriteLine("Sending to node " + destination);
@@ -163,7 +163,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 catch (Exception e)
                 {
-                    throw new IllegalStateException("Unable to send message to " + destId + " " + e.Message);
+                    Logger.Log(Level.Warning, "Unable to send message to " + destId + " " + e.Message);
                 }
 
                 Console.WriteLine("Message sent to node " + destination);

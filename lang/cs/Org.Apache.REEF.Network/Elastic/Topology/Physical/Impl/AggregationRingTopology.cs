@@ -107,18 +107,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Failed to receive message in the ring after {0} try", _retry));
                     }
                 }
-                ////else if (_taskId != _rootTaskId)
-                ////{
-                ////    if (retry++ > _retry)
-                ////    {
-                ////        throw new Exception(string.Format(
-                ////            "Failed to receive message in the ring after {0} try", _retry));
-                ////    }
-
-                ////    Logger.Log(Level.Info, "Waiting to join the ring");
-
-                ////    _commLayer.JoinTheRing(_taskId, -1);
-                ////}
             }
 
             return message;
@@ -228,11 +216,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             var data = message as RingMessagePayload;
-            string value;
-            if (_next.TryRemove(data.Iteration, out value))
-            {
-                Console.WriteLine("I was supposed to send to {0} in iteration {1}", data.Iteration, value);
-            }
+            ////string value;
+            ////if (_next.TryRemove(data.Iteration, out value))
+            ////{
+            ////    Console.WriteLine("I was supposed to send to {0} in iteration {1}", data.Iteration, value);
+            ////}
+            _next.Clear();
             _next.TryAdd(data.Iteration, data.NextTaskId);
 
             Console.WriteLine("Going to send message to {0} in iteration {1}", data.NextTaskId, data.Iteration);
@@ -325,6 +314,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                         ICheckpointState checkpoint;
 
+                        if (_next.TryGetValue(destMessage.Iteration, out string dest) && dest == destMessage.NextTaskId)
+                        {
+                            Logger.Log(Level.Info, "I am sending to " + destMessage.NextTaskId + " for iteration " + destMessage.Iteration + ": ignoring");
+                            return;
+                        }
+
                         if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                         {
                             var splits = Operator.FailureInfo.Split(':');
@@ -348,6 +343,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             
                             return;
                         }
+
+                        ////if (_next.IsEmpty)
+                        ////{
+                        ////    _next.TryAdd(destMessage.Iteration, destMessage.NextTaskId);
+                        ////}
 
                         foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                         {

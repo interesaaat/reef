@@ -68,7 +68,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private readonly object _lock;
 
         private readonly Stopwatch _timer;
-        private long _avg;
 
         public RingTopology(int rootId)
         {
@@ -93,7 +92,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             GlobalEvents = new ConcurrentQueue<IElasticDriverMessage>();
 
             _timer = Stopwatch.StartNew();
-            _avg = 0;
             _lock = new object();
         }
 
@@ -360,8 +358,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _nextWaitingList = new HashSet<string>();
                     _tasksInRing = new HashSet<string> { { _rootTaskId } };
                     _ringNodes[_iteration].Add(_rootTaskId, _ringHead);
-                    _avg += _timer.ElapsedMilliseconds;
-                    ResumeRing(_iteration + 1, (int)(_avg / _iteration));
 
                     _iteration++;
                     _ringPrint = new StringBuilder(_rootTaskId + " ");
@@ -377,8 +373,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             lock (_lock)
             {
-                RingNode node;
-                if (!_ringNodes[iteration].TryGetValue(taskId, out node))
+                if (!_ringNodes.ContainsKey(iteration))
+                {
+                    LOGGER.Log(Level.Warning, string.Format("Iteration {0} not found", iteration));
+                }
+
+                if (!_ringNodes[iteration].TryGetValue(taskId, out RingNode node))
                 {
                     var msg = "Node not found: ";
                     if (_currentWaitingList.Count > 0 || _failedNodesWaiting.Count > 0)
@@ -391,6 +391,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     {
                         LOGGER.Log(Level.Warning, msg + " waiting");
                     }
+
+                    return;
                 }
 
                 if (node.Next != null)
