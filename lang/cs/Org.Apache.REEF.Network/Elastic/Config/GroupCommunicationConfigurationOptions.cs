@@ -51,6 +51,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         public class Retry : Name<int>
         {
         }
+
         [NamedParameter("Timeout for disposing operators when messages are still in queue", defaultValue: "10000")]
         public class DisposeTimeout : Name<int>
         {

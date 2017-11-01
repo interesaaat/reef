@@ -144,7 +144,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                     Logger.Log(Level.Warning, msg);
                     throw;
                 }
-                Logger.Log(Level.Info, msg);
+                Logger.Log(Level.Verbose, msg);
             }
         }
     }

@@ -111,7 +111,6 @@ namespace Org.Apache.REEF.Network.NetworkService
 
             try
             {
-                Console.WriteLine("Sending to " + _nameClient.CacheLookup(_destId.ToString()).Port);
                 _remoteSender.OnNext(new NsMessage<T>(_sourceId, _destId, message));
             }
             catch (IOException e)

@@ -72,6 +72,41 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
+        [NamedParameter("Timeout for sending or receiving messages", defaultValue: "100")]
+        public class Timeout : Name<int>
+        {
+        }
+
+        [NamedParameter("Number of retry to send a message", defaultValue: "3")]
+        public class Retry : Name<int>
+        {
+        }
+
+        [NamedParameter("Number of failures before a task abort the task set", defaultValue: "10")]
+        public class NumTaskFailures : Name<int>
+        {
+        }
+
+        [NamedParameter(Documentation = "Rack name used when a new evaluator is requested after a failure", DefaultValue = "WonderlandRack")]
+        public class NewEvaluatorRackName : Name<string>
+        {
+        }
+
+        [NamedParameter(Documentation = "Batch id used when a new evaluator is requested after a failure", DefaultValue = "IterateAggregateEvaluator")]
+        public class NewEvaluatorBatchId : Name<string>
+        {
+        }
+
+        [NamedParameter(Documentation = "Number of cores used when a new evaluator is requested after a failure", DefaultValue = "1")]
+        public class NewEvaluatorNumCores : Name<int>
+        {
+        }
+
+        [NamedParameter(Documentation = "Memory size used when a new evaluator is requested after a failure", DefaultValue = "512")]
+        public class NewEvaluatorMemorySize : Name<int>
+        {
+        }
+
         [NamedParameter("Number of checkpoints to store per operator", defaultValue: "1")]
         public class NumCheckpoints : Name<int>
         {

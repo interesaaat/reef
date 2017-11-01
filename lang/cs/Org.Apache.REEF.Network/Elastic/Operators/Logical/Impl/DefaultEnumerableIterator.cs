@@ -115,9 +115,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
-            var exception = task.AsError() as OperatorException;
+            var failedOperatorId = _id;
 
-            if (exception.OperatorId >= _id)
+            if (task.AsError() is OperatorException)
+            {
+                var opException = task.AsError() as OperatorException;
+                failedOperatorId = opException.OperatorId;
+            }
+
+            if (failedOperatorId >= _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
                 var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
@@ -146,7 +152,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     0.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-                rescheduleEvent.TaskConfigurations.Add(checkpointConf);
+                if (!rescheduleEvent.RescheduleTaskConfigurations.TryGetValue(Subscription.SubscriptionName, out IList<IConfiguration> confs))
+                {
+                    confs = new List<IConfiguration>();
+                    rescheduleEvent.RescheduleTaskConfigurations.Add(Subscription.SubscriptionName, confs);
+                }
+                confs.Add(checkpointConf);             
             }
         }
 

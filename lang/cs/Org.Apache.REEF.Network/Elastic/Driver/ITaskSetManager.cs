@@ -62,7 +62,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="context">The context the task will run on</param>
         /// <returns>A new task id</returns>
-        string GetNextTaskId(IActiveContext context);
+        string GetTaskId(IActiveContext context);
 
         /// <summary>
         /// Finalizes the Task Set.
@@ -80,13 +80,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext context);
 
         /// <summary>
-        /// Add a task to the Task Set.
-        /// The Task Set must have called Build() before adding tasks.
+        /// TODO
         /// </summary>
-        /// <param name="taskId">The id of the task to add</param>
-        /// <param name="taskConfig">The current configuration of the task</param>
-        /// <param name="context">The context the task will run on</param>
-        void AddTask(string taskId, IConfiguration taskConfig, IActiveContext context);
+        void OnNewActiveContext(IActiveContext activeContext);
 
         /// <summary>
         /// Actions to execute when a notification that a task is running is received.

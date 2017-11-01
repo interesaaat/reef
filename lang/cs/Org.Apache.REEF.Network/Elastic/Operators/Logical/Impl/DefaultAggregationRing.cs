@@ -70,8 +70,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
-            DrainGlobalEvents(ref returnMessages);
-
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
 
             switch (msgReceived)
@@ -80,9 +78,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
-                            Console.WriteLine("Task {0} is going to join the ring", message.TaskId);
                             var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                            var addedDataPoints = RingTopology.AddTaskIdToRing(message.TaskId, iteration, ref returnMessages);
+                            var addedDataPoints = RingTopology.AddTaskToRing(message.TaskId, iteration, ref returnMessages);
                             _failureMachine.AddDataPoints(addedDataPoints);
 
                             if (!_stop)
@@ -152,7 +149,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     if (exception.OperatorId == _id)
                     {
                         var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo).ToList();
-                        DrainGlobalEvents(ref msg);
                         reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                     else
@@ -195,7 +191,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 }
 
                 var msg = RingTopology.Reconfigure(rescheduleEvent.TaskId, additionalInfo).ToList();
-                DrainGlobalEvents(ref msg);
                 rescheduleEvent.FailureResponse.AddRange(msg);
             }
             else
@@ -210,19 +205,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 _stop = true;
             }
-        }
-
-        private void DrainGlobalEvents(ref List<IElasticDriverMessage> messages)
-        {
-            ////lock (RingTopology.GlobalEvents)
-            ////{
-            ////    while (RingTopology.GlobalEvents.Count > 0)
-            ////    {
-            ////        IElasticDriverMessage msg;
-            ////        RingTopology.GlobalEvents.TryDequeue(out msg);
-            ////        messages.Add(msg);
-            ////    }
-            ////}
         }
     }
 }

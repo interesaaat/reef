@@ -15,20 +15,48 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System.Collections.Generic;
+
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     public enum TaskStatus
     {
         Init = 1,
 
-        Submitted = 2,
+        Queued = 2,
 
-        Recovering = 3,
+        Submitted = 3,
 
-        Running = 4,
+        Recovering = 4,
 
-        Failed = 5,
+        Running = 5,
 
-        Completed = 6
+        Failed = 6,
+
+        Completed = 7
+    }
+
+    public static class TaskStatusUtils
+    {
+        private static List<TaskStatus> recoverable = new List<TaskStatus>() { TaskStatus.Failed, TaskStatus.Queued };
+
+        private static List<TaskStatus> notRunnable = new List<TaskStatus>() { TaskStatus.Failed, TaskStatus.Completed };
+
+        internal static bool IsRecoverable(TaskStatus status)
+        {
+            return recoverable.Contains(status);
+        }
+
+        internal static bool IsRunnable(TaskStatus status)
+        {
+            return !notRunnable.Contains(status);
+        }
+    }
+
+    public enum EvaluatorStatus
+    {
+        Running = 1,
+
+        Failed = 2
     }
 }

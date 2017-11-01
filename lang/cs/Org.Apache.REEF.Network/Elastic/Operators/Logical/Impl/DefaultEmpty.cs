@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
@@ -59,6 +60,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
+        }
+
+        public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
+        {
+            if (_next != null)
+            {
+                _next.OnTaskFailure(task, ref failureEvents);
+            }
         }
     }
 }

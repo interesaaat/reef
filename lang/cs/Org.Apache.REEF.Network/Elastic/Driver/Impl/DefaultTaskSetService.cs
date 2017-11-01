@@ -33,10 +33,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Driver.Context;
-using Org.Apache.REEF.Tang.Implementations.Configuration;
-using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl

@@ -130,8 +130,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                     _networkService.Unregister();
 
-                    Console.WriteLine("Elastic Communication Service disposed.");
-
                     _disposed = true;
                 }
             }

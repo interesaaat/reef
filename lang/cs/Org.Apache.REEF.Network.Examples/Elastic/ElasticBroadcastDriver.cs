@@ -88,6 +88,20 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
+            Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
+                    .Build())
+                .Build();
+
+            Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
+                    .Build())
+                .Build();
+
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
             ElasticOperator pipeline = subscription.RootOperator;
@@ -100,7 +114,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _subscription = subscription.Build();
 
             // Create the task manager
-            _taskManager = new DefaultTaskSetManager(_numEvaluators);
+            _taskManager = new DefaultTaskSetManager(_numEvaluators, _evaluatorRequestor, masterTaskConfiguration, slaveTaskConfiguration);
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);
@@ -136,31 +150,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IActiveContext activeContext)
         {
-            bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
-            string taskId = _taskManager.GetNextTaskId(activeContext);
-
-            IConfiguration partialTaskConf;
-
-            if (isMaster)
-            {
-                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                    TaskConfiguration.ConfigurationModule
-                        .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
-                        .Build())
-                    .Build();
-            }
-            else
-            {
-                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                    TaskConfiguration.ConfigurationModule
-                        .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
-                        .Build())
-                    .Build();
-            }
-
-            _taskManager.AddTask(taskId, partialTaskConf, activeContext);
+            _taskManager.OnNewActiveContext(activeContext);
         }
 
         public void OnNext(IRunningTask value)

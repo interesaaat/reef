@@ -155,8 +155,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Logger.Log(Level.Warning, "Unable to establish a connection to " + destId + " " + e.Message);
                 }
 
-                Console.WriteLine("Sending to node " + destination);
-
                 try
                 {
                     conn.Write(message);
@@ -165,8 +163,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 {
                     Logger.Log(Level.Warning, "Unable to send message to " + destId + " " + e.Message);
                 }
-
-                Console.WriteLine("Message sent to node " + destination);
             }
         }
 
@@ -176,7 +172,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="remoteMessage"></param>
         public void OnNext(IRemoteMessage<NsMessage<GroupCommunicationMessage>> remoteMessage)
         {
-            Console.WriteLine("Received message from {0}", remoteMessage.Message.SourceId);
             if (_disposed)
             {
                 Logger.Log(Level.Warning, "Received message after disposing: Ignoring");
@@ -196,8 +191,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     var returnMessage = checkpoint.ToMessage();
 
                     returnMessage.Payload = checkpoint;
-
-                    Console.WriteLine("Sending from checkpoint request");
 
                     Send(gcMessageTaskSource, returnMessage);
                 }

@@ -102,8 +102,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task
                         Workflow.Dispose();
                     }
 
-                    Console.WriteLine("Subscription {0} disposed.", SubscriptionName);
-
                     _disposed = true;
                 }
             }  

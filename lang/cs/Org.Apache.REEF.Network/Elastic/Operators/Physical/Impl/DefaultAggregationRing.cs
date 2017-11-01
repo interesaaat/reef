@@ -149,7 +149,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
-                _topology.WaitCompletionBeforeDisposing();
+                _topology.WaitCompletionBeforeDisposing(CancellationSource);
             }
         }
 

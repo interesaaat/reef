@@ -29,6 +29,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     {
         Optional<IFailedTask> FailedTask { get; }
 
-        IList<IConfiguration> TaskConfigurations { get; }
+        Dictionary<string, IList<IConfiguration>> RescheduleTaskConfigurations { get; }
     }
 }

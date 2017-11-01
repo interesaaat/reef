@@ -161,11 +161,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration, false);
         }
 
-        public override void WaitCompletionBeforeDisposing()
+        public void WaitCompletionBeforeDisposing(CancellationTokenSource cancellationSource)
         {
             if (_taskId != _rootTaskId)
             {
-                while (_commLayer.Lookup(_rootTaskId) == true)
+                while (_commLayer.Lookup(_rootTaskId) == true && !cancellationSource.IsCancellationRequested)
                 {
                     Thread.Sleep(100);
                 }
@@ -193,8 +193,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             }
 
-            Console.WriteLine("Received from {0}", message.SourceId);
-
             foreach (var payload in message.Data)
             {
                 _messageQueue.Add(payload);
@@ -216,15 +214,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             var data = message as RingMessagePayload;
-            ////string value;
-            ////if (_next.TryRemove(data.Iteration, out value))
-            ////{
-            ////    Console.WriteLine("I was supposed to send to {0} in iteration {1}", data.Iteration, value);
-            ////}
-            _next.Clear();
-            _next.TryAdd(data.Iteration, data.NextTaskId);
 
-            Console.WriteLine("Going to send message to {0} in iteration {1}", data.NextTaskId, data.Iteration);
+            if (_next.Count > 0)
+            {
+                var tmp = _next.Keys.OrderBy(x => x).First();
+
+                if (tmp < data.Iteration - 1)
+                {
+                    _next.TryRemove(tmp, out string removed);
+                }
+            }
+
+            _next.AddOrUpdate(data.Iteration, data.NextTaskId, (k, v) => data.NextTaskId);
 
             _sendmre.Set();
         }
@@ -237,9 +238,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     {
                         var destMessage = message as TokenReceivedRequest;
                         var str = (int)PositionTracker.InReceive + ":" + destMessage.Iteration;
-
-                        Console.WriteLine(str);
-                        Console.WriteLine(Operator.FailureInfo);
 
                         var splits = Operator.FailureInfo.Split(':');
                         bool result = false;
@@ -298,8 +296,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                             {
-                                Console.WriteLine("Sending from failure recovery");
-
                                 _commLayer.Send(destMessage.NextTaskId, data);
                             }
                         }
@@ -340,22 +336,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             {
                                 Logger.Log(Level.Warning, "Resume not available: ignoring");
                             }
-                            
                             return;
                         }
 
-                        ////if (_next.IsEmpty)
-                        ////{
-                        ////    _next.TryAdd(destMessage.Iteration, destMessage.NextTaskId);
-                        ////}
-
                         foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                         {
-                            Console.WriteLine("Sending from resume");
 
                             _commLayer.Send(destMessage.NextTaskId, data);
                         }
-
                         break;
                     }
             }
@@ -375,7 +363,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             GroupCommunicationMessage message;
             string nextNode;
 
-            Console.WriteLine("Sendqueue size is " + _sendQueue.Count());
             if (_sendQueue.TryPeek(out message))
             {
                 var dm = message as DataMessage;
@@ -405,8 +392,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 _sendQueue.TryDequeue(out message);
                 _next.TryRemove(dm.Iteration, out string tmp);
-
-                Console.WriteLine("Sending to " + nextNode);
 
                 _commLayer.Send(nextNode, message);
             }

@@ -24,15 +24,35 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     {
         [Inject]
         public TaskSetManagerParameters(
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry)
+            [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.Retry))] int retry,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumTaskFailures))] int numFailures,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorRackName))] string rackName,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorBatchId))] string batchId,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorNumCores))] int numCores,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorMemorySize))] int memorySize)
         {
             Timeout = timeout;
             Retry = retry;
+            NumTaskFailures = numFailures;
+            NewEvaluatorRackName = rackName;
+            NewEvaluatorBatchId = batchId;
+            NewEvaluatorNumCores = numCores;
+            NewEvaluatorMemorySize = memorySize;
         }
 
         internal int Timeout { get; private set; }
 
         internal int Retry { get; private set; }
+
+        internal int NumTaskFailures { get; private set; }
+
+        internal string NewEvaluatorRackName { get; private set; }
+
+        internal string NewEvaluatorBatchId { get; private set; }
+
+        internal int NewEvaluatorNumCores { get; private set; }
+
+        internal int NewEvaluatorMemorySize { get; private set; }
     }
 }

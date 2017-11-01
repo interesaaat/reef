@@ -27,7 +27,6 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
 using System;
-using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -85,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
-            var failedOperatorId = -1;
+            var failedOperatorId = _id;
 
             if (task.AsError() is OperatorException)
             {
@@ -115,13 +114,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         failureEvents.Add(new FailEvent(task.Id));
                         break;
                     default:
-                        throw new IllegalStateException("Failure state not recognized");
+                        LOGGER.Log(Level.Info, "Failure from {0} requires no action", task.Id);
+                        break;
                 }
 
                 LogOperatorState();
             }
-
-            Console.WriteLine("Failure machine is in {0}", _failureMachine.State.FailureState);
 
             if (PropagateFailureDownstream() && _next != null)
             {

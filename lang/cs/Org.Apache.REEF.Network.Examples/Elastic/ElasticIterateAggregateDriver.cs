@@ -100,6 +100,27 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableModel<int>>.Class)
                 .Build();
 
+            Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateMasterTask>.Class)
+                    .Build())
+                .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
+                    GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
+                    _numEvaluators.ToString(CultureInfo.InvariantCulture))
+                .Build();
+
+            Func<string, IConfiguration> slaveTaskConfiguration = taskId => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateSlaveTask>.Class)
+                    .Build())
+                .Build();
+
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
             ElasticOperator pipeline = subscription.RootOperator;
@@ -115,7 +136,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _subscription = subscription.Build();
 
             // Create the task manager
-            _taskManager = new DefaultTaskSetManager(_numEvaluators);
+            _taskManager = new DefaultTaskSetManager(_numEvaluators, _evaluatorRequestor, masterTaskConfiguration, slaveTaskConfiguration);
 
             // Register the subscription to the task manager
             _taskManager.AddTaskSetSubscription(_subscription);
@@ -131,7 +152,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("IterateBroadcastEvaluator")
+                .SetEvaluatorBatchId("IterateAggregateEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
@@ -153,38 +174,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IActiveContext activeContext)
         {
-            bool isMaster = _taskManager.IsMasterTaskContext(activeContext).Any();
-            string taskId = _taskManager.GetNextTaskId(activeContext);
-
-            IConfiguration partialTaskConf;
-
-            if (isMaster)
-            {
-                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                    TaskConfiguration.ConfigurationModule
-                        .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<IterateAggregateMasterTask>.Class)
-                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateMasterTask>.Class)
-                        .Build())
-                    .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
-                        GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
-                        _numEvaluators.ToString(CultureInfo.InvariantCulture))
-                    .Build();
-            }
-            else
-            {
-                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                    TaskConfiguration.ConfigurationModule
-                        .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<IterateAggregateSlaveTask>.Class)
-                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnClose, GenericType<IterateAggregateSlaveTask>.Class)
-                        .Build())
-                    .Build();
-            }
-
-            _taskManager.AddTask(taskId, partialTaskConf, activeContext);
+            _taskManager.OnNewActiveContext(activeContext);
         }
 
         public void OnNext(IRunningTask value)
@@ -198,6 +188,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             if (_taskManager.Done())
             {
+                LOGGER.Log(Level.Info, "TaskSet completed.");
                 _taskManager.Dispose();
             }
         }

@@ -20,28 +20,35 @@ using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
 using System;
+using Org.Apache.REEF.Tang.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     /// <summary>
-    /// Wraps all the info required to proper manager a task life cicle.
+    /// Wraps all the info required to proper manager a task life cycle.
     /// </summary>
     internal sealed class TaskInfo : IDisposable
     {
-        internal TaskInfo(IConfiguration config, IActiveContext context, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
+        internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
         {
             TaskConfiguration = config;
             ActiveContext = context;
+            EvaluatorId = evaluatorId;
             Subscriptions = subscriptions;
             NumRetry = 0;
             TaskStatus = status;
+            RescheduleConfigurations = new Dictionary<string, IList<IConfiguration>>();
         }
 
         internal IConfiguration TaskConfiguration { get; private set; }
 
         internal IActiveContext ActiveContext { get; private set; }
 
+        internal string EvaluatorId { get; private set; }
+
         internal IList<IElasticTaskSetSubscription> Subscriptions { get; private set; }
+
+        internal Dictionary<string, IList<IConfiguration>> RescheduleConfigurations { get; set; }
 
         internal IRunningTask TaskRunner { get; set; }
 
@@ -50,6 +57,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         internal int NumRetry { get; set; }
 
         internal bool IsDisposed { get; private set; }
+
+        internal void UpdateRuntime(IActiveContext newActiveContext, string evaluatorId)
+        {
+            if (ActiveContext != null)
+            {
+                throw new IllegalStateException("Updating Task with not null active context");
+            }
+
+            ActiveContext = newActiveContext;
+            EvaluatorId = evaluatorId;
+        }
+
+        internal void DropRuntime()
+        {
+            ActiveContext = null;
+            EvaluatorId = string.Empty;
+        }
 
         public void Dispose()
         {

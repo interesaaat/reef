@@ -114,6 +114,36 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 
+            Func<string, IConfiguration> masterServerTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
+                    .Build())
+                .BindNamedParameter<ElasticServiceConfigurationOptions.NumServers, int>(
+                    GenericType<ElasticServiceConfigurationOptions.NumServers>.Class,
+                    3.ToString(CultureInfo.InvariantCulture))
+                .BindNamedParameter<ElasticServiceConfigurationOptions.NumWorkers, int>(
+                    GenericType<ElasticServiceConfigurationOptions.NumWorkers>.Class,
+                    6.ToString(CultureInfo.InvariantCulture))
+                .Build();
+
+            Func<string, IConfiguration> slaveServerTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<HelloServerTask>.Class)
+                    .Build())
+                .BindNamedParameter<ElasticServiceConfigurationOptions.NumWorkers, int>(
+                    GenericType<ElasticServiceConfigurationOptions.NumWorkers>.Class,
+                    6.ToString(CultureInfo.InvariantCulture))
+                .Build();
+
+            Func<string, IConfiguration> workerTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
+                    .Build())
+                .Build();
+
             // Subscriptions
             IElasticTaskSetSubscription subscription = _service.NewTaskSetSubscription("servers", 3);
 
@@ -131,10 +161,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None)
+                        CheckpointLevel.None)
                     .Reduce(1, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None,
+                        CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
@@ -146,10 +176,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None)
+                        CheckpointLevel.None)
                      .Reduce(2, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None,
+                        CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
@@ -161,17 +191,17 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None)
+                        CheckpointLevel.None)
                     .Reduce(3, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None,
+                        CheckpointLevel.None,
                         reduceFunctionConfig)
                     .Build();
 
             _serverC = subscription.Build();
 
             // Create the servers task manager
-            _serversTaskManager = new DefaultTaskSetManager(3);
+            _serversTaskManager = new DefaultTaskSetManager(3, _evaluatorRequestor, masterServerTaskConfiguration, slaveServerTaskConfiguration);
 
             // Register the subscriptions to the server task manager
             _serversTaskManager.AddTaskSetSubscription(_serversSubscription);
@@ -180,7 +210,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serversTaskManager.AddTaskSetSubscription(_serverC);
 
             // Create the workers task manager
-            _workersTaskManager = new DefaultTaskSetManager(6);
+            _workersTaskManager = new DefaultTaskSetManager(6, _evaluatorRequestor, workerTaskConfiguration);
 
             // Register the subscriptions to the workers task manager
             _workersTaskManager.AddTaskSetSubscription(_serverA);
@@ -232,58 +262,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IActiveContext activeContext)
         {
-            string taskId;
-            IConfiguration partialTaskConf;
-
             bool isServerContext = _serversTaskManager.SubscriptionsId == _service.GetContextSubscriptions(activeContext);
 
             if (isServerContext)
             {
-                taskId = _serversTaskManager.GetNextTaskId(activeContext);
-                var servers = _serversTaskManager.IsMasterTaskContext(activeContext);
-
-                if (servers.Any(subs => subs.SubscriptionName == "servers"))
-                {
-                    partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                       TaskConfiguration.ConfigurationModule
-                           .Set(TaskConfiguration.Identifier, taskId)
-                           .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
-                           .Build())
-                       .BindNamedParameter<ElasticServiceConfigurationOptions.NumServers, int>(
-                           GenericType<ElasticServiceConfigurationOptions.NumServers>.Class,
-                           3.ToString(CultureInfo.InvariantCulture))
-                       .BindNamedParameter<ElasticServiceConfigurationOptions.NumWorkers, int>(
-                           GenericType<ElasticServiceConfigurationOptions.NumWorkers>.Class,
-                           6.ToString(CultureInfo.InvariantCulture))
-                       .Build();
-                }
-                else
-                {
-                    partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                      TaskConfiguration.ConfigurationModule
-                          .Set(TaskConfiguration.Identifier, taskId)
-                          .Set(TaskConfiguration.Task, GenericType<HelloServerTask>.Class)
-                          .Build())
-                      .BindNamedParameter<ElasticServiceConfigurationOptions.NumWorkers, int>(
-                           GenericType<ElasticServiceConfigurationOptions.NumWorkers>.Class,
-                           6.ToString(CultureInfo.InvariantCulture))
-                      .Build();
-                }
-
-                _serversTaskManager.AddTask(taskId, partialTaskConf, activeContext);
+                _serversTaskManager.OnNewActiveContext(activeContext);
             }
             else
             {
-                taskId = _workersTaskManager.GetNextTaskId(activeContext);
-
-                partialTaskConf = TangFactory.GetTang().NewConfigurationBuilder(
-                    TaskConfiguration.ConfigurationModule
-                        .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
-                        .Build())
-                    .Build();
-
-                _workersTaskManager.AddTask(taskId, partialTaskConf, activeContext);
+                _workersTaskManager.OnNewActiveContext(activeContext);
             }
         }
 

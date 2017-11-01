@@ -31,7 +31,6 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Collections.Concurrent;
-using System.Threading.Tasks;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -48,18 +47,27 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _contextsAdded;
         private int _tasksAdded;
         private int _tasksRunning;
+
         private readonly int _numTasks;
+        private readonly IEvaluatorRequestor _evaluatorRequestor;
+        private readonly Func<string, IConfiguration> _masterTaskConfiguration;
+        private readonly Func<string, IConfiguration> _slaveTaskConfiguration;
 
         // Task info 0-indexed
         private readonly List<TaskInfo> _taskInfos;
-        private readonly ConcurrentDictionary<string, IAllocatedEvaluator> _evaluators;
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
+        private readonly ConcurrentQueue<int> _queuedTasks;
         private IFailureState _failureStatus;
 
-        private readonly object _taskLock;
+        private readonly object _infosLock;
         private readonly object _statusLock;
 
-        public DefaultTaskSetManager(int numTasks, params IConfiguration[] confs)
+        public DefaultTaskSetManager(
+            int numTasks,
+            IEvaluatorRequestor evaluatorRequestor,
+            Func<string, IConfiguration> masterTaskConfiguration, 
+            Func<string, IConfiguration> slaveTaskConfiguration = null, 
+            params IConfiguration[] confs)
         {
             _finalized = false;
             _disposed = false;
@@ -67,14 +75,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _contextsAdded = 0;
             _tasksAdded = 0;
             _tasksRunning = 0;
+
             _numTasks = numTasks;
+            _evaluatorRequestor = evaluatorRequestor;
+            _masterTaskConfiguration = masterTaskConfiguration;
+            _slaveTaskConfiguration = slaveTaskConfiguration ?? masterTaskConfiguration;
 
             _taskInfos = new List<TaskInfo>(numTasks);
-            _evaluators = new ConcurrentDictionary<string, IAllocatedEvaluator>();
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
+            _queuedTasks = new ConcurrentQueue<int>();
             _failureStatus = new DefaultFailureState();
 
-            _taskLock = new object();
+            _infosLock = new object();
             _statusLock = new object();
 
             for (int i = 0; i < numTasks; i++)
@@ -104,21 +116,21 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public string GetNextTaskContextId(IAllocatedEvaluator evaluator)
         {
+            if (_queuedTasks.TryDequeue(out int identifier))
+            {
+                return Utils.BuildContextId(SubscriptionsId, identifier);
+            }
+
             if (_contextsAdded > _numTasks)
             {
                 throw new IllegalStateException("Trying to schedule too many contexts");
-            }
-
-            if (!_evaluators.ContainsKey(evaluator.Id))
-            {
-                _evaluators.TryAdd(evaluator.Id, evaluator);
             }
 
             int id = Interlocked.Increment(ref _contextsAdded);
             return Utils.BuildContextId(SubscriptionsId, id);
         }
 
-        public string GetNextTaskId(IActiveContext context)
+        public string GetTaskId(IActiveContext context)
         {
             var id = Utils.GetContextNum(context);
             return Utils.BuildTaskId(SubscriptionsId, id);
@@ -142,7 +154,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return _subscriptions.Values.Where(sub => sub.IsMasterTaskContext(activeContext));
         }
 
-        public void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
+        public void OnNewActiveContext(IActiveContext activeContext)
         {
             if (_finalized != true)
             {
@@ -151,33 +163,41 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             if (Completed())
             {
-                LOGGER.Log(Level.Warning, "Adding task to already completed Task Set: ignoring");
+                LOGGER.Log(Level.Warning, "Adding tasks to already completed Task Set: ignoring");
                 return;
             }
 
-            int id = Utils.GetTaskNum(taskId) - 1;
+            var id = Utils.GetContextNum(activeContext);
 
-            if (_taskInfos[id] != null)
+            if (_taskInfos[id - 1] != null)
             {
-                throw new ArgumentException("Task Id already registered with TaskSet");
-            }
+                LOGGER.Log(Level.Info, "{0} already part of Task Set: going to direct submit it", Utils.BuildTaskId(SubscriptionsId, id));
 
-            Interlocked.Increment(ref _tasksAdded);
-            var subList = new List<IElasticTaskSetSubscription>();
-
-            foreach (var sub in _subscriptions)
-            {
-                if (sub.Value.AddTask(taskId))
+                lock (_infosLock)
                 {
-                    subList.Add(sub.Value);
+                    _taskInfos[id - 1].TaskStatus = TaskStatus.Init;
+                    _taskInfos[id - 1].UpdateRuntime(activeContext, activeContext.EvaluatorId);
                 }
+
+                SubmitTask(id - 1);
             }
-
-            _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, TaskStatus.Init, subList);
-
-            if (StartSubmitTasks())
+            else
             {
-                SubmitTasks();
+                bool isMaster = IsMasterTaskContext(activeContext).Any();
+                var taskId = Utils.BuildTaskId(SubscriptionsId, id);
+
+                IConfiguration partialTaskConf;
+
+                if (isMaster)
+                {
+                    partialTaskConf = _masterTaskConfiguration(taskId);
+                }
+                else
+                {
+                    partialTaskConf = _slaveTaskConfiguration(taskId);
+                }
+
+                AddTask(taskId, partialTaskConf, activeContext);
             }
         }
 
@@ -215,11 +235,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 var id = Utils.GetTaskNum(task.Id) - 1;
 
-                lock (_taskLock)
+                lock (_infosLock)
                 {
-                    if (_taskInfos[id].TaskStatus == TaskStatus.Completed)
+                    if (!TaskStatusUtils.IsRunnable(_taskInfos[id].TaskStatus))
                     {
-                        LOGGER.Log(Level.Info, "Received running from task {0} which is completed: ignoring");
+                        LOGGER.Log(Level.Info, "Received running from task {0} which is not runnable: ignoring");
                         return;
                     }
 
@@ -248,7 +268,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 Interlocked.Decrement(ref _tasksRunning);
                 var id = Utils.GetTaskNum(taskInfo.Id) - 1;
 
-                lock (_taskLock)
+                lock (_infosLock)
                 {
                     _taskInfos[id].TaskStatus = TaskStatus.Completed;
                     _taskInfos[id].TaskRunner = null;
@@ -271,7 +291,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 var id = Utils.GetTaskNum(message.TaskId) - 1;
 
-                lock (_taskLock)
+                lock (_infosLock)
                 {
                     var returnMessages = new List<IElasticDriverMessage>();
 
@@ -313,7 +333,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (BelongsTo(info.Id))
             {
-                LOGGER.Log(Level.Info, "Received a Failure from " + info.Id);
+                LOGGER.Log(Level.Info, "Received a failure from " + info.Id, info.AsError());
 
                 Interlocked.Decrement(ref _tasksRunning);
 
@@ -326,23 +346,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 var id = Utils.GetTaskNum(info.Id) - 1;
 
-                lock (_taskLock)
+                failureEvents = failureEvents ?? new List<IFailureEvent>();
+
+                lock (_infosLock)
                 {
                     if (_taskInfos[id].TaskStatus < TaskStatus.Failed)
                     {
                         _taskInfos[id].TaskStatus = TaskStatus.Failed;
                     }
-                }
 
-                failureEvents = failureEvents ?? new List<IFailureEvent>();
-
-                LOGGER.Log(Level.Info, "Received an Operator Exception from Task " + info.Id, info.AsError());
-
-                lock (_taskLock)
-                {
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
                     {
-                        Console.WriteLine("before subscription for {0}", info.Id);
                         sub.OnTaskFailure(info, ref failureEvents);
                     }
 
@@ -360,8 +374,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
         {
-            Console.WriteLine("Failed Evaluator {0} with error {1}", evaluator.Id, evaluator.EvaluatorException);
-            throw new NotImplementedException();
+            if (evaluator.FailedTask.IsPresent())
+            {
+                var failedTask = evaluator.FailedTask.Value;
+                var id = Utils.GetTaskNum(failedTask.Id) - 1;
+
+                lock (_infosLock)
+                {
+                    _taskInfos[id].DropRuntime();
+                }
+
+                OnTaskFailure(evaluator.FailedTask.Value);
+            }
+            else
+            {
+                SpawnNewEvaluator();
+            }
         }
 
         public void EventDispatcher(ref IFailureEvent @event)
@@ -414,14 +442,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             SendToTasks(rescheduleEvent.FailureResponse);
 
-            lock (_taskLock)
+            lock (_infosLock)
             {
                 var id = Utils.GetTaskNum(rescheduleEvent.TaskId) - 1;
                 _taskInfos[id].NumRetry++;
 
-                if (_taskInfos[id].NumRetry > _parameters.Retry)
+                if (_taskInfos[id].NumRetry > _parameters.NumTaskFailures)
                 {
-                    LOGGER.Log(Level.Error, "Task {0} failed more than {1} times: Aborting", rescheduleEvent.TaskId, _parameters.Retry);
+                    LOGGER.Log(Level.Error, "Task {0} failed more than {1} times: Aborting", rescheduleEvent.TaskId, _parameters.NumTaskFailures);
                     OnFail();
                 }
 
@@ -430,15 +458,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     _taskInfos[id].TaskRunner.Dispose();
                     _taskInfos[id].TaskRunner = null;
 
-                    var resubmitConf = rescheduleEvent.TaskConfigurations.ToArray();
+                    _taskInfos[id].RescheduleConfigurations = rescheduleEvent.RescheduleTaskConfigurations;
 
                     // When we resubmit the task need to be reconfigured
                     // If there is no reconfiguration, the task doesn't need to be rescheduled
-                    if (resubmitConf.Length > 0)
+                    if (_taskInfos[id].RescheduleConfigurations.Count > 0)
                     {
                         LOGGER.Log(Level.Info, "Rescheduling task {0}", rescheduleEvent.TaskId);
 
-                        SubmitTask(id, rescheduleEvent.TaskConfigurations.ToArray());
+                        SubmitTask(id);
                     }
                 }
             }
@@ -468,7 +496,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void Dispose()
         {
-            lock (_taskLock)
+            lock (_infosLock)
             {
                 if (!_disposed)
                 {
@@ -485,7 +513,29 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        private void SubmitTask(int id, params IConfiguration[] additonalConfs)
+        private void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
+        {
+            Interlocked.Increment(ref _tasksAdded);
+            var subList = new List<IElasticTaskSetSubscription>();
+            var id = Utils.GetTaskNum(taskId) - 1;
+
+            foreach (var sub in _subscriptions)
+            {
+                if (sub.Value.AddTask(taskId))
+                {
+                    subList.Add(sub.Value);
+                }
+            }
+
+            _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
+
+            if (StartSubmitTasks())
+            {
+                SubmitTasks();
+            }
+        }
+
+        private void SubmitTask(int id)
         {
             if (Completed() || Failed())
             {
@@ -496,6 +546,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             var subs = _taskInfos[id].Subscriptions;
             ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+            var rescheduleConfs = _taskInfos[id].RescheduleConfigurations;
 
             foreach (var sub in subs)
             {
@@ -505,9 +556,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 var confSub = confSubBuilder.Build();
 
-                foreach (var additionalConf in additonalConfs)
+                if (rescheduleConfs.TryGetValue(sub.SubscriptionName, out var confs))
                 {
-                    confSub = Configurations.Merge(confSub, additionalConf);
+                    foreach (var additionalConf in confs)
+                    {
+                        confSub = Configurations.Merge(confSub, additionalConf);
+                    }
                 }
 
                 _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSub);
@@ -517,17 +571,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[id].TaskConfiguration, serviceConf);
 
-            lock (_taskLock)
+            lock (_infosLock)
             {
                 if (_taskInfos[id].ActiveContext == null)
                 {
-                    LOGGER.Log(Level.Warning, "Task submit for a non-active context: ignoring");
+                    LOGGER.Log(Level.Warning, "Task submit for a non-active context: spawning a new evaluator");
+
+                    if (_taskInfos[id].TaskStatus == TaskStatus.Failed)
+                    {
+                        _queuedTasks.Enqueue(id);
+                        _taskInfos[id].TaskStatus = TaskStatus.Queued;
+
+                        SpawnNewEvaluator();
+                    }
+ 
                     return;
                 }
 
                 _taskInfos[id].ActiveContext.SubmitTask(mergedTaskConf);
 
-                if (_taskInfos[id].TaskStatus == TaskStatus.Failed)
+                if (TaskStatusUtils.IsRecoverable(_taskInfos[id].TaskStatus))
                 {
                     _taskInfos[id].TaskStatus = TaskStatus.Recovering;
                 }
@@ -536,6 +599,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     _taskInfos[id].TaskStatus = TaskStatus.Submitted;
                 }
             }
+        }
+
+        private void SpawnNewEvaluator()
+        {
+            var request = _evaluatorRequestor.NewBuilder()
+                .SetNumber(1)
+                .SetMegabytes(_parameters.NewEvaluatorMemorySize)
+                .SetCores(_parameters.NewEvaluatorNumCores)
+                .SetRackName(_parameters.NewEvaluatorRackName)
+                .SetEvaluatorBatchId(_parameters.NewEvaluatorBatchId)
+                .Build();
+
+            _evaluatorRequestor.Submit(request);
         }
 
         private bool BelongsTo(string id)
@@ -551,7 +627,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     var destination = Utils.GetTaskNum(returnMessage.Destination) - 1;
 
-                    lock (_taskLock)
+                    lock (_infosLock)
                     {
                         if (_taskInfos[destination] == null)
                         {
@@ -567,8 +643,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         if (_taskInfos[destination].TaskStatus != TaskStatus.Running ||
                             _taskInfos[destination].TaskRunner == null)
                         {
-                            var msg = "Cannot send message to ";
-                            msg += (destination + 1) + ": Task Status is " + _taskInfos[destination].TaskStatus;
+                            var msg = string.Format("Cannot send message to {0}:", destination + 1);
+                            msg += ": Task Status is " + _taskInfos[destination].TaskStatus;
 
                             if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < _parameters.Retry)
                             {
@@ -585,15 +661,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                                 LOGGER.Log(Level.Warning, msg + " Ignoring");
                             }
 
-                            ////else if (_taskInfos[destination].ActiveContext != null)
-                            ////{
-                            ////    LOGGER.Log(Level.Warning, msg + "\nGoing to kill and resubmit the context");
-                            ////    var evaluatorId = _taskInfos[destination].ActiveContext.EvaluatorId;
-                            ////    var contextId = _taskInfos[destination].ActiveContext.Id;
-                            ////    _taskInfos[destination].ActiveContext.Dispose();
-
-                            ////    // Eventually will do the resubmit
-                            ////}
                             return;
                         }
 
