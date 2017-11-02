@@ -31,7 +31,6 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Common.Exceptions;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
@@ -45,7 +44,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
         private readonly int _timeout;
-        private readonly int _retryCount;
+        private readonly int _retryRegistration;
+        private readonly int _retrySending;
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
         private readonly RingTaskMessageSource _ringMessageSource;
@@ -68,8 +68,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         [Inject]
         private CommunicationLayer(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryCount,
+            [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryRegistration,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retrySending,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             RingTaskMessageSource ringMessageSource,
             DriverMessageHandler driverMessagesHandler,
@@ -77,8 +78,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
-            _retryCount = retryCount;
+            _retryRegistration = retryRegistration;
             _sleepTime = sleepTime;
+            _retrySending = retrySending;
             _networkService = networkService;
             _ringMessageSource = ringMessageSource;
             _driverMessagesHandler = driverMessagesHandler;
@@ -127,7 +129,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// included in the message.
         /// </summary>
         /// <param name="message">The message to send.</param>
-        internal void Send(string destination, GroupCommunicationMessage message)
+        internal void Send(string destination, GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
             if (message == null)
             {
@@ -144,25 +146,17 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            using (var conn = _networkService.NewConnection(destId))
-            {
-                try
-                {
-                    conn.Open();
-                }
-                catch (Exception e)
-                {
-                    Logger.Log(Level.Warning, "Unable to establish a connection to " + destId + " " + e.Message);
-                }
+            var conn = _networkService.NewConnection(destId);
+            int retry = 0;
 
-                try
-                {
-                    conn.Write(message);
-                }
-                catch (Exception e)
-                {
-                    Logger.Log(Level.Warning, "Unable to send message to " + destId + " " + e.Message);
-                }
+            while (!Send(conn, message) && retry++ < _retrySending && !_disposed && cancellationSource.IsCancellationRequested)
+            {
+                Logger.Log(Level.Warning, "Retrying to send message.");
+            }
+
+            if (retry > _retrySending)
+            {
+                throw new Exception(string.Format("Failed to send a message after {0} retry", retry));
             }
         }
 
@@ -189,10 +183,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration))
                 {
                     var returnMessage = checkpoint.ToMessage();
+                    var cancellationSource = new CancellationTokenSource();
 
                     returnMessage.Payload = checkpoint;
 
-                    Send(gcMessageTaskSource, returnMessage);
+                    Send(gcMessageTaskSource, returnMessage, cancellationSource);
                 }
 
                 return;
@@ -274,11 +269,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        internal bool IsAlive(string nodeIdentifier, CancellationTokenSource cancellationSource)
-        {
-            return _networkService.NamingClient.Lookup(nodeIdentifier) != null;
-        }
-
         /// <summary>
         /// Checks if the identifier is registered with the Name Server.
         /// Throws exception if the operation fails more than the retry count.
@@ -290,7 +280,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             using (Logger.LogFunction("CommunicationLayer::WaitForTaskRegistration"))
             {
                 IList<string> foundList = new List<string>();
-                for (var i = 0; i < _retryCount; i++)
+                for (var i = 0; i < _retryRegistration; i++)
                 {
                     if (cancellationSource != null && cancellationSource.Token.IsCancellationRequested)
                     {
@@ -332,6 +322,27 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 return false;
             }
             return _networkService.NamingClient.Lookup(identifier) != null;
+        }
+
+        private bool Send(IConnection<GroupCommunicationMessage> connection, GroupCommunicationMessage message)
+        {
+            try
+            {
+                if (!connection.IsOpen)
+                {
+                    connection.Open();
+                }
+            
+                connection.Write(message);
+            }
+            catch (Exception e)
+            {
+                Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                connection.Dispose();
+                return false;
+            }
+
+            return true;
         }
     }
 }

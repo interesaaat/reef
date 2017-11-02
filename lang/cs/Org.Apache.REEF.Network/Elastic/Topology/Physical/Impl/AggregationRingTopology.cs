@@ -294,9 +294,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                                 return;
                             }
 
+                            var cancellationSource = new CancellationTokenSource();
+
                             foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                             {
-                                _commLayer.Send(destMessage.NextTaskId, data);
+                                _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
                             }
                         }
                         break;
@@ -339,10 +341,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             return;
                         }
 
+                        var cancellationSource = new CancellationTokenSource();
+
                         foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                         {
-
-                            _commLayer.Send(destMessage.NextTaskId, data);
+                            _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
                         }
                         break;
                     }
@@ -393,7 +396,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _sendQueue.TryDequeue(out message);
                 _next.TryRemove(dm.Iteration, out string tmp);
 
-                _commLayer.Send(nextNode, message);
+                _commLayer.Send(nextNode, message, cancellationSource);
             }
         }
     }

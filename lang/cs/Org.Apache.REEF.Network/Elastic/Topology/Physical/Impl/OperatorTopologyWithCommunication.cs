@@ -177,7 +177,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 foreach (var child in _children.Values)
                 {
-                    _commLayer.Send(child, message);
+                    _commLayer.Send(child, message, cancellationSource);
                 }
             }
         }

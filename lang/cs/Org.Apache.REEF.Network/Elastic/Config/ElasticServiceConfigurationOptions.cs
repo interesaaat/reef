@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         }
 
         [NamedParameter(Documentation = "Number of retry when a failure occurs", DefaultValue = "1")]
-        public class NumRetry : Name<int>
+        public class RetryAfterFailure : Name<int>
         {
         }
 
@@ -78,11 +78,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         }
 
         [NamedParameter("Number of retry to send a message", defaultValue: "3")]
-        public class Retry : Name<int>
+        public class SendRetry : Name<int>
         {
         }
 
-        [NamedParameter("Number of failures before a task abort the task set", defaultValue: "10")]
+        [NamedParameter("Number of failures before a task abort the task set", defaultValue: "30")]
         public class NumTaskFailures : Name<int>
         {
         }

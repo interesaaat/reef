@@ -114,8 +114,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 {
                     Logger.Log(Level.Info, "Retrieving the checkpoint from " + rootTaskId);
                     var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
+                    var cancellationSource = new CancellationTokenSource();
 
-                    _communicationLayer.Send(rootTaskId, cpm);
+                    _communicationLayer.Send(rootTaskId, cpm, cancellationSource);
 
                     _checkpointsWaiting.TryAdd(id, received);
                     retry++;

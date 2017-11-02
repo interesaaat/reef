@@ -25,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         [Inject]
         public TaskSetManagerParameters(
             [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.Retry))] int retry,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retry,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumTaskFailures))] int numFailures,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorRackName))] string rackName,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorBatchId))] string batchId,
