@@ -84,6 +84,7 @@ namespace Org.Apache.REEF.Network.NetworkService
             try
             {
                 _remoteSender = _remoteManager.GetRemoteObserver(destAddr);
+                IsOpen = true;
                 LOGGER.Log(Level.Verbose, "Network service completed connection to {0}.", destStr);
             }
             catch (SocketException)
@@ -132,6 +133,7 @@ namespace Org.Apache.REEF.Network.NetworkService
         {
             if (_remoteSender != null)
             {
+                IsOpen = false;
                 _remoteSender.OnCompleted();
             }
         }

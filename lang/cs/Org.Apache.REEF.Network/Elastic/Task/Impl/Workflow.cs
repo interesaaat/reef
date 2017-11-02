@@ -152,7 +152,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public IElasticOperator Current
         {
-            get { return _operators[_position]; }
+            get { return _position == -1 ? _operators[0] : _operators[_position]; }
         }
 
         public ICheckpointableState GetCheckpointableState()

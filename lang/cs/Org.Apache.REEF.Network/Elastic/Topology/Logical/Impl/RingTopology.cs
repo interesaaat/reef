@@ -448,7 +448,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             // We are before receive, we should be ok
                             case (int)PositionTracker.Nil:
                                 LOGGER.Log(Level.Info, "Node failed before any communication: no need to reconfigure");
-
                                 break;
 
                             // The failure is on the node with token
@@ -458,7 +457,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 {
                                     if (!_ringNodes[iteration].TryGetValue(taskId, out node))
                                     {
-                                        throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized: current ring is in {2}", taskId, iteration, _iteration));
+                                        LOGGER.Log(Level.Info, "Node failed while waiting for message: ignore");
+                                        break;
                                     }
                                 }
 
