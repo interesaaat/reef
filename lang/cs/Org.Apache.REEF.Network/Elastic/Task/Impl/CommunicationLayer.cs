@@ -151,7 +151,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             while (!Send(conn, message) && retry++ < _retrySending && !_disposed && cancellationSource.IsCancellationRequested)
             {
-                Logger.Log(Level.Warning, "Retrying to send message.");
+                Logger.Log(Level.Warning, string.Format("{0} retry to send message.", retry));
             }
 
             if (retry > _retrySending)
@@ -332,14 +332,17 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 {
                     connection.Open();
                 }
-            
+
                 connection.Write(message);
+
+                Console.WriteLine("Message sent");
             }
             catch (Exception e)
             {
                 Logger.Log(Level.Warning, "Unable to send message " + e.Message);
                 connection.Dispose();
                 return false;
+                throw new Exception("Unable to send message");
             }
 
             return true;
