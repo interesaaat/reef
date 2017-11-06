@@ -58,11 +58,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         };
 
         [Inject]
-        public DefaultFailureStateMachine()
+        public DefaultFailureStateMachine(int initalPoints = 0, DefaultFailureStates initalState = DefaultFailureStates.Continue)
         {
-            NumOfDataPoints = 0;
-            NumOfFailedDataPoints = 0;
-            State = new DefaultFailureState();
+            NumOfDataPoints = initalPoints;
+            NumOfFailedDataPoints = initalPoints;
+            State = new DefaultFailureState((int)initalState);
             _finalized = false;
 
             _statusLock = new object();

@@ -43,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
     }
 
-    public enum DefaultFailureStates
+    public enum DefaultFailureStates : int
     {
         Continue = 1,
 
@@ -54,5 +54,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         StopAndReschedule = 4,
 
         Fail = 5
+    }
+
+    public enum DefaultSubscriptionStates : int
+    {
+        Go = 0,
+
+        Stop = 1
     }
 }
