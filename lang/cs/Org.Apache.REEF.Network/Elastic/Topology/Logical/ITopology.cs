@@ -19,6 +19,7 @@ using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
@@ -39,15 +40,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// After Build(), it assumes that the task is added because recovered from a failure.
         /// </summary>
         /// <param name="taskId">The id of the task to be added</param>
+        /// <param name="taskId">TODO</param>
         /// <returns>The number of data points linked with the added task id</returns>
-        int AddTask(string taskId);
+        bool AddTask(string taskId, ref IFailureStateMachine failureMachine);
 
         /// <summary>
         /// Removes a task from the topology
         /// </summary>
         /// <param name="taskId">The id of the task to be removed</param>
+        /// <param name="taskId">TODO</param>
         /// <returns>The number of data points lost because of the removed task id</returns>
         int RemoveTask(string taskId);
+
+        // TODO
+        bool CanBeScheduled();
 
         /// <summary>
         /// Finalizes the Topology.

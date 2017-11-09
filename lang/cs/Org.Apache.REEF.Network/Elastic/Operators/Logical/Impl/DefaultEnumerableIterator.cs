@@ -163,7 +163,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override bool PropagateFailureDownstream()
         {
-            // We don't expect iterator operators to fails
+            // We don't expect iterator operators to fail
             return true;
         }
     }

@@ -41,10 +41,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetManager));
 
         private bool _finalized;
-        private bool _disposed;
+        private volatile bool _disposed;
+        private volatile bool _scheduled;
         private readonly TaskSetManagerParameters _parameters;
 
-        private int _contextsAdded;
+        private volatile int _contextsAdded;
         private int _tasksAdded;
         private int _tasksRunning;
 
@@ -70,6 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             params IConfiguration[] confs)
         {
             _finalized = false;
+            _scheduled = false;
             _disposed = false;
 
             _contextsAdded = 0;
@@ -121,12 +123,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 return Utils.BuildContextId(SubscriptionsId, identifier);
             }
 
+            int id = Interlocked.Increment(ref _contextsAdded);
+
             if (_contextsAdded > _numTasks)
             {
                 throw new IllegalStateException("Trying to schedule too many contexts");
             }
 
-            int id = Interlocked.Increment(ref _contextsAdded);
             return Utils.BuildContextId(SubscriptionsId, id);
         }
 
@@ -203,17 +206,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool StartSubmitTasks()
         {
-            var canI = _subscriptions.All(sub => sub.Value.ScheduleSubscription());
+            if (_subscriptions.All(sub => sub.Value.ScheduleSubscription()))
+            {
+                LOGGER.Log(Level.Info, string.Format("Scheduling {0} tasks from Taskset {1}", _tasksAdded, SubscriptionsId));
 
-            return _tasksAdded == _numTasks && canI;
+                _scheduled = true;
+            }
+            return _scheduled;
         }
 
         public void SubmitTasks()
         {
-            ////System.Threading.Thread.Sleep(10000);
-            for (int i = 0; i < _numTasks; i++)
+            lock (_infosLock)
             {
-                SubmitTask(i);
+                for (int i = 0; i < _numTasks; i++)
+                {
+                    if (_taskInfos[i] != null)
+                    {
+                        SubmitTask(i);
+                    }
+                }
             }
         }
 
@@ -374,6 +386,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
         {
+            LOGGER.Log(Level.Info, "Received a failure from " + evaluator.Id, evaluator.EvaluatorException);
+
             if (evaluator.FailedTask.IsPresent())
             {
                 var failedTask = evaluator.FailedTask.Value;
@@ -384,7 +398,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     _taskInfos[id].DropRuntime();
                 }
 
-                OnTaskFailure(evaluator.FailedTask.Value);
+                OnTaskFailure(failedTask);
             }
             else
             {
@@ -525,11 +539,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     subList.Add(sub.Value);
                 }
+                else
+                {
+                    LOGGER.Log(Level.Warning, taskId + " cannot be added to subscription " + sub.Key);
+                    return;
+                }
             }
 
-            _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
+            lock (_infosLock)
+            {
+                _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
+            }
 
-            if (StartSubmitTasks())
+            if (_scheduled)
+            {
+                SubmitTask(id);
+            }
+            else if (StartSubmitTasks())
             {
                 SubmitTasks();
             }
@@ -544,42 +570,42 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 return;
             }
 
-            var subs = _taskInfos[id].Subscriptions;
-            ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
-            var rescheduleConfs = _taskInfos[id].RescheduleConfigurations;
-
-            foreach (var sub in subs)
-            {
-                ICsConfigurationBuilder confSubBuilder = TangFactory.GetTang().NewConfigurationBuilder();
-
-                sub.GetTaskConfiguration(ref confSubBuilder, id + 1);
-
-                var confSub = confSubBuilder.Build();
-
-                if (rescheduleConfs.TryGetValue(sub.SubscriptionName, out var confs))
-                {
-                    foreach (var additionalConf in confs)
-                    {
-                        confSub = Configurations.Merge(confSub, additionalConf);
-                    }
-                }
-
-                _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSub);
-            }
-
-            IConfiguration serviceConf = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
-
-            IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[id].TaskConfiguration, serviceConf);
-
             lock (_infosLock)
             {
+                var subs = _taskInfos[id].Subscriptions;
+                ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+                var rescheduleConfs = _taskInfos[id].RescheduleConfigurations;
+
+                foreach (var sub in subs)
+                {
+                    ICsConfigurationBuilder confSubBuilder = TangFactory.GetTang().NewConfigurationBuilder();
+
+                    sub.GetTaskConfiguration(ref confSubBuilder, id + 1);
+
+                    var confSub = confSubBuilder.Build();
+
+                    if (rescheduleConfs.TryGetValue(sub.SubscriptionName, out var confs))
+                    {
+                        foreach (var additionalConf in confs)
+                        {
+                            confSub = Configurations.Merge(confSub, additionalConf);
+                        }
+                    }
+
+                    _subscriptions.Values.First().Service.SerializeSubscriptionConfiguration(ref confBuilder, confSub);
+                }
+
+                IConfiguration serviceConf = _subscriptions.Values.First().Service.GetTaskConfiguration(confBuilder);
+
+                IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[id].TaskConfiguration, serviceConf);
+
                 if (_taskInfos[id].ActiveContext == null)
                 {
-                    LOGGER.Log(Level.Warning, "Task submit for a non-active context: spawning a new evaluator");
+                    LOGGER.Log(Level.Warning, string.Format("Task submit for {0} with a non-active context: spawning a new evaluator", id + 1));
 
                     if (_taskInfos[id].TaskStatus == TaskStatus.Failed)
                     {
-                        _queuedTasks.Enqueue(id);
+                        _queuedTasks.Enqueue(id + 1);
                         _taskInfos[id].TaskStatus = TaskStatus.Queued;
 
                         SpawnNewEvaluator();
@@ -649,7 +675,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                             if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < _parameters.Retry)
                             {
                                 LOGGER.Log(Level.Warning, msg + " Retry");
-                                System.Threading.Tasks.Task.Run(() => SendToTasks(new List<IElasticDriverMessage>() { returnMessage }, retry + 1));
+                                System.Threading.Tasks.Task.Run(() => 
+                                {
+                                    Thread.Sleep(_parameters.WaitTime);
+                                    SendToTasks(new List<IElasticDriverMessage>() { returnMessage }, retry + 1);
+                                });
                             }
                             else if (retry >= _parameters.Retry)
                             {

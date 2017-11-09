@@ -25,6 +25,7 @@ using Org.Apache.REEF.Tang.Exceptions;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -87,7 +88,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public int AddTask(string taskId)
+        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -106,17 +107,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     int count = 1;
 
                     AddReachable(children, ref count);
+                    failureMachine.AddDataPoints(count, false);
 
-                    return count;
+                    return false;
                 }
 
                 throw new ArgumentException("Task has already been added to the topology");
             }
 
             DataNode node = new DataNode(id, true);
-            _nodes[id] = node;
 
-            return 1;
+            _nodes[id] = node;
+            failureMachine.AddDataPoints(1, true);
+
+            return true;
         }
 
         public int RemoveTask(string taskId)
@@ -153,6 +157,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             RemoveReachable(children, ref count);
 
             return count;
+        }
+
+        public bool CanBeScheduled()
+        {
+            return _nodes.ContainsKey(_rootId);
         }
 
         public ITopology Build()

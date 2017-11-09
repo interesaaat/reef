@@ -23,8 +23,8 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -34,7 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private int _rootId;
         private bool _finalized;
-        private bool _hasRoot;
+        private volatile bool _hasRoot;
 
         public RootTopology(int rootId)
         {
@@ -48,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string SubscriptionName { get; set; }
 
-        public int AddTask(string taskId)
+        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _hasRoot = true;
             }
 
-            return 1;
+            return false;
         }
 
         public int RemoveTask(string taskId)
@@ -77,12 +77,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new ArgumentNullException("taskId");
             }
 
-            return 1;
+            return 0;
+        }
+
+        public bool CanBeScheduled()
+        {
+            return _hasRoot;
         }
 
         public ITopology Build()
         {
-            if (_finalized == true)
+            if (_finalized)
             {
                 throw new IllegalStateException("Topology cannot be built more than once");
             }

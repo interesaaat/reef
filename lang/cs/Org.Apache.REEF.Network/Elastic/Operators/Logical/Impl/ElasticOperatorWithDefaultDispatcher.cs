@@ -192,7 +192,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                "State for Operator {0} in Subscription {1}:\n", OperatorName, Subscription.SubscriptionName);
             string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}\n", _topology.LogTopologyState());
             string failureMachineState = "Failure State: " + (DefaultFailureStates)_failureMachine.State.FailureState +
-                    "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints;
+                    "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints + " / " + _failureMachine.NumOfDataPoints;
 
             LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
         }

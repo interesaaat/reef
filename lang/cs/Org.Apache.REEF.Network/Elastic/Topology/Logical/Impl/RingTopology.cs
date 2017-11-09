@@ -30,6 +30,7 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Diagnostics;
 using System.Collections.Concurrent;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -51,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private HashSet<string> _currentWaitingList;
         private HashSet<string> _nextWaitingList;
         private HashSet<string> _tasksInRing;
-        private HashSet<string> _failedNodesWaiting;
+        private HashSet<string> _nodesWaitingToJoinRing;
         private HashSet<string> _failedNodes;
         private RingNode _ringHead;
         private readonly Dictionary<int, DataNode> _nodes;
@@ -75,7 +76,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _ringNodes.Add(1, new Dictionary<string, RingNode>());
             _currentWaitingList = new HashSet<string>();
             _nextWaitingList = new HashSet<string>();
-            _failedNodesWaiting = new HashSet<string>();
+            _nodesWaitingToJoinRing = new HashSet<string>();
             _failedNodes = new HashSet<string>();
             _rootTaskId = string.Empty;
             _taskSubscription = string.Empty;
@@ -89,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string SubscriptionName { get; set; }
 
-        public int AddTask(string taskId)
+        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -112,10 +113,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         }
 
                         _failedNodes.Remove(taskId);
-                        _failedNodesWaiting.Add(taskId);
+                        _nodesWaitingToJoinRing.Add(taskId);
                         _nodes[id].FailState = DataNodeState.Unreachable;
-
-                        return 0;
+                        failureMachine.AddDataPoints(0, false);
+                        return false;
                     }
 
                     throw new ArgumentException("Task has already been added to the topology");
@@ -123,16 +124,30 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 DataNode node = new DataNode(id, false);
                 _nodes[id] = node;
-                _availableDataPoints++;
+
+                if (_finalized)
+                {
+                    // New node but elastically added. It should be gracefully added to the ring.
+                    _nodesWaitingToJoinRing.Add(taskId);
+                    _nodes[id].FailState = DataNodeState.Unreachable;
+                    failureMachine.AddDataPoints(1, true);
+                    failureMachine.RemoveDataPoints(1);
+                    return false;
+                }
+                else
+                {
+                    _availableDataPoints++;
+
+                    // This is required later in order to build the topology
+                    if (_taskSubscription == string.Empty)
+                    {
+                        _taskSubscription = Utils.GetTaskSubscriptions(taskId);
+                    }
+                }
             }
 
-            // This is required later in order to build the topology
-            if (_taskSubscription == string.Empty)
-            {
-                _taskSubscription = Utils.GetTaskSubscriptions(taskId);
-            }
-
-            return 1;
+            failureMachine.AddDataPoints(1, true);
+            return true;
         }
 
         public int RemoveTask(string taskId)
@@ -155,13 +170,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 var state = node.FailState;
 
-                _failedNodesWaiting.Remove(taskId);
+                _nodesWaitingToJoinRing.Remove(taskId);
                 _failedNodes.Add(taskId);
                 node.FailState = DataNodeState.Lost;
 
                 if (state != DataNodeState.Reachable)
                 {
-                    LOGGER.Log(Level.Info, "Removing an already lost node");
+                    LOGGER.Log(Level.Info, string.Format("Removing {0} that was already in state {1}", taskId, state));
                     return 0;
                 }
 
@@ -174,9 +189,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return 1;
         }
 
+        public bool CanBeScheduled()
+        {
+            return _nodes.ContainsKey(_rootId);
+        }
+
         public ITopology Build()
         {
-            if (_finalized == true)
+            if (_finalized)
             {
                 throw new IllegalStateException("Topology cannot be built more than once");
             }
@@ -221,7 +241,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 while (node != null && count < _availableDataPoints)
                 {
-                    str.Append(" <- " + node.TaskId);
+                    str.Append(" <- " + node.TaskId + "-" + node.Iteration);
                     node = node.Prev;
                     count++;
                 }
@@ -245,7 +265,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        internal int AddTaskToRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
+        internal void AddTaskToRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages, ref IFailureStateMachine failureStateMachine)
         {
             var addedReachableNodes = 0;
 
@@ -254,15 +274,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (_failedNodes.Contains(taskId))
                 {
                     LOGGER.Log(Level.Warning, "Trying to add to the ring a failed task: ignoring");
-                    return 0;
+                    return;
                 }
 
-                if (_failedNodesWaiting.Contains(taskId))
+                if (_nodesWaitingToJoinRing.Contains(taskId))
                 {
                     var id = Utils.GetTaskNum(taskId);
 
                     _availableDataPoints++;
-                    _failedNodesWaiting.Remove(taskId);
+                    _nodesWaitingToJoinRing.Remove(taskId);
                     _nodes[id].FailState = DataNodeState.Reachable;
                     addedReachableNodes++;
                 }
@@ -277,7 +297,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
             }
 
-            return addedReachableNodes;
+            failureStateMachine.AddDataPoints(addedReachableNodes, false);
         }
 
         internal void GetNextTasksInRing(ref List<IElasticDriverMessage> messages)
@@ -350,12 +370,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (!_ringNodes.ContainsKey(iteration))
                 {
                     LOGGER.Log(Level.Warning, string.Format("Iteration {0} not found", iteration));
+                    return;
                 }
 
                 if (!_ringNodes[iteration].TryGetValue(taskId, out RingNode node))
                 {
                     var msg = "Node not found: ";
-                    if (_currentWaitingList.Count > 0 || _failedNodesWaiting.Count > 0)
+                    if (_currentWaitingList.Count > 0 || _nodesWaitingToJoinRing.Count > 0)
                     {
                         LOGGER.Log(Level.Warning, msg + "going to flush nodes in queue");
 

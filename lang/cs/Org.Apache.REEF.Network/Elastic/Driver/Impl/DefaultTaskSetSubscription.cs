@@ -40,6 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
         private bool _finalized;
+        private volatile bool _scheduled;
         private readonly AvroConfigurationSerializer _confSerializer;
 
         private readonly int _numTasks;
@@ -62,12 +63,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _confSerializer = confSerializer;
             SubscriptionName = subscriptionName;
             _finalized = false;
+            _scheduled = false;
             _numTasks = numTasks;
             _tasksAdded = 0;
             _missingMasterTasks = new HashSet<string>();
             Completed = false;
             Service = elasticService;
-            _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine();
+            _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks);
             FailureStatus = new DefaultFailureState();
             RootOperator = new DefaultEmpty(this, _defaultFailureMachine.Clone());
 
@@ -96,16 +98,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool AddTask(string taskId)
         {
-            if (Completed || FailureStatus.FailureState == (int)DefaultFailureStates.Fail)
+            if (Completed || (_scheduled && FailureStatus.FailureState == (int)DefaultFailureStates.Fail))
             {
                 return false;
-            }
-
-            if (RootOperator.StateFinalized)
-            {
-                RootOperator.AddTask(taskId);
-
-                return true;
             }
 
             if (!_finalized)
@@ -117,22 +112,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             lock (_tasksLock)
             {
                 // We don't add a task if eventually we end up by not adding the master task
-                if (_tasksAdded >= _numTasks || 
-                    (_tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId)))
+                if (!_scheduled && (_tasksAdded >= _numTasks || 
+                    (_tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId))))
                 {
                     return false;
                 }
 
-                RootOperator.AddTask(taskId);
+                if (!RootOperator.AddTask(taskId))
+                {
+                    return true;
+                }
 
                 _tasksAdded++;
 
                 _missingMasterTasks.Remove(taskId);
 
-                if (_tasksAdded == _numTasks)
-                {
-                    RootOperator.BuildState();
-                }
+                _defaultFailureMachine.AddDataPoints(1, true);
             }
 
             return true;
@@ -140,7 +135,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool ScheduleSubscription()
         {
-            return true;
+            if (_defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled())
+            {
+                _scheduled = true;
+
+                RootOperator.BuildState();
+            }
+
+            return _scheduled;
         }
 
         public bool IsMasterTaskContext(IActiveContext activeContext)

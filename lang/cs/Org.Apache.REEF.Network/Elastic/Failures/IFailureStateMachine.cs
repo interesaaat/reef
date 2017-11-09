@@ -54,9 +54,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         void SetThreashold(IFailureState level, float threshold);
 
         /// <summary>
-        /// A utility method for setting multiple threshould at once.
+        /// A utility method for setting multiple threshold at once.
         /// </summary>
-        /// <param name="weights">Pairs of failure states with realted new threshold</param>
+        /// <param name="weights">Pairs of failure states with related new threshold</param>
         void SetThreasholds(Tuple<IFailureState, float>[] weights);
 
         /// <summary>
@@ -66,8 +66,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// is resolved.
         /// </summary>
         /// <param name="points">How many data point to add</param>
+        /// <param name="isNew">Whether the data point is new of restored from a previous failed point</param>
         /// <returns>The failure state resulting from the addition of the data points</returns>
-        IFailureState AddDataPoints(int points);
+        IFailureState AddDataPoints(int points, bool isNew);
 
         /// <summary>
         /// Remove data point(s) from the Failure Machine as a result of a runtime failure.
@@ -75,13 +76,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <param name="points">How many data point to remove</param>
         /// <returns>A failure event resulting from the removal of the data points</returns>
         IFailureState RemoveDataPoints(int points);
-
-        /// <summary>
-        /// Finalizes the Failure Machine.
-        /// Once finalized, each newly added data point is considered as resolving a failure. 
-        /// </summary>
-        /// <returns>The same finalized Failure Machine</returns>
-        IFailureStateMachine Build();
 
         /// <summary>
         /// Utility method used to clone the target failure machine.

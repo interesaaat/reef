@@ -52,7 +52,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected CheckpointLevel _checkpointLevel;
         protected ITopology _topology;
 
-        protected bool _operatorFinalized = false;
+        protected bool _operatorFinalized;
+        protected volatile bool _operatorStateFinalized;
 
         protected IElasticTaskSetSubscription _subscription;
         protected int _id;
@@ -83,6 +84,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _failureMachine = failureMachine;
             _checkpointLevel = checkpointLevel;
             _configurations = configurations;
+            _operatorFinalized = false;
+            _operatorStateFinalized = false;
 
             _topology.OperatorId = _id;
             _topology.SubscriptionName = Subscription.SubscriptionName;
@@ -119,14 +122,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        internal bool StateFinalized { get; private set; }
+        internal bool CanBeScheduled()
+        {
+            bool canBeScheduled = _topology.CanBeScheduled();
+
+            if (canBeScheduled && _next != null)
+            {
+                return _next.CanBeScheduled();
+            }
+
+            return canBeScheduled;
+        }
 
         /// <summary>
         /// Add a task to the Operator.
         /// The Operator must have called Build() before adding tasks.
         /// </summary>
         /// <param name="taskId">The id of the task to add</param>
-        /// <returns>True if the task is added to the Operator</returns>
+        /// <returns>True if the task is new and got added to the Operator</returns>
         public virtual bool AddTask(string taskId)
         {
             if (_operatorFinalized == false)
@@ -134,27 +147,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new IllegalStateException("Operator needs to be built before adding tasks");
             }
 
-            var addedDataPoints = _topology.AddTask(taskId);
-            _failureMachine.AddDataPoints(addedDataPoints);
+            var newTask = _topology.AddTask(taskId, ref _failureMachine);
 
             if (_next != null)
             {
-                _next.AddTask(taskId);
+                // A task is new if it got added by at least one operator
+                return _next.AddTask(taskId) || newTask;
             }
 
-            return true;
-        }
-
-        internal bool Done()
-        {
-            if (_next != null)
-            {
-                return _next.Done();
-            }
-            else
-            {
-                return false;
-            }
+            return newTask;
         }
 
         /// <summary>
@@ -167,7 +168,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The configuration for the Task with added Operators information</returns>
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
-            if (_operatorFinalized && StateFinalized)
+            if (_operatorFinalized && _operatorStateFinalized)
             {
                 GetOperatorConfiguration(ref builder, taskId);
 
@@ -210,7 +211,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same Operator with the finalized state</returns>
         public virtual ElasticOperator BuildState()
         {
-            if (StateFinalized)
+            if (_operatorStateFinalized)
             {
                 throw new IllegalStateException("Operator cannot be built more than once");
             }
@@ -225,12 +226,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _next.BuildState();
             }
 
-            _failureMachine.Build();
             _topology.Build();
 
             LogOperatorState();
 
-            StateFinalized = true;
+            _operatorStateFinalized = true;
            
             return this;
         }

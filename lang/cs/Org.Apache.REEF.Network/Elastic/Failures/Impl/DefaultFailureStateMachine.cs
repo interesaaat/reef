@@ -17,7 +17,6 @@
 
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Utilities.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,8 +29,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     public class DefaultFailureStateMachine : IFailureStateMachine
     {
-        private bool _finalized;
-
         private readonly object _statusLock;
 
         private readonly SortedDictionary<DefaultFailureStates, DefaultFailureStates> transitionMapUp = new SortedDictionary<DefaultFailureStates, DefaultFailureStates>()
@@ -58,12 +55,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         };
 
         [Inject]
+        public DefaultFailureStateMachine() : this(0, DefaultFailureStates.Continue)
+        {
+        }
+
         public DefaultFailureStateMachine(int initalPoints = 0, DefaultFailureStates initalState = DefaultFailureStates.Continue)
         {
             NumOfDataPoints = initalPoints;
             NumOfFailedDataPoints = initalPoints;
             State = new DefaultFailureState((int)initalState);
-            _finalized = false;
 
             _statusLock = new object();
         }
@@ -74,11 +74,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         public int NumOfFailedDataPoints { get; private set; }
 
-        public IFailureState AddDataPoints(int points)
+        public IFailureState AddDataPoints(int points, bool isNew)
         {
             lock (_statusLock)
             {
-                if (!_finalized)
+                if (isNew)
                 {
                     NumOfDataPoints += points;
                 }
@@ -160,18 +160,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
                 CheckConsistency();
             }
-        }
-
-        public IFailureStateMachine Build()
-        {
-            if (_finalized == true)
-            {
-                throw new IllegalStateException("Failure state machine cannot be built more than once");
-            }
-
-            _finalized = true;
-
-            return this;
         }
 
         private void CheckConsistency()

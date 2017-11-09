@@ -79,8 +79,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                            var addedDataPoints = RingTopology.AddTaskToRing(message.TaskId, iteration, ref returnMessages);
-                            _failureMachine.AddDataPoints(addedDataPoints);
+                            RingTopology.AddTaskToRing(message.TaskId, iteration, ref returnMessages, ref _failureMachine);
 
                             if (!_stop)
                             {

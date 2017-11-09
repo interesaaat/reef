@@ -18,8 +18,9 @@
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Exceptions;
 using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using System;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -37,14 +38,19 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string SubscriptionName { get; set; }
 
-        public int AddTask(string taskId)
+        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
         {
-            return 0;
+            return false;
         }
 
         public int RemoveTask(string taskId)
         {
             return 0;
+        }
+
+        public bool CanBeScheduled()
+        {
+            return true;
         }
 
         public ITopology Build()

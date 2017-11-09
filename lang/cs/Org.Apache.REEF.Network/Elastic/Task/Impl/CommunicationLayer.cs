@@ -146,17 +146,22 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            var conn = _networkService.NewConnection(destId);
-            int retry = 0;
-
-            while (!Send(conn, message) && retry++ < _retrySending && !_disposed && cancellationSource.IsCancellationRequested)
+            using (var connection = _networkService.NewConnection(destId))
             {
-                Logger.Log(Level.Warning, string.Format("{0} retry to send message.", retry));
-            }
+                try
+                {
+                    if (!connection.IsOpen)
+                    {
+                        connection.Open();
+                    }
 
-            if (retry > _retrySending)
-            {
-                throw new Exception(string.Format("Failed to send a message after {0} retry", retry));
+                    connection.Write(message);
+                }
+                catch (Exception e)
+                {
+                    Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                    throw new Exception("Unable to send message");
+                }
             }
         }
 
@@ -324,8 +329,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             return _networkService.NamingClient.Lookup(identifier) != null;
         }
 
-        private bool Send(IConnection<GroupCommunicationMessage> connection, GroupCommunicationMessage message)
+        private bool Send(IIdentifier destId, GroupCommunicationMessage message)
         {
+            var connection = _networkService.NewConnection(destId);
+
             try
             {
                 if (!connection.IsOpen)
@@ -342,7 +349,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 Logger.Log(Level.Warning, "Unable to send message " + e.Message);
                 connection.Dispose();
                 return false;
-                throw new Exception("Unable to send message");
+                ////throw new Exception("Unable to send message");
             }
 
             return true;
