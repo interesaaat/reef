@@ -73,10 +73,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 var update = aggregator.Receive();
 
-                                //// Update the model
-
                                 Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", model), workflow.Iteration);
 
+                                //// Update the model
                                 for (int i = 0; i < n; i++)
                                 {
                                     model[i]++;
