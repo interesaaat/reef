@@ -99,5 +99,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="taskId">The task id of the task that belongs to this Subscription</param>
         /// <returns>The configuration for the Task with added Subscription informations</returns>
         void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        string LogFinalStatistics();
     }
 }

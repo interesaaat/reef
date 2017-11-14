@@ -48,6 +48,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private volatile int _contextsAdded;
         private int _tasksAdded;
         private int _tasksRunning;
+        private volatile int _totFailedTasks;
+        private volatile int _totFailedEvaluators;
 
         private readonly int _numTasks;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
@@ -77,8 +79,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _contextsAdded = 0;
             _tasksAdded = 0;
             _tasksRunning = 0;
+            _totFailedTasks = 0;
+            _totFailedEvaluators = 0;
 
-            _numTasks = numTasks;
+        _numTasks = numTasks;
             _evaluatorRequestor = evaluatorRequestor;
             _masterTaskConfiguration = masterTaskConfiguration;
             _slaveTaskConfiguration = slaveTaskConfiguration ?? masterTaskConfiguration;
@@ -164,9 +168,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 throw new IllegalStateException("Task set have to be built before adding tasks");
             }
 
-            if (Completed())
+            if (Completed() || (_scheduled && Failed()))
             {
                 LOGGER.Log(Level.Warning, "Adding tasks to already completed Task Set: ignoring");
+                activeContext.Dispose();
                 return;
             }
 
@@ -249,6 +254,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 lock (_infosLock)
                 {
+                    if (Completed() || Failed())
+                    {
+                        task.Dispose();
+                        task.ActiveContext.Dispose();
+                        _taskInfos[id] = null;
+
+                        return;
+                    }
+
                     if (!TaskStatusUtils.IsRunnable(_taskInfos[id].TaskStatus))
                     {
                         LOGGER.Log(Level.Info, "Received running from task {0} which is not runnable: ignoring");
@@ -348,10 +362,18 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 LOGGER.Log(Level.Info, "Received a failure from " + info.Id, info.AsError());
 
                 Interlocked.Decrement(ref _tasksRunning);
+                _totFailedTasks++;
 
                 if (Completed())
                 {
                     LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is complete: ignoring the failure " + info.Id, info.AsError());
+
+                    return;
+                }
+
+                if (Failed())
+                {
+                    LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is failed: ignoring the failure " + info.Id, info.AsError());
 
                     return;
                 }
@@ -387,6 +409,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
         {
             LOGGER.Log(Level.Info, "Received a failure from " + evaluator.Id, evaluator.EvaluatorException);
+            _totFailedEvaluators++;
 
             if (evaluator.FailedTask.IsPresent())
             {
@@ -402,7 +425,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
             else
             {
-                SpawnNewEvaluator();
+                if (!Completed() || Failed())
+                {
+                    SpawnNewEvaluator();
+                }
             }
         }
 
@@ -514,6 +540,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 if (!_disposed)
                 {
+                    LogFinalStatistics();
+
                     foreach (var info in _taskInfos)
                     {
                         if (info != null)
@@ -542,6 +570,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 else
                 {
                     LOGGER.Log(Level.Warning, taskId + " cannot be added to subscription " + sub.Key);
+                    activeContext.Dispose();
                     return;
                 }
             }
@@ -698,6 +727,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     }
                 }
             }
+        }
+
+        private void LogFinalStatistics()
+        {
+            var msg = string.Format("Total Failed Tasks: {0}\nTotal Failed Evaluators: {1}", _totFailedTasks, _totFailedEvaluators);
+            msg += _subscriptions.Select(x => x.Value.LogFinalStatistics()).Aggregate((a, b) => a + "\n" + b);
+            LOGGER.Log(Level.Info, msg);
         }
     }
 }

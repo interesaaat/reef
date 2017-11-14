@@ -77,13 +77,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
-            return Receive(cancellationSource, null);
+            return Receive(cancellationSource, -1);
         }
 
-        internal GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource, int? iteration)
+        internal GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource, int iteration)
         {
             GroupCommunicationMessage message;
-            int retry = 1;
+            float retry = 1.0f;
+            float delta = iteration == 1 ? 0.1f : 1.0f;
 
             while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
             {
@@ -92,16 +93,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     throw new OperationCanceledException("Received cancellation request: stop receiving");
                 }
 
-                // Ask only if we are actually waiting for some data
-                if (!_next.IsEmpty)
+                if (_taskId == _rootTaskId)
                 {
-                    var iterationNumber = _taskId != _rootTaskId ? _next.Keys.OrderBy(x => x).First() : iteration ?? -1;
+                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iteration);
 
-                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iterationNumber);
+                    _commLayer.NextDataRequest(_taskId, iteration);
 
-                    _commLayer.NextDataRequest(_taskId, iterationNumber);
+                    retry += delta;
 
-                    if (iterationNumber > 1 && retry++ > _retry)
+                    if (retry > _retry)
                     {
                         throw new Exception(string.Format(
                             "Failed to receive message in the ring after {0} try", _retry));
@@ -176,7 +176,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (_rootTaskId != _taskId)
             {
-                _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
+                try
+                {
+                    _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
+                }
+                catch (Exception e)
+                {
+                    throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
+                }
             }
 
             _initialized = true;
@@ -312,27 +319,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                         ICheckpointState checkpoint;
 
-                        if (_next.TryGetValue(destMessage.Iteration, out string dest) && dest == destMessage.NextTaskId)
-                        {
-                            Logger.Log(Level.Info, "I am sending to " + destMessage.NextTaskId + " for iteration " + destMessage.Iteration + ": ignoring");
-                            return;
-                        }
-
                         if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                         {
                             var splits = Operator.FailureInfo.Split(':');
 
                             if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
                             {
-                                if (_next.IsEmpty)
-                                {
-                                    Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
-                                    _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
-                                }
-                                else
-                                {
-                                    Logger.Log(Level.Warning, "I am resuming as well: waiting");
-                                }
+                                Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
+                                _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
                             }
                             else
                             {
@@ -383,7 +377,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     {
                         retry++;
                         _commLayer.NextTokenRequest(_taskId, dm.Iteration);
-                        if (retry > _retry)
+                        if (dm.Iteration > 1 && retry > _retry)
                         {
                             throw new Exception(string.Format(
                                 "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));

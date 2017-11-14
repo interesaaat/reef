@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
@@ -24,6 +25,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// </summary>
     public interface IReconfigure : IFailureEvent
     {
-        IFailedTask FailedTask { get; }
+        Optional<IFailedTask> FailedTask { get; }
     }
 }

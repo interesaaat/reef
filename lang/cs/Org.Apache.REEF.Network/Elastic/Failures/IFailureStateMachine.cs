@@ -81,7 +81,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// Utility method used to clone the target failure machine.
         /// Only the thresholds are cloned, while the machine state is not.
         /// </summary>
+        /// TODO
         /// <returns>A new failure machine with the same settings</returns>
-        IFailureStateMachine Clone();
+        IFailureStateMachine Clone(int initalPoints = 0, int initalState = 0);
     }
 }

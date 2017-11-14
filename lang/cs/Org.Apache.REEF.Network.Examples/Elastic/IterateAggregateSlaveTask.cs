@@ -20,7 +20,6 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
 
@@ -59,41 +58,18 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
-                                if (rand.Next(100) < 10)
-                                {
-                                    Console.WriteLine("I die. Bye.");
-
-                                    throw new Exception("Die. Before");
-                                }
-
-                                ////System.Threading.Thread.Sleep(rand.Next(1000));
-                                Console.WriteLine("Before receive");
                                 var rec = aggregator.Receive();
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
 
                                 // Update the model, die in case
-                                ////for (int i = 0; i < rec.Length; i++)
-                                ////{
-                                ////    rec[i];
-                                ////    ////System.Threading.Thread.Sleep(rand.Next(100));
-                                ////}
-
-                                if (rand.Next(100) < 10)
+                                for (int i = 0; i < rec.Length; i++)
                                 {
-                                    Console.WriteLine("I die. Bye.");
-
-                                    throw new Exception("Die. Middle");
+                                    rec[i] += 0;
                                 }
 
                                 aggregator.Send(rec);
 
-                                if (rand.Next(100) < 10)
-                                {
-                                    Console.WriteLine("I die. Bye.");
-
-                                    throw new Exception("Die. After");
-                                }
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
                                 break;
                             default:
