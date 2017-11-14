@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         }
                         else
                         {
-                            LOGGER.Log(Level.Info, "{0} received token: no need to reconfigure", message.TaskId);
+                            LOGGER.Log(Level.Info, "Node {0} received token: no need to reconfigure", message.TaskId);
                         }
 
                         return true;
@@ -113,7 +113,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 case TaskMessageType.NextTokenRequest:
                     {
                         var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                        LOGGER.Log(Level.Info, "Received next token request for iteration {0} from {1}", iteration, message.TaskId);
+                        LOGGER.Log(Level.Info, "Received next token request for iteration {0} from node {1}", iteration, message.TaskId);
 
                         RingTopology.RetrieveTokenFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
@@ -121,7 +121,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 case TaskMessageType.NextDataRequest:
                     {
                         var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                        LOGGER.Log(Level.Info, "Received next data request from {0} for iteration {1}", message.TaskId, iteration);
+                        LOGGER.Log(Level.Info, "Received next data request from node {0} for iteration {1}", message.TaskId, iteration);
 
                         RingTopology.RetrieveMissingDataFromRing(message.TaskId, iteration, ref returnMessages);
                         return true;
@@ -142,43 +142,60 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_checkpointLevel > CheckpointLevel.None)
             {
-                if (reconfigureEvent.FailedTask.IsPresent())
+                if (reconfigureEvent.FailedTask.AsError() is OperatorException)
                 {
-                    if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException)
+                    var exception = reconfigureEvent.FailedTask.AsError() as OperatorException;
+                    if (exception.OperatorId == _id)
                     {
-                        var exception = reconfigureEvent.FailedTask.Value.AsError() as OperatorException;
-                        if (exception.OperatorId == _id)
-                        {
-                            var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, exception.AdditionalInfo).ToList();
-                            reconfigureEvent.FailureResponse.AddRange(msg);
-                        }
-                        else
-                        {
-                            throw new NotImplementedException("Different operator id is Future work");
-                        }
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Id, exception.AdditionalInfo).ToList();
+                        reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                     else
                     {
-                        // We trigger the resume of the computation starting from the master
-                        var msgs = new List<IElasticDriverMessage>();
-
-                        RingTopology.RemoveTaskFromRing(reconfigureEvent.FailedTask.Value.Id);
-                        RingTopology.RetrieveMissingDataFromRing(ref msgs);
-                        reconfigureEvent.FailureResponse.AddRange(msgs);
+                        throw new NotImplementedException("Different operator id is Future work");
                     }
                 }
             }
             else
             {
-                throw new NotImplementedException("No caching is Future work");
+                throw new NotImplementedException("No catching is Future work");
             }
         }
 
         public override void OnReschedule(ref IReschedule rescheduleEvent)
         {
-            var reconfigureEvent = rescheduleEvent as IReconfigure;
+            LOGGER.Log(Level.Info, "Going to reconfigure the ring");
 
-            OnReconfigure(ref reconfigureEvent);
+            if (_stop)
+            {
+                _stop = false;
+            }
+
+            if (_checkpointLevel > CheckpointLevel.None)
+            {
+                string additionalInfo = string.Empty;
+
+                if (rescheduleEvent.FailedTask.IsPresent() && rescheduleEvent.FailedTask.Value.AsError() is OperatorException)
+                {
+                    var exception = rescheduleEvent.FailedTask.Value.AsError() as OperatorException;
+                    if (exception.OperatorId == _id)
+                    {
+                        additionalInfo = exception.AdditionalInfo;
+                    }
+                    else
+                    {
+                        // Failure occurred not in this operator
+                        return;
+                    }
+                }
+
+                var msg = RingTopology.Reconfigure(rescheduleEvent.TaskId, additionalInfo).ToList();
+                rescheduleEvent.FailureResponse.AddRange(msg);
+            }
+            else
+            {
+                throw new NotImplementedException("No caching is Future work");
+            }
         }
 
         public override void OnStop(ref IStop stopEvent)
@@ -187,11 +204,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 _stop = true;
             }
-        }
-
-        protected override string LogInternalStatistics()
-        {
-            return RingTopology.Statistics();
         }
     }
 }

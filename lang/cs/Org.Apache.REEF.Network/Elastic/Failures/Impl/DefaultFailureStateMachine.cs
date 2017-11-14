@@ -43,16 +43,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             { DefaultFailureStates.ContinueAndReconfigure, DefaultFailureStates.Continue },
             { DefaultFailureStates.ContinueAndReschedule, DefaultFailureStates.ContinueAndReconfigure },
-            { DefaultFailureStates.StopAndReschedule, DefaultFailureStates.ContinueAndReschedule },
-            { DefaultFailureStates.Fail, DefaultFailureStates.StopAndReschedule }
+            { DefaultFailureStates.StopAndReschedule, DefaultFailureStates.ContinueAndReschedule }
         };
 
         private readonly IDictionary<DefaultFailureStates, float> transitionWeights = new Dictionary<DefaultFailureStates, float>()
         {
             { DefaultFailureStates.ContinueAndReconfigure, 0.0F },
             { DefaultFailureStates.ContinueAndReschedule, 0.0F },
-            { DefaultFailureStates.StopAndReschedule, 0.3F },
-            { DefaultFailureStates.Fail, 0.3F }
+            { DefaultFailureStates.StopAndReschedule, 0.5F },
+            { DefaultFailureStates.Fail, 0.5F }
         };
 
         [Inject]
@@ -86,14 +85,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 else
                 {
                     NumOfFailedDataPoints -= points;
-                }
-                if (State.FailureState > (int)DefaultFailureStates.Continue && State.FailureState <= (int)DefaultFailureStates.Fail)
-                {
-                    float currentRate = (float)NumOfFailedDataPoints / NumOfDataPoints;
 
-                    while (currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
+                    if (State.FailureState > (int)DefaultFailureStates.Continue && State.FailureState < (int)DefaultFailureStates.Fail)
                     {
-                        State.FailureState = (int)transitionMapDown[(DefaultFailureStates)State.FailureState];
+                        float currentRate = NumOfFailedDataPoints / NumOfDataPoints;
+
+                        while (currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
+                        {
+                            State.FailureState = (int)transitionMapDown[(DefaultFailureStates)State.FailureState];
+                        }
                     }
                 }
 
@@ -109,7 +109,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
                 float currentRate = (float)NumOfFailedDataPoints / NumOfDataPoints;
 
-                while (State.FailureState < (int)DefaultFailureStates.Fail && 
+                while (State.FailureState != (int)DefaultFailureStates.Fail && 
                     currentRate > transitionWeights[transitionMapUp[(DefaultFailureStates)State.FailureState]])
                 {
                     State.FailureState = (int)transitionMapUp[(DefaultFailureStates)State.FailureState];
@@ -189,9 +189,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             }
         }
 
-        public IFailureStateMachine Clone(int initalPoints = 0, int initalState = (int)DefaultFailureStates.Continue)
+        public IFailureStateMachine Clone()
         {
-            var newMachine = new DefaultFailureStateMachine(initalPoints, (DefaultFailureStates)initalState);
+            var newMachine = new DefaultFailureStateMachine();
 
             foreach (DefaultFailureStates state in transitionWeights.Keys)
             {

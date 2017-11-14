@@ -15,7 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities;
 using System.Collections.Generic;
+using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -23,8 +25,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// <summary>
     /// Reschedule task event.
     /// </summary>
-    public interface IReschedule : IReconfigure
+    public interface IReschedule : IFailureEvent
     {
+        Optional<IFailedTask> FailedTask { get; }
+
         Dictionary<string, IList<IConfiguration>> RescheduleTaskConfigurations { get; }
     }
 }

@@ -134,14 +134,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (_rootTaskId != _taskId)
             {
-                try
-                {
-                    _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
-                }
-                catch (Exception e)
-                {
-                    throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
-                }
+                _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
             }
         }
 

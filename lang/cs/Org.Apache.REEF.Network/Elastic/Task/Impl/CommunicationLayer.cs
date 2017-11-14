@@ -131,17 +131,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="message">The message to send.</param>
         internal void Send(string destination, GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
-            if (message.GetType() == typeof(DataMessage<int[]>))
-            {
-                var dmsg = message as DataMessage;
-                if (dmsg.Iteration == 100)
-                {
-                    if (new Random().Next(100) < 20)
-                    {
-                        Environment.Exit(0);
-                    }
-                }
-            }
             if (message == null)
             {
                 throw new ArgumentNullException("message");
@@ -352,6 +341,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
 
                 connection.Write(message);
+
+                Console.WriteLine("Message sent");
             }
             catch (Exception e)
             {

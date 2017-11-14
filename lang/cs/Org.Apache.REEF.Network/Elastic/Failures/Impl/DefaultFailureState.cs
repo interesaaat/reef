@@ -45,15 +45,15 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
     public enum DefaultFailureStates : int
     {
-        Continue = 0,
+        Continue = 1,
 
-        ContinueAndReconfigure = 1,
+        ContinueAndReconfigure = 2,
 
-        ContinueAndReschedule = 2,
+        ContinueAndReschedule = 3,
 
-        StopAndReschedule = 3,
+        StopAndReschedule = 4,
 
-        Fail = 4
+        Fail = 5
     }
 
     public enum DefaultSubscriptionStates : int

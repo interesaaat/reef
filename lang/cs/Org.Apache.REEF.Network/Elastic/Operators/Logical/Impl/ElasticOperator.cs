@@ -534,25 +534,5 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _next.GatherMasterIds(ref masterTasks);
             }
         }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        internal virtual string LogFinalStatistics()
-        {
-            var str = LogInternalStatistics();
-
-            if (_next != null)
-            {
-                str += "\n" + _next.LogFinalStatistics();
-            }
-
-            return str;
-        }
-
-        protected virtual string LogInternalStatistics()
-        {
-            return string.Empty;
-        }
     }
 }

@@ -89,7 +89,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (defaultSubscription == null)
                 {
-                    NewTaskSetSubscription(_defaultSubscriptionName, _numEvaluators, _defaultFailureMachine.Clone(_numEvaluators, (int)DefaultFailureStates.Fail));
+                    NewTaskSetSubscription(_defaultSubscriptionName, _numEvaluators, _defaultFailureMachine);
                 }
                 return _subscriptions[_defaultSubscriptionName];
             }
@@ -116,7 +116,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 var subscription = new DefaultTaskSetSubscription(
                     subscriptionName,
                     _configSerializer,
-                    numTasks, this, failureMachine ?? _defaultFailureMachine.Clone(numTasks, (int)DefaultFailureStates.Fail));
+                    numTasks, this, failureMachine ?? _defaultFailureMachine);
                 _subscriptions[subscriptionName] = subscription;
 
                 return subscription;

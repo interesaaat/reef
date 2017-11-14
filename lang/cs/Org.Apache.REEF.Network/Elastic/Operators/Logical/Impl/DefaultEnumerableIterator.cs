@@ -166,10 +166,5 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             // We don't expect iterator operators to fail
             return true;
         }
-
-        protected override string LogInternalStatistics()
-        {
-            return "Number of Iterations: " + _numIterations;
-        }
     }
 }

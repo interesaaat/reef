@@ -69,8 +69,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _missingMasterTasks = new HashSet<string>();
             Completed = false;
             Service = elasticService;
-            _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks, DefaultFailureStates.Fail);
-            FailureStatus = _defaultFailureMachine.State;
+            _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks);
+            FailureStatus = new DefaultFailureState();
             RootOperator = new DefaultEmpty(this, _defaultFailureMachine.Clone());
 
             IsIterative = false;
@@ -100,7 +100,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (Completed || (_scheduled && FailureStatus.FailureState == (int)DefaultFailureStates.Fail))
             {
-                LOGGER.Log(Level.Warning, string.Format("Taskset {0}", Completed ? "completed." : "failed."));
                 return false;
             }
 
@@ -113,19 +112,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             lock (_tasksLock)
             {
                 // We don't add a task if eventually we end up by not adding the master task
-                var tooManyTasks = _tasksAdded >= _numTasks;
-                var notAddingMaster = _tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId);
-
-                if (!_scheduled && (tooManyTasks || notAddingMaster))
+                if (!_scheduled && (_tasksAdded >= _numTasks || 
+                    (_tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId))))
                 {
-                    if (tooManyTasks)
-                    {
-                        LOGGER.Log(Level.Warning, string.Format("Already added {0} tasks when total tasks request is {1}", _tasksAdded, _numTasks));
-                    }
-                    if (notAddingMaster)
-                    {
-                        LOGGER.Log(Level.Warning, string.Format("Already added {0} over {1} but missing master task(s)", _tasksAdded, _numTasks));
-                    }
                     return false;
                 }
 
@@ -138,7 +127,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 _missingMasterTasks.Remove(taskId);
 
-                _defaultFailureMachine.AddDataPoints(1, false);
+                _defaultFailureMachine.AddDataPoints(1, true);
             }
 
             return true;
@@ -257,11 +246,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 FailureStatus = FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
             }
-        }
-
-        public string LogFinalStatistics()
-        {
-            return RootOperator.LogFinalStatistics();
         }
     }
 }
