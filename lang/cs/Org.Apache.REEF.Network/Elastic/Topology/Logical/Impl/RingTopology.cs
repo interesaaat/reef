@@ -29,7 +29,6 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Diagnostics;
-using System.Collections.Concurrent;
 using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
@@ -62,6 +61,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private readonly object _lock;
         private readonly Stopwatch _timer;
+        private long _totTime;
+        private int _totNumberofNodes;
 
         public RingTopology(int rootId)
         {
@@ -83,6 +84,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _iteration = 1;
 
             _timer = Stopwatch.StartNew();
+            _totTime = 0;
+            _totNumberofNodes = 0;
             _lock = new object();
         }
 
@@ -265,184 +268,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        internal void AddTaskToRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages, ref IFailureStateMachine failureStateMachine)
-        {
-            var addedReachableNodes = 0;
-
-            lock (_lock)
-            {
-                if (_failedNodes.Contains(taskId))
-                {
-                    LOGGER.Log(Level.Warning, "Trying to add to the ring a failed task: ignoring");
-                    return;
-                }
-
-                if (_nodesWaitingToJoinRing.Contains(taskId))
-                {
-                    var id = Utils.GetTaskNum(taskId);
-
-                    _availableDataPoints++;
-                    _nodesWaitingToJoinRing.Remove(taskId);
-                    _nodes[id].FailState = DataNodeState.Reachable;
-                    addedReachableNodes++;
-                }
-
-                if (_currentWaitingList.Contains(taskId) || _tasksInRing.Contains(taskId))
-                {
-                    _nextWaitingList.Add(taskId);
-                }
-                else
-                {
-                    _currentWaitingList.Add(taskId);
-                }
-            }
-
-            failureStateMachine.AddDataPoints(addedReachableNodes, false);
-        }
-
-        internal void GetNextTasksInRing(ref List<IElasticDriverMessage> messages)
-        {
-            lock (_lock)
-            {
-                while (_currentWaitingList.Count > 0)
-                {
-                    var nextTask = _currentWaitingList.First();
-                    var dest = _ringHead.TaskId;
-                    var data = _ringHead.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(nextTask, SubscriptionName, OperatorId, _iteration) : (DriverMessagePayload)new FailureMessagePayload(nextTask, _iteration, SubscriptionName, OperatorId);
-                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
-
-                    messages.Add(returnMessage);
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, nextTask, _iteration);
-
-                    _ringHead.Next = new RingNode(nextTask, _iteration, _ringHead);
-                    _ringHead = _ringHead.Next;
-                    _tasksInRing.Add(nextTask);
-                    _currentWaitingList.Remove(nextTask);
-                    _ringNodes[_iteration].Add(nextTask, _ringHead);
-                }
-
-                CloseRing(ref messages);
-            }
-
-            // Continuously build the ring until there is some node waiting
-            if (_currentWaitingList.Count > 0)
-            {
-                GetNextTasksInRing(ref messages);
-            }
-        }
-
-        internal void CloseRing(ref List<IElasticDriverMessage> messages)
-        {
-            lock (_lock)
-            {
-                if (_availableDataPoints <= _tasksInRing.Count)
-                {
-                    var dest = _ringHead.TaskId;
-                    var data = _ringHead.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId, _iteration) : (DriverMessagePayload)new FailureMessagePayload(_rootTaskId, _iteration, SubscriptionName, OperatorId);
-                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
-
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, _rootTaskId, _iteration);
-                    messages.Add(returnMessage);
-
-                    _timer.Stop();
-                    LOGGER.Log(Level.Info, string.Format("Ring in Iteration {0} is closed in {1}ms with {2} nodes", _iteration, _timer.ElapsedMilliseconds, _tasksInRing.Count));
-
-                    _ringHead.Next = new RingNode(_rootTaskId, _iteration, _ringHead);
-                    _ringHead = _ringHead.Next;
-                    _currentWaitingList = _nextWaitingList;
-                    _nextWaitingList = new HashSet<string>();
-                    _tasksInRing = new HashSet<string> { { _rootTaskId } };
-                    _ringNodes[_iteration].Add(_rootTaskId, _ringHead);
-
-                    _iteration++;
-                    _ringNodes.Add(_iteration, new Dictionary<string, RingNode>());
-                    CleanPreviousRings();
-
-                    _timer.Restart();
-                }
-            }
-        }
-
-        internal void RetrieveTokenFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
-        {
-            lock (_lock)
-            {
-                if (!_ringNodes.ContainsKey(iteration))
-                {
-                    LOGGER.Log(Level.Warning, string.Format("Iteration {0} not found", iteration));
-                    return;
-                }
-
-                if (!_ringNodes[iteration].TryGetValue(taskId, out RingNode node))
-                {
-                    var msg = "Node not found: ";
-                    if (_currentWaitingList.Count > 0 || _nodesWaitingToJoinRing.Count > 0)
-                    {
-                        LOGGER.Log(Level.Warning, msg + "going to flush nodes in queue");
-
-                        GetNextTasksInRing(ref messages);
-                    }
-                    else
-                    {
-                        LOGGER.Log(Level.Warning, msg + " waiting");
-                    }
-
-                    return;
-                }
-
-                if (node.Next != null)
-                {
-                    var dest = taskId;
-                    var data = node.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(node.Next.TaskId, SubscriptionName, OperatorId, node.Next.Iteration) : (DriverMessagePayload)new FailureMessagePayload(node.Next.TaskId, node.Next.Iteration, SubscriptionName, OperatorId);
-                    messages.Add(new ElasticDriverMessageImpl(dest, data));
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2} in retrieve", dest, node.Next.TaskId, node.Next.Iteration);
-                }
-
-                LOGGER.Log(Level.Info, "Next token is {0}", node.Next.TaskId);    
-            }
-        }
-
-        internal void RetrieveMissingDataFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> returnMessages)
-        {
-            lock (_lock)
-            {
-                RingNode node;
-                if (_ringNodes[iteration].TryGetValue(taskId, out node))
-                {
-                    var dest = node.Prev.TaskId;
-                    var data = new ResumeMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
-                    returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, node.Iteration);
-                }
-                else
-                {
-                    LOGGER.Log(Level.Warning, "Impossible to retrieve missing data for Task {0} in iteration {1}", taskId, iteration);
-                }
-            }
-        }
-
-        internal void ResumeRingFromCheckpoint(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
-        {
-            lock (_lock)
-            {
-                if (_ringNodes[iteration].TryGetValue(taskId, out RingNode node) && node.Prev != null)
-                {
-                    var data = new FailureMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
-                    var returnMessage = new ElasticDriverMessageImpl(node.Prev.TaskId, data);
-
-                    node.Type = DriverMessageType.Ring;
-                    messages.Add(returnMessage);
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", node.Prev.TaskId, node.TaskId, node.Iteration);
-
-                    LOGGER.Log(Level.Info, "Resuming ring from node {0}", node.Prev.TaskId);
-                }
-                else
-                {
-                    LOGGER.Log(Level.Warning, "Impossible to resume from checkpoint for Task {0} in iteration {1}: Ignoring", taskId, iteration);
-                }
-            }
-        }
-
         public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
             if (taskId == _rootTaskId)
@@ -455,7 +280,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             lock (_lock)
             {
                 if (info != string.Empty)
-                { 
+                {
                     var failureInfos = info.Split(':');
                     int position = int.Parse(failureInfos[0]);
                     int iteration = int.Parse(failureInfos[1]);
@@ -540,28 +365,249 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     }
                 }
 
-                foreach (var dict in _ringNodes.Values)
-                {
-                    if (dict.TryGetValue(taskId, out RingNode node))
-                    {
-                        if (node.Next != null)
-                        {
-                            node.Next.Prev = node.Prev;
-                        }
-                        if (node.Prev != null)
-                        {
-                            node.Prev.Next = node.Next;
-                        }
-
-                        node = null;
-                        dict.Remove(taskId);
-                    }
-                }
+                RemoveTaskFromRing(taskId);
             }
 
             CloseRing(ref messages);
 
             return messages;
+        }
+
+        internal void RemoveTaskFromRing(string taskId)
+        {
+            foreach (var dict in _ringNodes.Values)
+            {
+                if (dict.TryGetValue(taskId, out RingNode node))
+                {
+                    if (node.Next != null)
+                    {
+                        node.Next.Prev = node.Prev;
+                    }
+                    if (node.Prev != null)
+                    {
+                        node.Prev.Next = node.Next;
+                    }
+
+                    node = null;
+                    dict.Remove(taskId);
+                }
+            }
+        }
+
+        internal void AddTaskToRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages, ref IFailureStateMachine failureStateMachine)
+        {
+            var addedReachableNodes = 0;
+
+            lock (_lock)
+            {
+                if (_failedNodes.Contains(taskId))
+                {
+                    LOGGER.Log(Level.Warning, "Trying to add to the ring a failed task: ignoring");
+                    return;
+                }
+
+                if (_nodesWaitingToJoinRing.Contains(taskId))
+                {
+                    var id = Utils.GetTaskNum(taskId);
+
+                    _availableDataPoints++;
+                    _nodesWaitingToJoinRing.Remove(taskId);
+                    _nodes[id].FailState = DataNodeState.Reachable;
+                    addedReachableNodes++;
+                }
+
+                if (_currentWaitingList.Contains(taskId) || _tasksInRing.Contains(taskId))
+                {
+                    _nextWaitingList.Add(taskId);
+                }
+                else
+                {
+                    _currentWaitingList.Add(taskId);
+                }
+            }
+
+            failureStateMachine.AddDataPoints(addedReachableNodes, false);
+        }
+
+        internal void GetNextTasksInRing(ref List<IElasticDriverMessage> messages)
+        {
+            lock (_lock)
+            {
+                while (_currentWaitingList.Count > 0)
+                {
+                    var nextTask = _currentWaitingList.First();
+                    var dest = _ringHead.TaskId;
+                    var data = _ringHead.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(nextTask, SubscriptionName, OperatorId, _iteration) : (DriverMessagePayload)new FailureMessagePayload(nextTask, _iteration, SubscriptionName, OperatorId);
+                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
+
+                    messages.Add(returnMessage);
+                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, nextTask, _iteration);
+
+                    _ringHead.Next = new RingNode(nextTask, _iteration, _ringHead);
+                    _ringHead = _ringHead.Next;
+                    _tasksInRing.Add(nextTask);
+                    _currentWaitingList.Remove(nextTask);
+                    _ringNodes[_iteration].Add(nextTask, _ringHead);
+                }
+
+                CloseRing(ref messages);
+            }
+
+            // Continuously build the ring until there is some node waiting
+            if (_currentWaitingList.Count > 0)
+            {
+                GetNextTasksInRing(ref messages);
+            }
+        }
+
+        internal void CloseRing(ref List<IElasticDriverMessage> messages)
+        {
+            lock (_lock)
+            {
+                if (_availableDataPoints <= _tasksInRing.Count)
+                {
+                    var dest = _ringHead.TaskId;
+                    var data = _ringHead.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId, _iteration) : (DriverMessagePayload)new FailureMessagePayload(_rootTaskId, _iteration, SubscriptionName, OperatorId);
+                    var returnMessage = new ElasticDriverMessageImpl(dest, data);
+
+                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, _rootTaskId, _iteration);
+                    messages.Add(returnMessage);
+
+                    _timer.Stop();
+                    _totTime += _timer.ElapsedMilliseconds;
+                    _totNumberofNodes += _tasksInRing.Count;
+                    LOGGER.Log(Level.Info, string.Format("Ring in Iteration {0} is closed in {1}ms with {2} nodes", _iteration, _timer.ElapsedMilliseconds, _tasksInRing.Count, (float)_totTime / 1000.0, _totTime / _iteration));
+
+                    _ringHead.Next = new RingNode(_rootTaskId, _iteration, _ringHead);
+                    _ringHead = _ringHead.Next;
+                    _currentWaitingList = _nextWaitingList;
+                    _nextWaitingList = new HashSet<string>();
+                    _tasksInRing = new HashSet<string> { { _rootTaskId } };
+                    _ringNodes[_iteration].Add(_rootTaskId, _ringHead);
+
+                    _iteration++;
+                    _ringNodes.Add(_iteration, new Dictionary<string, RingNode>());
+                    CleanPreviousRings();
+
+                    _timer.Restart();
+                }
+            }
+        }
+
+        internal void RetrieveTokenFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
+        {
+            lock (_lock)
+            {
+                if (!_ringNodes.ContainsKey(iteration))
+                {
+                    LOGGER.Log(Level.Warning, string.Format("Iteration {0} not found", iteration));
+                    return;
+                }
+
+                if (!_ringNodes[iteration].TryGetValue(taskId, out RingNode node))
+                {
+                    var msg = "Node not found: ";
+                    if (_currentWaitingList.Count > 0 || _nodesWaitingToJoinRing.Count > 0)
+                    {
+                        LOGGER.Log(Level.Warning, msg + "going to flush nodes in queue");
+
+                        GetNextTasksInRing(ref messages);
+                    }
+                    else
+                    {
+                        LOGGER.Log(Level.Warning, msg + " waiting");
+                    }
+
+                    return;
+                }
+
+                if (node.Next != null)
+                {
+                    var dest = taskId;
+                    var data = node.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(node.Next.TaskId, SubscriptionName, OperatorId, node.Next.Iteration) : (DriverMessagePayload)new FailureMessagePayload(node.Next.TaskId, node.Next.Iteration, SubscriptionName, OperatorId);
+                    messages.Add(new ElasticDriverMessageImpl(dest, data));
+                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2} in retrieve", dest, node.Next.TaskId, node.Next.Iteration);
+                } 
+            }
+        }
+
+        internal void RetrieveMissingDataFromRing(ref List<IElasticDriverMessage> messages)
+        {
+            Dictionary<string, RingNode> dict = null;
+            var iteration = _iteration;
+            lock (_lock)
+            {
+                dict = _ringNodes[iteration];
+
+                // The ring may have just started a new iteration where no node has joined yet.
+                // In this care retrieve the iteration - 1
+                if (dict.Count == 0 && iteration > 0)
+                {
+                    dict = _ringNodes[--iteration];
+                }
+            }
+
+            if (dict.Count > 0)
+            {
+                var head = dict.First().Value;
+
+                while (head.Next != null)
+                {
+                    head = head.Next;
+                }
+
+                RetrieveMissingDataFromRing(head.TaskId, iteration, ref messages);
+            }
+            else
+            {
+                throw new IllegalStateException("Trying to recover an empty ring: failing");
+            } 
+        }
+
+        internal void RetrieveMissingDataFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> returnMessages)
+        {
+            lock (_lock)
+            {
+                RingNode node;
+                if (_ringNodes[iteration].TryGetValue(taskId, out node))
+                {
+                    var dest = node.Prev.TaskId;
+                    var data = new ResumeMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
+                    returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
+                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, node.Iteration);
+                }
+                else
+                {
+                    LOGGER.Log(Level.Warning, "Impossible to retrieve missing data for Task {0} in iteration {1}", taskId, iteration);
+                }
+            }
+        }
+
+        internal void ResumeRingFromCheckpoint(string taskId, int iteration, ref List<IElasticDriverMessage> messages)
+        {
+            lock (_lock)
+            {
+                if (_ringNodes[iteration].TryGetValue(taskId, out RingNode node) && node.Prev != null)
+                {
+                    var data = new FailureMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
+                    var returnMessage = new ElasticDriverMessageImpl(node.Prev.TaskId, data);
+
+                    node.Type = DriverMessageType.Ring;
+                    messages.Add(returnMessage);
+                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", node.Prev.TaskId, node.TaskId, node.Iteration);
+
+                    LOGGER.Log(Level.Info, "Resuming ring from node {0}", node.Prev.TaskId);
+                }
+                else
+                {
+                    LOGGER.Log(Level.Warning, "Impossible to resume from checkpoint for Task {0} in iteration {1}: Ignoring", taskId, iteration);
+                }
+            }
+        }
+
+        internal string Statistics()
+        {
+            return string.Format("Total ring computation time {0}s\nAverage ring computation time {1}ms\nAverage number of nodes in ring {2}", (float)_totTime / 1000.0, _totTime / (_iteration - 1), (float)_totNumberofNodes / (_iteration - 1));
         }
 
         private void CleanPreviousRings()

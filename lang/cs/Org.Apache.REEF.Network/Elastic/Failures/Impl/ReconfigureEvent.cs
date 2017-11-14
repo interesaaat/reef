@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Utilities;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
@@ -28,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     {
         public ReconfigureEvent(IFailedTask failedTask, int opertorId)
         {
-            FailedTask = failedTask;
+            FailedTask = Optional<IFailedTask>.Of(failedTask);
             OperatorId = opertorId;
             FailureResponse = new List<IElasticDriverMessage>();
         }
@@ -38,11 +39,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             get { return (int)DefaultFailureStateEvents.Reconfigure; }
         }
 
-        public IFailedTask FailedTask { get; private set; }
+        public Optional<IFailedTask> FailedTask { get; set; }
 
         public string TaskId
         {
-            get { return FailedTask.Id; }
+            get { return FailedTask.Value.Id; }
         }
 
         public int OperatorId { get; private set; }

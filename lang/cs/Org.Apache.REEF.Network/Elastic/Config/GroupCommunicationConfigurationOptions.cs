@@ -42,12 +42,12 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Timeout for sending or receiving messages", defaultValue: "10000")]
+        [NamedParameter("Timeout for sending or receiving messages", defaultValue: "60000")]
         public class Timeout : Name<int>
         {
         }
 
-        [NamedParameter("Number of retry to send a message", defaultValue: "50")]
+        [NamedParameter("Number of retry to send a message", defaultValue: "10")]
         public class Retry : Name<int>
         {
         }
@@ -61,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         /// Each Communication group needs to check and wait until all the other nodes in the group are registered to the NameServer
         /// Sleep time is set between each retry. 
         /// </summary>
-        [NamedParameter("sleep time to wait for nodes to be registered", defaultValue: "2000")]
+        [NamedParameter("sleep time to wait for nodes to be registered", defaultValue: "1000")]
         internal sealed class SleepTimeWaitingForRegistration : Name<int>
         {
         }
