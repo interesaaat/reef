@@ -184,9 +184,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(ICompletedTask value)
         {
+            LOGGER.Log(Level.Info, "Task {0} completed.", value.Id);
             _taskManager.OnTaskCompleted(value);
 
-            if (_taskManager.Done())
+            if (_taskManager.IsDone())
             {
                 LOGGER.Log(Level.Info, "TaskSet completed.");
                 _taskManager.Dispose();
@@ -197,8 +198,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
 
-            if (_taskManager.Done())
+            if (_taskManager.IsDone())
             {
+                LOGGER.Log(Level.Info, "TaskSet completed.");
                 _taskManager.Dispose();
             }
         }
@@ -207,8 +209,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskFailure(failedTask);
 
-            if (_taskManager.Done())
+            if (_taskManager.IsDone())
             {
+                LOGGER.Log(Level.Info, "TaskSet completed.");
                 _taskManager.Dispose();
             }
         }

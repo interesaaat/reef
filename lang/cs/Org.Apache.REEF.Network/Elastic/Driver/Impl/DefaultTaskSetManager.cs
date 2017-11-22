@@ -43,6 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private bool _finalized;
         private volatile bool _disposed;
         private volatile bool _scheduled;
+        private volatile bool _completed;
         private readonly TaskSetManagerParameters _parameters;
 
         private volatile int _contextsAdded;
@@ -75,6 +76,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _finalized = false;
             _scheduled = false;
             _disposed = false;
+            _completed = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
@@ -82,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _totFailedTasks = 0;
             _totFailedEvaluators = 0;
 
-        _numTasks = numTasks;
+            _numTasks = numTasks;
             _evaluatorRequestor = evaluatorRequestor;
             _masterTaskConfiguration = masterTaskConfiguration;
             _slaveTaskConfiguration = slaveTaskConfiguration ?? masterTaskConfiguration;
@@ -179,11 +181,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             if (_taskInfos[id - 1] != null)
             {
-                LOGGER.Log(Level.Info, "{0} already part of Task Set: going to direct submit it", Utils.BuildTaskId(SubscriptionsId, id));
+                LOGGER.Log(Level.Info, "{0} already part of Task Set: going to directly submit it", Utils.BuildTaskId(SubscriptionsId, id));
 
                 lock (_infosLock)
                 {
-                    _taskInfos[id - 1].TaskStatus = TaskStatus.Init;
                     _taskInfos[id - 1].UpdateRuntime(activeContext, activeContext.EvaluatorId);
                 }
 
@@ -222,14 +223,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SubmitTasks()
         {
-            lock (_infosLock)
+            for (int i = 0; i < _numTasks; i++)
             {
-                for (int i = 0; i < _numTasks; i++)
+                if (_taskInfos[i] != null)
                 {
-                    if (_taskInfos[i] != null)
-                    {
-                        SubmitTask(i);
-                    }
+                    SubmitTask(i);
                 }
             }
         }
@@ -251,21 +249,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (BelongsTo(task.Id))
             {
                 var id = Utils.GetTaskNum(task.Id) - 1;
+                _taskInfos[id].SetTaskRunner(task);
 
                 lock (_infosLock)
                 {
                     if (Completed() || Failed())
                     {
-                        task.Dispose();
-                        task.ActiveContext.Dispose();
-                        _taskInfos[id] = null;
+                        LOGGER.Log(Level.Info, "Received running from task {0} but Taskset is completed or failed: ignoring", task.Id);
+                        _taskInfos[id].DisposeTask();
 
                         return;
                     }
-
                     if (!TaskStatusUtils.IsRunnable(_taskInfos[id].TaskStatus))
                     {
-                        LOGGER.Log(Level.Info, "Received running from task {0} which is not runnable: ignoring");
+                        LOGGER.Log(Level.Info, "Received running from task {0} which is not runnable: ignoring", task.Id);
+                        _taskInfos[id].DisposeTask();
+
                         return;
                     }
 
@@ -279,8 +278,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                             }
                         }
 
-                        _taskInfos[id].TaskStatus = TaskStatus.Running;
-                        _taskInfos[id].TaskRunner = task;
+                        _taskInfos[id].SetTaskStatus(TaskStatus.Running);
                         Interlocked.Increment(ref _tasksRunning);
                     }
                 }
@@ -296,15 +294,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 lock (_infosLock)
                 {
-                    _taskInfos[id].TaskStatus = TaskStatus.Completed;
-                    _taskInfos[id].TaskRunner = null;
+                    _taskInfos[id].SetTaskStatus(TaskStatus.Completed);
 
                     if (Completed())
                     {
-                        foreach (var info in _taskInfos.Where(info => info.TaskRunner != null))
+                        foreach (var info in _taskInfos.Where(info => info != null && info.TaskStatus < TaskStatus.Failed && info.TaskRunner != null && !info.IsTaskDisposed))
                         {
                             info.TaskRunner.Dispose();
-                            info.TaskRunner = null;
                         }
                     }
                 }
@@ -333,7 +329,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool Completed()
         {
-            return _subscriptions.Select(sub => sub.Value.Completed).Aggregate((com1, com2) => com1 && com2);
+            if (!_completed)
+            {
+                _completed = _subscriptions.Select(sub => sub.Value.Completed).Aggregate((com1, com2) => com1 && com2);
+            }
+            return _completed;
         }
 
         public bool Failed()
@@ -344,7 +344,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <summary>
         /// A task set is done when all subscriptions are completed ore we have no more tasks running
         /// </summary>
-        public bool Done()
+        public bool IsDone()
         {
             return Completed() && _tasksRunning == 0;
         }
@@ -363,22 +363,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 Interlocked.Decrement(ref _tasksRunning);
                 _totFailedTasks++;
-
-                if (Completed())
-                {
-                    LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is complete: ignoring the failure " + info.Id, info.AsError());
-
-                    return;
-                }
-
-                if (Failed())
-                {
-                    LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is failed: ignoring the failure " + info.Id, info.AsError());
-
-                    return;
-                }
-
                 var id = Utils.GetTaskNum(info.Id) - 1;
+
+                if (Completed() || Failed())
+                {
+                    LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is completed or failed: ignoring the failure " + info.Id, info.AsError());
+
+                    lock (_infosLock)
+                    {
+                        _taskInfos[id].SetTaskStatus(TaskStatus.Failed);
+                    }
+
+                    return;
+                }
 
                 failureEvents = failureEvents ?? new List<IFailureEvent>();
 
@@ -386,7 +383,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     if (_taskInfos[id].TaskStatus < TaskStatus.Failed)
                     {
-                        _taskInfos[id].TaskStatus = TaskStatus.Failed;
+                        _taskInfos[id].SetTaskStatus(TaskStatus.Failed);
                     }
 
                     foreach (IElasticTaskSetSubscription sub in _taskInfos[id].Subscriptions)
@@ -493,21 +490,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     OnFail();
                 }
 
-                if (_taskInfos[id].TaskRunner != null)
+                _taskInfos[id].RescheduleConfigurations = rescheduleEvent.RescheduleTaskConfigurations;
+
+                // When we resubmit the task need to be reconfigured
+                // If there is no reconfiguration, the task doesn't need to be rescheduled
+                if (_taskInfos[id].RescheduleConfigurations.Count > 0)
                 {
-                    _taskInfos[id].TaskRunner.Dispose();
-                    _taskInfos[id].TaskRunner = null;
+                    LOGGER.Log(Level.Info, "Rescheduling task {0}", rescheduleEvent.TaskId);
 
-                    _taskInfos[id].RescheduleConfigurations = rescheduleEvent.RescheduleTaskConfigurations;
-
-                    // When we resubmit the task need to be reconfigured
-                    // If there is no reconfiguration, the task doesn't need to be rescheduled
-                    if (_taskInfos[id].RescheduleConfigurations.Count > 0)
-                    {
-                        LOGGER.Log(Level.Info, "Rescheduling task {0}", rescheduleEvent.TaskId);
-
-                        SubmitTask(id);
-                    }
+                    SubmitTask(id);
                 }
             }
         }
@@ -595,7 +586,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (Completed() || Failed())
             {
                 LOGGER.Log(Level.Warning, "Task submit for a completed or failed Task Set: ignoring");
-                _taskInfos[id].Dispose();
+                lock (_infosLock)
+                {
+                    _taskInfos[id].DisposeTask();
+                }
                 return;
             }
 
@@ -635,9 +629,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     if (_taskInfos[id].TaskStatus == TaskStatus.Failed)
                     {
                         _queuedTasks.Enqueue(id + 1);
-                        _taskInfos[id].TaskStatus = TaskStatus.Queued;
+                        _taskInfos[id].SetTaskStatus(TaskStatus.Queued);
 
-                        SpawnNewEvaluator();
+                        SpawnNewEvaluator("_" + id + "_" + _taskInfos[id].NumRetry);
                     }
  
                     return;
@@ -647,23 +641,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (TaskStatusUtils.IsRecoverable(_taskInfos[id].TaskStatus))
                 {
-                    _taskInfos[id].TaskStatus = TaskStatus.Recovering;
+                    _taskInfos[id].SetTaskStatus(TaskStatus.Recovering);
                 }
                 else
                 {
-                    _taskInfos[id].TaskStatus = TaskStatus.Submitted;
+                    _taskInfos[id].SetTaskStatus(TaskStatus.Submitted);
                 }
             }
         }
 
-        private void SpawnNewEvaluator()
+        private void SpawnNewEvaluator(string id = "")
         {
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(1)
                 .SetMegabytes(_parameters.NewEvaluatorMemorySize)
                 .SetCores(_parameters.NewEvaluatorNumCores)
                 .SetRackName(_parameters.NewEvaluatorRackName)
-                .SetEvaluatorBatchId(_parameters.NewEvaluatorBatchId)
+                .SetEvaluatorBatchId(_parameters.NewEvaluatorBatchId + id)
                 .Build();
 
             _evaluatorRequestor.Submit(request);
@@ -691,7 +685,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         if (Completed() || Failed())
                         {
                             LOGGER.Log(Level.Warning, "Task submit for a completed or failed Task Set: ignoring");
-                            _taskInfos[destination].Dispose();
+                            _taskInfos[destination].DisposeTask();
 
                             return;
                         }
@@ -704,7 +698,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                             if (_taskInfos[destination].TaskStatus == TaskStatus.Submitted && retry < _parameters.Retry)
                             {
                                 LOGGER.Log(Level.Warning, msg + " Retry");
-                                System.Threading.Tasks.Task.Run(() => 
+                                System.Threading.Tasks.Task.Run(() =>
                                 {
                                     Thread.Sleep(_parameters.WaitTime);
                                     SendToTasks(new List<IElasticDriverMessage>() { returnMessage }, retry + 1);

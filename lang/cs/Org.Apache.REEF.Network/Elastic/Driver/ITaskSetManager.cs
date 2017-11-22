@@ -103,9 +103,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         void OnTaskMessage(ITaskMessage message);
 
         /// <summary>
-        /// This method contains the logic to trigger when the Task Set execution is completed
+        /// TODO
         /// </summary>
-        bool Done();
+        bool IsDone();
 
         /// <summary>
         /// Used to react of a failure of a task.

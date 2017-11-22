@@ -31,6 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     {
         internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
         {
+            IsTaskDisposed = false;
             TaskConfiguration = config;
             ActiveContext = context;
             EvaluatorId = evaluatorId;
@@ -50,13 +51,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal Dictionary<string, IList<IConfiguration>> RescheduleConfigurations { get; set; }
 
-        internal IRunningTask TaskRunner { get; set; }
+        internal IRunningTask TaskRunner { get; private set; }
 
-        internal TaskStatus TaskStatus { get; set; }
+        internal TaskStatus TaskStatus { get; private set; }
 
         internal int NumRetry { get; set; }
 
         internal bool IsDisposed { get; private set; }
+
+        internal bool IsTaskDisposed { get; private set; }
+
+        internal void SetTaskRunner(IRunningTask taskRunner)
+        {
+            TaskRunner = taskRunner;
+            IsTaskDisposed = false;
+        }
+
+        internal void SetTaskStatus(TaskStatus status)
+        {
+            TaskStatus = status;
+        }
 
         internal void UpdateRuntime(IActiveContext newActiveContext, string evaluatorId)
         {
@@ -75,15 +89,23 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             EvaluatorId = string.Empty;
         }
 
-        public void Dispose()
+        public void DisposeTask()
         {
-            if (!IsDisposed)
+            if (!IsTaskDisposed)
             {
                 if (TaskRunner != null)
                 {
                     TaskRunner.Dispose();
-                    TaskRunner = null;
                 }
+                IsTaskDisposed = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            if (!IsDisposed)
+            {
+                DisposeTask();
 
                 if (ActiveContext != null)
                 {

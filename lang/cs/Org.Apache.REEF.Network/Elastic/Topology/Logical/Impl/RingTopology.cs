@@ -323,7 +323,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                     var returnMessage = new ElasticDriverMessageImpl(prev.TaskId, data);
                                     messages.Add(returnMessage);
                                 }
-                                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", node.TaskId);
+                                LOGGER.Log(Level.Info, "Sending reconfiguration message: restarting from node {0}", prev.TaskId);
                                 break;
 
                             // The failure is on the node with token while sending
@@ -533,48 +533,31 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal void RetrieveMissingDataFromRing(ref List<IElasticDriverMessage> messages)
         {
-            Dictionary<string, RingNode> dict = null;
-            var iteration = _iteration;
-            lock (_lock)
-            {
-                dict = _ringNodes[iteration];
-
-                // The ring may have just started a new iteration where no node has joined yet.
-                // In this care retrieve the iteration - 1
-                if (dict.Count == 0 && iteration > 0)
-                {
-                    dict = _ringNodes[--iteration];
-                }
-            }
-
-            if (dict.Count > 0)
-            {
-                var head = dict.First().Value;
-
-                while (head.Next != null)
-                {
-                    head = head.Next;
-                }
-
-                RetrieveMissingDataFromRing(head.TaskId, iteration, ref messages);
-            }
-            else
-            {
-                throw new IllegalStateException("Trying to recover an empty ring: failing");
-            } 
+            RetrieveMissingDataFromRing(_ringHead.TaskId, _ringHead.Iteration, ref messages);
         }
 
         internal void RetrieveMissingDataFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> returnMessages)
         {
             lock (_lock)
             {
-                RingNode node;
-                if (_ringNodes[iteration].TryGetValue(taskId, out node))
+                RingNode node = null;
+                if (!_ringNodes.ContainsKey(iteration))
+                {
+                    if (taskId == _rootTaskId)
+                    {
+                        node = _ringHead;
+                    }
+                    else
+                    {
+                        throw new IllegalStateException(string.Format("Cannot retrieve iteration {0} for {1}", iteration, taskId));
+                    }
+                }
+                if (node != null || _ringNodes[iteration].TryGetValue(taskId, out node))
                 {
                     var dest = node.Prev.TaskId;
-                    var data = new ResumeMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
+                    var data = new ResumeMessagePayload(node.TaskId, iteration, SubscriptionName, OperatorId);
                     returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, node.Iteration);
+                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, iteration);
                 }
                 else
                 {
@@ -607,7 +590,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal string Statistics()
         {
-            return string.Format("Total ring computation time {0}s\nAverage ring computation time {1}ms\nAverage number of nodes in ring {2}", (float)_totTime / 1000.0, _totTime / (_iteration - 1), (float)_totNumberofNodes / (_iteration - 1));
+            return string.Format("Total ring computation time {0}s\nAverage ring computation time {1}ms\nAverage number of nodes in ring {2}", (float)_totTime / 1000.0, _totTime / (_iteration > 2 ? _iteration - 1 : 1), (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
         }
 
         private void CleanPreviousRings()

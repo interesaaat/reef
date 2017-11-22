@@ -144,18 +144,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 if (reconfigureEvent.FailedTask.IsPresent())
                 {
-                    if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException)
+                    if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException && ((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).OperatorId == _id)
                     {
-                        var exception = reconfigureEvent.FailedTask.Value.AsError() as OperatorException;
-                        if (exception.OperatorId == _id)
-                        {
-                            var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, exception.AdditionalInfo).ToList();
-                            reconfigureEvent.FailureResponse.AddRange(msg);
-                        }
-                        else
-                        {
-                            throw new NotImplementedException("Different operator id is Future work");
-                        }
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, ((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo).ToList();
+                        reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                     else
                     {

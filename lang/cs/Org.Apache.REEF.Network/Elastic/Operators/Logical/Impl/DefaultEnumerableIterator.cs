@@ -169,7 +169,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override string LogInternalStatistics()
         {
-            return "Number of Iterations: " + _numIterations;
+            return "Number of Iterations: " + Math.Min(_iteration, _numIterations);
         }
     }
 }

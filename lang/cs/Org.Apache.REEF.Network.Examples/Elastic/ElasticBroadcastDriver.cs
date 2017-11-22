@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskCompleted(value);
 
-            if (_taskManager.Done())
+            if (_taskManager.IsDone())
             {
                 _taskManager.Dispose();
             }
@@ -172,7 +172,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
 
-            if (_taskManager.Done())
+            if (_taskManager.IsDone())
             {
                 _taskManager.Dispose();
             }
@@ -182,7 +182,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _taskManager.OnTaskFailure(failedTask);
 
-            if (_taskManager.Done())
+            if (_taskManager.IsDone())
             {
                 _taskManager.Dispose();
             }

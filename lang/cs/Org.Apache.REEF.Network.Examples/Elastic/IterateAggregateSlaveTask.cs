@@ -58,6 +58,19 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.AggregationRing:
                                 var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
 
+                                if (rand.Next(100) < 5)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. before");
+
+                                    if (rand.Next(100) < 50)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        ////Environment.Exit(0);
+                                    }
+                                }
                                 var rec = aggregator.Receive();
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
@@ -68,9 +81,37 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     rec[i] += 0;
                                 }
 
+                                if (rand.Next(100) < 5)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. mid");
+
+                                    if (rand.Next(100) < 50)
+                                    {
+                                        throw new Exception("Die. mid");
+                                    }
+                                    else
+                                    {
+                                        ////Environment.Exit(0);
+                                    }
+                                }
+
                                 aggregator.Send(rec);
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
+
+                                if (rand.Next(100) < 5)
+                                {
+                                    Console.WriteLine("I am going to die. Bye.");
+
+                                    if (rand.Next(100) < 50)
+                                    {
+                                        throw new Exception("Die. after");
+                                    }
+                                    else
+                                    {
+                                        ////Environment.Exit(0);
+                                    }
+                                }
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");

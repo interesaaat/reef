@@ -287,12 +287,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _workersTaskManager.OnTaskCompleted(value);
 
-            if (_serversTaskManager.Done())
+            if (_serversTaskManager.IsDone())
             {
                 _serversTaskManager.Dispose();
             }
 
-            if (_workersTaskManager.Done())
+            if (_workersTaskManager.IsDone())
             {
                 _workersTaskManager.Dispose();
             }
@@ -304,12 +304,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _workersTaskManager.OnEvaluatorFailure(failedEvaluator);
 
-            if (_serversTaskManager.Done())
+            if (_serversTaskManager.IsDone())
             {
                 _serversTaskManager.Dispose();
             }
 
-            if (_workersTaskManager.Done())
+            if (_workersTaskManager.IsDone())
             {
                 _workersTaskManager.Dispose();
             }
@@ -321,12 +321,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             _workersTaskManager.OnTaskFailure(failedTask);
 
-            if (_serversTaskManager.Done())
+            if (_serversTaskManager.IsDone())
             {
                 _serversTaskManager.Dispose();
             }
 
-            if (_workersTaskManager.Done())
+            if (_workersTaskManager.IsDone())
             {
                 _workersTaskManager.Dispose();
             }

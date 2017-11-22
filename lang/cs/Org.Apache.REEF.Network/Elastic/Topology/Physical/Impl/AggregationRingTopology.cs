@@ -325,8 +325,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
                             {
+                                var iteration = destMessage.Iteration;
+                                if (_rootTaskId == _taskId)
+                                {
+                                    iteration--;
+                                }
                                 Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
-                                _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
+                                _commLayer.NextDataRequest(_taskId, iteration);
                             }
                             else
                             {
