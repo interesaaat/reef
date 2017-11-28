@@ -95,6 +95,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             var received = false;
             DataMessage<T> message = null;
 
+            ////if (new Random().Next(100) < 5)
+            ////{
+            ////    Console.WriteLine("I am going to die. Bye.");
+
+            ////    if (new Random().Next(100) < 50)
+            ////    {
+            ////        throw new Exception("Die. in receive");
+            ////    }
+            ////    else
+            ////    {
+            ////        Environment.Exit(0);
+            ////    }
+            ////}
+
             while (!received && !CancellationSource.IsCancellationRequested)
             {
                 message = _topology.Receive(CancellationSource, (int)IteratorReference.Current) as DataMessage<T>;

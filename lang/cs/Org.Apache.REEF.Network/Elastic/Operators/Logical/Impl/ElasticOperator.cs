@@ -424,6 +424,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public abstract void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
+        public abstract void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration);
+
         public abstract void EventDispatcher(ref IFailureEvent @event);
 
         /// <summary>

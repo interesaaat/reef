@@ -131,17 +131,19 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="message">The message to send.</param>
         internal void Send(string destination, GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
-            if (message.GetType() == typeof(DataMessage<int[]>))
-            {
-                var dmsg = message as DataMessage;
-                if (dmsg.Iteration == 100)
-                {
-                    if (new Random().Next(100) < 20)
-                    {
-                        Environment.Exit(0);
-                    }
-                }
-            }
+            ////if (new Random().Next(100) < 5)
+            ////{
+            ////    Console.WriteLine("I am going to die. Bye.");
+
+            ////    if (new Random().Next(100) < 50)
+            ////    {
+            ////        throw new Exception("Die. in send");
+            ////    }
+            ////    ////else
+            ////    ////{
+            ////    ////    Environment.Exit(0);
+            ////    ////}
+            ////}
             if (message == null)
             {
                 throw new ArgumentNullException("message");
@@ -157,20 +159,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            using (var connection = _networkService.NewConnection(destId))
-            {
-                try
-                {
-                    if (!connection.IsOpen)
-                    {
-                        connection.Open();
-                    }
+            int retry = 0;
 
-                    connection.Write(message);
-                }
-                catch (Exception e)
+            while (!Send(destId, message) && !cancellationSource.IsCancellationRequested)
+            {
+                retry++;
+                if (retry > _retrySending)
                 {
-                    Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                    Logger.Log(Level.Warning, string.Format("Unable to send message after {0} retry", retry));
                     throw new Exception("Unable to send message");
                 }
             }
@@ -188,12 +184,28 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 return;
             }
 
+            ////if (new Random().Next(100) < 5)
+            ////{
+            ////    Console.WriteLine("I am going to die. Bye.");
+
+            ////    if (new Random().Next(100) < 50)
+            ////    {
+            ////        throw new Exception("Die. in onNext");
+            ////    }
+            ////    ////else
+            ////    ////{
+            ////    ////    Environment.Exit(0);
+            ////    ////}
+            ////}
+
             var nsMessage = remoteMessage.Message;
             var gcm = nsMessage.Data.First();
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
 
             if (gcm.GetType() == typeof(CheckpointMessageRequest))
             {
+                Logger.Log(Level.Info, "Received checkpoint request from " + gcMessageTaskSource);
+
                 var cpm = gcm as CheckpointMessageRequest;
                 ICheckpointState checkpoint;
                 if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration))
@@ -342,23 +354,23 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private bool Send(IIdentifier destId, GroupCommunicationMessage message)
         {
-            var connection = _networkService.NewConnection(destId);
-
-            try
+            using (var connection = _networkService.NewConnection(destId))
             {
-                if (!connection.IsOpen)
+                try
                 {
-                    connection.Open();
-                }
+                    if (!connection.IsOpen)
+                    {
+                        connection.Open();
+                    }
 
-                connection.Write(message);
-            }
-            catch (Exception e)
-            {
-                Logger.Log(Level.Warning, "Unable to send message " + e.Message);
-                connection.Dispose();
-                return false;
-                ////throw new Exception("Unable to send message");
+                    connection.Write(message);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine("yo");
+                    Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                    return false;
+                }
             }
 
             return true;

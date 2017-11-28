@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.NetworkService
             string destStr = _destId.ToString();
             LOGGER.Log(Level.Verbose, "Network service opening connection to {0}...", destStr);
 
-            IPEndPoint destAddr = _nameClient.CacheLookup(_destId.ToString());
+            IPEndPoint destAddr = _nameClient.Lookup(_destId.ToString());
             if (destAddr == null)
             {
                 throw new RecoverableNetworkException("Cannot register Identifier with NameService");

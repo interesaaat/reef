@@ -42,12 +42,12 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Timeout for sending or receiving messages", defaultValue: "60000")]
+        [NamedParameter("Timeout for sending or receiving messages", defaultValue: "20000")]
         public class Timeout : Name<int>
         {
         }
 
-        [NamedParameter("Number of retry to send a message", defaultValue: "10")]
+        [NamedParameter("Number of retry to send a message", defaultValue: "15")]
         public class Retry : Name<int>
         {
         }

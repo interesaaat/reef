@@ -17,13 +17,19 @@
 
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Config;
+using Org.Apache.REEF.Wake.Time;
+using System;
+using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     class TaskSetManagerParameters
     {
+        private IClock _clock;
+
         [Inject]
         public TaskSetManagerParameters(
+            IClock clock,
             [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retry,
             [Parameter(typeof(ElasticServiceConfigurationOptions.RetryWaitTime))] int waitTime,
@@ -33,6 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorNumCores))] int numCores,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorMemorySize))] int memorySize)
         {
+            _clock = clock;
             Timeout = timeout;
             Retry = retry;
             WaitTime = waitTime;
@@ -58,5 +65,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         internal int NewEvaluatorNumCores { get; private set; }
 
         internal int NewEvaluatorMemorySize { get; private set; }
+
+        internal void ScheduleAlarm(IObserver<Alarm> alarm)
+        {
+            _clock.ScheduleAlarm(Timeout, alarm);
+        }
     }
 }

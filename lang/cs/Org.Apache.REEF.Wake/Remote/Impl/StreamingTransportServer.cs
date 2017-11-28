@@ -160,7 +160,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                     ProcessClient(client).LogAndIgnoreExceptionIfAny(
                         LOGGER,
                         "StreamingTransportServer observed Task Exception during client processing.",
-                        Level.Verbose);
+                        Level.Info);
                 }
             }
             catch (InvalidOperationException)
@@ -209,7 +209,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             }
             catch (Exception e)
             {
-                LOGGER.Log(Level.Warning, "StreamingTransportServer get exception in ProcessClient: {0}, IsCancellationRequested {1}.", e.GetType(), token.IsCancellationRequested);
+                LOGGER.Log(Level.Warning, "StreamingTransportServer get exception in ProcessClient: {0}, IsCancellationRequested {1}.", e.Message, token.IsCancellationRequested);
                 throw;
             }
         }

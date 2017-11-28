@@ -123,12 +123,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
                         LOGGER.Log(Level.Info, "Received next data request from {0} for iteration {1}", message.TaskId, iteration);
 
-                        RingTopology.RetrieveMissingDataFromRing(message.TaskId, iteration, ref returnMessages);
+                        RingTopology.RetrieveMissingDataFromRing(ref returnMessages, message.TaskId, iteration);
                         return true;
                     }
                 default:
                     return false;
             }
+        }
+
+        public override void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        {
+            RingTopology.RetrieveMissingDataFromRing(ref msgs, taskId, iteration);
         }
 
         public override void OnReconfigure(ref IReconfigure reconfigureEvent)
@@ -153,9 +158,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         // We trigger the resume of the computation starting from the master
                         var msgs = new List<IElasticDriverMessage>();
+                        int? iteration = reconfigureEvent.Iteration.IsPresent() ? (int?)reconfigureEvent.Iteration.Value : null;
 
                         RingTopology.RemoveTaskFromRing(reconfigureEvent.FailedTask.Value.Id);
-                        RingTopology.RetrieveMissingDataFromRing(ref msgs);
+                        RingTopology.RetrieveMissingDataFromRing(ref msgs, reconfigureEvent.FailedTask.Value.Id, iteration);
                         reconfigureEvent.FailureResponse.AddRange(msgs);
                     }
                 }

@@ -335,7 +335,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                                 {
                                     if (!_ringNodes[iteration].TryGetValue(taskId, out node))
                                     {
-                                        throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized: current ring is in {2}", taskId, iteration, _iteration));
+                                        throw new IllegalStateException(string.Format("Failure in {0} in iteration {1} not recognized.", taskId, iteration));
                                     }
                                 }
 
@@ -375,21 +375,24 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal void RemoveTaskFromRing(string taskId)
         {
-            foreach (var dict in _ringNodes.Values)
+            lock (_lock)
             {
-                if (dict.TryGetValue(taskId, out RingNode node))
+                foreach (var dict in _ringNodes.Values)
                 {
-                    if (node.Next != null)
+                    if (dict.TryGetValue(taskId, out RingNode node))
                     {
-                        node.Next.Prev = node.Prev;
-                    }
-                    if (node.Prev != null)
-                    {
-                        node.Prev.Next = node.Next;
-                    }
+                        if (node.Next != null)
+                        {
+                            node.Next.Prev = node.Prev;
+                        }
+                        if (node.Prev != null)
+                        {
+                            node.Prev.Next = node.Next;
+                        }
 
-                    node = null;
-                    dict.Remove(taskId);
+                        node = null;
+                        dict.Remove(taskId);
+                    }
                 }
             }
         }
@@ -504,7 +507,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     return;
                 }
 
-                if (!_ringNodes[iteration].TryGetValue(taskId, out RingNode node))
+                if (!_ringNodes[iteration].TryGetValue(taskId, out RingNode node) || node.Next == null)
                 {
                     var msg = "Node not found: ";
                     if (_currentWaitingList.Count > 0 || _nodesWaitingToJoinRing.Count > 0)
@@ -521,27 +524,26 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     return;
                 }
 
-                if (node.Next != null)
-                {
-                    var dest = taskId;
-                    var data = node.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(node.Next.TaskId, SubscriptionName, OperatorId, node.Next.Iteration) : (DriverMessagePayload)new FailureMessagePayload(node.Next.TaskId, node.Next.Iteration, SubscriptionName, OperatorId);
-                    messages.Add(new ElasticDriverMessageImpl(dest, data));
-                    LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2} in retrieve", dest, node.Next.TaskId, node.Next.Iteration);
-                } 
+                var dest = taskId;
+                var data = node.Type == DriverMessageType.Ring ? (DriverMessagePayload)new RingMessagePayload(node.Next.TaskId, SubscriptionName, OperatorId, node.Next.Iteration) : (DriverMessagePayload)new FailureMessagePayload(node.Next.TaskId, node.Next.Iteration, SubscriptionName, OperatorId);
+                messages.Add(new ElasticDriverMessageImpl(dest, data));
+                LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2} in retrieve", dest, node.Next.TaskId, node.Next.Iteration);
             }
         }
 
-        internal void RetrieveMissingDataFromRing(ref List<IElasticDriverMessage> messages)
-        {
-            RetrieveMissingDataFromRing(_ringHead.TaskId, _ringHead.Iteration, ref messages);
-        }
-
-        internal void RetrieveMissingDataFromRing(string taskId, int iteration, ref List<IElasticDriverMessage> returnMessages)
+        internal void RetrieveMissingDataFromRing(ref List<IElasticDriverMessage> returnMessages, string taskId = "", int? iter = null)
         {
             lock (_lock)
             {
                 RingNode node = null;
-                if (!_ringNodes.ContainsKey(iteration))
+                if (taskId == string.Empty)
+                {
+                    taskId = _ringHead.TaskId;
+                    iter = _ringHead.Iteration;
+                }
+                var iteration = iter ?? _ringNodes.Keys.Last();
+
+                if (!_ringNodes.ContainsKey(iteration) || !_ringNodes[iteration].TryGetValue(taskId, out node))
                 {
                     if (taskId == _rootTaskId)
                     {
@@ -549,10 +551,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     }
                     else
                     {
-                        throw new IllegalStateException(string.Format("Cannot retrieve iteration {0} for {1}", iteration, taskId));
+                        LOGGER.Log(Level.Info, "{0} in iteration {1} not found", taskId, iteration);
                     }
                 }
-                if (node != null || _ringNodes[iteration].TryGetValue(taskId, out node))
+                if (node != null)
                 {
                     var dest = node.Prev.TaskId;
                     var data = new ResumeMessagePayload(node.TaskId, iteration, SubscriptionName, OperatorId);
@@ -597,7 +599,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             lock (_lock)
             {
-                if (_ringNodes.Count > 3)
+                if (_ringNodes.Count > 4)
                 {
                     var smallerDict = _ringNodes.First();
                     var keys = smallerDict.Value.Keys.ToArray();

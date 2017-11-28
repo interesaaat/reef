@@ -51,8 +51,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             { DefaultFailureStates.ContinueAndReconfigure, 0.0F },
             { DefaultFailureStates.ContinueAndReschedule, 0.0F },
-            { DefaultFailureStates.StopAndReschedule, 0.3F },
-            { DefaultFailureStates.Fail, 0.3F }
+            { DefaultFailureStates.StopAndReschedule, 0.5F },
+            { DefaultFailureStates.Fail, 0.5F }
         };
 
         [Inject]

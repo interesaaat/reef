@@ -37,6 +37,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <returns>Zero or more events for triggering failure mitigation mechanisms</returns>
         void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
+        // TODO
+        void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration);
+
         /// <summary>
         /// When a new failure state is raised, this method is used to dispatch
         /// such event to the proper failure mitigation logic.

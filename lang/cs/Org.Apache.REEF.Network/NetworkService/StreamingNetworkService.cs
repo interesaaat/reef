@@ -169,18 +169,18 @@ namespace Org.Apache.REEF.Network.NetworkService
             }
 
             IConnection<T> connection;
-            if (_connectionMap.TryGetValue(destinationId, out connection))
-            {
-                return connection;
-            }
-            else
-            {
+            ////if (_connectionMap.TryGetValue(destinationId, out connection))
+            ////{
+            ////    return connection;
+            ////}
+            ////else
+            ////{
                 connection = new NsConnection<T>(_localIdentifier, destinationId,
                     NamingClient, _remoteManager);
 
-                _connectionMap[destinationId] = connection;
+                ////_connectionMap[destinationId] = connection;
                 return connection;
-            }
+            ////}
         }
 
         /// <summary>

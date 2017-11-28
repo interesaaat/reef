@@ -16,7 +16,6 @@
 // under the License.
 
 using Org.Apache.REEF.Common.Protobuf.ReefProtocol;
-using Org.Apache.REEF.Common.Runtime.Evaluator.Task;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Interface;
 
@@ -42,11 +41,6 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator
             }
 
             _heartBeatManager.OnNext(proto);
-        }
-
-        public void Heartbeat()
-        {
-            _heartBeatManager.OnNext();
         }
     }
 }

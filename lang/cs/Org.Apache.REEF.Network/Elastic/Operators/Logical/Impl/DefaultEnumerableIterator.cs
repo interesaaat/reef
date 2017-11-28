@@ -31,6 +31,7 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Types;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -132,6 +133,27 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             if (PropagateFailureDownstream() && _next != null)
             {
                 _next.OnTaskFailure(task, ref failureEvents);
+            }
+        }
+
+        public override void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        {
+            iteration = _iteration;
+            
+            if (_next != null)
+            {
+                OnResume(ref msgs, ref taskId, ref iteration);
+            }
+        }
+
+        public override void OnReconfigure(ref IReconfigure reconfigureEvent)
+        {
+            if (reconfigureEvent.FailedTask.IsPresent())
+            {
+                if (!(reconfigureEvent.FailedTask.Value.AsError() is OperatorException))
+                {
+                    reconfigureEvent.Iteration = Optional<int>.Of(_iteration);
+                }
             }
         }
 

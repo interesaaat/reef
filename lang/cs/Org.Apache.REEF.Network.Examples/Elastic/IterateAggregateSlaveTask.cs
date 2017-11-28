@@ -68,7 +68,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     }
                                     else
                                     {
-                                        ////Environment.Exit(0);
+                                        Environment.Exit(0);
                                     }
                                 }
                                 var rec = aggregator.Receive();
@@ -109,7 +109,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     }
                                     else
                                     {
-                                        ////Environment.Exit(0);
+                                        Environment.Exit(0);
                                     }
                                 }
                                 break;

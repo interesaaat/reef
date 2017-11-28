@@ -27,6 +27,7 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
 using System;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -124,6 +125,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             if (PropagateFailureDownstream() && _next != null)
             {
                 _next.OnTaskFailure(task, ref failureEvents);
+            }
+        }
+
+        public override void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        {
+            if (_next != null)
+            {
+                OnResume(ref msgs, ref taskId, ref iteration);
             }
         }
 

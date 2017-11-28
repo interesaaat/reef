@@ -41,6 +41,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         public Optional<IFailedTask> FailedTask { get; set; }
 
+        public Optional<int> Iteration { get; set; }
+
         public string TaskId
         {
             get { return FailedTask.Value.Id; }

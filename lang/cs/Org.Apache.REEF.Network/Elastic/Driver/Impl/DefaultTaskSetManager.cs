@@ -31,12 +31,14 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Collections.Concurrent;
+using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     public sealed class DefaultTaskSetManager : 
         ITaskSetManager, 
-        IDefaultFailureEventResponse
+        IDefaultFailureEventResponse,
+        IObserver<Alarm>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetManager));
 
@@ -45,6 +47,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private volatile bool _scheduled;
         private volatile bool _completed;
         private readonly TaskSetManagerParameters _parameters;
+        private volatile bool _skipAlarm;
+        private int _retryResume;
 
         private volatile int _contextsAdded;
         private int _tasksAdded;
@@ -77,6 +81,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _scheduled = false;
             _disposed = false;
             _completed = false;
+            _skipAlarm = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
@@ -170,30 +175,30 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 throw new IllegalStateException("Task set have to be built before adding tasks");
             }
 
-            if (Completed() || (_scheduled && Failed()))
+            if (Completed() || Failed())
             {
                 LOGGER.Log(Level.Warning, "Adding tasks to already completed Task Set: ignoring");
                 activeContext.Dispose();
                 return;
             }
 
-            var id = Utils.GetContextNum(activeContext);
+            var id = Utils.GetContextNum(activeContext) - 1;
 
-            if (_taskInfos[id - 1] != null)
+            if (_taskInfos[id] != null)
             {
                 LOGGER.Log(Level.Info, "{0} already part of Task Set: going to directly submit it", Utils.BuildTaskId(SubscriptionsId, id));
 
-                lock (_infosLock)
+                lock (_taskInfos[id].Lock)
                 {
-                    _taskInfos[id - 1].UpdateRuntime(activeContext, activeContext.EvaluatorId);
+                    _taskInfos[id].UpdateRuntime(activeContext, activeContext.EvaluatorId);
                 }
 
-                SubmitTask(id - 1);
+                SubmitTask(id);
             }
             else
             {
                 bool isMaster = IsMasterTaskContext(activeContext).Any();
-                var taskId = Utils.BuildTaskId(SubscriptionsId, id);
+                var taskId = Utils.BuildTaskId(SubscriptionsId, id + 1);
 
                 IConfiguration partialTaskConf;
 
@@ -249,10 +254,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (BelongsTo(task.Id))
             {
                 var id = Utils.GetTaskNum(task.Id) - 1;
-                _taskInfos[id].SetTaskRunner(task);
 
-                lock (_infosLock)
+                lock (_taskInfos[id].Lock)
                 {
+                    _taskInfos[id].SetTaskRunner(task);
+
                     if (Completed() || Failed())
                     {
                         LOGGER.Log(Level.Info, "Received running from task {0} but Taskset is completed or failed: ignoring", task.Id);
@@ -292,16 +298,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 Interlocked.Decrement(ref _tasksRunning);
                 var id = Utils.GetTaskNum(taskInfo.Id) - 1;
 
-                lock (_infosLock)
+                lock (_taskInfos[id].Lock)
                 {
                     _taskInfos[id].SetTaskStatus(TaskStatus.Completed);
-
-                    if (Completed())
+                }
+                if (Completed())
+                {
+                    foreach (var info in _taskInfos.Where(info => info != null && info.TaskStatus < TaskStatus.Failed))
                     {
-                        foreach (var info in _taskInfos.Where(info => info != null && info.TaskStatus < TaskStatus.Failed && info.TaskRunner != null && !info.IsTaskDisposed))
-                        {
-                            info.TaskRunner.Dispose();
-                        }
+                        info.DisposeTask();
                     }
                 }
             }
@@ -312,18 +317,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (BelongsTo(message.TaskId))
             {
                 var id = Utils.GetTaskNum(message.TaskId) - 1;
+                var returnMessages = new List<IElasticDriverMessage>();
+                _skipAlarm = true;
 
-                lock (_infosLock)
+                foreach (var sub in _subscriptions.Values)
                 {
-                    var returnMessages = new List<IElasticDriverMessage>();
-
-                    foreach (var sub in _subscriptions.Values)
-                    {
-                        sub.OnTaskMessage(message, ref returnMessages);
-                    }
-
-                    SendToTasks(returnMessages);
+                    sub.OnTaskMessage(message, ref returnMessages);
                 }
+
+                SendToTasks(returnMessages);
             }
         }
 
@@ -333,6 +335,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 _completed = _subscriptions.Select(sub => sub.Value.Completed).Aggregate((com1, com2) => com1 && com2);
             }
+
             return _completed;
         }
 
@@ -355,6 +358,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             OnTaskFailure(info, ref failureEvents);
         }
 
+        public void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        {
+            foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            {
+                sub.OnResume(ref msgs, ref taskId, ref iteration);
+            }
+        }
+
         public void OnTaskFailure(IFailedTask info, ref List<IFailureEvent> failureEvents)
         {
             if (BelongsTo(info.Id))
@@ -369,7 +380,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     LOGGER.Log(Level.Info, "Received a Task failure but Task Manager is completed or failed: ignoring the failure " + info.Id, info.AsError());
 
-                    lock (_infosLock)
+                    lock (_taskInfos[id].Lock)
                     {
                         _taskInfos[id].SetTaskStatus(TaskStatus.Failed);
                     }
@@ -379,7 +390,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 failureEvents = failureEvents ?? new List<IFailureEvent>();
 
-                lock (_infosLock)
+                lock (_taskInfos[id].Lock)
                 {
                     if (_taskInfos[id].TaskStatus < TaskStatus.Failed)
                     {
@@ -413,7 +424,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 var failedTask = evaluator.FailedTask.Value;
                 var id = Utils.GetTaskNum(failedTask.Id) - 1;
 
-                lock (_infosLock)
+                lock (_taskInfos[id].Lock)
                 {
                     _taskInfos[id].DropRuntime();
                 }
@@ -422,7 +433,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
             else
             {
-                if (!Completed() || Failed())
+                if (!Completed() && !Failed())
                 {
                     SpawnNewEvaluator();
                 }
@@ -479,9 +490,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             SendToTasks(rescheduleEvent.FailureResponse);
 
-            lock (_infosLock)
+            var id = Utils.GetTaskNum(rescheduleEvent.TaskId) - 1;
+
+            lock (_taskInfos[id].Lock)
             {
-                var id = Utils.GetTaskNum(rescheduleEvent.TaskId) - 1;
                 _taskInfos[id].NumRetry++;
 
                 if (_taskInfos[id].NumRetry > _parameters.NumTaskFailures)
@@ -525,24 +537,55 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             Dispose();
         }
 
+        public void OnNext(Alarm value)
+        {
+            if (!_skipAlarm)
+            {
+                if (_retryResume > _parameters.Retry)
+                {
+                    LOGGER.Log(Level.Error, string.Format("Taskset not able to recover after {0} tries: Aborting.", _retryResume));
+                    OnFail();
+                }
+                var msgs = new List<IElasticDriverMessage>();
+                var taskId = string.Empty;
+                int? iteration = null;
+                OnResume(ref msgs, ref taskId, ref iteration);
+            }
+            else
+            {
+                _retryResume = 0;
+                _skipAlarm = false;
+            }
+
+            _parameters.ScheduleAlarm(this);
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
+        }
+
         public void Dispose()
         {
-            lock (_infosLock)
+            if (!_disposed)
             {
-                if (!_disposed)
-                {
-                    LogFinalStatistics();
+                LogFinalStatistics();
 
-                    foreach (var info in _taskInfos)
+                foreach (var info in _taskInfos)
+                {
+                    lock (info.Lock)
                     {
                         if (info != null)
                         {
                             info.Dispose();
                         }
                     }
-
-                    _disposed = true;
                 }
+
+                _disposed = true;
             }
         }
 
@@ -566,10 +609,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
             }
 
-            lock (_infosLock)
-            {
-                _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
-            }
+            _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
 
             if (_scheduled)
             {
@@ -586,14 +626,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (Completed() || Failed())
             {
                 LOGGER.Log(Level.Warning, "Task submit for a completed or failed Task Set: ignoring");
-                lock (_infosLock)
-                {
-                    _taskInfos[id].DisposeTask();
-                }
+                _taskInfos[id].DisposeTask();
+
                 return;
             }
 
-            lock (_infosLock)
+            lock (_taskInfos[id].Lock)
             {
                 var subs = _taskInfos[id].Subscriptions;
                 ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
@@ -622,7 +660,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 IConfiguration mergedTaskConf = Configurations.Merge(_taskInfos[id].TaskConfiguration, serviceConf);
 
-                if (_taskInfos[id].ActiveContext == null)
+                if (_taskInfos[id].IsActiveContextDisposed)
                 {
                     LOGGER.Log(Level.Warning, string.Format("Task submit for {0} with a non-active context: spawning a new evaluator", id + 1));
 
@@ -676,12 +714,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     var destination = Utils.GetTaskNum(returnMessage.Destination) - 1;
 
-                    lock (_infosLock)
+                    if (_taskInfos[destination] == null)
                     {
-                        if (_taskInfos[destination] == null)
-                        {
-                            throw new ArgumentNullException("Task Info");
-                        }
+                        throw new ArgumentNullException("Task Info");
+                    }
+                    lock (_taskInfos[destination].Lock)
+                    {
                         if (Completed() || Failed())
                         {
                             LOGGER.Log(Level.Warning, "Task submit for a completed or failed Task Set: ignoring");

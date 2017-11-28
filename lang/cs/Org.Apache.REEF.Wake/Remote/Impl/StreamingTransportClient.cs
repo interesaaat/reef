@@ -101,6 +101,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 throw new ArgumentNullException("message");
             }
 
+            Console.WriteLine("Link is disposed " + _disposed);
             _link.Write(message);
         }
 
@@ -144,7 +145,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                     Logger.Log(Level.Warning, msg);
                     throw;
                 }
-                Logger.Log(Level.Verbose, msg);
+                Logger.Log(Level.Info, msg);
             }
         }
     }

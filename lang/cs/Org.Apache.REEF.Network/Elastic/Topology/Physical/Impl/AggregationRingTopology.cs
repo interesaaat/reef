@@ -83,8 +83,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         internal GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource, int iteration)
         {
             GroupCommunicationMessage message;
-            float retry = 1.0f;
-            float delta = iteration == 1 ? 0.1f : 1.0f;
+            ////float retry = 1.0f;
+            ////float delta = iteration == 1 ? 0.1f : 1.0f;
 
             while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
             {
@@ -93,20 +93,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     throw new OperationCanceledException("Received cancellation request: stop receiving");
                 }
 
-                if (_taskId == _rootTaskId)
-                {
-                    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iteration);
+                ////if (_taskId == _rootTaskId)
+                ////{
+                ////    Logger.Log(Level.Info, "Waited for {0}ms, going to request for data at iteration {1}", _timeout, iteration);
 
-                    _commLayer.NextDataRequest(_taskId, iteration);
+                ////    _commLayer.NextDataRequest(_taskId, iteration);
 
-                    retry += delta;
+                ////    retry += delta;
 
-                    if (retry > _retry)
-                    {
-                        throw new Exception(string.Format(
-                            "Failed to receive message in the ring after {0} try", _retry));
-                    }
-                }
+                ////    if (retry > _retry)
+                ////    {
+                ////        throw new Exception(string.Format(
+                ////            "Failed to receive message in the ring after {0} try", _retry));
+                ////    }
+                ////}
             }
 
             return message;
@@ -191,6 +191,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public override void OnNext(NsMessage<GroupCommunicationMessage> message)
         {
+            if (!_initialized)
+            {
+                Logger.Log(Level.Warning, "Received data while task is not initialized: ignoring");
+                return;
+            }
+
             if (_messageQueue.IsAddingCompleted)
             {
                 if (_messageQueue.Count > 0)
@@ -199,6 +205,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
                 _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             }
+
+            Console.WriteLine("Received message from " + message.SourceId);
 
             foreach (var payload in message.Data)
             {
@@ -323,8 +331,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         {
                             var splits = Operator.FailureInfo.Split(':');
 
-                            if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
-                            {
+                            ////if (int.Parse(splits[0]) == (int)PositionTracker.InReceive)
+                            ////{
                                 var iteration = destMessage.Iteration;
                                 if (_rootTaskId == _taskId)
                                 {
@@ -332,11 +340,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                                 }
                                 Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
                                 _commLayer.NextDataRequest(_taskId, iteration);
-                            }
-                            else
-                            {
-                                Logger.Log(Level.Warning, "Resume not available: ignoring");
-                            }
+                            ////}
+                            ////else
+                            ////{
+                            ////    Logger.Log(Level.Warning, "Resume not available: ignoring");
+                            ////}
                             return;
                         }
 
@@ -355,6 +363,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (_taskId != _rootTaskId)
             {
+                if (_messageQueue.Count > 0)
+                {
+                    // This is required because data (coming from when the task was alive)
+                    // could have been received while a task recovers from a failure. 
+                    _messageQueue.Dispose();
+                    _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
+                }
                 _commLayer.JoinTheRing(_taskId, iteration);
             }
         }
@@ -377,6 +392,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     }
 
                     _sendmre.Reset();
+
+                    if (_next.Count > 0 && _next.Keys.Last() > dm.Iteration)
+                    {
+                        Logger.Log(Level.Warning, "Trying to send an old data message: Ignoring");
+                        return;
+                    }
 
                     if (!_sendmre.WaitOne(_timeout))
                     {

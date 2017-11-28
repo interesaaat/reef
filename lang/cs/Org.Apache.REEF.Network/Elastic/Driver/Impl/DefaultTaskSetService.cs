@@ -35,6 +35,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -187,6 +188,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskFailure(IFailedTask value, ref List<IFailureEvent> failureEvents)
         {       
+        }
+
+        public void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        {
         }
 
         public void EventDispatcher(ref IFailureEvent @event)

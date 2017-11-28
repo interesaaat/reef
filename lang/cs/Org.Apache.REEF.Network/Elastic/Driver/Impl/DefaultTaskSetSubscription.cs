@@ -197,6 +197,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
+        public void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        {
+            RootOperator.OnResume(ref msgs, ref taskId, ref iteration);
+        }
+
         public void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             // Failures have to be propagated down to the operators

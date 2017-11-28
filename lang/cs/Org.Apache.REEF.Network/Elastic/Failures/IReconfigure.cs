@@ -26,5 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     public interface IReconfigure : IFailureEvent
     {
         Optional<IFailedTask> FailedTask { get; }
+
+        Optional<int> Iteration { get; set; }
     }
 }

@@ -89,8 +89,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             Logger.Log(Level.Info, "Sending request for data through heartbeat");
 
-            Logger.Log(Level.Info, "Sending request for data through heartbeat");
-
             Send(taskId, message);     
         }
 

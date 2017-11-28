@@ -29,9 +29,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// </summary>
     internal sealed class TaskInfo : IDisposable
     {
+        private volatile bool _isTaskDisposed;
+        private volatile bool _isActiveContextDisposed;
+        private volatile bool _isDisposed;
+
         internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
         {
-            IsTaskDisposed = false;
+            _isTaskDisposed = false;
+            _isActiveContextDisposed = false;
+            _isDisposed = false;
             TaskConfiguration = config;
             ActiveContext = context;
             EvaluatorId = evaluatorId;
@@ -39,11 +45,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             NumRetry = 0;
             TaskStatus = status;
             RescheduleConfigurations = new Dictionary<string, IList<IConfiguration>>();
+            Lock = new object();
         }
 
         internal IConfiguration TaskConfiguration { get; private set; }
 
         internal IActiveContext ActiveContext { get; private set; }
+
+        internal bool IsActiveContextDisposed
+        {
+            get { return _isActiveContextDisposed; }
+        }
 
         internal string EvaluatorId { get; private set; }
 
@@ -57,14 +69,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal int NumRetry { get; set; }
 
-        internal bool IsDisposed { get; private set; }
-
-        internal bool IsTaskDisposed { get; private set; }
+        internal object Lock { get; private set; }
 
         internal void SetTaskRunner(IRunningTask taskRunner)
         {
             TaskRunner = taskRunner;
-            IsTaskDisposed = false;
+            _isTaskDisposed = false;
         }
 
         internal void SetTaskStatus(TaskStatus status)
@@ -74,46 +84,57 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal void UpdateRuntime(IActiveContext newActiveContext, string evaluatorId)
         {
-            if (ActiveContext != null)
+            if (!_isActiveContextDisposed)
             {
-                throw new IllegalStateException("Updating Task with not null active context");
+                throw new IllegalStateException("Updating Task with not disposed active context");
             }
 
             ActiveContext = newActiveContext;
             EvaluatorId = evaluatorId;
+            _isActiveContextDisposed = false;
         }
 
         internal void DropRuntime()
         {
-            ActiveContext = null;
-            EvaluatorId = string.Empty;
+            _isActiveContextDisposed = true;
+            _isTaskDisposed = true;
         }
 
         public void DisposeTask()
         {
-            if (!IsTaskDisposed)
+            if (!_isTaskDisposed)
             {
                 if (TaskRunner != null)
                 {
                     TaskRunner.Dispose();
                 }
-                IsTaskDisposed = true;
+
+                _isTaskDisposed = true;
+            }
+        }
+
+        public void DisposeActiveContext()
+        {
+            if (!_isActiveContextDisposed)
+            {
+                if (ActiveContext != null)
+                {
+                    ActiveContext.Dispose();
+                }
+
+                _isActiveContextDisposed = true;
             }
         }
 
         public void Dispose()
         {
-            if (!IsDisposed)
+            if (!_isDisposed)
             {
                 DisposeTask();
 
-                if (ActiveContext != null)
-                {
-                    ActiveContext.Dispose();
-                    ActiveContext = null;
-                }
+                DisposeActiveContext();
 
-                IsDisposed = true;
+                _isDisposed = true;
             }
         }
     }
