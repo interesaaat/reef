@@ -25,6 +25,7 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake;
 using Org.Apache.REEF.Wake.Remote;
+using System.Reactive.Disposables;
 
 namespace Org.Apache.REEF.Network.NetworkService
 {
@@ -134,7 +135,8 @@ namespace Org.Apache.REEF.Network.NetworkService
             if (_remoteSender != null)
             {
                 IsOpen = false;
-                _remoteSender.OnCompleted();
+                var disposable = _remoteSender as IDisposable;
+                disposable.Dispose();
             }
         }
     }

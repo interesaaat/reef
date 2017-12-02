@@ -115,7 +115,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
                 if (message.Iteration < (int)IteratorReference.Current)
                 {
-                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
+                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: resuming my computation", message.Iteration, (int)IteratorReference.Current);
+
+                    if (!_topology.GetCheckpoint(out ICheckpointState checkpoint, message.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                    {
+                        LOGGER.Log(Level.Warning, "Recovery from checkpoint not available: ignoring");
+                    }
+
+                    _topology.Send(checkpoint.State as GroupCommunicationMessage[], CancellationSource);
                 }
                 else
                 {

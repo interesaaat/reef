@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Timeout for sending or receiving messages", defaultValue: "100")]
+        [NamedParameter("Timeout after which computation is consider inactive", defaultValue: "60000")]
         public class Timeout : Name<int>
         {
         }

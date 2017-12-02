@@ -47,33 +47,20 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Send(taskId, message);
         }
 
-        internal void JoinTheRing(string taskId, int iteration)
+        internal void JoinTheRing(string taskId)
         {
-            var message = new byte[6];
+            var message = new byte[2];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
 
             Logger.Log(Level.Info, "Going to request to join the ring through heartbeat");
 
             Send(taskId, message);
         }
 
-        internal void TokenResponse(string taskId, int iteration, bool response)
-        {
-            var message = new byte[7];
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenResponse), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
-            message[6] = response ? (byte)1 : (byte)0;
-
-            Logger.Log(Level.Info, string.Format("Sending response message ({0} for iteration {1}) through heartbeat", response, iteration));
-
-            Send(taskId, message);
-        }
-
-        internal void NextTokenRequest(string taskId, int iteration)
+        internal void TokenRequest(string taskId, int iteration)
         {
             var message = new byte[6];
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextTokenRequest), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenRequest), 0, message, 0, sizeof(ushort));
             Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
 
             Logger.Log(Level.Info, string.Format("Sending request for next node in the ring at iteration {0} through heartbeat", iteration));

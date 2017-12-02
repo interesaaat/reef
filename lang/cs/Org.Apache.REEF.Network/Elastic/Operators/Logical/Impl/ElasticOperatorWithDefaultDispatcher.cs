@@ -28,6 +28,7 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
 using System;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -128,11 +129,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)
         {
             if (_next != null)
             {
-                OnResume(ref msgs, ref taskId, ref iteration);
+                _next.OnTimeout(alarm, ref msgs, ref nextTimeouts);
             }
         }
 

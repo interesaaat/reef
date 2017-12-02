@@ -36,6 +36,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -190,7 +191,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {       
         }
 
-        public void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)
         {
         }
 

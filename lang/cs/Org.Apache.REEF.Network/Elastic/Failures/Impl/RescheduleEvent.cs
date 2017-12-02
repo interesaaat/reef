@@ -36,6 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             OperatorId = operatorId;
             FailureResponse = new List<IElasticDriverMessage>();
             RescheduleTaskConfigurations = new Dictionary<string, IList<IConfiguration>>();
+            Iteration = Optional<int>.Empty();
         }
 
         public int FailureEvent
@@ -45,14 +46,19 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         public Optional<IFailedTask> FailedTask { get; set; }
 
-        public Optional<int> Iteration { get; set; }
-
         public string TaskId { get; private set; }
 
         public int OperatorId { get; private set; }
 
+        public Optional<int> Iteration { get; set; }
+
         public List<IElasticDriverMessage> FailureResponse { get; private set; }
 
         public Dictionary<string, IList<IConfiguration>> RescheduleTaskConfigurations { get; private set; }
+
+        public bool Reschedule
+        {
+            get { return RescheduleTaskConfigurations.Count > 0; }
+        }
     }
 }

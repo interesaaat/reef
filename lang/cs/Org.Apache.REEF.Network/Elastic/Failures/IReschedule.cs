@@ -26,5 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     public interface IReschedule : IReconfigure
     {
         Dictionary<string, IList<IConfiguration>> RescheduleTaskConfigurations { get; }
+
+        bool Reschedule { get; }
     }
 }

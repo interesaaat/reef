@@ -113,14 +113,15 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 throw new ArgumentNullException("remoteEndpoint");
             }
 
-            ProxyObserver remoteObserver;
-            if (!_cachedClients.TryGetValue(remoteEndpoint, out remoteObserver) || remoteObserver.Disposed)
-            {
-                remoteObserver = CreateRemoteObserver(remoteEndpoint);
-                _cachedClients[remoteEndpoint] = remoteObserver;
-            }
+            ////ProxyObserver remoteObserver;
+            ////if (!_cachedClients.TryGetValue(remoteEndpoint, out remoteObserver) || remoteObserver.Disposed)
+            ////{
+            ////    remoteObserver = CreateRemoteObserver(remoteEndpoint);
+            ////    _cachedClients[remoteEndpoint] = remoteObserver;
+            ////}
 
-            return remoteObserver;
+            ////return remoteObserver;
+            return CreateRemoteObserver(remoteEndpoint);
         }
 
         /// <summary>

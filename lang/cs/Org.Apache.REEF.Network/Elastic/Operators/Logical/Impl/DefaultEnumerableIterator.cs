@@ -136,24 +136,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
-        {
-            iteration = _iteration;
-            
-            if (_next != null)
-            {
-                OnResume(ref msgs, ref taskId, ref iteration);
-            }
-        }
-
         public override void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
-            if (reconfigureEvent.FailedTask.IsPresent())
+            if (reconfigureEvent.FailedTask.IsPresent() && !(reconfigureEvent.FailedTask.Value.AsError() is OperatorException))
             {
-                if (!(reconfigureEvent.FailedTask.Value.AsError() is OperatorException))
-                {
-                    reconfigureEvent.Iteration = Optional<int>.Of(_iteration);
-                }
+                reconfigureEvent.Iteration = Optional<int>.Of(_iteration);
             }
         }
 
@@ -168,6 +155,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_iteration < _numIterations)
             {
+                var reconfigureEvent = rescheduleEvent as IReconfigure;
                 var checkpointConf = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<StartIteration, int>(
                     GenericType<StartIteration>.Class,
@@ -179,7 +167,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     confs = new List<IConfiguration>();
                     rescheduleEvent.RescheduleTaskConfigurations.Add(Subscription.SubscriptionName, confs);
                 }
-                confs.Add(checkpointConf);             
+                confs.Add(checkpointConf);
+
+                OnReconfigure(ref reconfigureEvent);
             }
         }
 

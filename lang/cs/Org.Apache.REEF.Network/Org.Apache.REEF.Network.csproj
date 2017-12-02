@@ -84,8 +84,11 @@ under the License.
     <Compile Include="Elastic\Comm\Impl\ControlMessage.cs" />
     <Compile Include="Elastic\Comm\Impl\WithNextMessagePayload.cs" />
     <Compile Include="Elastic\Comm\Impl\ResumeMessagePayload.cs" />
-    <Compile Include="Elastic\Comm\Impl\TokenReceivedRequest.cs" />
     <Compile Include="Elastic\Driver\Impl\TaskSetManagerParameters.cs" />
+    <Compile Include="Elastic\Failures\Impl\TasksetAlarm.cs" />
+    <Compile Include="Elastic\Failures\Impl\OperatorAlarm.cs" />
+    <Compile Include="Elastic\Failures\Impl\Timeout.cs" />
+    <Compile Include="Elastic\Failures\Impl\FailuresClock.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
     <Compile Include="Elastic\Comm\Impl\FailureMessagePayload.cs" />

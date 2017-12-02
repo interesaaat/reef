@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                         Environment.Exit(0);
                                     }
                                 }
-                                var rec = aggregator.Receive();
+                                    var rec = aggregator.Receive();
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
 
@@ -91,11 +91,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     }
                                     else
                                     {
-                                        ////Environment.Exit(0);
+                                        Environment.Exit(0);
                                     }
                                 }
 
-                                aggregator.Send(rec);
+                                    aggregator.Send(rec);
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
 
@@ -112,7 +112,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                         Environment.Exit(0);
                                     }
                                 }
-                                break;
+                                    break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");
                         }

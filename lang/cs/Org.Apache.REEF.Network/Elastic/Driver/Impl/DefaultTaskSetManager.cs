@@ -47,8 +47,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private volatile bool _scheduled;
         private volatile bool _completed;
         private readonly TaskSetManagerParameters _parameters;
-        private volatile bool _skipAlarm;
-        private int _retryResume;
 
         private volatile int _contextsAdded;
         private int _tasksAdded;
@@ -66,8 +64,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private readonly ConcurrentQueue<int> _queuedTasks;
         private IFailureState _failureStatus;
+        private volatile bool _hasProgress;
 
-        private readonly object _infosLock;
         private readonly object _statusLock;
 
         public DefaultTaskSetManager(
@@ -81,7 +79,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _scheduled = false;
             _disposed = false;
             _completed = false;
-            _skipAlarm = false;
 
             _contextsAdded = 0;
             _tasksAdded = 0;
@@ -98,8 +95,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _queuedTasks = new ConcurrentQueue<int>();
             _failureStatus = new DefaultFailureState();
+            _hasProgress = true;
 
-            _infosLock = new object();
             _statusLock = new object();
 
             for (int i = 0; i < numTasks; i++)
@@ -228,6 +225,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void SubmitTasks()
         {
+            List<IElasticDriverMessage> msgs = null;
+            var nextTimeouts = new List<Failures.Impl.Timeout>();
+
+            OnTimeout(new TasksetAlarm(0, this), ref msgs, ref nextTimeouts);
+
             for (int i = 0; i < _numTasks; i++)
             {
                 if (_taskInfos[i] != null)
@@ -254,6 +256,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (BelongsTo(task.Id))
             {
                 var id = Utils.GetTaskNum(task.Id) - 1;
+                _hasProgress = true;
 
                 lock (_taskInfos[id].Lock)
                 {
@@ -297,6 +300,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 Interlocked.Decrement(ref _tasksRunning);
                 var id = Utils.GetTaskNum(taskInfo.Id) - 1;
+                _hasProgress = true;
 
                 lock (_taskInfos[id].Lock)
                 {
@@ -318,7 +322,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 var id = Utils.GetTaskNum(message.TaskId) - 1;
                 var returnMessages = new List<IElasticDriverMessage>();
-                _skipAlarm = true;
+                _hasProgress = true;
 
                 foreach (var sub in _subscriptions.Values)
                 {
@@ -344,9 +348,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return _failureStatus.FailureState == (int)DefaultFailureStates.Fail;
         }
 
-        /// <summary>
-        /// A task set is done when all subscriptions are completed ore we have no more tasks running
-        /// </summary>
         public bool IsDone()
         {
             return Completed() && _tasksRunning == 0;
@@ -355,14 +356,64 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void OnTaskFailure(IFailedTask info)
         {
             var failureEvents = new List<IFailureEvent>();
+
             OnTaskFailure(info, ref failureEvents);
         }
 
-        public void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Failures.Impl.Timeout> nextTimeouts)
         {
-            foreach (IElasticTaskSetSubscription sub in _subscriptions.Values)
+            var isInit = msgs == null;
+
+            // Taskset is just started, init the timeouts
+            if (isInit)
             {
-                sub.OnResume(ref msgs, ref taskId, ref iteration);
+                _hasProgress = false;
+                LOGGER.Log(Level.Info, "Timeout alarm for Taskset initialized");
+                nextTimeouts.Add(new Failures.Impl.Timeout(_parameters.Timeout, this, Failures.Impl.Timeout.TimeoutType.Taskset));
+
+                foreach (var sub in _subscriptions.Values)
+                {
+                    sub.OnTimeout(alarm, ref msgs, ref nextTimeouts);
+                }
+            }
+            else if (alarm.GetType() == typeof(TasksetAlarm))
+            {
+                if (!_hasProgress)
+                {
+                    LOGGER.Log(Level.Error, "Taskset made no progress in the last {0}ms. Aborting.", _parameters.Timeout);
+                    OnFail();
+                    return;
+                }
+                else
+                {
+                    _hasProgress = false;
+                    nextTimeouts.Add(new Failures.Impl.Timeout(_parameters.Timeout, this, Failures.Impl.Timeout.TimeoutType.Taskset));
+                }
+            }
+            else
+            {
+                foreach (var sub in _subscriptions.Values)
+                {
+                    sub.OnTimeout(alarm, ref msgs, ref nextTimeouts);
+                }
+
+                SendToTasks(msgs);
+            }
+
+            foreach (var timeout in nextTimeouts)
+            {
+                _parameters.ScheduleAlarm(timeout);
+            }
+        }
+
+        public void OnNext(Alarm value)
+        {
+            if (!Completed() && !Failed())
+            {
+                var msgs = new List<IElasticDriverMessage>();
+                var nextTimeouts = new List<Failures.Impl.Timeout>();
+
+                OnTimeout(value, ref msgs, ref nextTimeouts);
             }
         }
 
@@ -374,6 +425,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 Interlocked.Decrement(ref _tasksRunning);
                 _totFailedTasks++;
+                _hasProgress = true;
                 var id = Utils.GetTaskNum(info.Id) - 1;
 
                 if (Completed() || Failed())
@@ -433,6 +485,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
             else
             {
+                _hasProgress = true;
                 if (!Completed() && !Failed())
                 {
                     SpawnNewEvaluator();
@@ -465,9 +518,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     var stp = @event as IStop;
                     OnStop(ref stp);
                     break;
-                default:
+                case DefaultFailureStateEvents.Fail:
                     OnFail();
                     break;
+                default:
+                    throw new IllegalStateException("Failure event not recognized");
             }
         }
 
@@ -502,13 +557,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     OnFail();
                 }
 
-                _taskInfos[id].RescheduleConfigurations = rescheduleEvent.RescheduleTaskConfigurations;
-
-                // When we resubmit the task need to be reconfigured
-                // If there is no reconfiguration, the task doesn't need to be rescheduled
-                if (_taskInfos[id].RescheduleConfigurations.Count > 0)
+                if (rescheduleEvent.Reschedule)
                 {
                     LOGGER.Log(Level.Info, "Rescheduling task {0}", rescheduleEvent.TaskId);
+
+                    _taskInfos[id].RescheduleConfigurations = rescheduleEvent.RescheduleTaskConfigurations;
 
                     SubmitTask(id);
                 }
@@ -537,37 +590,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             Dispose();
         }
 
-        public void OnNext(Alarm value)
-        {
-            if (!_skipAlarm)
-            {
-                if (_retryResume > _parameters.Retry)
-                {
-                    LOGGER.Log(Level.Error, string.Format("Taskset not able to recover after {0} tries: Aborting.", _retryResume));
-                    OnFail();
-                }
-                var msgs = new List<IElasticDriverMessage>();
-                var taskId = string.Empty;
-                int? iteration = null;
-                OnResume(ref msgs, ref taskId, ref iteration);
-            }
-            else
-            {
-                _retryResume = 0;
-                _skipAlarm = false;
-            }
-
-            _parameters.ScheduleAlarm(this);
-        }
-
-        public void OnError(Exception error)
-        {
-        }
-
-        public void OnCompleted()
-        {
-        }
-
         public void Dispose()
         {
             if (!_disposed)
@@ -576,9 +598,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 foreach (var info in _taskInfos)
                 {
-                    lock (info.Lock)
+                    if (info != null)
                     {
-                        if (info != null)
+                        lock (info.Lock)
                         {
                             info.Dispose();
                         }
@@ -766,6 +788,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             var msg = string.Format("Total Failed Tasks: {0}\nTotal Failed Evaluators: {1}", _totFailedTasks, _totFailedEvaluators);
             msg += _subscriptions.Select(x => x.Value.LogFinalStatistics()).Aggregate((a, b) => a + "\n" + b);
             LOGGER.Log(Level.Info, msg);
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

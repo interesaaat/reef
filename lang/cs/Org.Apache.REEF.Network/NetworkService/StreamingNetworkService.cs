@@ -169,25 +169,25 @@ namespace Org.Apache.REEF.Network.NetworkService
             }
 
             IConnection<T> connection;
-            ////if (_connectionMap.TryGetValue(destinationId, out connection))
-            ////{
-            ////    return connection;
-            ////}
-            ////else
-            ////{
+            if (_connectionMap.TryGetValue(destinationId, out connection))
+            {
+                return connection;
+            }
+            else
+            {
                 connection = new NsConnection<T>(_localIdentifier, destinationId,
                     NamingClient, _remoteManager);
 
-                ////_connectionMap[destinationId] = connection;
+                _connectionMap[destinationId] = connection;
                 return connection;
-            ////}
+            }
         }
 
-        /// <summary>
-        /// Register the identifier for the NetworkService with the NameService.
-        /// </summary>
-        /// <param name="id">The identifier to register</param>
-        public void Register(IIdentifier id)
+            /// <summary>
+            /// Register the identifier for the NetworkService with the NameService.
+            /// </summary>
+            /// <param name="id">The identifier to register</param>
+            public void Register(IIdentifier id)
         {
             Logger.Log(Level.Verbose, "Registering id {0} with network service.", id);
 

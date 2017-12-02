@@ -159,17 +159,34 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            int retry = 0;
-
-            while (!Send(destId, message) && !cancellationSource.IsCancellationRequested)
+            using (var connection = _networkService.NewConnection(destId))
             {
-                retry++;
-                if (retry > _retrySending)
+                try
                 {
-                    Logger.Log(Level.Warning, string.Format("Unable to send message after {0} retry", retry));
-                    throw new Exception("Unable to send message");
+                    if (!connection.IsOpen)
+                    {
+                        connection.Open();
+                    }
+
+                    connection.Write(message);
+                    Console.WriteLine("message sent");
+                }
+                catch (Exception e)
+                {
+                    Logger.Log(Level.Warning, "Unable to send message " + e.Message);
                 }
             }
+            ////int retry = 0;
+
+            ////while (!Send(destId, message) && !cancellationSource.IsCancellationRequested)
+            ////{
+            ////    retry++;
+            ////    if (retry > _retrySending)
+            ////    {
+            ////        Logger.Log(Level.Warning, string.Format("Unable to send message after {0} retry", retry));
+            ////        throw new Exception("Unable to send message");
+            ////    }
+            ////}
         }
 
         /// <summary>
@@ -242,9 +259,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             operatorObserver.OnNext(nsMessage);
         }
 
-        internal void NextTokenRequest(string taskId, int iteration)
+        internal void TokenRequest(string taskId, int iteration)
         {
-            _ringMessageSource.NextTokenRequest(taskId, iteration);
+            _ringMessageSource.TokenRequest(taskId, iteration);
         }
 
         internal void NextDataRequest(string taskId, int iteration)
@@ -257,14 +274,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _ringMessageSource.IterationNumber(taskId, iteration);
         }
 
-        public void JoinTheRing(string taskId, int iteration)
+        public void JoinTheRing(string taskId)
         {
-            _ringMessageSource.JoinTheRing(taskId, iteration);
-        }
-
-        public void TokenResponse(string taskId, int iteration, bool isTokenReceived)
-        {
-            _ringMessageSource.TokenResponse(taskId, iteration, isTokenReceived);
+            _ringMessageSource.JoinTheRing(taskId);
         }
 
         public void OnError(Exception error)
@@ -367,7 +379,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("yo");
                     Logger.Log(Level.Warning, "Unable to send message " + e.Message);
                     return false;
                 }

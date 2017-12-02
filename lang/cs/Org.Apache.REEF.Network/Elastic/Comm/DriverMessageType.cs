@@ -26,8 +26,6 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
 
         Ring = 2,
 
-        Request = 3,
-
-        Resume = 4
+        Resume = 3
     }
 }

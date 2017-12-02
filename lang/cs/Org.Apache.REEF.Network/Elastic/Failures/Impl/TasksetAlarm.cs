@@ -15,30 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Wake.Time.Event;
 using System;
 
-namespace Org.Apache.REEF.Wake.Time.Event
+namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    /// <summary>
-    ///  Represents a timer event.
-    /// </summary>
-    public abstract class Alarm : Time
+    public sealed class TasksetAlarm : Alarm
     {
-        private readonly IObserver<Alarm> _handler;
-
-        public Alarm(long timestamp, IObserver<Alarm> handler) : base(timestamp)
+        public TasksetAlarm(long timeout, IObserver<Alarm> handler) : base(timeout, handler)
         {
-            _handler = handler;
-        }
-
-        public void Handle()
-        {
-            _handler.OnNext(this);
-        }
-
-        public IObserver<Alarm> Handler
-        {
-            get { return _handler; }
         }
     }
 }

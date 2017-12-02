@@ -71,15 +71,15 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
             : this(remoteEndpoint, streamingCodec, clientFactory)
         {
             _observer = observer;
-            try
-            {
-                Task.Factory.StartNew(() => ResponseLoop(), TaskCreationOptions.LongRunning);
-            }
-            catch (Exception e)
-            {
-                Logger.Log(Level.Warning, "StreamingTransportClient get exception from ResponseLoop: {0}.", e.GetType());
-                throw;
-            }            
+            ////try
+            ////{
+            ////    Task.Factory.StartNew(() => ResponseLoop(), TaskCreationOptions.LongRunning);
+            ////}
+            ////catch (Exception e)
+            ////{
+            ////    Logger.Log(Level.Warning, "StreamingTransportClient get exception from ResponseLoop: {0}.", e.GetType());
+            ////    throw;
+            ////}            
         }
 
         /// <summary>
@@ -101,7 +101,6 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 throw new ArgumentNullException("message");
             }
 
-            Console.WriteLine("Link is disposed " + _disposed);
             _link.Write(message);
         }
 
@@ -145,7 +144,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                     Logger.Log(Level.Warning, msg);
                     throw;
                 }
-                Logger.Log(Level.Info, msg);
+                Logger.Log(Level.Verbose, msg);
             }
         }
     }

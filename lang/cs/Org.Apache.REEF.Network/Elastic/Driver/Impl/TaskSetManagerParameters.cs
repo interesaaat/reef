@@ -20,16 +20,18 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Wake.Time;
 using System;
 using Org.Apache.REEF.Wake.Time.Event;
+using System.Threading.Tasks;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
     class TaskSetManagerParameters
     {
-        private IClock _clock;
+        private FailuresClock _clock;
 
         [Inject]
         public TaskSetManagerParameters(
-            IClock clock,
+            FailuresClock clock,
             [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retry,
             [Parameter(typeof(ElasticServiceConfigurationOptions.RetryWaitTime))] int waitTime,
@@ -48,6 +50,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             NewEvaluatorBatchId = batchId;
             NewEvaluatorNumCores = numCores;
             NewEvaluatorMemorySize = memorySize;
+
+            System.Threading.Tasks.Task.Factory.StartNew(() => _clock.Run(), TaskCreationOptions.LongRunning);
         }
 
         internal int Timeout { get; private set; }
@@ -66,9 +70,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal int NewEvaluatorMemorySize { get; private set; }
 
-        internal void ScheduleAlarm(IObserver<Alarm> alarm)
+        internal void ScheduleAlarm(long timeout, IObserver<Alarm> alarm)
         {
-            _clock.ScheduleAlarm(Timeout, alarm);
+            _clock.ScheduleAlarm(timeout, alarm);
+        }
+
+        internal void ScheduleAlarm(Timeout timeout)
+        {
+            _clock.ScheduleAlarm(timeout);
         }
     }
 }

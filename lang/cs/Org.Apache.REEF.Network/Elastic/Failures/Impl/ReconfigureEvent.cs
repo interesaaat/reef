@@ -32,6 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             FailedTask = Optional<IFailedTask>.Of(failedTask);
             OperatorId = opertorId;
             FailureResponse = new List<IElasticDriverMessage>();
+            Iteration = Optional<int>.Empty();
         }
 
         public int FailureEvent

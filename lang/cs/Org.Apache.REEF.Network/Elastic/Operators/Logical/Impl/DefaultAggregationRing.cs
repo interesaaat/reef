@@ -27,6 +27,8 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Linq;
+using Org.Apache.REEF.Wake.Time.Event;
+using System.Diagnostics;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -37,6 +39,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
         private volatile bool _stop;
+
+        private double _sum;
+        private double _sumSquare;
+        private volatile int _count;
+        private double _3sigma;
+        private Stopwatch _timer;
+        private volatile bool _ignoreTimeout;
+        private object _lock;
 
         public DefaultAggregationRing(
             int coordinatorId,
@@ -53,6 +63,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = coordinatorId;
             OperatorName = Constants.AggregationRing;
+            _sum = 0;
+            _sumSquare = 0;
+            _count = 0;
+            _3sigma = 0;
+            _ignoreTimeout = false;
+            _lock = new object();
 
             _stop = false;
         }
@@ -78,44 +94,28 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
-                            var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                            RingTopology.AddTaskToRing(message.TaskId, iteration, ref returnMessages, ref _failureMachine);
+                            LOGGER.Log(Level.Info, "{0} joins the ring", message.TaskId);
 
-                            if (!_stop)
-                            {
-                                RingTopology.GetNextTasksInRing(ref returnMessages);
-                            } 
+                            RingTopology.AddTaskToRing(message.TaskId, ref _failureMachine);
                         }
 
                         return true;
                     }
-                case TaskMessageType.TokenResponse:
+                case TaskMessageType.TokenRequest:
                     {
-                        if (message.Message[6] == 0)
+                        LOGGER.Log(Level.Info, "Received token request from {0}", message.TaskId);
+
+                        UpdateTimeoutStatistics();
+
+                        if (!_stop)
                         {
-                            if (_checkpointLevel > CheckpointLevel.None)
-                            {
-                                var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                                RingTopology.ResumeRingFromCheckpoint(message.TaskId, iteration, ref returnMessages);
-                            }
-                            else
-                            {
-                                throw new NotImplementedException("Future work");
-                            }
+                            RingTopology.TokenRequestResponse(message.TaskId, ref returnMessages);
                         }
                         else
                         {
-                            LOGGER.Log(Level.Info, "{0} received token: no need to reconfigure", message.TaskId);
+                            LOGGER.Log(Level.Info, "Operator {0} is in stopped: Ignoring", OperatorName);
                         }
-
-                        return true;
-                    }
-                case TaskMessageType.NextTokenRequest:
-                    {
-                        var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
-                        LOGGER.Log(Level.Info, "Received next token request for iteration {0} from {1}", iteration, message.TaskId);
-
-                        RingTopology.RetrieveTokenFromRing(message.TaskId, iteration, ref returnMessages);
+ 
                         return true;
                     }
                 case TaskMessageType.NextDataRequest:
@@ -123,7 +123,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         var iteration = BitConverter.ToInt32(message.Message, sizeof(ushort));
                         LOGGER.Log(Level.Info, "Received next data request from {0} for iteration {1}", message.TaskId, iteration);
 
-                        RingTopology.RetrieveMissingDataFromRing(ref returnMessages, message.TaskId, iteration);
+                        RingTopology.ResumeRing(ref returnMessages, message.TaskId, iteration);
                         return true;
                     }
                 default:
@@ -131,9 +131,63 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)
         {
-            RingTopology.RetrieveMissingDataFromRing(ref msgs, taskId, iteration);
+            var isInit = msgs == null;
+            var isComputationStarted = _count > 0;
+            var id = Subscription.SubscriptionName + "_" + _id;
+
+            if (isInit)
+            {
+                LOGGER.Log(Level.Warning, "Timeout for Operator {0} in Subscription {1} initialized", _id, Subscription.SubscriptionName);
+                nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
+
+                return;
+            }
+
+            if (alarm.GetType() == typeof(OperatorAlarm))
+            {
+                var opAlarm = alarm as OperatorAlarm;
+
+                if (opAlarm.Id == id)
+                {
+                    if (isComputationStarted)
+                    {
+                        if (!_ignoreTimeout)
+                        {
+                            LOGGER.Log(Level.Info, "Timeout expired, resuming computation");
+
+                            RingTopology.ResumeRing(ref msgs);
+                        }
+
+                        lock (_lock)
+                        {
+                            double avg = _sum / _count;
+                            double avgSquared = _sumSquare / _count;
+                            double sigma = Math.Sqrt(avgSquared - Math.Pow(avg, 2));
+                            double new3Sigma = avg + (3 * sigma);
+                            if (_3sigma > new3Sigma)
+                            {
+                                _3sigma = new3Sigma;
+                            }
+
+                            nextTimeouts.Add(new Timeout(Math.Max(10000, (long)_3sigma), alarm.Handler, Timeout.TimeoutType.Operator, id));
+                        }
+                    }
+                    else
+                    {
+                        nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
+                    }
+
+                    _ignoreTimeout = false;
+                    return;
+                }
+            }
+                
+            if (_next != null)
+            {
+                _next.OnTimeout(alarm, ref msgs, ref nextTimeouts);
+            }
         }
 
         public override void OnReconfigure(ref IReconfigure reconfigureEvent)
@@ -158,10 +212,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         // We trigger the resume of the computation starting from the master
                         var msgs = new List<IElasticDriverMessage>();
-                        int? iteration = reconfigureEvent.Iteration.IsPresent() ? (int?)reconfigureEvent.Iteration.Value : null;
 
                         RingTopology.RemoveTaskFromRing(reconfigureEvent.FailedTask.Value.Id);
-                        RingTopology.RetrieveMissingDataFromRing(ref msgs, reconfigureEvent.FailedTask.Value.Id, iteration);
+
+                        if (reconfigureEvent.Iteration.IsPresent())
+                        {
+                            RingTopology.ResumeRing(ref msgs, reconfigureEvent.FailedTask.Value.Id, reconfigureEvent.Iteration.Value);
+                        }
+                        else
+                        {
+                            RingTopology.ResumeRing(ref msgs);
+                        }
                         reconfigureEvent.FailureResponse.AddRange(msgs);
                     }
                 }
@@ -190,6 +251,27 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         protected override string LogInternalStatistics()
         {
             return RingTopology.Statistics();
+        }
+
+        private void UpdateTimeoutStatistics()
+        {
+            _ignoreTimeout = true;
+            lock (_lock)
+            {
+                _count++;
+
+                if (_count == 1)
+                {
+                    _timer = Stopwatch.StartNew();
+                }
+                else
+                {
+                    _timer.Stop();
+                    _sum += _timer.ElapsedMilliseconds;
+                    _sumSquare += (long)Math.Pow(_timer.ElapsedMilliseconds, 2);
+                    _timer.Restart();
+                }
+            }
         }
     }
 }

@@ -30,6 +30,7 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System;
+using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -197,9 +198,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
-        public void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration)
+        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Failures.Impl.Timeout> nextTimeouts)
         {
-            RootOperator.OnResume(ref msgs, ref taskId, ref iteration);
+            var isInit = msgs == null;
+
+            if (isInit)
+            {
+                RootOperator.OnTimeout(alarm, ref msgs, ref nextTimeouts);
+                return;
+            }
+
+            if (alarm.GetType() == typeof(OperatorAlarm))
+            {
+                var opAlarm = alarm as OperatorAlarm;
+
+                if (opAlarm.Id.Contains(SubscriptionName))
+                {
+                    RootOperator.OnTimeout(alarm, ref msgs, ref nextTimeouts);
+                }
+            }
         }
 
         public void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)

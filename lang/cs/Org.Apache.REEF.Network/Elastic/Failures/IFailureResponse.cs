@@ -18,6 +18,7 @@
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Driver;
+using Org.Apache.REEF.Wake.Time.Event;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -38,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
         // TODO
-        void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration);
+        void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Impl.Timeout> nextTimeouts);
 
         /// <summary>
         /// When a new failure state is raised, this method is used to dispatch

@@ -32,6 +32,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -424,7 +425,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public abstract void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
-        public abstract void OnResume(ref List<IElasticDriverMessage> msgs, ref string taskId, ref int? iteration);
+        public abstract void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Failures.Impl.Timeout> nextTimeouts);
 
         public abstract void EventDispatcher(ref IFailureEvent @event);
 

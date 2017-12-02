@@ -160,7 +160,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                     ProcessClient(client).LogAndIgnoreExceptionIfAny(
                         LOGGER,
                         "StreamingTransportServer observed Task Exception during client processing.",
-                        Level.Info);
+                        Level.Verbose);
                 }
             }
             catch (InvalidOperationException)
