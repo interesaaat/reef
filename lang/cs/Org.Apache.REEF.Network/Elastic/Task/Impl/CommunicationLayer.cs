@@ -131,19 +131,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="message">The message to send.</param>
         internal void Send(string destination, GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
-            ////if (new Random().Next(100) < 5)
-            ////{
-            ////    Console.WriteLine("I am going to die. Bye.");
-
-            ////    if (new Random().Next(100) < 50)
-            ////    {
-            ////        throw new Exception("Die. in send");
-            ////    }
-            ////    ////else
-            ////    ////{
-            ////    ////    Environment.Exit(0);
-            ////    ////}
-            ////}
             if (message == null)
             {
                 throw new ArgumentNullException("message");
@@ -169,24 +156,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     }
 
                     connection.Write(message);
-                    Console.WriteLine("message sent");
                 }
                 catch (Exception e)
                 {
                     Logger.Log(Level.Warning, "Unable to send message " + e.Message);
                 }
             }
-            ////int retry = 0;
-
-            ////while (!Send(destId, message) && !cancellationSource.IsCancellationRequested)
-            ////{
-            ////    retry++;
-            ////    if (retry > _retrySending)
-            ////    {
-            ////        Logger.Log(Level.Warning, string.Format("Unable to send message after {0} retry", retry));
-            ////        throw new Exception("Unable to send message");
-            ////    }
-            ////}
         }
 
         /// <summary>
@@ -200,20 +175,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 Logger.Log(Level.Warning, "Received message after disposing: Ignoring");
                 return;
             }
-
-            ////if (new Random().Next(100) < 5)
-            ////{
-            ////    Console.WriteLine("I am going to die. Bye.");
-
-            ////    if (new Random().Next(100) < 50)
-            ////    {
-            ////        throw new Exception("Die. in onNext");
-            ////    }
-            ////    ////else
-            ////    ////{
-            ////    ////    Environment.Exit(0);
-            ////    ////}
-            ////}
 
             var nsMessage = remoteMessage.Message;
             var gcm = nsMessage.Data.First();

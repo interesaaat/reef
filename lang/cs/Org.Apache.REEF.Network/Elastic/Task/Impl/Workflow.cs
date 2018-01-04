@@ -25,6 +25,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl

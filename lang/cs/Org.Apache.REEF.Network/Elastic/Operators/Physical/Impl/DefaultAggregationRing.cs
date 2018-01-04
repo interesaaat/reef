@@ -95,34 +95,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             var received = false;
             DataMessage<T> message = null;
 
-            ////if (new Random().Next(100) < 5)
-            ////{
-            ////    Console.WriteLine("I am going to die. Bye.");
-
-            ////    if (new Random().Next(100) < 50)
-            ////    {
-            ////        throw new Exception("Die. in receive");
-            ////    }
-            ////    else
-            ////    {
-            ////        Environment.Exit(0);
-            ////    }
-            ////}
-
             while (!received && !CancellationSource.IsCancellationRequested)
             {
                 message = _topology.Receive(CancellationSource, (int)IteratorReference.Current) as DataMessage<T>;
 
                 if (message.Iteration < (int)IteratorReference.Current)
                 {
-                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: resuming my computation", message.Iteration, (int)IteratorReference.Current);
-
-                    if (!_topology.GetCheckpoint(out ICheckpointState checkpoint, message.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
-                    {
-                        LOGGER.Log(Level.Warning, "Recovery from checkpoint not available: ignoring");
-                    }
-
-                    _topology.Send(checkpoint.State as GroupCommunicationMessage[], CancellationSource);
+                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
                 }
                 else
                 {

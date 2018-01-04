@@ -179,8 +179,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
             }
 
-            Console.WriteLine("Received message from " + message.SourceId);
-
             foreach (var payload in message.Data)
             {
                 _messageQueue.Add(payload);
@@ -213,7 +211,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                 {
-                    Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
+                    Logger.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
+                    _commLayer.NextDataRequest(_taskId, rmsg.Iteration);
                     return;
                 }
 
@@ -290,20 +289,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         {
                             var splits = Operator.FailureInfo.Split(':');
 
-                            ////if (int.Parse(splits[0]) == (int)PositionTracker.InReceive)
-                            ////{
-                                var iteration = destMessage.Iteration;
-                                if (_rootTaskId == _taskId)
-                                {
-                                    iteration--;
-                                }
-                                Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
-                                _commLayer.NextDataRequest(_taskId, iteration);
-                            ////}
-                            ////else
-                            ////{
-                            ////    Logger.Log(Level.Warning, "Resume not available: ignoring");
-                            ////}
+                            var iteration = destMessage.Iteration;
+                            if (_rootTaskId == _taskId)
+                            {
+                                iteration--;
+                            }
+                            Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
+                            _commLayer.NextDataRequest(_taskId, iteration);
                             return;
                         }
 

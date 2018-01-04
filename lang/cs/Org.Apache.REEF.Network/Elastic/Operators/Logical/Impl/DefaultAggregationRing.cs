@@ -203,27 +203,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 if (reconfigureEvent.FailedTask.IsPresent())
                 {
-                    if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException && ((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).OperatorId == _id)
+                    if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException)
                     {
-                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, ((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo).ToList();
-                        reconfigureEvent.FailureResponse.AddRange(msg);
+                        if (((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).OperatorId == _id)
+                        {
+                            var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, ((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo).ToList();
+                            reconfigureEvent.FailureResponse.AddRange(msg);
+                        }
                     }
                     else
                     {
-                        // We trigger the resume of the computation starting from the master
-                        var msgs = new List<IElasticDriverMessage>();
-
-                        RingTopology.RemoveTaskFromRing(reconfigureEvent.FailedTask.Value.Id);
-
-                        if (reconfigureEvent.Iteration.IsPresent())
-                        {
-                            RingTopology.ResumeRing(ref msgs, reconfigureEvent.FailedTask.Value.Id, reconfigureEvent.Iteration.Value);
-                        }
-                        else
-                        {
-                            RingTopology.ResumeRing(ref msgs);
-                        }
-                        reconfigureEvent.FailureResponse.AddRange(msgs);
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, string.Empty).ToList();
+                        reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                 }
             }

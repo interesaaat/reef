@@ -183,7 +183,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             if (_taskInfos[id] != null)
             {
-                LOGGER.Log(Level.Info, "{0} already part of Task Set: going to directly submit it", Utils.BuildTaskId(SubscriptionsId, id));
+                LOGGER.Log(Level.Info, "{0} already part of Task Set: going to directly submit it", Utils.BuildTaskId(SubscriptionsId, id + 1));
 
                 lock (_taskInfos[id].Lock)
                 {
