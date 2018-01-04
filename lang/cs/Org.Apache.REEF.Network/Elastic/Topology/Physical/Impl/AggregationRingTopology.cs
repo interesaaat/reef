@@ -229,84 +229,37 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             switch (message.MessageType)
             {
-                case DriverMessageType.Failure:
-                    {
-                        var msg = "Received failure recovery: ";
-                        var destMessage = message as FailureMessagePayload;
-
-                        GroupCommunicationMessage gcm;
-                        if (_sendQueue.TryPeek(out gcm))
-                        {
-                            var dm = gcm as DataMessage;
-                            if (dm.Iteration == destMessage.Iteration)
-                            {
-                                Logger.Log(Level.Info, msg + "going to send message to " + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
-
-                                _next.TryAdd(destMessage.NextTaskId);
-                            }
-                        }
-                        else
-                        {
-                            Logger.Log(Level.Info, msg + "going to resume ring computation for " + destMessage.NextTaskId);
-
-                            ICheckpointState checkpoint;
-
-                            if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
-                            {
-                                var splits = Operator.FailureInfo.Split(':');
-
-                                if (int.Parse(splits[0]) == (int)PositionTracker.InReceive && int.Parse(splits[1]) <= destMessage.Iteration)
-                                {
-                                    Logger.Log(Level.Warning, "Resume not available because I am blocked as well: going to propagate");
-                                    _commLayer.NextDataRequest(_taskId, destMessage.Iteration);
-                                }
-                                else
-                                {
-                                    Logger.Log(Level.Warning, "Failure recovery from state not available: ignoring");
-                                }
-                                return;
-                            }
-
-                            var cancellationSource = new CancellationTokenSource();
-
-                            foreach (var data in checkpoint.State as GroupCommunicationMessage[])
-                            {
-                                _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
-                            }
-                        }
-                        break;
-                    }
                 case DriverMessageType.Resume:
+                    var msg = "Received resume message: going to resume ring computation for ";
+                    var destMessage = message as ResumeMessagePayload;
+
+                    Logger.Log(Level.Info, msg + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
+
+                    ICheckpointState checkpoint;
+
+                    if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                     {
-                        var msg = "Received resume message: going to resume ring computation for ";
-                        var destMessage = message as ResumeMessagePayload;
+                        var splits = Operator.FailureInfo.Split(':');
 
-                        Logger.Log(Level.Info, msg + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
-
-                        ICheckpointState checkpoint;
-
-                        if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                        var iteration = destMessage.Iteration;
+                        if (_rootTaskId == _taskId)
                         {
-                            var splits = Operator.FailureInfo.Split(':');
-
-                            var iteration = destMessage.Iteration;
-                            if (_rootTaskId == _taskId)
-                            {
-                                iteration--;
-                            }
-                            Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
-                            _commLayer.NextDataRequest(_taskId, iteration);
-                            return;
+                            iteration--;
                         }
-
-                        var cancellationSource = new CancellationTokenSource();
-
-                        foreach (var data in checkpoint.State as GroupCommunicationMessage[])
-                        {
-                            _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
-                        }
-                        break;
+                        Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
+                        _commLayer.NextDataRequest(_taskId, iteration);
+                        return;
                     }
+
+                    var cancellationSource = new CancellationTokenSource();
+
+                    foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                    {
+                        _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
+                    }
+                    break;
+                default:
+                    throw new IllegalStateException("Failure Message not supported");
             }
         }
 

@@ -146,21 +146,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             IIdentifier destId = _idFactory.Create(destination);
-            using (var connection = _networkService.NewConnection(destId))
-            {
-                try
-                {
-                    if (!connection.IsOpen)
-                    {
-                        connection.Open();
-                    }
+            int retry = 0;
 
-                    connection.Write(message);
-                }
-                catch (Exception e)
+            while (!Send(destId, message))
+            {
+                if (retry > _retrySending)
                 {
-                    Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                    throw new IllegalStateException("Unable to send message after " + retry + " retry");
                 }
+                retry++;
             }
         }
 
@@ -327,22 +321,20 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         private bool Send(IIdentifier destId, GroupCommunicationMessage message)
         {
-            using (var connection = _networkService.NewConnection(destId))
+            var connection = _networkService.NewConnection(destId);
+            try
             {
-                try
+                if (!connection.IsOpen)
                 {
-                    if (!connection.IsOpen)
-                    {
-                        connection.Open();
-                    }
+                    connection.Open();
+                }
 
-                    connection.Write(message);
-                }
-                catch (Exception e)
-                {
-                    Logger.Log(Level.Warning, "Unable to send message " + e.Message);
-                    return false;
-                }
+                connection.Write(message);
+            }
+            catch (Exception e)
+            {
+                Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                return false;
             }
 
             return true;

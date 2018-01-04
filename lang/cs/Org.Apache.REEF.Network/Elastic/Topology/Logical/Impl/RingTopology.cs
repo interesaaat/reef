@@ -55,7 +55,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private HashSet<string> _failedNodes;
         private RingNode _ringHead;
         private readonly Dictionary<int, DataNode> _nodes;
-        private readonly SortedDictionary<int, Dictionary<string, RingNode>> _ringNodes;
+        private readonly SortedDictionary<int, RingNode> _prevRingHeads;
 
         private volatile int _availableDataPoints;
 
@@ -73,8 +73,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             SubscriptionName = string.Empty;
 
             _nodes = new Dictionary<int, DataNode>();
-            _ringNodes = new SortedDictionary<int, Dictionary<string, RingNode>>();
-            _ringNodes.Add(1, new Dictionary<string, RingNode>());
+            _prevRingHeads = new SortedDictionary<int, RingNode>();
             _currentWaitingList = new HashSet<string>();
             _nextWaitingList = new HashSet<string>();
             _nodesWaitingToJoinRing = new HashSet<string>();
@@ -304,6 +303,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             lock (_lock)
             {
+                // If is head, set head to the prev node
                 if (_ringHead.TaskId == taskId)
                 {
                     var newHead = _ringHead.Prev;
@@ -311,10 +311,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _ringHead = newHead;
                 }
 
-                foreach (var key in _ringNodes.Keys)
+                var node = _ringHead;
+
+                // Look for all occurrences of taskId in the ring
+                while (node != null)
                 {
-                    var values = _ringNodes[key];
-                    if (values.TryGetValue(taskId, out RingNode node))
+                    if (node.TaskId == taskId)
                     {
                         if (node.Next != null)
                         {
@@ -324,8 +326,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         {
                             node.Prev.Next = node.Next;
                         }
-
-                        _ringNodes[key].Remove(taskId);
                     }
                 }
             }
@@ -391,10 +391,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         _currentWaitingList = _nextWaitingList;
                         _nextWaitingList = new HashSet<string>();
                         _tasksInRing = new HashSet<string> { { _rootTaskId } };
-                        _ringNodes[_iteration].Add(_rootTaskId, _ringHead);
+                        _prevRingHeads.Add(_iteration, _ringHead);
 
                         _iteration++;
-                        _ringNodes.Add(_iteration, new Dictionary<string, RingNode>());
                         CleanPreviousRings();
 
                         _timer.Restart();
@@ -402,7 +401,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     else if (_currentWaitingList.Count > 0)
                     {
                         var dest = _ringHead.TaskId;
-                        var nextTask = _currentWaitingList.Where(t => t != dest).First();
+                        var nextTask = _currentWaitingList.First();
                         var data = new RingMessagePayload(nextTask, SubscriptionName, OperatorId, _iteration);
                         var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
@@ -413,8 +412,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         _ringHead = _ringHead.Next;
                         _tasksInRing.Add(nextTask);
                         _currentWaitingList.Remove(nextTask);
-       
-                        _ringNodes[_iteration].Add(nextTask, _ringHead);
                     }
                 }
                 else
@@ -434,6 +431,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest.TaskId, nextTask, _iteration);
                             return;
                         }
+
+                        node = node.Prev;
                     }
 
                     LOGGER.Log(Level.Warning, "Task {0} was not found", taskId);
@@ -448,27 +447,23 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal void ResumeRing(ref List<IElasticDriverMessage> returnMessages, string taskId, int iteration)
         {
-            if (!_ringNodes.ContainsKey(iteration) || !_ringNodes[iteration].TryGetValue(taskId, out RingNode node))
-            {
-                LOGGER.Log(Level.Warning, "{0} in iteration {1} not found: ignoring", taskId, iteration);
-                return;
-            }
+            var node = _ringHead;
 
-            ResumeRing(ref returnMessages, node);
-        }
-
-        internal void ResumeRing(ref List<IElasticDriverMessage> returnMessages, RingNode node)
-        {
-            lock (_lock)
+            while (node != null)
             {
-                if (node != null)
+                if (node.TaskId == taskId && node.Iteration == iteration)
                 {
                     var dest = node.Prev.TaskId;
                     var data = new ResumeMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
                     returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
                     LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, node.Iteration);
+                    return;
                 }
+
+                node = node.Prev;
             }
+
+            LOGGER.Log(Level.Warning, "{0} in iteration {1} not found: ignoring", taskId, iteration); 
         }
 
         internal string Statistics()
@@ -480,17 +475,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             lock (_lock)
             {
-                if (_ringNodes.Count > 2)
+                if (_prevRingHeads.Count > 2)
                 {
-                    var smallerDict = _ringNodes.First();
-                    var key = smallerDict.Value.Keys.OrderBy(x => x).First();
-                    var task = smallerDict.Value[key];
+                    var smallerDict = _prevRingHeads.First();
+                    var task = smallerDict.Value;
                     if (task.Next != null)
                     {
                         task.Next.Prev = null;
                     }
 
-                    _ringNodes.Remove(smallerDict.Key);
+                    _prevRingHeads.Remove(smallerDict.Key);
                 }
             }
         }

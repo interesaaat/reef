@@ -91,7 +91,6 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\FailuresClock.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
-    <Compile Include="Elastic\Comm\Impl\FailureMessagePayload.cs" />
     <Compile Include="Elastic\Comm\Impl\ElasticDriverMessageImpl.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointableModel.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointableObject.cs" />

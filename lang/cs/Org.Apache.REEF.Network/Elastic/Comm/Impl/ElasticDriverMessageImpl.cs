@@ -81,9 +81,6 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             switch (type)
             {
-                case DriverMessageType.Failure:
-                    payload = FailureMessagePayload.From(data, offset);
-                    break;
                 case DriverMessageType.Ring:
                     payload = RingMessagePayload.From(data, offset);
                     break;
