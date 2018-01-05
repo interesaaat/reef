@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         [Inject]
         private DefaultTaskSetSubscription(
            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscriptionName,
-           [Parameter(typeof(GroupCommunicationConfigurationOptions.SerializedOperatorConfigs))] ISet<string> operatorConfigs,
+           [Parameter(typeof(GroupCommunicationConfigurationOptions.SerializedOperatorConfigs))] IList<string> operatorConfigs,
            [Parameter(typeof(StartIteration))] int startIteration,
            AvroConfigurationSerializer configSerializer,
            Workflow workflow,

@@ -39,6 +39,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -52,7 +53,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
         IObserver<IFailedEvaluator>,
-        IObserver<IFailedTask>
+        IObserver<IFailedTask>,
+        IObserver<ITaskMessage>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastDriver));
 
@@ -101,6 +103,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<IterateBroadcastMasterTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -111,19 +115,20 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<IterateBroadcastSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastSlaveTask>.Class)
                     .Build())
                 .Build();
 
-        IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
+            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        CheckpointLevel.None,
+                        CheckpointLevel.PersistentMemoryMaster,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Tree,
-                        new DefaultFailureStateMachine(),
+                    .Broadcast<int>(TopologyType.Flat,
                         CheckpointLevel.None)
                     .Build();
 
@@ -154,6 +159,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
+            ////System.Threading.Thread.Sleep(10000);
+
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
@@ -177,10 +184,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(ICompletedTask value)
         {
+            LOGGER.Log(Level.Info, "Task {0} completed.", value.Id);
             _taskManager.OnTaskCompleted(value);
 
             if (_taskManager.IsDone())
             {
+                LOGGER.Log(Level.Info, "TaskSet completed.");
                 _taskManager.Dispose();
             }
         }
@@ -203,6 +212,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 _taskManager.Dispose();
             }
+        }
+
+        public void OnNext(ITaskMessage taskMessage)
+        {
+            _taskManager.OnTaskMessage(taskMessage);
         }
 
         public void OnCompleted()

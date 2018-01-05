@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
 
         private readonly AggregationRingTopology _topology;
-        private PositionTracker _position;
+        private volatile PositionTracker _position;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -97,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource, (int)IteratorReference.Current) as DataMessage<T>;
+                message = _topology.Receive(CancellationSource) as DataMessage<T>;
 
                 if (message.Iteration < (int)IteratorReference.Current)
                 {
@@ -172,14 +172,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
                 _topology.Checkpoint(state);
             }
-        }
-    }
-
-    static class Extensions
-    {
-        public static IList<T> Clone<T>(this IList<T> listToClone) where T : ICloneable
-        {
-            return listToClone.Select(item => (T)item.Clone()).ToList();
         }
     }
 }

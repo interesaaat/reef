@@ -16,7 +16,6 @@
 // under the License.
 
 using System;
-using System.Linq;
 using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
@@ -161,8 +160,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
-            Console.WriteLine("Context {0} in Evaluator {1}", identifier, allocatedEvaluator.Id);
-
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
                 .Build();
@@ -216,6 +213,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
         }
 
+        public void OnNext(ITaskMessage taskMessage)
+        {
+            _taskManager.OnTaskMessage(taskMessage);
+        }
+
         public void OnCompleted()
         {
             _taskManager.Dispose();
@@ -224,11 +226,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnError(Exception error)
         {
             _taskManager.Dispose();
-        }
-
-        public void OnNext(ITaskMessage taskMessage)
-        {
-            _taskManager.OnTaskMessage(taskMessage);
         }
     }
 }

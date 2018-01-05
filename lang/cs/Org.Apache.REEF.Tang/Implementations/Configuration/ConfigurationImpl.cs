@@ -18,6 +18,7 @@
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Types;
+using System.Linq;
 
 namespace Org.Apache.REEF.Tang.Implementations.Configuration
 {
@@ -105,9 +106,9 @@ namespace Org.Apache.REEF.Tang.Implementations.Configuration
             return Builder.BoundSetEntries.GetEnumerator();
         }
 
-        public IDictionary<INamedParameterNode, IList<object>> GetBoundList()
+        public IEnumerator<KeyValuePair<INamedParameterNode, object>> GetBoundList()
         {
-            return Builder.BoundLists;
+            return Builder.BoundLists.SelectMany(kvp => kvp.Value, (kvp, v) => new KeyValuePair<INamedParameterNode, object>(kvp.Key, v)).GetEnumerator();
         }
 
         public IList<object> GetBoundList(INamedParameterNode np)

@@ -48,7 +48,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _retrySending;
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
-        private readonly RingTaskMessageSource _ringMessageSource;
+        private readonly TaskToDriverMessageDispatcher _taskToDriverDispatcher;
         private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
         private readonly CheckpointService _checkpointService;
@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retrySending,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
-            RingTaskMessageSource ringMessageSource,
+            TaskToDriverMessageDispatcher taskToDriverDispatcher,
             DriverMessageHandler driverMessagesHandler,
             CheckpointService checkpointService,
             IIdentifierFactory idFactory)
@@ -82,7 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _sleepTime = sleepTime;
             _retrySending = retrySending;
             _networkService = networkService;
-            _ringMessageSource = ringMessageSource;
+            _taskToDriverDispatcher = taskToDriverDispatcher;
             _driverMessagesHandler = driverMessagesHandler;
             _checkpointService = checkpointService;
             _checkpointService.CommunicationLayer = this;
@@ -216,22 +216,22 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         internal void TokenRequest(string taskId, int iteration)
         {
-            _ringMessageSource.TokenRequest(taskId, iteration);
+            _taskToDriverDispatcher.TokenRequest(taskId, iteration);
         }
 
         internal void NextDataRequest(string taskId, int iteration)
         {
-            _ringMessageSource.NextDataRequest(taskId, iteration);
+            _taskToDriverDispatcher.NextDataRequest(taskId, iteration);
         }
 
         public void IterationNumber(string taskId, int iteration)
         {
-            _ringMessageSource.IterationNumber(taskId, iteration);
+            _taskToDriverDispatcher.IterationNumber(taskId, iteration);
         }
 
         public void JoinTheRing(string taskId)
         {
-            _ringMessageSource.JoinTheRing(taskId);
+            _taskToDriverDispatcher.JoinTheRing(taskId);
         }
 
         public void OnError(Exception error)

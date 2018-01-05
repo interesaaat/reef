@@ -24,6 +24,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -33,8 +34,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// <typeparam name="T">The type of message being sent.</typeparam>
     public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
+
         private readonly BroadcastTopology _topology;
-        private PositionTracker _position;
+        private volatile PositionTracker _position;
 
         /// <summary>
         /// Creates a new BroadcastReceiver.
@@ -67,7 +70,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string FailureInfo
         {
-            get { return _position.ToString(); }
+            get
+            {
+                string iteration = IteratorReference == null ? "-1" : IteratorReference.Current.ToString();
+                return ((int)_position).ToString() + ":" + iteration;
+            }
         }
 
         public IElasticIterator IteratorReference { private get;  set; }
@@ -82,9 +89,31 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public T Receive()
         {
             _position = PositionTracker.InReceive;
-            var message = _topology.Receive(CancellationSource) as DataMessage<T>;
+            var received = false;
+            DataMessage<T> message = null;
 
-            _position = PositionTracker.AfterReceiveBeforeSend;
+            while (!received && !CancellationSource.IsCancellationRequested)
+            {
+                message = _topology.Receive(CancellationSource) as DataMessage<T>;
+
+                if (message.Iteration < (int)IteratorReference.Current)
+                {
+                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
+                }
+                else
+                {
+                    received = true;
+                }
+            }
+
+            if (message == null)
+            {
+                throw new OperationCanceledException("Impossible to receive messages: operation canceled");
+            }
+
+            IteratorReference.SyncIteration(message.Iteration);
+
+            _position = PositionTracker.AfterReceive;
 
             return message.Data;
         }

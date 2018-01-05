@@ -54,7 +54,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
         }
 
-        protected override void GetOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
+        protected override void GetOperatorConfiguration(ref IList<string> serializedOperatorsConfs, int taskId)
         {
         }
 

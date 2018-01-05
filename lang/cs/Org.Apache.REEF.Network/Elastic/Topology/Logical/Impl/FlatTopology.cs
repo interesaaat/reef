@@ -212,7 +212,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
         {
-            throw new MissingMethodException("TODO");
+            return new List<IElasticDriverMessage>();
         }
     }
 }

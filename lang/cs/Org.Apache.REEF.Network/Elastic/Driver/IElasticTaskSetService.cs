@@ -20,6 +20,7 @@ using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -96,9 +97,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <summary>
         /// Append an operator configuration to a configuration builder object.
         /// </summary>
-        /// <param name="confBuilder">The configuration where the operator configuration will be appended to</param>
+        /// <param name="serializedOperatorsConfs">The list where the operator configuration will be appended to</param>
         /// <param name="subscriptionConf">The operator configuration at hand</param>
         /// <returns>The configuration containing the serialized operator configuration</returns>
-        void SerializeOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration operatorConf);
+        void SerializeOperatorConfiguration(ref IList<string> serializedOperatorsConfs, IConfiguration operatorConfiguration);
     }
 }

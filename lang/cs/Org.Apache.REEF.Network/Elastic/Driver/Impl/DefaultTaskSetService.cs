@@ -180,11 +180,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _configSerializer.ToString(subscriptionConfiguration));
         }
 
-        public void SerializeOperatorConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration operatorConfiguration)
+        public void SerializeOperatorConfiguration(ref IList<string> serializedOperatorsConfs, IConfiguration operatorConfiguration)
         {
-            confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs, string>(
-                GenericType<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs>.Class,
-                _configSerializer.ToString(operatorConfiguration));
+            serializedOperatorsConfs.Add(_configSerializer.ToString(operatorConfiguration));
         }
 
         public void OnTaskFailure(IFailedTask value, ref List<IFailureEvent> failureEvents)

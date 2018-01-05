@@ -24,14 +24,14 @@ using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    public class RingTaskMessageSource
+    public class TaskToDriverMessageDispatcher
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
         private readonly HeartBeatReference _heartBeatManager;
 
         [Inject]
-        private RingTaskMessageSource(HeartBeatReference heartBeatManager)
+        private TaskToDriverMessageDispatcher(HeartBeatReference heartBeatManager)
         {
             _heartBeatManager = heartBeatManager;
         }

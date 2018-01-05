@@ -63,6 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly List<TaskInfo> _taskInfos;
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private readonly ConcurrentQueue<int> _queuedTasks;
+        private readonly ConcurrentQueue<int> _queuedContexts;
         private IFailureState _failureStatus;
         private volatile bool _hasProgress;
 
@@ -94,6 +95,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _taskInfos = new List<TaskInfo>(numTasks);
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _queuedTasks = new ConcurrentQueue<int>();
+            _queuedContexts = new ConcurrentQueue<int>();
             _failureStatus = new DefaultFailureState();
             _hasProgress = true;
 
@@ -126,12 +128,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public string GetNextTaskContextId(IAllocatedEvaluator evaluator)
         {
-            if (_queuedTasks.TryDequeue(out int identifier))
+            int id;
+
+            if (_queuedTasks.TryDequeue(out id))
             {
-                return Utils.BuildContextId(SubscriptionsId, identifier);
+                return Utils.BuildContextId(SubscriptionsId, id);
             }
 
-            int id = Interlocked.Increment(ref _contextsAdded);
+            if (_queuedContexts.TryDequeue(out id))
+            {
+                return Utils.BuildContextId(SubscriptionsId, id);
+            }
+
+            id = Interlocked.Increment(ref _contextsAdded);
 
             if (_contextsAdded > _numTasks)
             {
@@ -338,6 +347,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             if (!_completed)
             {
                 _completed = _subscriptions.Select(sub => sub.Value.Completed).Aggregate((com1, com2) => com1 && com2);
+
+                if (_completed)
+                {
+                    LOGGER.Log(Level.Info, "TaskSet Completed");
+                }
             }
 
             return _completed;
@@ -486,8 +500,20 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             else
             {
                 _hasProgress = true;
+                Console.WriteLine("No Task in Evaluator");
                 if (!Completed() && !Failed())
                 {
+                    var found = false;
+                    for (int i = 0; i < evaluator.FailedContexts.Count && !found; i++)
+                    {
+                        if (evaluator.FailedContexts[i].ParentContext.IsPresent())
+                        {
+                            Console.WriteLine("Reusing context {0}", evaluator.FailedContexts[i].ParentContext.Value.Id);
+                            var id = Utils.GetContextNum(evaluator.FailedContexts[i].ParentContext.Value);
+                            _queuedContexts.Enqueue(id);
+                            found = true;
+                        }
+                    }
                     SpawnNewEvaluator();
                 }
             }
@@ -580,7 +606,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnFail()
         {
-            LOGGER.Log(Level.Info, "Task set failed");
+            LOGGER.Log(Level.Info, "TaskSet failed");
 
             lock (_statusLock)
             {

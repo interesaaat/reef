@@ -27,6 +27,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 
         AfterReceiveBeforeSend = 3,
 
-        AfterSendBeforeReceive = 4
+        AfterReceive = 4,
+
+        AfterSendBeforeReceive = 5,
+
+        AfterSend = 6
     }
 }

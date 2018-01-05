@@ -23,7 +23,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
     public sealed class GroupCommunicationConfigurationOptions
     {
         [NamedParameter("Serialized operator configuration")]
-        public class SerializedOperatorConfigs : Name<ISet<string>>
+        public class SerializedOperatorConfigs : Name<IList<string>>
         {
         }
 

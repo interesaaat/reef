@@ -74,11 +74,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
-            return Receive(cancellationSource, -1);
-        }
-
-        internal GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource, int iteration)
-        {
             GroupCommunicationMessage message;
 
             _messageQueue.TryTake(out message, Timeout.Infinite, cancellationSource.Token);

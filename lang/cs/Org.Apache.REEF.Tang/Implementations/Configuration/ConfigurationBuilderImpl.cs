@@ -275,6 +275,10 @@ namespace Org.Apache.REEF.Tang.Implementations.Configuration
             {
                 BindSetEntry((INamedParameterNode)name, value);
             } 
+            else if (name.IsList())
+            {
+                BindList((INamedParameterNode)name, value);
+            }
             else 
             {
                 try
@@ -330,6 +334,18 @@ namespace Org.Apache.REEF.Tang.Implementations.Configuration
                 l.Add((object)n);
             }
             BoundLists.Add(iface, l);
+        }
+
+        public void BindList(INamedParameterNode iface, string impl)
+        {
+            IList<object> l;
+            if (!BoundLists.TryGetValue(iface, out l))
+            {
+                l = new List<object>();
+                BoundLists.Add(iface, l);
+            }
+
+            l.Add((object)impl);
         }
 
         public void BindList(INamedParameterNode iface, IList<string> impl)

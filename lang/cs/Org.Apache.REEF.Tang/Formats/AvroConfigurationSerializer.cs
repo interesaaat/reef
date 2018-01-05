@@ -260,6 +260,28 @@ namespace Org.Apache.REEF.Tang.Formats
                 l.Add(new ConfigurationEntry(e.Key.GetFullName(), val));
             }
 
+            IEnumerator bl = conf.GetBoundList();
+            while (bl.MoveNext())
+            {
+                KeyValuePair<INamedParameterNode, object> e = (KeyValuePair<INamedParameterNode, object>)bl.Current;
+
+                string val = null;
+                if (e.Value is string)
+                {
+                    val = (string)e.Value;
+                }
+                else if (e.Value is INode)
+                {
+                    val = ((INode)e.Value).GetFullName();
+                }
+                else
+                {
+                    Org.Apache.REEF.Utilities.Diagnostics.Exceptions.Throw(new IllegalStateException(), LOGGER);
+                }
+
+                l.Add(new ConfigurationEntry(e.Key.GetFullName(), val));
+            }
+
             return new AvroConfiguration(Language.Cs.ToString(), l);
         }
         

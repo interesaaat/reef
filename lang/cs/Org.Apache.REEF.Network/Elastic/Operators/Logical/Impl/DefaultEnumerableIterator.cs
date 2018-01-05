@@ -103,6 +103,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 case TaskMessageType.IterationNumber:
                     _iteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, 2));
 
+                    LOGGER.Log(Level.Info, "Starting iteration " + _iteration);
+
                     if (_iteration > _numIterations)
                     {
                         Subscription.Completed = true;

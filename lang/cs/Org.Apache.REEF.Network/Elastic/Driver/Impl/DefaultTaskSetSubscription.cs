@@ -171,12 +171,16 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
+            IList<string> serializedOperatorsConfs = new List<string>();
             builder = builder
                 .BindNamedParameter<GroupCommunicationConfigurationOptions.SubscriptionName, string>(
                     GenericType<GroupCommunicationConfigurationOptions.SubscriptionName>.Class,
                     SubscriptionName);
 
-                RootOperator.GetTaskConfiguration(ref builder, taskId);
+            RootOperator.GetTaskConfiguration(ref serializedOperatorsConfs, taskId);
+            builder.BindList<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs, string>(
+                GenericType<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs>.Class,
+                serializedOperatorsConfs);
         }
 
         public IElasticTaskSetSubscription Build()

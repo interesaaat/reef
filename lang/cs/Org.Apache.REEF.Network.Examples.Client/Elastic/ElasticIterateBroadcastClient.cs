@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
         public void RunIterateBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 10;
+            const int numIterations = 100;
             const string driverId = "ElasticIterateBroadcastDriver";
             const string subscription = "IterateBroadcast";
 
@@ -54,6 +54,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<NumIterations, int>(

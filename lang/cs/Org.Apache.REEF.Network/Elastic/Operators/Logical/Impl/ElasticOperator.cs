@@ -164,18 +164,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// Must be called only after Build() and BuildState() have been called.
         /// This method should be called from the root operator at beginning of the pipeline
         /// </summary>
-        /// <param name="builder">The configuration builder the Operator configuration will be appended to</param>
+        /// <param name="serializedOperatorsConfs">The list the Operator configuration will be appended to</param>
         /// <param name="taskId">The task id of the task that belongs to this Operator</param>
         /// <returns>The configuration for the Task with added Operators information</returns>
-        public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
+        public void GetTaskConfiguration(ref IList<string> serializedOperatorsConfs, int taskId)
         {
             if (_operatorFinalized && _operatorStateFinalized)
             {
-                GetOperatorConfiguration(ref builder, taskId);
+                GetOperatorConfiguration(ref serializedOperatorsConfs, taskId);
 
                 if (_next != null)
                 {
-                    _next.GetTaskConfiguration(ref builder, taskId);
+                    _next.GetTaskConfiguration(ref serializedOperatorsConfs, taskId);
                 }
             }
             else
@@ -272,6 +272,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public ElasticOperator Broadcast<T>(TopologyType topologyType, params IConfiguration[] configurations)
         {
             return Broadcast<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
+        }
+
+        /// <summary>
+        /// Adds an instance of the Broadcast Operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that operators will send / receive</typeparam>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">The configuration of the tasks</param>
+        /// <returns>The same operator pipeline with the added Broadcast operator</returns>
+        public ElasticOperator Broadcast<T>(TopologyType topologyType, Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        {
+            return Broadcast<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         /// <summary>
@@ -436,7 +449,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <param name="builder">The configuration builder the Operator configuration will be appended to</param>
         /// <param name="taskId">The task id of the task that belongs to this Operator</param>
         /// <returns>The configuration for the Task with added serialized Operator conf</returns>
-        protected virtual void GetOperatorConfiguration(ref ICsConfigurationBuilder builder, int taskId)
+        protected virtual void GetOperatorConfiguration(ref IList<string> serializedOperatorsConfs, int taskId)
         {
             ICsConfigurationBuilder operatorBuilder = TangFactory.GetTang().NewConfigurationBuilder();
 
@@ -458,7 +471,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 operatorConf = Configurations.Merge(operatorConf, conf);
             }
 
-            Subscription.Service.SerializeOperatorConfiguration(ref builder, operatorConf);
+            Subscription.Service.SerializeOperatorConfiguration(ref serializedOperatorsConfs, operatorConf);
         }
 
         /// <summary>
