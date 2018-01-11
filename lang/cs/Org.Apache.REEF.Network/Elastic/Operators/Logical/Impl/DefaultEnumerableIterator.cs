@@ -32,6 +32,7 @@ using System.Globalization;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Types;
 using Org.Apache.REEF.Utilities;
+using System.Diagnostics;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -42,8 +43,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultEnumerableIterator));
 
-        private int _iteration;
-        private int _numIterations;
+        private volatile int _iteration;
+        private readonly int _numIterations;
+
+        private readonly Stopwatch _timer;
+        private long _totTime;
 
         public DefaultEnumerableIterator(
             int masterTaskId,
@@ -51,9 +55,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
-                null, 
-                prev, 
-                new RootTopology(masterTaskId), 
+                null,
+                prev,
+                new RootTopology(masterTaskId),
                 failureMachine,
                 checkpointLevel,
                 configurations)
@@ -72,7 +76,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 }
             }
-        }
+            _timer = new Stopwatch();
+            _totTime = 0;
+    }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
         {
@@ -101,13 +107,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             switch (msgReceived)
             {
                 case TaskMessageType.IterationNumber:
-                    _iteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, 2));
+                    var newIteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, 2));
 
-                    LOGGER.Log(Level.Info, "Starting iteration " + _iteration);
-
-                    if (_iteration > _numIterations)
+                    if (_iteration < newIteration)
                     {
-                        Subscription.Completed = true;
+                        OnNewIteration(newIteration);
                     }
 
                     return true;
@@ -183,7 +187,30 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override string LogInternalStatistics()
         {
-            return "Number of Iterations: " + Math.Min(_iteration, _numIterations);
+            return string.Format("Number of Iterations {0}\nTotal computation time {1}s\nAverage iteration time {2}ms\n", Math.Min(_iteration, _numIterations), (float)_totTime / 1000.0, _totTime / (_iteration > 2 ? _iteration - 1 : 1));
+        }
+
+        protected override void OnNewIteration(int iteration)
+        {
+            _timer.Stop();
+            _totTime += _timer.ElapsedMilliseconds;
+
+            _iteration = iteration;
+            LOGGER.Log(Level.Info, "Starting iteration " + _iteration);
+
+            if (_iteration > _numIterations)
+            {
+                Subscription.Completed = true;
+            }
+
+            if (_iteration > 1)
+            {
+                LOGGER.Log(Level.Info, string.Format("Iteration {0} is closed in {1}ms", _iteration, _timer.ElapsedMilliseconds));
+
+                base.OnNewIteration(iteration);
+            }
+
+            _timer.Restart();
         }
     }
 }

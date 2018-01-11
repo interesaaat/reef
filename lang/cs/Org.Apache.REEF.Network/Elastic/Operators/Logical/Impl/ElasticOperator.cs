@@ -533,6 +533,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         }
 
         /// <summary>
+        /// TODO
+        /// </summary>
+        protected virtual void OnNewIteration(int iteration)
+        {
+            if (_next != null)
+            {
+                _next.OnNewIteration(iteration);
+            }
+        }
+
+        /// <summary>
         /// Utility method gathering the set of master task ids of the operators in the current pipeline.
         /// </summary>
         /// <param name="masterTasks">The id of the master tasks of the operators preceding operators</param>
@@ -560,7 +571,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_next != null)
             {
-                str += "\n" + _next.LogFinalStatistics();
+                var str2 = _next.LogFinalStatistics();
+
+                if (str2 != string.Empty && str != string.Empty)
+                {
+                    str += "\n";
+                }
+                str += _next.LogFinalStatistics();
             }
 
             return str;

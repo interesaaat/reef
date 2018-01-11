@@ -57,6 +57,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             _topology = topology;
             _topology.Operator = this;
+            OnTaskRescheduled = new Action(() => { });
         }
 
         /// <summary>
@@ -81,6 +82,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public CancellationTokenSource CancellationSource { get; set; }
 
+        public Action OnTaskRescheduled { get; private set; }
+
         /// <summary>
         /// Receive a message from neighbors broadcasters.
         /// </summary>
@@ -88,7 +91,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive()
         {
-            _topology.JoinTheRing((int)IteratorReference.Current);
+            _topology.JoinTopology();
 
             _position = PositionTracker.InReceive;
 

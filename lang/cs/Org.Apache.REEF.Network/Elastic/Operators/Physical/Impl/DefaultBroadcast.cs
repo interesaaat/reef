@@ -18,7 +18,6 @@
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
 using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
@@ -55,6 +54,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             CheckpointLevel = (CheckpointLevel)level;
             _topology = topology;
             _position = PositionTracker.Nil;
+
+            OnTaskRescheduled = new Action(() =>
+            {
+                _topology.JoinTopology();
+            });
         }
 
         /// <summary>
@@ -73,13 +77,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             get
             {
                 string iteration = IteratorReference == null ? "-1" : IteratorReference.Current.ToString();
-                return ((int)_position).ToString() + ":" + iteration;
+                string position = ((int)_position).ToString() + ":";
+                string isSending = _topology.IsSending ? "1" : "0";
+                return iteration + ":" + position + ":" + isSending;
             }
         }
 
         public IElasticIterator IteratorReference { private get;  set; }
 
         public CancellationTokenSource CancellationSource { get; set; }
+
+        public Action OnTaskRescheduled { get; private set; }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.
@@ -120,13 +128,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void Send(T data)
         {
+            _topology.TopologyUpdateRequest();
+
             _position = PositionTracker.InSend;
 
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
+            var messages = new GroupCommunicationMessage[] { message };
+
+            Checkpoint(messages, message.Iteration);
 
             _topology.Send(new GroupCommunicationMessage[] { message }, CancellationSource);
 
-            _position = PositionTracker.AfterSendBeforeReceive;
+            _position = PositionTracker.AfterSend;
         }
 
         public void ResetPosition()
@@ -150,6 +163,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Dispose()
         {
             _topology.Dispose();
+        }
+
+        internal void Checkpoint(GroupCommunicationMessage[] data, int iteration)
+        {
+            if (CheckpointLevel > CheckpointLevel.None)
+            {
+                var state = new CheckpointableObject<GroupCommunicationMessage[]>()
+                {
+                    Level = CheckpointLevel,
+                    Iteration = iteration
+                };
+
+                state.MakeCheckpointable(data);
+
+                _topology.Checkpoint(state);
+            }
         }
     }
 }

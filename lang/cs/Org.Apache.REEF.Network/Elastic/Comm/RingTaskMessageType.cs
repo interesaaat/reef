@@ -21,9 +21,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     {
         IterationNumber = 0,
 
-        JoinTheRing = 1,
+        JoinTopology = 1,
 
-        TokenRequest = 2,
+        TopologyUpdateRequest = 2,
 
         NextDataRequest = 3
     }

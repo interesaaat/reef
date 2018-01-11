@@ -47,23 +47,24 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Send(taskId, message);
         }
 
-        internal void JoinTheRing(string taskId)
+        internal void JoinTopology(string taskId, int operatorId)
         {
-            var message = new byte[2];
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTheRing), 0, message, 0, sizeof(ushort));
+            var message = new byte[6];
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTopology), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(operatorId), 0, message, sizeof(ushort), sizeof(int));
 
-            Logger.Log(Level.Info, "Going to request to join the ring through heartbeat");
+            Logger.Log(Level.Info, string.Format("Operator {0} requesting to join the topology through heartbeat", operatorId));
 
             Send(taskId, message);
         }
 
-        internal void TokenRequest(string taskId, int iteration)
+        internal void TopologyUpdateRequest(string taskId, int operatorId)
         {
-            var message = new byte[6];
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TokenRequest), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
-
-            Logger.Log(Level.Info, string.Format("Sending request for next node in the ring at iteration {0} through heartbeat", iteration));
+            var message = new byte[10];
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TopologyUpdateRequest), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes(operatorId), 0, message, sizeof(ushort), sizeof(int));
+     
+            Logger.Log(Level.Info, string.Format("Operator {0} requesting a topology update through heartbeat", operatorId));
 
             Send(taskId, message);
         }

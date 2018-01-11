@@ -20,6 +20,7 @@ using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using System;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
 {
@@ -79,11 +80,21 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         string LogTopologyState();
 
         /// <summary>
+        /// TODO
+        /// </summary>
+        void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        void OnNewIteration(int iteration);
+
+        /// <summary>
         /// Reconfigure the topology in response to some event
         /// </summary>
         /// <param name="taskId">The task id responsible for the topology change</param>
         /// <param name="info">Some additional topology-specific information</param>
         /// <returns>One or more messages for reconfiguring the Tasks</returns>
-        IList<IElasticDriverMessage> Reconfigure(string taskId, string info);
+        IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration);
     }
 }

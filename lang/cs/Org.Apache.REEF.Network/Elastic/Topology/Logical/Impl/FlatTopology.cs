@@ -26,6 +26,8 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -33,24 +35,34 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(FlatTopology));
 
+        private string _rootTaskId;
         private int _rootId;
+        private string _taskSubscription;
+        private volatile int _iteration;
         private bool _finalized;
         private readonly bool _sorted;
 
         private readonly Dictionary<int, DataNode> _nodes;
+        private readonly HashSet<string> _lostNodesToBeRemoved;
+        private readonly HashSet<string> _nodesWaitingToJoinTopology;
 
         private readonly object _lock;
 
         public FlatTopology(int rootId, bool sorted = false)
         {
+            _rootTaskId = string.Empty;
+            _taskSubscription = string.Empty;
             _rootId = rootId;
             _finalized = false;
             _sorted = sorted;
             OperatorId = -1;
+            _iteration = 1;
 
             _lock = new object();
 
             _nodes = new Dictionary<int, DataNode>();
+            _lostNodesToBeRemoved = new HashSet<string>();
+            _nodesWaitingToJoinTopology = new HashSet<string>();
         }
 
         public int OperatorId { get; set; }
@@ -70,13 +82,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 if (_nodes.ContainsKey(id))
                 {
-                    if (_finalized)
+                    if (_nodes[id].FailState != DataNodeState.Reachable)
                     {
-                        if (_nodes[id].FailState != DataNodeState.Reachable)
-                        {
-                            _nodes[id].FailState = DataNodeState.Reachable;
-                        }
-
+                        _nodesWaitingToJoinTopology.Add(taskId);
+                        _nodes[id].FailState = DataNodeState.Unreachable;
                         failureMachine.AddDataPoints(0, false);
                         return false;
                     }
@@ -86,6 +95,22 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 DataNode node = new DataNode(id, false);
                 _nodes[id] = node;
+
+                if (_finalized)
+                {
+                    // New node but elastically added. It should be gracefully added to the ring.
+                    _nodesWaitingToJoinTopology.Add(taskId);
+                    _nodes[id].FailState = DataNodeState.Unreachable;
+                    failureMachine.AddDataPoints(1, true);
+                    failureMachine.RemoveDataPoints(1);
+                    return false;
+                }
+
+                // This is required later in order to build the topology
+                if (_taskSubscription == string.Empty)
+                {
+                    _taskSubscription = Utils.GetTaskSubscriptions(taskId);
+                }
             }
 
             failureMachine.AddDataPoints(1, true);
@@ -117,6 +142,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
 
                 node.FailState = DataNodeState.Lost;
+                _nodesWaitingToJoinTopology.Remove(taskId);
+                _lostNodesToBeRemoved.Add(taskId);
             }
 
             return 1;
@@ -151,6 +178,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             BuildTopology();
 
+            _rootTaskId = Utils.BuildTaskId(_taskSubscription, _rootId);
             _finalized = true;
 
             return this;
@@ -196,6 +224,58 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        {
+            if (taskId == _rootTaskId)
+            {
+                lock (_lock)
+                {
+                    var data = new TopologyMessagePayload(_nodesWaitingToJoinTopology.ToList(), false, SubscriptionName, OperatorId, _iteration);
+                    var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
+
+                    returnMessages.Add(returnMessage);
+
+                    if (_nodesWaitingToJoinTopology.Count > 0)
+                    {
+                        LOGGER.Log(Level.Info, string.Format("Tasks {0} are added to topology in iteration {1}", string.Join(",", _nodesWaitingToJoinTopology), _iteration));
+                        _nodesWaitingToJoinTopology.Clear();
+                    }
+                }
+            }
+        }
+
+        public void OnNewIteration(int iteration)
+        {
+            _iteration = iteration;
+        }
+
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
+        {
+            List<IElasticDriverMessage> messages = new List<IElasticDriverMessage>();
+
+            lock (_lock)
+            {
+                int iter;
+
+                if (info.IsPresent())
+                {
+                    iter = int.Parse(info.Value.Split(':')[0]);
+                }
+                else
+                {
+                    iter = iteration.Value;
+                }
+
+                var data = new TopologyMessagePayload(_lostNodesToBeRemoved.ToList(), true, SubscriptionName, OperatorId, -1);
+                var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
+
+                LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);
+                messages.Add(returnMessage);
+            }
+
+            return messages;
+        }
+    
         private void BuildTopology()
         {
             IEnumerator<DataNode> iter = _sorted ? _nodes.OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Values.GetEnumerator();
@@ -208,11 +288,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     root.AddChild(iter.Current);
                 }
             }
-        }
-
-        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
-        {
-            return new List<IElasticDriverMessage>();
         }
     }
 }

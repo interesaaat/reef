@@ -21,6 +21,7 @@ using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -84,7 +85,16 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return "empty";
         }
 
-        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        {
+        }
+
+        public void OnNewIteration(int iteration)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
             return new List<IElasticDriverMessage>();
         }

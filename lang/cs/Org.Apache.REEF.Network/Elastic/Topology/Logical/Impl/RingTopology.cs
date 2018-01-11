@@ -25,11 +25,11 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Text;
 using System.Linq;
-using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Diagnostics;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -52,7 +52,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private HashSet<string> _nextWaitingList;
         private HashSet<string> _tasksInRing;
         private HashSet<string> _nodesWaitingToJoinRing;
-        private HashSet<string> _failedNodes;
         private RingNode _ringHead;
         private readonly Dictionary<int, DataNode> _nodes;
         private readonly SortedDictionary<int, RingNode> _prevRingHeads;
@@ -60,8 +59,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private volatile int _availableDataPoints;
 
         private readonly object _lock;
-        private readonly Stopwatch _timer;
-        private long _totTime;
         private int _totNumberofNodes;
 
         public RingTopology(int rootId)
@@ -77,13 +74,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _currentWaitingList = new HashSet<string>();
             _nextWaitingList = new HashSet<string>();
             _nodesWaitingToJoinRing = new HashSet<string>();
-            _failedNodes = new HashSet<string>();
             _rootTaskId = string.Empty;
             _taskSubscription = string.Empty;
             _iteration = 1;
 
-            _timer = Stopwatch.StartNew();
-            _totTime = 0;
             _totNumberofNodes = 0;
             _lock = new object();
         }
@@ -109,12 +103,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     // Don't add it yet to the ring otherwise we slow down closing
                     if (_finalized && _nodes[id].FailState != DataNodeState.Reachable)
                     {
-                        if (!_failedNodes.Contains(taskId))
-                        {
-                            throw new IllegalStateException("Resuming task never failed: Aborting");
-                        }
-
-                        _failedNodes.Remove(taskId);
                         _nodesWaitingToJoinRing.Add(taskId);
                         _nodes[id].FailState = DataNodeState.Unreachable;
                         failureMachine.AddDataPoints(0, false);
@@ -163,7 +151,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             if (!_nodes.ContainsKey(id))
             {
-                LOGGER.Log(Level.Warning, string.Format("{0} is not part of this topology: ignoring", taskId));
+                throw new ArgumentException("Task is not part of this topology");
             }
 
             DataNode node = _nodes[id];
@@ -173,7 +161,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 var state = node.FailState;
 
                 _nodesWaitingToJoinRing.Remove(taskId);
-                _failedNodes.Add(taskId);
                 node.FailState = DataNodeState.Lost;
 
                 if (state != DataNodeState.Reachable)
@@ -270,7 +257,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
             if (taskId == _rootTaskId)
             {
@@ -290,7 +277,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _ringHead.Prev = null;
                     _ringHead = newHead;
 
-                    TokenRequestResponse(_ringHead.TaskId, ref messages);
+                    TopologyUpdateResponse(_ringHead.TaskId, ref messages);
                 }
 
                 RemoveTaskFromRing(taskId);
@@ -337,7 +324,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             lock (_lock)
             {
-                if (_failedNodes.Contains(taskId))
+                var id = Utils.GetTaskNum(taskId);
+
+                if (_nodes[id].FailState == DataNodeState.Lost)
                 {
                     LOGGER.Log(Level.Warning, "Trying to add to the ring a failed task: ignoring");
                     return;
@@ -345,8 +334,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 if (_nodesWaitingToJoinRing.Contains(taskId))
                 {
-                    var id = Utils.GetTaskNum(taskId);
-
                     _availableDataPoints++;
                     _nodesWaitingToJoinRing.Remove(taskId);
                     _nodes[id].FailState = DataNodeState.Reachable;
@@ -366,7 +353,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             failureStateMachine.AddDataPoints(addedReachableNodes, false);
         }
 
-        internal void TokenRequestResponse(string taskId, ref List<IElasticDriverMessage> messages)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> messages)
         {
             lock (_lock)
             {
@@ -380,23 +367,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                         LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, _rootTaskId, _iteration);
                         messages.Add(returnMessage);
-
-                        _timer.Stop();
-                        _totTime += _timer.ElapsedMilliseconds;
-                        _totNumberofNodes += _tasksInRing.Count;
-                        LOGGER.Log(Level.Info, string.Format("Ring in Iteration {0} is closed in {1}ms with {2} nodes", _iteration, _timer.ElapsedMilliseconds, _tasksInRing.Count, (float)_totTime / 1000.0, _totTime / _iteration));
-
-                        _ringHead.Next = new RingNode(_rootTaskId, _iteration, _ringHead);
-                        _ringHead = _ringHead.Next;
-                        _currentWaitingList = _nextWaitingList;
-                        _nextWaitingList = new HashSet<string>();
-                        _tasksInRing = new HashSet<string> { { _rootTaskId } };
-                        _prevRingHeads.Add(_iteration, _ringHead);
-
-                        _iteration++;
-                        CleanPreviousRings();
-
-                        _timer.Restart();
                     }
                     else if (_currentWaitingList.Count > 0)
                     {
@@ -440,9 +410,24 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
+        public void OnNewIteration(int iteration)
+        {
+            LOGGER.Log(Level.Info, string.Format("Ring in Iteration {0} is closed with {1} nodes", _iteration, _tasksInRing.Count));
+
+            _ringHead.Next = new RingNode(_rootTaskId, _iteration, _ringHead);
+            _ringHead = _ringHead.Next;
+            _currentWaitingList = _nextWaitingList;
+            _nextWaitingList = new HashSet<string>();
+            _tasksInRing = new HashSet<string> { { _rootTaskId } };
+            _prevRingHeads.Add(_iteration, _ringHead);
+
+            _iteration = iteration;
+            CleanPreviousRings();
+        }
+
         internal void ResumeRing(ref List<IElasticDriverMessage> returnMessages)
         {
-            TokenRequestResponse(_ringHead.TaskId, ref returnMessages);
+            TopologyUpdateResponse(_ringHead.TaskId, ref returnMessages);
         }
 
         internal void ResumeRing(ref List<IElasticDriverMessage> returnMessages, string taskId, int iteration)
@@ -468,7 +453,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal string Statistics()
         {
-            return string.Format("Total ring computation time {0}s\nAverage ring computation time {1}ms\nAverage number of nodes in ring {2}", (float)_totTime / 1000.0, _totTime / (_iteration > 2 ? _iteration - 1 : 1), (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
+            return string.Format("Average number of nodes in ring {0}", (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
         }
 
         private void CleanPreviousRings()

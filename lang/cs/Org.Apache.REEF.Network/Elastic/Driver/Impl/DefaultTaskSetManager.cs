@@ -620,6 +620,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (!_disposed)
             {
+                _disposed = true;
                 LogFinalStatistics();
 
                 foreach (var info in _taskInfos)
@@ -632,8 +633,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         }
                     }
                 }
-
-                _disposed = true;
             }
         }
 

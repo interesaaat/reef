@@ -62,5 +62,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         /// every time a new iteration start in the workflow
         /// </summary>
         void ResetPosition();
+
+        Action OnTaskRescheduled { get; }
     }
 }

@@ -101,6 +101,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
+        internal virtual void JoinTopology()
+        {
+            _commLayer.JoinTopology(_taskId, OperatorId);
+        }
+
         public virtual void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             try

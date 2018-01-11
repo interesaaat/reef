@@ -214,9 +214,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             operatorObserver.OnNext(nsMessage);
         }
 
-        internal void TokenRequest(string taskId, int iteration)
+        internal void TopologyUpdateRequest(string taskId, int operatorId)
         {
-            _taskToDriverDispatcher.TokenRequest(taskId, iteration);
+            _taskToDriverDispatcher.TopologyUpdateRequest(taskId, operatorId);
         }
 
         internal void NextDataRequest(string taskId, int iteration)
@@ -229,9 +229,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskToDriverDispatcher.IterationNumber(taskId, iteration);
         }
 
-        public void JoinTheRing(string taskId)
+        public void JoinTopology(string taskId, int operatorId)
         {
-            _taskToDriverDispatcher.JoinTheRing(taskId);
+            _taskToDriverDispatcher.JoinTopology(taskId, operatorId);
         }
 
         public void OnError(Exception error)

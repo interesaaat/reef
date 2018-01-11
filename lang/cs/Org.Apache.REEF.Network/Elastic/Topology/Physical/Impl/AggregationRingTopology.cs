@@ -26,12 +26,10 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -45,7 +43,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         private AggregationRingTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
@@ -55,19 +52,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
-
-            foreach (var child in children)
-            {
-                var childTaskId = Utils.BuildTaskId(SubscriptionName, child);
-
-                _children.TryAdd(child, childTaskId);
-            }
+            _checkpointService = checkpointService;
 
             _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
-
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
-
-            _checkpointService = checkpointService;
         }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
@@ -258,7 +246,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        internal void JoinTheRing(int iteration)
+        internal override void JoinTopology()
         {
             if (_taskId != _rootTaskId)
             {
@@ -268,7 +256,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     _messageQueue.Take();
                 }
-                _commLayer.JoinTheRing(_taskId);
+                _commLayer.JoinTopology(_taskId, OperatorId);
             }
         }
 
@@ -282,7 +270,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 var dm = message as DataMessage;
 
-                _commLayer.TokenRequest(_taskId, dm.Iteration);
+                _commLayer.TopologyUpdateRequest(_taskId, OperatorId);
 
                 while (!_next.TryTake(out nextNode, _timeout))
                 {
@@ -300,7 +288,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
                     }
 
-                    _commLayer.TokenRequest(_taskId, dm.Iteration);
+                    _commLayer.TopologyUpdateRequest(_taskId, OperatorId);
                 }
 
                 _sendQueue.TryDequeue(out message);

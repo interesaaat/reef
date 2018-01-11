@@ -29,6 +29,7 @@ using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Linq;
 using Org.Apache.REEF.Wake.Time.Event;
 using System.Diagnostics;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -38,6 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     class DefaultAggregationRing<T> : ElasticOperatorWithDefaultDispatcher, IElasticAggregationRing
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
+
         private volatile bool _stop;
 
         private double _sum;
@@ -90,8 +92,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             switch (msgReceived)
             {
-                case TaskMessageType.JoinTheRing:
+                case TaskMessageType.JoinTopology:
                     {
+                        var operatorId = BitConverter.ToInt32(message.Message, sizeof(ushort));
+
+                        if (operatorId != _id)
+                        {
+                            return false;
+                        }
+
                         if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             LOGGER.Log(Level.Info, "{0} joins the ring", message.TaskId);
@@ -101,15 +110,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                         return true;
                     }
-                case TaskMessageType.TokenRequest:
+                case TaskMessageType.TopologyUpdateRequest:
                     {
+                        var operatorId = BitConverter.ToInt32(message.Message, sizeof(ushort));
+
+                        if (operatorId != _id)
+                        {
+                            return false;
+                        }
+
                         LOGGER.Log(Level.Info, "Received token request from {0}", message.TaskId);
 
                         UpdateTimeoutStatistics();
 
                         if (!_stop)
                         {
-                            RingTopology.TokenRequestResponse(message.TaskId, ref returnMessages);
+                            RingTopology.TopologyUpdateResponse(message.TaskId, ref returnMessages);
                         }
                         else
                         {
@@ -207,13 +223,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     {
                         if (((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).OperatorId == _id)
                         {
-                            var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, ((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo).ToList();
+                            var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
+                            var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
                             reconfigureEvent.FailureResponse.AddRange(msg);
                         }
                     }
                     else
                     {
-                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, string.Empty).ToList();
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, Optional<string>.Empty(), reconfigureEvent.Iteration);
                         reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                 }

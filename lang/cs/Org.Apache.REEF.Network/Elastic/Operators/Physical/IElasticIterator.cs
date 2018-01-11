@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using System;
+
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
@@ -27,5 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         object Current { get; }
 
         void SyncIteration(int iteration);
+
+        void RegisterActionOnTaskRescheduled(Action action);
     }
 }

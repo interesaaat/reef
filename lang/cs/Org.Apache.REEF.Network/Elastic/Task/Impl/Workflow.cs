@@ -25,7 +25,6 @@ using Org.Apache.REEF.Utilities.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
@@ -77,7 +76,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             if (_iteratorPosition >= 0)
             {
-                op.IteratorReference = _operators[_iteratorPosition] as IElasticIterator;
+                var iterator = _operators[_iteratorPosition] as IElasticIterator;
+
+                op.IteratorReference = iterator;
+                iterator.RegisterActionOnTaskRescheduled(op.OnTaskRescheduled);
             }
 
             if (op.OperatorName == Constants.Iterate)

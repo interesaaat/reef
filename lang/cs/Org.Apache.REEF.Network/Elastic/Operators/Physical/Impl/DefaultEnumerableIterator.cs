@@ -23,6 +23,8 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Exceptions;
+using System;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -36,6 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private readonly ElasticIteratorEnumerator<int> _inner;
         private readonly IterateTopology _topology;
         private ICheckpointableState _checkpointState;
+        private readonly IList<Action> _actions;
 
         /// <summary>
         /// Creates a new Enumerable Iterator.
@@ -54,6 +57,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _checkpointState = state;
             _inner = innerIterator;
             _topology = topology;
+            _actions = new List<Action>();
+
+            OnTaskRescheduled = new Action(() => { });
         }
 
         public int OperatorId { get; private set; }
@@ -91,6 +97,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                         FastForward(checkpoint.Iteration - 1);
                     }
                     _checkpointState.MakeCheckpointable(checkpoint.State);
+
+                    foreach (var action in _actions)
+                    {
+                        action.Invoke();
+                    }
                 }
                 return _checkpointState;
             }
@@ -113,6 +124,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         }
 
         public CancellationTokenSource CancellationSource { get; set; }
+
+        public Action OnTaskRescheduled { get; private set; }
 
         public void ResetPosition()
         {
@@ -144,6 +157,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public void Reset()
         {
             _inner.Reset();
+        }
+
+        public void RegisterActionOnTaskRescheduled(Action action)
+        {
+            _actions.Add(action);
         }
 
         public void Dispose()

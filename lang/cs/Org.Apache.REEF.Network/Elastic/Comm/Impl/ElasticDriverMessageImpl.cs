@@ -87,6 +87,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
                 case DriverMessageType.Resume:
                     payload = ResumeMessagePayload.From(data, offset);
                     break;
+                case DriverMessageType.Topology:
+                    payload = TopologyMessagePayload.From(data, offset);
+                    break;
                 default:
                     throw new IllegalStateException("Message type not recognized");
             }

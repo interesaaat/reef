@@ -25,6 +25,7 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -124,7 +125,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        {
+            throw new MissingMethodException("TODO");
+        }
+
+        public void OnNewIteration(int iteration)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
             throw new MissingMethodException("TODO");
         }

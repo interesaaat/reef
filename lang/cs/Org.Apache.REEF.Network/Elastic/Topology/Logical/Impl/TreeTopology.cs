@@ -26,6 +26,7 @@ using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -235,6 +236,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return output;
         }
 
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        {
+            throw new MissingMethodException("TODO");
+        }
+
         private DataNode GetTaskNode(int taskId)
         {
             DataNode node;
@@ -290,7 +296,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public IList<IElasticDriverMessage> Reconfigure(string taskId, string info)
+        public void OnNewIteration(int iteration)
+        {
+            throw new NotImplementedException();
+        }
+
+        public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
             throw new NotImplementedException();
         }

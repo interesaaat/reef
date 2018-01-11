@@ -32,6 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             switch (message.MessageType)
             {
                 case DriverMessageType.Ring:
+                case DriverMessageType.Topology:
                     OnMessageFromDriver(message);
                     break;
                 default:
