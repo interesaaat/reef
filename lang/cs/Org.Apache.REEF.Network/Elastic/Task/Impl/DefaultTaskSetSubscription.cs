@@ -111,9 +111,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         {
             if (!_cancellationSource.IsCancelled())
             {
-                Logger.Log(Level.Info, "Received request to close Subscription", SubscriptionName);
-
                 _cancellationSource.Cancel();
+
+                Logger.Log(Level.Info, "Received request to close Subscription", SubscriptionName);
             }
         }
     }

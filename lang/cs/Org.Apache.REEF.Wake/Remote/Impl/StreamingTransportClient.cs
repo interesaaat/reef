@@ -101,7 +101,7 @@ namespace Org.Apache.REEF.Wake.Remote.Impl
                 throw new ArgumentNullException("message");
             }
 
-            _link.Write(message);
+            _link.WriteAsync(message, new CancellationToken());
         }
 
         /// <summary>

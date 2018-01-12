@@ -187,7 +187,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override string LogInternalStatistics()
         {
-            return string.Format("Number of Iterations {0}\nTotal computation time {1}s\nAverage iteration time {2}ms\n", Math.Min(_iteration, _numIterations), (float)_totTime / 1000.0, _totTime / (_iteration > 2 ? _iteration - 1 : 1));
+            return string.Format("\nNumber of Iterations {0}\nTotal computation time {1}s\nAverage iteration time {2}ms", Math.Min(_iteration, _numIterations), (float)_totTime / 1000.0, _totTime / (_iteration > 2 ? _iteration - 1 : 1));
         }
 
         protected override void OnNewIteration(int iteration)
@@ -196,16 +196,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _totTime += _timer.ElapsedMilliseconds;
 
             _iteration = iteration;
-            LOGGER.Log(Level.Info, "Starting iteration " + _iteration);
 
             if (_iteration > _numIterations)
             {
                 Subscription.Completed = true;
             }
+            else
+            {
+                LOGGER.Log(Level.Info, "Starting iteration " + _iteration);
+            }
 
             if (_iteration > 1)
             {
-                LOGGER.Log(Level.Info, string.Format("Iteration {0} is closed in {1}ms", _iteration, _timer.ElapsedMilliseconds));
+                LOGGER.Log(Level.Info, string.Format("Iteration {0} is closed in {1}ms", _iteration - 1, _timer.ElapsedMilliseconds));
 
                 base.OnNewIteration(iteration);
             }

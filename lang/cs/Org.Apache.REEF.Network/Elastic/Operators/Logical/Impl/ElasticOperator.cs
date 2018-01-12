@@ -537,6 +537,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         protected virtual void OnNewIteration(int iteration)
         {
+            _topology.OnNewIteration(iteration);
+
             if (_next != null)
             {
                 _next.OnNewIteration(iteration);
@@ -571,12 +573,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_next != null)
             {
-                var str2 = _next.LogFinalStatistics();
-
-                if (str2 != string.Empty && str != string.Empty)
-                {
-                    str += "\n";
-                }
                 str += _next.LogFinalStatistics();
             }
 

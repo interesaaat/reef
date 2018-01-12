@@ -91,7 +91,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public void OnNewIteration(int iteration)
         {
-            throw new NotImplementedException();
         }
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)

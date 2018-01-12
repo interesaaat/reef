@@ -28,6 +28,8 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
     /// </summary>
     public sealed class FloatArrayStreamingCodec : IStreamingCodec<float[]>
     {
+        private const int MAX_SIZE = 1024 * 1024 * 2;
+
         /// <summary>
         /// Injectable constructor
         /// </summary>
@@ -78,10 +80,29 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
         public async Task<float[]> ReadAsync(IDataReader reader, CancellationToken token)
         {
             int length = await reader.ReadInt32Async(token);
+
             byte[] buffer = new byte[sizeof(float) * length];
-            await reader.ReadAsync(buffer, 0, buffer.Length, token);
             float[] floatArr = new float[length];
-            Buffer.BlockCopy(buffer, 0, floatArr, 0, sizeof(float) * length);
+
+            if (length > MAX_SIZE)
+            {
+                byte[] tmpBuffer = new byte[sizeof(float) * MAX_SIZE];
+                var total = 0;
+                var toRead = 0;
+
+                while (total < length)
+                {
+                    toRead = Math.Min(length - total, MAX_SIZE);
+                    await reader.ReadAsync(buffer, 0, toRead, token);
+                    Buffer.BlockCopy(buffer, 0, floatArr, 0, sizeof(float) * toRead);
+                    total += toRead;
+                }
+            }
+            else
+            {
+                await reader.ReadAsync(buffer, 0, buffer.Length, token);
+                Buffer.BlockCopy(buffer, 0, floatArr, 0, sizeof(float) * length);
+            }
             return floatArr;
         }
 
@@ -99,9 +120,27 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
             }
 
             await writer.WriteInt32Async(obj.Length, token);
-            byte[] buffer = new byte[sizeof(float) * obj.Length];
-            Buffer.BlockCopy(obj, 0, buffer, 0, sizeof(float) * obj.Length);
-            await writer.WriteAsync(buffer, 0, buffer.Length, token);
+
+            if (obj.Length > MAX_SIZE)
+            {
+                byte[] buffer = new byte[sizeof(float) * MAX_SIZE];
+                var total = 0;
+                var toWrite = 0;
+
+                while (total < obj.Length)
+                {
+                    toWrite = Math.Min(obj.Length - total, MAX_SIZE);
+                    Buffer.BlockCopy(obj, total, buffer, 0, sizeof(float) * toWrite);
+                    await writer.WriteAsync(buffer, 0, toWrite, token);
+                    total += toWrite;
+                }
+            }
+            else
+            {
+                byte[] buffer = new byte[sizeof(float) * obj.Length];
+                Buffer.BlockCopy(obj, 0, buffer, 0, sizeof(float) * obj.Length);
+                await writer.WriteAsync(buffer, 0, buffer.Length, token);
+            }  
         }
     }
 }

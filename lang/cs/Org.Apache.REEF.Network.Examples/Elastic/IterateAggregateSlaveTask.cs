@@ -56,7 +56,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.AggregationRing:
-                                var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
+                                var aggregator = workflow.Current as IElasticAggregationRing<float[]>;
 
                                 if (rand.Next(100) < 0)
                                 {
@@ -71,14 +71,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                         Environment.Exit(0);
                                     }
                                 }
-                                    var rec = aggregator.Receive();
+                                var rec = aggregator.Receive();
 
-                                Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
+                                Console.WriteLine("Slave has received model of size {0} in iteration {1}", rec.Length, workflow.Iteration);
 
-                                // Update the model, die in case
+                                ////Update the model, die in case
                                 for (int i = 0; i < rec.Length; i++)
                                 {
-                                    rec[i] += 0;
+                                    rec[i] += 1;
                                 }
 
                                 if (rand.Next(100) < 0)
@@ -95,9 +95,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     }
                                 }
 
-                                    aggregator.Send(rec);
+                                aggregator.Send(rec);
 
-                                Console.WriteLine("Slave has sent {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
+                                Console.WriteLine("Slave has sent model of size {0} in iteration {1}", rec.Length, workflow.Iteration);
 
                                 if (rand.Next(100) < 0)
                                 {
@@ -112,7 +112,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                         Environment.Exit(0);
                                     }
                                 }
-                                    break;
+                                break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");
                         }

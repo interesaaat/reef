@@ -334,6 +334,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             catch (Exception e)
             {
                 Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                connection.Dispose();
                 return false;
             }
 

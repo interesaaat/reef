@@ -89,14 +89,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int[]>.Conf
-                .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
+            _codecConfig = StreamingCodecConfiguration<float[]>.Conf
+                .Set(StreamingCodecConfiguration<float[]>.Codec, GenericType<FloatArrayStreamingCodec>.Class)
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
-                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableModel<int>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableModel<float>>.Class)
                 .Build();
 
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
@@ -128,7 +128,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.PersistentMemoryMaster,
                         iteratorConfig)
-                    .AggregationRing<int[]>(CheckpointLevel.EphemeralAll)
+                    .AggregationRing<float[]>(CheckpointLevel.EphemeralAll)
                     .Build();
 
             // Build the subscription

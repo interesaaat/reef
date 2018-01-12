@@ -367,6 +367,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                         LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, _rootTaskId, _iteration);
                         messages.Add(returnMessage);
+
+                        _totNumberofNodes += _tasksInRing.Count;
                     }
                     else if (_currentWaitingList.Count > 0)
                     {
@@ -453,7 +455,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         internal string Statistics()
         {
-            return string.Format("Average number of nodes in ring {0}", (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
+            return string.Format("\nAverage number of nodes in ring {0}", (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
         }
 
         private void CleanPreviousRings()

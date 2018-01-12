@@ -20,7 +20,6 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
 
@@ -50,11 +49,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 try
                 {
-                    var model = new int[n];
+                    var model = new float[n];
 
                     for (int i = 0; i < n; i++)
                     {
-                        model[i] = 1;
+                        model[i] = NextFloat(rand);
                     }
 
                     var checkpointable = workflow.GetCheckpointableState();
@@ -65,21 +64,21 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.AggregationRing:
-                                var aggregator = workflow.Current as IElasticAggregationRing<int[]>;
+                                var aggregator = workflow.Current as IElasticAggregationRing<float[]>;
 
                                 aggregator.Send(model);
 
-                                Console.WriteLine("Master has sent {0} in iteration {1}", string.Join(",", model), workflow.Iteration);
+                                Console.WriteLine("Master has sent model size {0} in iteration {1}", model.Length, workflow.Iteration);
 
                                 var update = aggregator.Receive();
-
-                                Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", model), workflow.Iteration);
 
                                 //// Update the model
                                 for (int i = 0; i < n; i++)
                                 {
-                                    model[i]++;
+                                    model[i] = ++update;
                                 }
+
+                                Console.WriteLine("Master has received model size {0} in iteration {1}", update.Length, workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " not implemented");
@@ -114,6 +113,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
+        }
+
+        static float NextFloat(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-126, 128));
+            return (float)(mantissa * exponent);
         }
     }
 }
