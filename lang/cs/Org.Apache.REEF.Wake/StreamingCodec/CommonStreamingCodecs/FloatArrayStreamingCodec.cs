@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
     /// </summary>
     public sealed class FloatArrayStreamingCodec : IStreamingCodec<float[]>
     {
-        private const int MAX_SIZE = 1024 * 1024 * 2;
+        private const int MAX_SIZE = 1024 * 256;
 
         /// <summary>
         /// Injectable constructor

@@ -45,6 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private readonly Dictionary<int, DataNode> _nodes;
         private readonly HashSet<string> _lostNodesToBeRemoved;
         private readonly HashSet<string> _nodesWaitingToJoinTopology;
+        private volatile int _availableDataPoints;
 
         private readonly object _lock;
 
@@ -57,6 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _sorted = sorted;
             OperatorId = -1;
             _iteration = 1;
+            _availableDataPoints = 0;
 
             _lock = new object();
 
@@ -113,6 +115,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
             }
 
+            _availableDataPoints++;
             failureMachine.AddDataPoints(1, true);
 
             return true;
@@ -141,6 +144,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     return 0;
                 }
 
+                _availableDataPoints--;
                 node.FailState = DataNodeState.Lost;
                 _nodesWaitingToJoinTopology.Remove(taskId);
                 _lostNodesToBeRemoved.Add(taskId);
@@ -230,22 +234,30 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 lock (_lock)
                 {
-                    var data = new TopologyMessagePayload(_nodesWaitingToJoinTopology.ToList(), false, SubscriptionName, OperatorId, _iteration);
+                    var list = _nodesWaitingToJoinTopology.ToList();
+                    list.Insert(0, _rootTaskId);
+                    var data = new TopologyMessagePayload(new List<List<string>>() { list }, false, SubscriptionName, OperatorId, _iteration);
                     var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
 
                     returnMessages.Add(returnMessage);
 
                     if (_nodesWaitingToJoinTopology.Count > 0)
                     {
-                        LOGGER.Log(Level.Info, string.Format("Tasks {0} are added to topology in iteration {1}", string.Join(",", _nodesWaitingToJoinTopology), _iteration));
+                        _availableDataPoints += _nodesWaitingToJoinTopology.Count;
+                        LOGGER.Log(Level.Info, string.Format("Tasks [{0}] are added to topology in iteration {1}", string.Join(",", _nodesWaitingToJoinTopology), _iteration));
                         _nodesWaitingToJoinTopology.Clear();
                     }
                 }
+            }
+            else
+            {
+                throw new IllegalStateException("Only root tasks are supposed to request topology updates");
             }
         }
 
         public void OnNewIteration(int iteration)
         {
+            LOGGER.Log(Level.Info, string.Format("Flat Topology for Operator {0} in Iteration {1} is closed with {2} nodes", OperatorId, iteration - 1, _availableDataPoints));
             _iteration = iteration;
         }
 
@@ -266,7 +278,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     iter = iteration.Value;
                 }
 
-                var data = new TopologyMessagePayload(_lostNodesToBeRemoved.ToList(), true, SubscriptionName, OperatorId, -1);
+                var data = new TopologyMessagePayload(new List<List<string>>() { _lostNodesToBeRemoved.ToList() }, true, SubscriptionName, OperatorId, -1);
                 var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
 
                 LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);

@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var sender = workflow.Current as IElasticBroadcast<int>;
 
-                                ////System.Threading.Thread.Sleep(1000);
+                                System.Threading.Thread.Sleep(1000);
 
                                 sender.Send(number);
 

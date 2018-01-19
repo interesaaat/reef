@@ -128,7 +128,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.PersistentMemoryMaster,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Flat,
+                    .Broadcast<int>(TopologyType.Tree,
                         CheckpointLevel.None)
                     .Build();
 
@@ -158,9 +158,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         }
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
-        {
-            ////System.Threading.Thread.Sleep(5000);
-
+        {     
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule

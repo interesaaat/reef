@@ -98,11 +98,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             _position = PositionTracker.InReceive;
             var received = false;
-            DataMessage<T> message = null;
+            DataMessageWithTopology<T> message = null;
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource) as DataMessage<T>;
+                message = _topology.Receive(CancellationSource) as DataMessageWithTopology<T>;
 
                 if (message.Iteration < (int)IteratorReference.Current)
                 {
@@ -132,7 +132,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             _position = PositionTracker.InSend;
 
-            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
+            var message = new DataMessageWithTopology<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
             var messages = new GroupCommunicationMessage[] { message };
 
             Checkpoint(messages, message.Iteration);

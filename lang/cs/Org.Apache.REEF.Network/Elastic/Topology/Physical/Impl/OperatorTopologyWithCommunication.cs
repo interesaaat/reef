@@ -138,7 +138,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 _messageQueue.Add(payload);
 
-                if (_children.Count > 0)
+                if (!_children.IsEmpty)
                 {
                     _sendQueue.Enqueue(payload);
                 }

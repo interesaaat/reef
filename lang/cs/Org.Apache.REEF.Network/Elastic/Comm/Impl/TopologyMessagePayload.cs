@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// </summary>
     internal sealed class TopologyMessagePayload : DriverMessagePayload
     {
-        public TopologyMessagePayload(IList<string> updates, bool toRemove, string subscriptionName, int operatorId, int iteration)
+        public TopologyMessagePayload(List<List<string>> updates, bool toRemove, string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId, iteration)
         {
             MessageType = DriverMessageType.Topology;
@@ -36,7 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             ToRemove = toRemove;
         }
 
-        internal IList<string> TopologyUpdates { get; private set; }
+        internal List<List<string>> TopologyUpdates { get; private set; }
 
         internal bool ToRemove { get; private set; }
 
@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         {
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
             int offset = 0;
-            var totalLengthUpdates = TopologyUpdates.Sum(x => x.Length) + (TopologyUpdates.Count * sizeof(int));
+            var totalLengthUpdates = TopologyUpdates.Sum(x => (x.Count * sizeof(int)) + x.Sum(y => y.Length)) + (TopologyUpdates.Count * sizeof(int));
             byte[] buffer = new byte[sizeof(int) + totalLengthUpdates + sizeof(int) + subscriptionBytes.Length + sizeof(bool) + sizeof(int) + sizeof(int)];
             byte[] tmpBuffer;
 
@@ -52,11 +52,16 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             offset += sizeof(int);
             foreach (var value in TopologyUpdates)
             {
-                tmpBuffer = ByteUtilities.StringToByteArrays(value);
-                Buffer.BlockCopy(BitConverter.GetBytes(tmpBuffer.Length), 0, buffer, offset, sizeof(int));
+                Buffer.BlockCopy(BitConverter.GetBytes(value.Count), 0, buffer, offset, sizeof(int));
                 offset += sizeof(int);
-                Buffer.BlockCopy(tmpBuffer, 0, buffer, offset, tmpBuffer.Length);
-                offset += tmpBuffer.Length;
+                foreach (var innerValue in value)
+                {
+                    tmpBuffer = ByteUtilities.StringToByteArrays(innerValue);
+                    Buffer.BlockCopy(BitConverter.GetBytes(tmpBuffer.Length), 0, buffer, offset, sizeof(int));
+                    offset += sizeof(int);
+                    Buffer.BlockCopy(tmpBuffer, 0, buffer, offset, tmpBuffer.Length);
+                    offset += tmpBuffer.Length;
+                }
             }
 
             Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
@@ -78,7 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         {
             int length = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
-            IList<string> updates = Deserialize(data, length, offset);
+            List<List<string>> updates = Deserialize(data, length, offset);
             offset += length;
 
             length = BitConverter.ToInt32(data, offset);
@@ -95,20 +100,28 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return new TopologyMessagePayload(updates, toRemove, subscription, operatorId, iteration);
         }
 
-        private static IList<string> Deserialize(byte[] data, int totLength, int start)
+        private static List<List<string>> Deserialize(byte[] data, int totLength, int start)
         {
-            var result = new List<string>();
+            var result = new List<List<string>>();
+            var num = 0;
             var length = 0;
             var offset = 0;
             string value;
 
             while (offset < totLength)
             {
-                length = BitConverter.ToInt32(data, start + offset);
+                num = BitConverter.ToInt32(data, start + offset);
                 offset += sizeof(int);
-                value = ByteUtilities.ByteArraysToString(data, start + offset, length);
-                offset += length;
-                result.Add(value);
+                var tmp = new List<string>();
+                for (int i = 0; i < num; i++)
+                {
+                    length = BitConverter.ToInt32(data, start + offset);
+                    offset += sizeof(int);
+                    value = ByteUtilities.ByteArraysToString(data, start + offset, length);
+                    offset += length;
+                    tmp.Add(value);
+                }
+                result.Add(tmp);
             }
 
             return result;

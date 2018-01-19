@@ -160,12 +160,5 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _stop = true;
             }
         }
-
-        protected override void OnNewIteration(int iteration)
-        {
-            _topology.OnNewIteration(iteration);
-
-            base.OnNewIteration(iteration);
-        }
     }
 }

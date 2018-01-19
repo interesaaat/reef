@@ -16,7 +16,6 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Wake.StreamingCodec;
@@ -42,6 +41,8 @@ namespace Org.Apache.REEF.Network.Elastic.Config
             .BindImplementation(GenericType<IStreamingCodec<T>>.Class, Codec)
             .BindImplementation(GenericType<IStreamingCodec<DataMessage<T>>>.Class,
                 GenericType<DataMessageStreamingCodec<T>>.Class)
+            .BindImplementation(GenericType<IStreamingCodec<DataMessageWithTopology<T>>>.Class,
+                GenericType<DataMessageWithTopologyStreamingCodec<T>>.Class)
             .BindImplementation(GenericType<IStreamingCodec<CheckpointMessage>>.Class,
                 GenericType<CheckpointMessageStreamingCodec<T>>.Class)
             .BindImplementation(GenericType<IStreamingCodec<CheckpointMessageRequest>>.Class,
