@@ -148,7 +148,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 throw new IllegalStateException("Operator needs to be built before adding tasks");
             }
 
-            var newTask = _topology.AddTask(taskId, ref _failureMachine);
+            var newTask = _topology.AddTask(taskId, _failureMachine);
 
             if (_next != null)
             {
@@ -581,7 +581,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected virtual string LogInternalStatistics()
         {
-            return string.Empty;
+            return _topology.LogFinalStatistics();
         }
     }
 }

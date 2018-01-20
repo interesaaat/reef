@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         {
                             LOGGER.Log(Level.Info, "{0} joins the ring", message.TaskId);
 
-                            RingTopology.AddTaskToRing(message.TaskId, ref _failureMachine);
+                            RingTopology.AddTaskToRing(message.TaskId, _failureMachine);
                         }
 
                         return true;
@@ -125,7 +125,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                         if (!_stop)
                         {
-                            RingTopology.TopologyUpdateResponse(message.TaskId, ref returnMessages);
+                            RingTopology.TopologyUpdateResponse(message.TaskId, ref returnMessages, Optional<IFailureStateMachine>.Empty());
                         }
                         else
                         {
@@ -156,7 +156,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             if (isInit)
             {
                 LOGGER.Log(Level.Warning, "Timeout for Operator {0} in Subscription {1} initialized", _id, Subscription.SubscriptionName);
-                nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
+                ////nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
 
                 return;
             }
@@ -187,12 +187,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                                 _3sigma = new3Sigma;
                             }
 
-                            nextTimeouts.Add(new Timeout(Math.Max(10000, (long)_3sigma), alarm.Handler, Timeout.TimeoutType.Operator, id));
+                            ////nextTimeouts.Add(new Timeout(Math.Max(10000, (long)_3sigma), alarm.Handler, Timeout.TimeoutType.Operator, id));
                         }
                     }
                     else
                     {
-                        nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
+                        ////nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
                     }
 
                     _ignoreTimeout = false;
@@ -254,11 +254,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 _stop = true;
             }
-        }
-
-        protected override string LogInternalStatistics()
-        {
-            return RingTopology.Statistics();
         }
 
         private void UpdateTimeoutStatistics()

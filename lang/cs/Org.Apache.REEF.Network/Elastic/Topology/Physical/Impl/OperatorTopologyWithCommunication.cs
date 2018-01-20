@@ -110,7 +110,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             try
             {
-                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
+                _commLayer.WaitForTaskRegistration(_children, cancellationSource);
             }
             catch (Exception e)
             {

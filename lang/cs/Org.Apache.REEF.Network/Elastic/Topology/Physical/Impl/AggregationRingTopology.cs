@@ -135,7 +135,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 try
                 {
-                    _commLayer.WaitForTaskRegistration(new List<string> { _rootTaskId }, cancellationSource);
+                    var tmp = new ConcurrentDictionary<int, string>();
+                    tmp.TryAdd(0, _rootTaskId);
+                    _commLayer.WaitForTaskRegistration(tmp, cancellationSource);
                 }
                 catch (Exception e)
                 {

@@ -57,9 +57,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private readonly SortedDictionary<int, RingNode> _prevRingHeads;
 
         private volatile int _availableDataPoints;
+        private int _totNumberofNodes;
 
         private readonly object _lock;
-        private int _totNumberofNodes;
 
         public RingTopology(int rootId)
         {
@@ -86,7 +86,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string SubscriptionName { get; set; }
 
-        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
+        public bool AddTask(string taskId, IFailureStateMachine failureMachine)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -277,7 +277,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _ringHead.Prev = null;
                     _ringHead = newHead;
 
-                    TopologyUpdateResponse(_ringHead.TaskId, ref messages);
+                    TopologyUpdateResponse(_ringHead.TaskId, ref messages, Optional<IFailureStateMachine>.Empty());
                 }
 
                 RemoveTaskFromRing(taskId);
@@ -318,7 +318,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        internal void AddTaskToRing(string taskId, ref IFailureStateMachine failureStateMachine)
+        internal void AddTaskToRing(string taskId, IFailureStateMachine failureStateMachine)
         {
             var addedReachableNodes = 0;
 
@@ -353,7 +353,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             failureStateMachine.AddDataPoints(addedReachableNodes, false);
         }
 
-        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> messages)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> messages, Optional<IFailureStateMachine> failureStateMachine)
         {
             lock (_lock)
             {
@@ -427,9 +427,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             CleanPreviousRings();
         }
 
+        public string LogFinalStatistics()
+        {
+            return string.Format("\nAverage number of nodes in ring {0}", (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
+        }
+
         internal void ResumeRing(ref List<IElasticDriverMessage> returnMessages)
         {
-            TopologyUpdateResponse(_ringHead.TaskId, ref returnMessages);
+            TopologyUpdateResponse(_ringHead.TaskId, ref returnMessages, null);
         }
 
         internal void ResumeRing(ref List<IElasticDriverMessage> returnMessages, string taskId, int iteration)
@@ -451,11 +456,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
 
             LOGGER.Log(Level.Warning, "{0} in iteration {1} not found: ignoring", taskId, iteration); 
-        }
-
-        internal string Statistics()
-        {
-            return string.Format("\nAverage number of nodes in ring {0}", (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
         }
 
         private void CleanPreviousRings()

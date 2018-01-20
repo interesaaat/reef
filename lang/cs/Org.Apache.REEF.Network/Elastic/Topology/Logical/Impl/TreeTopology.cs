@@ -112,7 +112,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
+        public bool AddTask(string taskId, IFailureStateMachine failureMachine)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -282,7 +282,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return output;
         }
 
-        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages, Optional<IFailureStateMachine> failureStateMachine)
         {
             if (taskId == _rootTaskId)
             { 
@@ -341,6 +341,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
+            if (taskId == _rootTaskId)
+            {
+                throw new NotImplementedException("Failure on master not supported yet");
+            }
+
             List<IElasticDriverMessage> messages = new List<IElasticDriverMessage>();
 
             lock (_lock)
@@ -364,6 +369,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
 
             return messages;
+        }
+
+        public string LogFinalStatistics()
+        {
+            return string.Empty;
         }
 
         private void BuildTopology(ref Queue<DataNode> parents, ref IEnumerator<DataNode> iter)

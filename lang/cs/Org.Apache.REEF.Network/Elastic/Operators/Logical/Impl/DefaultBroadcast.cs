@@ -85,7 +85,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             var taskId = message.TaskId;
                             LOGGER.Log(Level.Info, "{0} joins the topology", taskId);
 
-                            _topology.AddTask(taskId, ref _failureMachine);
+                            _topology.AddTask(taskId, _failureMachine);
                         }
 
                         return true;
@@ -103,7 +103,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                         if (!_stop)
                         {
-                            _topology.TopologyUpdateResponse(message.TaskId, ref returnMessages);
+                            _topology.TopologyUpdateResponse(message.TaskId, ref returnMessages, Optional<IFailureStateMachine>.Of(_failureMachine));
                         }
                         else
                         {

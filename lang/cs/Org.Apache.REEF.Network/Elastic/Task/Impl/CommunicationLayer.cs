@@ -270,7 +270,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="identifiers">The identifier to look up</param>
         /// <param name="cancellationSource">The token to cancel the operation</param>
-        internal void WaitForTaskRegistration(IList<string> identifiers, CancellationTokenSource cancellationSource)
+        internal void WaitForTaskRegistration(ConcurrentDictionary<int, string> identifiers, CancellationTokenSource cancellationSource)
         {
             using (Logger.LogFunction("CommunicationLayer::WaitForTaskRegistration"))
             {
@@ -284,7 +284,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     }
 
                     Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
-                    foreach (var identifier in identifiers)
+                    foreach (var identifier in identifiers.Values)
                     {
                         if (!foundList.Contains(identifier) && Lookup(identifier))
                         {
@@ -302,7 +302,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Thread.Sleep(_sleepTime);
                 }
 
-                var leftOvers = foundList.Count == 0 ? identifiers : identifiers.Where(e => !foundList.Contains(e)).ToList();
+                ICollection<string> leftOvers = foundList.Count == 0 ? identifiers.Values : identifiers.Values.Where(e => !foundList.Contains(e)).ToList();
                 var msg = string.Join(",", leftOvers);
 
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);

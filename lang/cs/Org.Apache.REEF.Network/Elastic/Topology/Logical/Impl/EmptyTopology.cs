@@ -39,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string SubscriptionName { get; set; }
 
-        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
+        public bool AddTask(string taskId, IFailureStateMachine failureMachine)
         {
             return false;
         }
@@ -85,7 +85,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             return "empty";
         }
 
-        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages, Optional<IFailureStateMachine> failureStateMachine)
         {
         }
 
@@ -96,6 +96,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
             return new List<IElasticDriverMessage>();
+        }
+
+        public string LogFinalStatistics()
+        {
+            return string.Empty;
         }
     }
 }

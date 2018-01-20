@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string SubscriptionName { get; set; }
 
-        public bool AddTask(string taskId, ref IFailureStateMachine failureMachine)
+        public bool AddTask(string taskId, IFailureStateMachine failureMachine)
         {
             if (string.IsNullOrEmpty(taskId))
             {
@@ -125,7 +125,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
-        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages)
+        public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages, Optional<IFailureStateMachine> failureMachine)
         {
             throw new MissingMethodException("TODO");
         }
@@ -137,6 +137,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
             throw new MissingMethodException("TODO");
+        }
+
+        public string LogFinalStatistics()
+        {
+            return string.Empty;
         }
     }
 }

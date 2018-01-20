@@ -43,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// <param name="taskId">The id of the task to be added</param>
         /// <param name="taskId">TODO</param>
         /// <returns>The number of data points linked with the added task id</returns>
-        bool AddTask(string taskId, ref IFailureStateMachine failureMachine);
+        bool AddTask(string taskId, IFailureStateMachine failureMachine);
 
         /// <summary>
         /// Removes a task from the topology
@@ -82,7 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// <summary>
         /// TODO
         /// </summary>
-        void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages);
+        void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages, Optional<IFailureStateMachine> failureStateMachine);
 
         /// <summary>
         /// TODO
@@ -96,5 +96,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         /// <param name="info">Some additional topology-specific information</param>
         /// <returns>One or more messages for reconfiguring the Tasks</returns>
         IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        string LogFinalStatistics();
     }
 }
