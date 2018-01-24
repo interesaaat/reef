@@ -187,7 +187,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override string LogInternalStatistics()
         {
-            return string.Format("\nNumber of Iterations {0}\nTotal computation time {1}s\nAverage iteration time {2}ms", Math.Min(_iteration, _numIterations), (float)_totTime / 1000.0, _totTime / (_iteration > 2 ? _iteration - 1 : 1));
+            var actualIteration = _iteration > 2 ? _iteration - 1 : 1;
+            return string.Format("\nNumber of Iterations {0}\nTotal computation time {1}s\nAverage iteration time {2}ms", Math.Min(actualIteration, _numIterations), (float)_totTime / 1000.0, _totTime / actualIteration);
         }
 
         protected override void OnNewIteration(int iteration)

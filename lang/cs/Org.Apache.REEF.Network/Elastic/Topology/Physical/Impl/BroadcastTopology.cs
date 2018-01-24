@@ -141,6 +141,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             }
 
+            Console.WriteLine("Received message from {0}", message.SourceId);
+
             foreach (var payload in message.Data)
             {
                 _messageQueue.Add(payload);
@@ -243,6 +245,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 if (_taskId == _rootTaskId)
                 {
                     _topologyUpdateReceived.Reset();
+                    Console.WriteLine("resetting");
                 }
 
                 foreach (var node in _children.Values)

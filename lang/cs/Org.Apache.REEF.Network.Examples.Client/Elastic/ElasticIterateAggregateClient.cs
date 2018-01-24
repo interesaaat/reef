@@ -92,7 +92,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                 .AddDriverConfiguration(driverConfig)
                 .AddGlobalAssemblyForType(globalAssemblyType)
                 .SetJobIdentifier(jobIdentifier)
-                .SetDriverMemory(2048)
+                .SetDriverMemory(5048)
                 .Build();
 
             reefClient.SubmitAndGetJobStatus(jobSubmission);

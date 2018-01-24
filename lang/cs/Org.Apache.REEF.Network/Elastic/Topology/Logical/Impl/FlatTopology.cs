@@ -235,6 +235,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         {
             if (taskId == _rootTaskId)
             {
+                if (!failureStateMachine.IsPresent())
+                {
+                    throw new IllegalStateException("Cannot update topology without failure machine");
+                }
                 lock (_lock)
                 {
                     var list = _nodesWaitingToJoinTopology.ToList();
@@ -249,10 +253,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         LOGGER.Log(Level.Info, string.Format("Tasks [{0}] are added to topology in iteration {1}", string.Join(",", _nodesWaitingToJoinTopology), _iteration));
 
                         _availableDataPoints += _nodesWaitingToJoinTopology.Count;
-                        if (failureStateMachine.IsPresent())
-                        {
-                            failureStateMachine.Value.AddDataPoints(_nodesWaitingToJoinTopology.Count, false);
-                        }
+                        failureStateMachine.Value.AddDataPoints(_nodesWaitingToJoinTopology.Count, false);
+       
                         foreach (var node in _nodesWaitingToJoinTopology)
                         {
                             var id = Utils.GetTaskNum(node);

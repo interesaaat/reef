@@ -44,6 +44,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private string _taskSubscription;
 
         private volatile int _availableDataPoints;
+        private int _totNumberofNodes;
+
         private readonly IDictionary<int, DataNode> _nodes;
         private readonly HashSet<string> _lostNodesToBeRemoved;
         private readonly HashSet<string> _nodesWaitingToJoinTopology;
@@ -62,7 +64,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             OperatorId = -1;
             _taskSubscription = string.Empty;
             _rootTaskId = string.Empty;
+
             _availableDataPoints = 0;
+            _totNumberofNodes = 0;
 
             _nodes = new Dictionary<int, DataNode>();
             _lostNodesToBeRemoved = new HashSet<string>();
@@ -88,21 +92,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new ArgumentException("Task has not been added to the topology");
             }
 
-            DataNode parent = node.Parent;
-            int parentId;
-
-            if (parent == null)
-            {
-                parentId = node.TaskId;
-            }
-            else
-            {
-                parentId = parent.TaskId;
-            }
-
             confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
                     GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
-                    parentId.ToString(CultureInfo.InvariantCulture));
+                    _rootId.ToString(CultureInfo.InvariantCulture));
 
             foreach (DataNode childNode in node.Children)
             {
@@ -129,12 +121,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     {
                         _nodesWaitingToJoinTopologyInNextIteration.Add(taskId);
                         _nodes[id].FailState = DataNodeState.Unreachable;
-
-                        failureMachine.AddDataPoints(0, false);
                         return false;
                     }
 
-                    throw new ArgumentException("Task has already been added to the topology");
+                    throw new ArgumentException("{0} has already been added to the topology", taskId);
                 }
 
                 DataNode node = new DataNode(id, true);
@@ -186,20 +176,28 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
 
                 DataNode node = _nodes[id];
+                var state = node.FailState;
+                node.FailState = DataNodeState.Lost;
+                _nodesWaitingToJoinTopology.Remove(taskId);
+                _nodesWaitingToJoinTopologyInNextIteration.Remove(taskId);
 
-                if (node.FailState != DataNodeState.Unreachable)
+                if (state != DataNodeState.Lost)
+                {
+                    _lostNodesToBeRemoved.Add(taskId);
+                }
+
+                if (state != DataNodeState.Reachable)
                 {
                     return 0;
                 }
 
-                node.FailState = node.FailState = DataNodeState.Lost;
-                _nodesWaitingToJoinTopology.Remove(taskId);
-                _nodesWaitingToJoinTopologyInNextIteration.Remove(taskId);
-                _lostNodesToBeRemoved.Add(taskId);
-
+                var parent = node.Parent;
+                parent.Children.Remove(node);
+                node.Parent = null;
                 var children = node.Children.GetEnumerator();
                 RemoveReachable(children, ref count);
                 _availableDataPoints -= count;
+                node.Children.Clear();
             }
 
             return count;
@@ -247,36 +245,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string LogTopologyState()
         {
-            Queue<DataNode> current = new Queue<DataNode>();
-            Queue<DataNode> next;
-            var root = _nodes[_rootId];
-            current.Enqueue(root);
             string output = string.Empty;
 
-            while (current.Count != 0)
+            lock (_lock)
             {
-                var iter = current.GetEnumerator();
-                next = new Queue<DataNode>();
-                while (iter.MoveNext())
+                foreach (var node in _nodes.OrderBy(x => x.Key).Select(x => x.Value))
                 {
+                    if (output != string.Empty)
+                    {
+                        output += "\n";
+                    }
                     var rep = "X";
-                    if (iter.Current.FailState == DataNodeState.Reachable)
+                    if (node.FailState == DataNodeState.Reachable)
                     {
-                        rep = iter.Current.TaskId.ToString();
+                        rep = node.TaskId.ToString();
                     }
 
-                    output += rep + " ";
+                    output += rep;
 
-                    foreach (var item in iter.Current.Children)
+                    if (node.Children.Count > 0)
                     {
-                        next.Enqueue(item);
+                        output += " -> " + string.Join(",", node.Children.Select(x => x.TaskId));
                     }
                 }
-                if (next.Count > 0)
-                {
-                    output += "\n";
-                }
-                current = next;
             }
 
             return output;
@@ -285,13 +276,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages, Optional<IFailureStateMachine> failureStateMachine)
         {
             if (taskId == _rootTaskId)
-            { 
+            {
+                if (!failureStateMachine.IsPresent())
+                {
+                    throw new IllegalStateException("Cannot update topology without failure machine");
+                }
                 lock (_lock)
                 {
                     var updates = new List<List<string>>();
                     var queue = new Queue<int>();
                     queue.Enqueue(_rootId);
-                    BuildTopologyUpdateMessage(ref queue, ref updates);
+                    BuildTopologyUpdateMessage(queue, updates, failureStateMachine.Value);
 
                     var data = new TopologyMessagePayload(updates, false, SubscriptionName, OperatorId, _iteration);
                     var returnMessage = new ElasticDriverMessageImpl(taskId, data);
@@ -300,33 +295,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
             else
             {
-                throw new IllegalStateException("Only root tasks are supposed to request topology updates");
-            }
-        }
-
-        private void RemoveReachable(IEnumerator<DataNode> children, ref int count)
-        {
-            lock (_lock)
-            {
-                while (children.MoveNext())
-                {
-                    var taskId = Utils.BuildTaskId(_taskSubscription, children.Current.TaskId);
-                    children.Current.FailState = DataNodeState.Unreachable;
-                    _nodesWaitingToJoinTopologyInNextIteration.Add(taskId);
-                    count++;
-
-                    var nextChildren = children.Current.Children.GetEnumerator();
-                    RemoveReachable(nextChildren, ref count);
-                    children.Current.Children.Clear();
-                }
+                throw new IllegalStateException(string.Format("Not {0} but only root tasks are supposed to request topology updates", taskId));
             }
         }
 
         public void OnNewIteration(int iteration)
         {
             LOGGER.Log(Level.Info, string.Format("Tree Topology for Operator {0} in Iteration {1} is closed with {2} nodes", OperatorId, iteration - 1, _availableDataPoints));
-
             _iteration = iteration;
+            _totNumberofNodes += _availableDataPoints;
 
             lock (_lock)
             {
@@ -366,6 +343,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);
                 messages.Add(returnMessage);
+                _lostNodesToBeRemoved.Clear();
             }
 
             return messages;
@@ -373,7 +351,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string LogFinalStatistics()
         {
-            return string.Empty;
+            return string.Format("\nAverage number of nodes in the topology of Operator {0}: {1}", OperatorId, (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
         }
 
         private void BuildTopology(ref Queue<DataNode> parents, ref IEnumerator<DataNode> iter)
@@ -397,7 +375,29 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        private void BuildTopologyUpdateMessage(ref Queue<int> ids, ref List<List<string>> updates)
+        private void RemoveReachable(IEnumerator<DataNode> children, ref int count)
+        {
+            lock (_lock)
+            {
+                while (children.MoveNext())
+                {
+                    if (children.Current.FailState == DataNodeState.Reachable)
+                    {
+                        var taskId = Utils.BuildTaskId(_taskSubscription, children.Current.TaskId);
+                        children.Current.FailState = DataNodeState.Unreachable;
+                        children.Current.Parent = null;
+                        _nodesWaitingToJoinTopologyInNextIteration.Add(taskId);
+                        count++;
+
+                        var nextChildren = children.Current.Children.GetEnumerator();
+                        RemoveReachable(nextChildren, ref count);
+                        children.Current.Children.Clear();
+                    }
+                }
+            }
+        }
+
+        private void BuildTopologyUpdateMessage(Queue<int> ids, List<List<string>> updates, IFailureStateMachine failureStateMachine)
         {
             lock (_lock)
             {
@@ -408,7 +408,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         throw new IllegalStateException("Queue for adding nodes to the tree is empty");
                     }
                     var id = ids.Dequeue();
-                    var numNodesToAdd = _degree - _nodes[id].NumberOfChildren;
+                    var numNodesToAdd = _degree - _nodes[id].Children.Where(x => x.FailState == DataNodeState.Reachable).Count();
 
                     if (numNodesToAdd > 0)
                     {
@@ -424,9 +424,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             var childId = Utils.GetTaskNum(child);
                             _nodes[childId].FailState = DataNodeState.Reachable;
                             _nodes[id].Children.Add(_nodes[childId]);
+                            _nodes[childId].Parent = _nodes[id];
                             buffer.Add(child);
                             _nodesWaitingToJoinTopology.Remove(child);
                             _availableDataPoints++;
+                            failureStateMachine.AddDataPoints(1, false);
                         }
                         updates.Add(buffer);
                     }
@@ -438,7 +440,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         }
                     }
 
-                    BuildTopologyUpdateMessage(ref ids, ref updates);
+                    BuildTopologyUpdateMessage(ids, updates, failureStateMachine);
                 }
             }
         }
