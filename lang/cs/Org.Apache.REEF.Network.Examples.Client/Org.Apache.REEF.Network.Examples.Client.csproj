@@ -31,6 +31,9 @@ under the License.
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x64'">
     <DefineConstants>TRACE;DEBUG;SLEEP</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <Import Project="$(SolutionDir)\build.props" />
   <PropertyGroup>
     <BuildPackage>false</BuildPackage>
@@ -50,6 +53,10 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="BroadcastAndReduceClient.cs" />
+    <Compile Include="Minibenchmarks\MiniBenchmarkSerSend.cs" />
+    <Compile Include="Minibenchmarks\MiniBenchmarkSend.cs" />
+    <Compile Include="Minibenchmarks\MiniBenchmarkSerialization.cs" />
+    <Compile Include="Minibenchmarks\MiniBenchmarkScans.cs" />
     <Compile Include="PipelineBroadcastAndReduceClient.cs" />
     <Compile Include="Run.cs" />
     <Compile Include="Elastic\ElasticIterateAggregateClient.cs" />

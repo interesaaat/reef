@@ -18,6 +18,7 @@
 using System;
 using Org.Apache.REEF.Network.Examples.Client.Elastic;
 using Org.Apache.REEF.Network.Examples.GroupCommunication;
+using Org.Apache.REEF.Network.Examples.Client.Minibenchmarks;
 
 namespace Org.Apache.REEF.Network.Examples.Client
 {
@@ -27,7 +28,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
         {
             Console.WriteLine("start running client: " + DateTime.Now);
             bool runOnYarn = false;
-            int numNodes = 10;
+            int numNodes = 30;
             int startPort = 8900;
             int portRange = 1000;
             string testToRun = "ElasticIterateBroadcast";
@@ -112,6 +113,32 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 new ElasticParameterServerClient().RunParameterServer(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticParameterServer completed!!!");
             }
+
+            if (testToRun.Equals("MiniBenchmarkScans".ToLower()) || testToRun.Equals("MiniBenchmarks".ToLower()))
+            {
+                new MiniBenchmarkScans().RunMiniBenchmarkScans();
+                Console.WriteLine("MinibenchamarkScans completed!!!");
+            }
+
+            if (testToRun.Equals("MiniBenchmarkSerialization".ToLower()) || testToRun.Equals("MiniBenchmarks".ToLower()))
+            {
+                new MiniBenchmarkSerialization().RunMiniBenchmarkSerialization();
+                Console.WriteLine("MiniBenchmarkSerialization completed!!!");
+            }
+
+            if (testToRun.Equals("MiniBenchmarkSend".ToLower()) || testToRun.Equals("MiniBenchmarks".ToLower()))
+            {
+                new MiniBenchmarkSend().RunMiniBenchmarkSend();
+                Console.WriteLine("MiniBenchmarkSend completed!!!");
+            }
+
+            if (testToRun.Equals("MiniBenchmarkSerSend".ToLower()) || testToRun.Equals("MiniBenchmarks".ToLower()))
+            {
+                new MiniBenchmarkSerSend().RunMiniBenchmarkSerSend();
+                Console.WriteLine("MiniBenchmarkSerSend completed!!!");
+            }
+
+            Console.ReadLine();
         }
     }
 }
