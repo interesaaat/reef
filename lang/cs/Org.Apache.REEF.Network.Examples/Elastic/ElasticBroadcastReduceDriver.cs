@@ -38,20 +38,22 @@ using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
     /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticBroadcastReduceDriver : 
-        IObserver<IAllocatedEvaluator>, 
-        IObserver<IActiveContext>, 
+    public class ElasticBroadcastReduceDriver :
+        IObserver<IAllocatedEvaluator>,
+        IObserver<IActiveContext>,
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
         IObserver<IFailedEvaluator>,
-        IObserver<IFailedTask>
+        IObserver<IFailedTask>,
+        IObserver<ITaskMessage>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastReduceDriver));
 
@@ -88,14 +90,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
-            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int, int>.Conf
-                .Set(ReduceFunctionConfiguration<int, int>.ReduceFunction, GenericType<SumFunction>.Class)
+            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int>.Conf
+                .Set(ReduceFunctionConfiguration<int>.ReduceFunction, GenericType<IntSumFunction>.Class)
                 .Build();
 
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<HelloMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<BroadcastReduceMasterTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastReduceMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -105,7 +109,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                     TaskConfiguration.ConfigurationModule
                         .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<HelloSlaveTask>.Class)
+                        .Set(TaskConfiguration.Task, GenericType<BroadcastReduceSlaveTask>.Class)
+                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnClose, GenericType<BroadcastReduceSlaveTask>.Class)
                         .Build())
                     .Build();
 
@@ -114,13 +120,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyType.Tree,
+            pipeline.Broadcast<int>(TopologyType.Flat,
                         new DefaultFailureStateMachine(),
                         Network.Elastic.Failures.CheckpointLevel.None)
-                    .Reduce(TopologyType.Flat,
-                        new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None,
-                        reduceFunctionConfig)
+                    .Reduce<int>(TopologyType.Flat, reduceFunctionConfig)
                     .Build();
 
             // Build the subscription
@@ -150,6 +153,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
+            System.Threading.Thread.Sleep(10000);
+
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
@@ -193,6 +198,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 _taskManager.Dispose();
             }
+        }
+
+        public void OnNext(ITaskMessage taskMessage)
+        {
+            _taskManager.OnTaskMessage(taskMessage);
         }
 
         public void OnCompleted()

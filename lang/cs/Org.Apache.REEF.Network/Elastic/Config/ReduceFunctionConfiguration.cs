@@ -21,18 +21,18 @@ using Org.Apache.REEF.Tang.Util;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    public sealed class ReduceFunctionConfiguration<T, V> : ConfigurationModuleBuilder
+    public sealed class ReduceFunctionConfiguration<T> : ConfigurationModuleBuilder
     {
         /// <summary>
-        /// RequiredImpl for Reduced Function. Client needs to set implementation for this paramter
+        /// RequiredImpl for Reduced Function. Client needs to set implementation for this parameter
         /// </summary>
-        public static readonly RequiredImpl<IReduceFunction<T, V>> ReduceFunction = new RequiredImpl<IReduceFunction<T, V>>();
+        public static readonly RequiredImpl<ReduceFunction<T>> ReduceFunction = new RequiredImpl<ReduceFunction<T>>();
         
         /// <summary>
         /// Configuration Module for Reduced Function
         /// </summary>
-        public static ConfigurationModule Conf = new ReduceFunctionConfiguration<T, V>()
-            .BindImplementation(GenericType<IReduceFunction<T, V>>.Class, ReduceFunction)
+        public static ConfigurationModule Conf = new ReduceFunctionConfiguration<T>()
+            .BindImplementation(GenericType<ReduceFunction<T>>.Class, ReduceFunction)
             .Build();
     }
 }

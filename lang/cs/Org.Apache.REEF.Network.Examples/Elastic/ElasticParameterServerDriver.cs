@@ -105,8 +105,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
-            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int, int>.Conf
-                .Set(ReduceFunctionConfiguration<int, int>.ReduceFunction, GenericType<SumFunction>.Class)
+            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int>.Conf
+                .Set(ReduceFunctionConfiguration<int>.ReduceFunction, GenericType<IntSumFunction>.Class)
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce(1, TopologyType.Tree,
+                    .Reduce<int>(1, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
@@ -177,7 +177,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                     .Reduce(2, TopologyType.Tree,
+                     .Reduce<int>(2, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
@@ -192,7 +192,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce(3, TopologyType.Tree,
+                    .Reduce<int>(3, TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)

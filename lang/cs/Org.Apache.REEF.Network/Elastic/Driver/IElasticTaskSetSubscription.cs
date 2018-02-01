@@ -55,6 +55,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         bool Completed { get; set; }
 
         /// <summary>
+        /// TODO.
+        /// </summary>
+        bool IsIterative { get; set; }
+
+        /// <summary>
         /// Generates an id to uniquely identify operators in the Subscription.
         /// </summary>
         /// <returns>A new unique id</returns>

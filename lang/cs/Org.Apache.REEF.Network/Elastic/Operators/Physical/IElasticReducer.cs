@@ -15,30 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Operators.Logical;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace Org.Apache.REEF.Network.Elastic.Operators
+namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
-    public class SumFunction : IReduceFunction<int, int>
-    { 
-        public int Merge(IEnumerable<int> elements)
-        {
-            return Reduce(elements);
-        }
-
-        public int Reduce(IEnumerable<int> elements)
-        {
-            return elements.Sum();
-        }
-    }
-
-    public class MaxFunction : SumFunction
+    /// <summary>
+    /// Group Communication operator used to reduce messages.
+    /// </summary>
+    public interface IElasticReducer<T> : IElasticTypedOperator<T>, IReceiver<T>, ISender<T>
     {
-        public new int Reduce(IEnumerable<int> elements)
-        {
-            return elements.Max();
-        }
     }
 }

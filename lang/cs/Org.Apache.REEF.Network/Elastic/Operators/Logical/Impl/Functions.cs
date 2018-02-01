@@ -15,16 +15,26 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Comm
+using Org.Apache.REEF.Network.Elastic.Operators.Logical;
+using Org.Apache.REEF.Tang.Annotations;
+
+namespace Org.Apache.REEF.Network.Elastic.Operators
 {
-    public enum TaskMessageType : ushort
+    public class IntSumFunction : ReduceFunction<int>
     {
-        IterationNumber = 0,
+        [Inject]
+        public IntSumFunction()
+        {
+        }
 
-        JoinTopology = 1,
+        public override bool CanMerge
+        {
+            get { return true; }
+        }
 
-        TopologyUpdateRequest = 2,
-
-        NextDataRequest = 3
+        protected override int Reduce(int left, int right)
+        {
+            return left + right;
+        }
     }
 }

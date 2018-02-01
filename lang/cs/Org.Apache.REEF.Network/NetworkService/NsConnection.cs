@@ -25,7 +25,6 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake;
 using Org.Apache.REEF.Wake.Remote;
-using System.Reactive.Disposables;
 
 namespace Org.Apache.REEF.Network.NetworkService
 {

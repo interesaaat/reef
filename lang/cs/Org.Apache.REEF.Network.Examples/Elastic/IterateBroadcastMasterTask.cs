@@ -88,8 +88,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _subscriptionClient.Cancel();
             _serviceClient.Dispose();
-
-            Console.WriteLine("Disposed.");
         }
 
         public void OnError(Exception error)

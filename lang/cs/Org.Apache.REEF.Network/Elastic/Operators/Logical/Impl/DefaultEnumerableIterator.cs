@@ -78,7 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
             _timer = new Stopwatch();
             _totTime = 0;
-    }
+        }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
         {

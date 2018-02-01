@@ -31,27 +31,30 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultBroadcast<T> : IElasticBroadcast<T>
+    public sealed class DefaultReduce<T> : IElasticReducer<T>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultBroadcast<>));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultReduce<>));
 
-        private readonly BroadcastTopology _topology;
+        private readonly ReduceTopology<T> _topology;
         private volatile PositionTracker _position;
+        private readonly bool _isLast;
 
         /// <summary>
-        /// Creates a new Broadcast operator.
+        /// Creates a new Reduce Operator.
         /// </summary>
         /// <param name="id">The operator identifier</param>
         /// <param name="topology">The operator topology layer</param>
         [Inject]
-        private DefaultBroadcast(
+        private DefaultReduce(
             [Parameter(typeof(OperatorId))] int id,
             [Parameter(typeof(Checkpointing))] int level,
-            BroadcastTopology topology)
+            [Parameter(typeof(IsLast))] bool isLast,
+            ReduceTopology<T> topology)
         {
-            OperatorName = Constants.Broadcast;
+            OperatorName = Constants.Reduce;
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
+            _isLast = isLast;
             _topology = topology;
             _position = PositionTracker.Nil;
 
@@ -90,7 +93,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public Action OnTaskRescheduled { get; private set; }
 
         /// <summary>
-        /// Receive a message from neighbors broadcasters.
+        /// Receive a message from neighbors receivers.
         /// </summary>
         /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
         /// <returns>The incoming data</returns>
@@ -98,12 +101,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             _position = PositionTracker.InReceive;
             var received = false;
-            DataMessageWithTopology<T> message = null;
+            DataMessage<T> message = null;
             var isIterative = IteratorReference != null;
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource) as DataMessageWithTopology<T>;
+                message = _topology.Receive(CancellationSource) as DataMessage<T>;
 
                 if (isIterative && message.Iteration < (int)IteratorReference.Current)
                 {
@@ -132,13 +135,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void Send(T data)
         {
-            _topology.TopologyUpdateRequest();
+            ////_topology.TopologyUpdateRequest();
 
             _position = PositionTracker.InSend;
 
             int iteration = IteratorReference == null ? 0 : (int)IteratorReference.Current;
 
-            var message = new DataMessageWithTopology<T>(_topology.SubscriptionName, OperatorId, iteration, data);
+            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, iteration, data);
             var messages = new GroupCommunicationMessage[] { message };
 
             Checkpoint(messages, message.Iteration);
@@ -168,6 +171,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void Dispose()
         {
+            if (_isLast)
+            {
+                _topology.SignalSubscriptionComplete();
+            }
             _topology.Dispose();
         }
 

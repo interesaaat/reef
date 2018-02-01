@@ -59,8 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> _groupMessageObservers =
             new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
 
-        private readonly ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> _driverMessageObservers =
-             new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
+        private readonly ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> _driverMessageObservers;
 
         /// <summary>
         /// Creates a new GroupCommNetworkObserver.
@@ -91,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _disposed = false;
 
             _disposableObserver = _networkService.RemoteManager.RegisterObserver(this);
-            _driverMessagesHandler.DriverMessageObservers = _driverMessageObservers;
+            _driverMessageObservers = _driverMessagesHandler.DriverMessageObservers;
         }
 
         /// <summary>
@@ -232,6 +231,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public void JoinTopology(string taskId, int operatorId)
         {
             _taskToDriverDispatcher.JoinTopology(taskId, operatorId);
+        }
+
+        public void SignalSubscriptionComplete(string taskId)
+        {
+            _taskToDriverDispatcher.SignalSubscriptionComplete(taskId);
         }
 
         public void OnError(Exception error)

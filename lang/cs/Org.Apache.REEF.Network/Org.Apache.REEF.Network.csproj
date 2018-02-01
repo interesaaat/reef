@@ -92,6 +92,8 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\OperatorAlarm.cs" />
     <Compile Include="Elastic\Failures\Impl\Timeout.cs" />
     <Compile Include="Elastic\Failures\Impl\FailuresClock.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticReducer.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultReduce.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
     <Compile Include="Elastic\Comm\Impl\ElasticDriverMessageImpl.cs" />
@@ -124,7 +126,7 @@ under the License.
     <Compile Include="Elastic\Comm\Impl\CheckpointMessage.cs" />
     <Compile Include="Elastic\Comm\Impl\CheckpointMessageRequestStreamingCodec.cs" />
     <Compile Include="Elastic\Comm\Impl\CheckpointMessageStreamingCodec.cs" />
-    <Compile Include="Elastic\Comm\RingTaskMessageType.cs" />
+    <Compile Include="Elastic\Comm\TaskMessageType.cs" />
     <Compile Include="Elastic\Task\Impl\CancellationSource.cs" />
     <Compile Include="Elastic\Task\Impl\DriverMessageHandler.cs" />
     <Compile Include="Elastic\Comm\Impl\DataMessage.cs" />
@@ -137,8 +139,9 @@ under the License.
     <Compile Include="Elastic\Topology\Logical\Impl\RingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\ICheckpointingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\ReduceTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\BroadcastTopology.cs" />
-    <Compile Include="Elastic\Task\Impl\RingTaskMessageSource.cs" />
+    <Compile Include="Elastic\Task\Impl\TaskToDriverMessageDispatcher.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\IterateTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopologyWithCommunication.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\OperatorTopology.cs" />
@@ -175,7 +178,7 @@ under the License.
     <Compile Include="Elastic\Failures\IFailureResponse.cs" />
     <Compile Include="Elastic\Driver\ITaskSetManager.cs" />
     <Compile Include="Elastic\Operators\Constants.cs" />
-    <Compile Include="Elastic\Operators\Functions.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\Functions.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetSubscription.cs" />
     <Compile Include="Elastic\Driver\IElasticTaskSetService.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperatorWithDefaultDispatcher.cs" />
@@ -184,7 +187,7 @@ under the License.
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultBroadcast.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\ElasticOperator.cs" />
     <Compile Include="Elastic\Operators\Logical\IElasticEmpty.cs" />
-    <Compile Include="Elastic\Operators\Logical\IReduceFunction.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\ReduceFunction.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticBroadcast.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultBroadcast.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticOperator.cs" />

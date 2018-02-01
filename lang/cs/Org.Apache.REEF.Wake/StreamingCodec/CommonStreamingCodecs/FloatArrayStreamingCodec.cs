@@ -30,12 +30,17 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
     {
         private const int MAX_SIZE = 1024 * 256;
 
+        private readonly byte[] _writeBuffer;
+        private readonly byte[] _readBuffer;
+
         /// <summary>
         /// Injectable constructor
         /// </summary>
         [Inject]
         private FloatArrayStreamingCodec()
         {
+            _writeBuffer = new byte[MAX_SIZE];
+            _readBuffer = new byte[MAX_SIZE];
         }
 
         /// <summary>
@@ -80,28 +85,26 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
         public async Task<float[]> ReadAsync(IDataReader reader, CancellationToken token)
         {
             int length = await reader.ReadInt32Async(token);
-
-            byte[] buffer = new byte[sizeof(float) * length];
             float[] floatArr = new float[length];
+            length *= sizeof(float);
 
             if (length > MAX_SIZE)
             {
-                byte[] tmpBuffer = new byte[sizeof(float) * MAX_SIZE];
                 var total = 0;
                 var toRead = 0;
 
                 while (total < length)
                 {
                     toRead = Math.Min(length - total, MAX_SIZE);
-                    await reader.ReadAsync(buffer, 0, toRead, token);
-                    Buffer.BlockCopy(buffer, 0, floatArr, 0, sizeof(float) * toRead);
+                    await reader.ReadAsync(_readBuffer, 0, toRead, token);
+                    Buffer.BlockCopy(_readBuffer, 0, floatArr, total, toRead);
                     total += toRead;
                 }
             }
             else
             {
-                await reader.ReadAsync(buffer, 0, buffer.Length, token);
-                Buffer.BlockCopy(buffer, 0, floatArr, 0, sizeof(float) * length);
+                await reader.ReadAsync(_readBuffer, 0, length, token);
+                Buffer.BlockCopy(_readBuffer, 0, floatArr, 0, length);
             }
             return floatArr;
         }
@@ -112,35 +115,35 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
         /// <param name="obj">The float array to be encoded</param>
         /// <param name="writer">The writer to which to write</param>
         /// <param name="token">Cancellation token</param>
+        #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
         public async Task WriteAsync(float[] obj, IDataWriter writer, CancellationToken token)
         {
             if (obj == null)
             {
                 throw new ArgumentNullException("obj", "float array is null");
             }
-
+            var length = obj.Length * sizeof(float);
             await writer.WriteInt32Async(obj.Length, token);
 
-            if (obj.Length > MAX_SIZE)
+            if (length > MAX_SIZE)
             {
-                byte[] buffer = new byte[sizeof(float) * MAX_SIZE];
                 var total = 0;
                 var toWrite = 0;
 
-                while (total < obj.Length)
+                while (total < length)
                 {
-                    toWrite = Math.Min(obj.Length - total, MAX_SIZE);
-                    Buffer.BlockCopy(obj, total, buffer, 0, sizeof(float) * toWrite);
-                    await writer.WriteAsync(buffer, 0, toWrite, token);
+                    toWrite = Math.Min(length - total, MAX_SIZE);
+                    Buffer.BlockCopy(obj, total, _writeBuffer, 0, toWrite);
+                    writer.WriteAsync(_writeBuffer, 0, toWrite, token);
                     total += toWrite;
                 }
             }
             else
-            {
-                byte[] buffer = new byte[sizeof(float) * obj.Length];
-                Buffer.BlockCopy(obj, 0, buffer, 0, sizeof(float) * obj.Length);
-                await writer.WriteAsync(buffer, 0, buffer.Length, token);
-            }  
+            {  
+                Buffer.BlockCopy(obj, 0, _writeBuffer, 0, length);
+                writer.WriteAsync(_writeBuffer, 0, length, token);
+            }
         }
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
     }
 }

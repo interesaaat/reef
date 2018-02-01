@@ -96,8 +96,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
-            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int, int>.Conf
-                .Set(ReduceFunctionConfiguration<int, int>.ReduceFunction, GenericType<SumFunction>.Class)
+            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int>.Conf
+                .Set(ReduceFunctionConfiguration<int>.ReduceFunction, GenericType<IntSumFunction>.Class)
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -134,7 +134,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     .Broadcast<int>(TopologyType.Tree,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce(TopologyType.Flat,
+                    .Reduce<int>(TopologyType.Flat,
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)

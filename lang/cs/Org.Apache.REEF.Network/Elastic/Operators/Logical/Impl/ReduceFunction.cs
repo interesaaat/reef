@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Tang.Exceptions;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
@@ -23,20 +25,44 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
     /// The class used to aggregate messages sent by ReduceSenders.
     /// </summary>
     /// <typeparam name="T">The message type.</typeparam>
-    public interface IReduceFunction<T, V>
+    public abstract class ReduceFunction<T>
     {
         /// <summary>
-        /// Reduce the IEnumerable of messages into one message.
+        /// Whether the reduce function is associative and commutative
         /// </summary>
-        /// <param name="elements">The messages to reduce</param>
-        /// <returns>The reduced message</returns>
-        T Merge(IEnumerable<V> elements);
+        public abstract bool CanMerge { get; }
 
         /// <summary>
         /// Reduce the IEnumerable of messages into one message.
+        /// Assume that this method destroys the input elements.
         /// </summary>
         /// <param name="elements">The messages to reduce</param>
         /// <returns>The reduced message</returns>
-        T Reduce(IEnumerable<T> elements);
+        public GroupCommunicationMessage Reduce(IEnumerable<GroupCommunicationMessage> elements)
+        {
+            DataMessage<T> ground = null;
+
+            foreach (var elem in elements)
+            {
+                var dataElement = elem as DataMessage<T>;
+                if (ground == null)
+                {
+                    ground = dataElement;
+                }
+                else
+                {
+                    if (ground.Iteration != dataElement.Iteration)
+                    {
+                        throw new IllegalStateException("Aggregating not matching iterations");
+                    }
+
+                    ground.Data = Reduce(ground.Data, dataElement.Data);
+                }
+            }
+
+            return ground;
+        }
+
+        protected abstract T Reduce(T left, T right);
     }
 }

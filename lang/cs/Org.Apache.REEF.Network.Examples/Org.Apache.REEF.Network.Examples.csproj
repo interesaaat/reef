@@ -51,8 +51,10 @@ under the License.
     <Compile Include="Elastic\ElasticIterateAggregateDriver.cs" />
     <Compile Include="Elastic\IterateAggregateMasterTask.cs" />
     <Compile Include="Elastic\IterateAggregateSlaveTask.cs" />
-    <Compile Include="Elastic\IterateBroadcastSlaveTask.cs" />
     <Compile Include="Elastic\IterateBroadcastMasterTask.cs" />
+    <Compile Include="Elastic\BroadcastReduceSlaveTask.cs" />
+    <Compile Include="Elastic\IterateBroadcastSlaveTask.cs" />
+    <Compile Include="Elastic\BroadcastReduceMasterTask.cs" />
     <Compile Include="Elastic\BroadcastSlaveTask.cs" />
     <Compile Include="Elastic\ElasticIterateBroadcastDriver.cs" />
     <Compile Include="Elastic\ElasticParameterServerDriver.cs" />

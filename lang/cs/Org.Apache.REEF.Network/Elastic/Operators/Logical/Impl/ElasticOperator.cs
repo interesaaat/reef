@@ -31,7 +31,6 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
@@ -231,6 +230,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             LogOperatorState();
 
+            if (OperatorName == Constants.Iterate)
+            {
+                Subscription.IsIterative = true;
+            }
+
             _operatorStateFinalized = true;
            
             return this;
@@ -336,22 +340,38 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <summary>
         /// TODO
         /// </summary>
-        public abstract ElasticOperator Reduce(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine, Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
+        public abstract ElasticOperator Reduce<T>(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine, Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations);
 
         /// <summary>
         /// TODO
         /// </summary>
-        public ElasticOperator Reduce(TopologyType topologyType = TopologyType.Flat, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations)
+        public ElasticOperator Reduce<T>(TopologyType topologyType = TopologyType.Tree, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            return Reduce(MasterId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return Reduce<T>(MasterId, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
         }
 
         /// <summary>
         /// TODO
         /// </summary>
-        public ElasticOperator Reduce(int receiverTaskId, params IConfiguration[] configurations)
+        public ElasticOperator Reduce<T>(TopologyType topologyType, params IConfiguration[] configurations)
         {
-            return Reduce(receiverTaskId, TopologyType.Flat, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
+            return Reduce<T>(MasterId, topologyType, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public ElasticOperator Reduce<T>(params IConfiguration[] configurations)
+        {
+            return Reduce<T>(MasterId, TopologyType.Tree, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
+        }
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public ElasticOperator Reduce<T>(int receiverTaskId, params IConfiguration[] configurations)
+        {
+            return Reduce<T>(receiverTaskId, TopologyType.Flat, _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
         }
 
         /// <summary>
@@ -456,6 +476,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _topology.GetTaskConfiguration(ref operatorBuilder, taskId);
 
             PhysicalOperatorConfiguration(ref operatorBuilder);
+
+            if (!Subscription.IsIterative && _next == null)
+            {
+                operatorBuilder.BindNamedParameter<IsLast, bool>(
+                    GenericType<IsLast>.Class,
+                    true.ToString(CultureInfo.InvariantCulture));
+            }
 
             IConfiguration operatorConf = operatorBuilder
                 .BindNamedParameter<OperatorId, int>(

@@ -32,6 +32,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         [Inject]
         public DriverMessageHandler()
         {
+            DriverMessageObservers = new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
         }
 
         internal ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> DriverMessageObservers { get; set; }

@@ -44,6 +44,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration();
 
+            var rand = new Random();
+
             using (var workflow = _subscriptionClient.Workflow)
             {
                 try
@@ -55,8 +57,35 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
 
+                                if (rand.Next(100) < 1)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. before");
+
+                                    if (rand.Next(100) < 50)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        Environment.Exit(0);
+                                    }
+                                }
+
                                 var rec = receiver.Receive();
 
+                                if (rand.Next(100) < 1)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. after");
+
+                                    if (rand.Next(100) < 50)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        Environment.Exit(0);
+                                    }
+                                }
                                 Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
                                 break;
                             default:
@@ -66,7 +95,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 }
                 catch (Exception e)
                 {
-                    throw e;
+                    workflow.Throw(e);
                 }
             }
 
@@ -81,8 +110,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _subscriptionClient.Cancel();
             _serviceClient.Dispose();
-
-            Console.WriteLine("Disposed.");
         }
 
         public void OnNext(ICloseEvent value)

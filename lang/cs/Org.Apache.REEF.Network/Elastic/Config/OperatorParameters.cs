@@ -53,4 +53,9 @@ namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
     public sealed class Restore : Name<bool>
     {
     }
+
+    [NamedParameter("Whether the operator is the last to be executed in the subscription", defaultValue: "false")]
+    public sealed class IsLast : Name<bool>
+    {
+    }
 }

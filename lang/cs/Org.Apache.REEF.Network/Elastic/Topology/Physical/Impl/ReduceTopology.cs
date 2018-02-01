@@ -30,18 +30,25 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.NetworkService;
 using System.Collections.Concurrent;
+using Org.Apache.REEF.Network.Elastic.Operators.Logical;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class BroadcastTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
+    internal class ReduceTopology<T> : OperatorTopologyWithCommunication, ICheckpointingTopology
     {
+        private readonly ReduceFunction<T> _reducer;
         private readonly CheckpointService _checkpointService;
         private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
+        private readonly object _lock;
+
+        private readonly ConcurrentQueue<GroupCommunicationMessage> _aggregationQueue;
+        private volatile int _aggregationCount;
 
         private readonly ManualResetEvent _topologyUpdateReceived;
 
         [Inject]
-        private BroadcastTopology(
+        private ReduceTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
@@ -50,12 +57,19 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
+            ReduceFunction<T> reduceFunction,
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
+            _reducer = reduceFunction;
+
             _checkpointService = checkpointService;
             _outOfOrderTopologyRemove = new ConcurrentDictionary<int, byte>();
             _topologyUpdateReceived = new ManualResetEvent(_rootTaskId == taskId ? false : true);
+            _lock = new object();
+
+            _aggregationCount = 0;
+            _aggregationQueue = new ConcurrentQueue<GroupCommunicationMessage>();
 
             _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
@@ -136,27 +150,64 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
             }
 
-            Console.WriteLine("Received message from {0}", message.SourceId);
-
             foreach (var payload in message.Data)
             {
-                _messageQueue.Add(payload);
+                _aggregationCount++;
 
-                var topologyPayload = payload as DataMessageWithTopology;
-                var updates = topologyPayload.TopologyUpdates;
-
-                UpdateTopology(ref updates);
-                topologyPayload.TopologyUpdates = updates;
-
-                if (!_children.IsEmpty)
+                if (_aggregationCount == 1 || !_reducer.CanMerge)
                 {
-                    _sendQueue.Enqueue(payload);
+                    _aggregationQueue.Enqueue(payload);
+                }
+                else
+                {
+                    lock (_lock)
+                    {
+                        if (!_aggregationQueue.TryDequeue(out GroupCommunicationMessage partial))
+                        {
+                            throw new IllegalStateException("Element not found");
+                        }
+
+                        var nextPartial = _reducer.Reduce(new List<GroupCommunicationMessage>() { payload, partial });
+                        _aggregationQueue.Enqueue(nextPartial);
+                    }
                 }
             }
 
-            if (_initialized)
+            if (_aggregationCount >= _children.Count)
             {
-                Send(new CancellationTokenSource());
+                GroupCommunicationMessage finalAggregatedMessage;
+                if (!_reducer.CanMerge)
+                {
+                    if (_aggregationQueue.Count != _aggregationCount)
+                    {
+                        throw new IllegalStateException("Number of partially aggregated messages do not match");
+                    }
+                    finalAggregatedMessage = _reducer.Reduce(_aggregationQueue);
+                }
+                else
+                {
+                    if (!_aggregationQueue.TryDequeue(out finalAggregatedMessage))
+                    {
+                        throw new IllegalStateException("Message not found");
+                    }
+
+                    if (_aggregationQueue.Count > 0)
+                    {
+                        throw new IllegalStateException("Pipeline of aggregation message not supported");
+                    }
+                }
+
+                _aggregationCount = 0;
+
+                if (_rootTaskId == _taskId)
+                {
+                    _messageQueue.Add(finalAggregatedMessage);
+                }
+                else if (_initialized)
+                {
+                    _sendQueue.Enqueue(finalAggregatedMessage);
+                    Send(new CancellationTokenSource());
+                }
             }
         }
 
@@ -188,19 +239,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     }
                 }
             }
-            else if (_sendQueue.Count > 0)
-            {               
-                if (_sendQueue.TryPeek(out GroupCommunicationMessage toSendmsg))
-                {
-                    var toSendmsgWithTop = toSendmsg as DataMessageWithTopology;
-                    var updates = rmsg.TopologyUpdates;
-
-                    UpdateTopology(ref updates);
-                    toSendmsgWithTop.TopologyUpdates = updates;
-                }
-
-                _topologyUpdateReceived.Set();
-            }
             else
             {
                 Logger.Log(Level.Warning, "Received a topology update message from driver but sending queue is empty: ignoring");
@@ -210,66 +248,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected override void Send(CancellationTokenSource cancellationSource)
         {
             GroupCommunicationMessage message;
-            int retry = 0;
-
-            if (_sendQueue.TryPeek(out message))
+            while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
-                var dm = message as DataMessage;
-                while (!_topologyUpdateReceived.WaitOne(_timeout))
-                {
-                    if (cancellationSource.IsCancellationRequested)
-                    {
-                        Logger.Log(Level.Warning, "Received cancellation request: stop sending");
-                        return;
-                    }
-
-                    retry++;
-
-                    if (retry > _retry)
-                    {
-                        throw new Exception(string.Format(
-                            "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
-                    }
-
-                    TopologyUpdateRequest();
-                }
-
-                _sendQueue.TryDequeue(out message);
-
-                if (_taskId == _rootTaskId)
-                {
-                    _topologyUpdateReceived.Reset();
-                }
-
-                foreach (var node in _children.Values)
-                {
-                    _commLayer.Send(node, message, cancellationSource);
-                }
-            }
-        }
-
-        private void UpdateTopology(ref List<List<string>> updates)
-        {
-            List<string> toRemove = null;
-            foreach (var list in updates)
-            {
-                if (list[0] == _taskId)
-                {
-                    toRemove = list;
-                    for (int i = 1; i < list.Count; i++)
-                    {
-                        var id = Utils.GetTaskNum(list[i]);
-                        if (!_outOfOrderTopologyRemove.TryRemove(id, out byte value))
-                        {
-                            _children.TryAdd(id, list[i]);
-                        }
-                    }
-                }
-            }
-
-            if (toRemove != null)
-            {
-                updates.Remove(toRemove);
+                 _commLayer.Send(_rootTaskId, message, cancellationSource);
             }
         }
     }

@@ -106,6 +106,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _commLayer.JoinTopology(_taskId, OperatorId);
         }
 
+        internal void SignalSubscriptionComplete()
+        {
+            if (_taskId == _rootTaskId)
+            {
+                _commLayer.SignalSubscriptionComplete(_taskId);
+            }
+        }
+
         public virtual void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             try
