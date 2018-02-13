@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
 using Org.Apache.REEF.Wake;
 
 namespace Org.Apache.REEF.Network.NetworkService
@@ -35,7 +34,6 @@ namespace Org.Apache.REEF.Network.NetworkService
         {
             SourceId = sourceId;
             DestId = destId;
-            Data = new List<T>();
         }
 
         /// <summary>
@@ -48,7 +46,7 @@ namespace Org.Apache.REEF.Network.NetworkService
         {
             SourceId = sourceId;
             DestId = destId;
-            Data = new List<T> { message };
+            Data = message;
         }
 
         /// <summary>
@@ -64,6 +62,6 @@ namespace Org.Apache.REEF.Network.NetworkService
         /// <summary>
         /// A list of data being sent in the message.
         /// </summary>
-        public List<T> Data { get; private set; } 
+        public T Data { get; set; } 
     }
 }

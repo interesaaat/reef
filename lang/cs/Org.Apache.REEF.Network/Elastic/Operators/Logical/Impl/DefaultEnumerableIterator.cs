@@ -64,6 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = masterTaskId;
             OperatorName = Constants.Iterate;
+            WithinIteration = true;
             _iteration = 0;
 
             foreach (var conf in _configurations)
@@ -153,11 +154,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public override void OnReschedule(ref IReschedule rescheduleEvent)
         {
             LOGGER.Log(Level.Info, "Going to reschedule task " + rescheduleEvent.TaskId);
-
-            if (_checkpointLevel == CheckpointLevel.None)
-            {
-                throw new NotImplementedException("Future work");
-            }
 
             if (_iteration < _numIterations)
             {

@@ -26,7 +26,6 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
     {
         public NsMessageProto()
         {
-            Data = new List<byte[]>(); 
         }
 
         [ProtoMember(1)]
@@ -36,7 +35,7 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
         public string DestId { get; set; }
 
         [ProtoMember(3)]
-        public List<byte[]> Data { get; set; } 
+        public byte[] Data { get; private set; } 
 
         public static NsMessageProto Create<T>(NsMessage<T> message, ICodec<T> codec)
         {
@@ -45,10 +44,7 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             proto.SourceId = message.SourceId.ToString();
             proto.DestId = message.DestId.ToString();
 
-            foreach (T item in message.Data)
-            {
-                proto.Data.Add(codec.Encode(item));
-            }
+            proto.Data = codec.Encode(message.Data);
 
             return proto;
         }

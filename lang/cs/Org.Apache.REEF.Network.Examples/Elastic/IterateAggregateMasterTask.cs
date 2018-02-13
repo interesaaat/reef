@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -43,7 +44,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient.WaitForTaskRegistration();
 
             var rand = new Random();
-            int n = 10;
+            int n = 1024 * 1024 * 256;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -72,11 +73,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 var update = aggregator.Receive();
 
+                                Console.WriteLine(model.SequenceEqual(update));
                                 //// Update the model
-                                for (int i = 0; i < n; i++)
-                                {
-                                    model[i] = ++update;
-                                }
+                                ////for (int i = 0; i < n; i++)
+                                ////{
+                                ////    model[i] = ++update[i];
+                                ////}
 
                                 Console.WriteLine("Master has received model size {0} in iteration {1}", update.Length, workflow.Iteration);
                                 break;
@@ -103,8 +105,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _subscriptionClient.Cancel();
             _serviceClient.Dispose();
-
-            Console.WriteLine("Disposed.");
         }
 
         public void OnError(Exception error)

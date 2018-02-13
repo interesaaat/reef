@@ -36,7 +36,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("BroadcastReduce");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcastReduce");
         }
 
         public byte[] Call(byte[] memento)
@@ -44,6 +44,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient.WaitForTaskRegistration();
 
             var received = 0;
+            var rand = new Random();
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -56,7 +57,21 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
 
+                                if (rand.Next(100) < 1)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. before receive");
+
+                                    throw new Exception("Die. before receive");
+                                }
+
                                 received = receiver.Receive();
+
+                                if (rand.Next(100) < 1)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. after receive");
+
+                                    throw new Exception("Die. after receive");
+                                }
 
                                 Console.WriteLine("Slave has received {0} in iteration {1}", received, workflow.Iteration);
                                 break;
@@ -64,7 +79,21 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Reduce:
                                 var sender = workflow.Current as IElasticReducer<int>;
 
+                                if (rand.Next(100) < 1)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. before send");
+
+                                    throw new Exception("Die. before send");
+                                }
+
                                 sender.Send(received);
+
+                                if (rand.Next(100) < 1)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. after send");
+
+                                   throw new Exception("Die. after send");
+                                }
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", received, workflow.Iteration);
                                 break;

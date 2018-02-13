@@ -28,10 +28,10 @@ namespace Org.Apache.REEF.Network.Examples.Client
         {
             Console.WriteLine("start running client: " + DateTime.Now);
             bool runOnYarn = false;
-            int numNodes = 30;
+            int numNodes = 10;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "ElasticIterateBroadcast";
+            string testToRun = "ElasticIterateBroadcastReduce";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -78,7 +78,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 Console.WriteLine("RunPipelineBroadcastAndReduce completed!!!");
             }
 
-            if (testToRun.Equals("RunElasticBroadcast".ToLower()) || testToRun.Equals("all"))
+            if (testToRun.Equals("ElasticBroadcast".ToLower()) || testToRun.Equals("all"))
             {
                 new ElasticBroadcastClient().RunElasticBroadcast(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticRunBroadcast completed!!!");
@@ -137,8 +137,6 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 new MiniBenchmarkSerSend().RunMiniBenchmarkSerSend();
                 Console.WriteLine("MiniBenchmarkSerSend completed!!!");
             }
-
-            Console.ReadLine();
         }
     }
 }

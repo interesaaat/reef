@@ -221,12 +221,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 {
                     if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException)
                     {
-                        if (((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).OperatorId == _id)
-                        {
-                            var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
-                            var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
-                            reconfigureEvent.FailureResponse.AddRange(msg);
-                        }
+                        var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
+                        var msg = RingTopology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
+                        reconfigureEvent.FailureResponse.AddRange(msg);
                     }
                     else
                     {

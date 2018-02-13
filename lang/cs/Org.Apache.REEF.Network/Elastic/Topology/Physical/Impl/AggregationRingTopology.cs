@@ -137,7 +137,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     var tmp = new ConcurrentDictionary<int, string>();
                     tmp.TryAdd(0, _rootTaskId);
-                    _commLayer.WaitForTaskRegistration(tmp, cancellationSource);
+                    _commLayer.WaitForTaskRegistration(new List<string>() { _rootTaskId }, cancellationSource);
                 }
                 catch (Exception e)
                 {
@@ -158,16 +158,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             if (_messageQueue.IsAddingCompleted)
             {
-                if (_messageQueue.Count > 0)
-                {
-                    throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
-                }
+                throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
             }
 
-            foreach (var payload in message.Data)
-            {
-                _messageQueue.Add(payload);
-            }
+            _messageQueue.Add(message.Data);
         }
 
         public new void Dispose()

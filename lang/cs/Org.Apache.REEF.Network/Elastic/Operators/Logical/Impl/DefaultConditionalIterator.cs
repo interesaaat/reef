@@ -42,6 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = coordinatortId;
             OperatorName = Constants.Iterate;
+            WithinIteration = true;
         }
 
         public object Iteration

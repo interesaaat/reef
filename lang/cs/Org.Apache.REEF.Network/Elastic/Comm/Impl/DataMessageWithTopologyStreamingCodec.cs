@@ -86,7 +86,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         public async Task<DataMessageWithTopology<T>> ReadAsync(IDataReader reader,
             CancellationToken token)
         {
-            int metadataSize = reader.ReadInt32();
+            int metadataSize = await reader.ReadInt32Async(token);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
             var res = MetaDataDecoding(metadata);

@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
@@ -30,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
         /// <summary>
         /// Whether the reduce function is associative and commutative
         /// </summary>
-        public abstract bool CanMerge { get; }
+        internal abstract bool CanMerge { get; }
 
         /// <summary>
         /// Reduce the IEnumerable of messages into one message.
@@ -38,11 +39,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
         /// </summary>
         /// <param name="elements">The messages to reduce</param>
         /// <returns>The reduced message</returns>
-        public GroupCommunicationMessage Reduce(IEnumerable<GroupCommunicationMessage> elements)
+        internal void Reduce(ConcurrentQueue<GroupCommunicationMessage> elements, DataMessage<T> ground = null)
         {
-            DataMessage<T> ground = null;
-
-            foreach (var elem in elements)
+            while (elements.TryDequeue(out GroupCommunicationMessage elem))
             {
                 var dataElement = elem as DataMessage<T>;
                 if (ground == null)
@@ -60,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
                 }
             }
 
-            return ground;
+            elements.Enqueue(ground);
         }
 
         protected abstract T Reduce(T left, T right);

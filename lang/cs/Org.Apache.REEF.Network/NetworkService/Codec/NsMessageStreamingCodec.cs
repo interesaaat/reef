@@ -61,16 +61,12 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             reader.Read(ref metadata, 0, metadataSize);
             var res = GenerateMetaDataDecoding(metadata);
 
-            Type messageType = res.Item3;
+            Type messageType = res.Item2;
             NsMessage<T> message = res.Item1;
 
             var codecReadFunc = _codecFunctionsCache.ReadFunction(messageType);
-            int messageCount = res.Item2;
 
-            for (int i = 0; i < messageCount; i++)
-            {
-                message.Data.Add(codecReadFunc(reader));
-            }
+            message.Data = codecReadFunc(reader);
 
             return message;
         }
@@ -87,13 +83,10 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             byte[] totalEncoding = encodedInt.Concat(encodedMetadata).ToArray();
             writer.Write(totalEncoding, 0, totalEncoding.Length);
 
-            Type messageType = obj.Data[0].GetType();        
+            Type messageType = obj.Data.GetType();        
             var codecWriteFunc = _codecFunctionsCache.WriteFunction(messageType);
           
-            foreach (var data in obj.Data)
-            {
-                codecWriteFunc(data, writer);
-            }
+            codecWriteFunc(obj.Data, writer);
         }
 
         /// <summary>
@@ -108,15 +101,11 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
             var res = GenerateMetaDataDecoding(metadata);
-            Type messageType = res.Item3;
+            Type messageType = res.Item2;
             NsMessage<T> message = res.Item1;
             var codecReadFunc = _codecFunctionsCache.ReadAsyncFunction(messageType);
-            int messageCount = res.Item2;
 
-            for (int i = 0; i < messageCount; i++)
-            {
-                message.Data.Add(codecReadFunc(reader, token));
-            }
+            message.Data = codecReadFunc(reader, token);
 
             return message;
         }
@@ -134,24 +123,20 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             byte[] totalEncoding = encodedInt.Concat(encodedMetadata).ToArray();
             await writer.WriteAsync(totalEncoding, 0, totalEncoding.Length, token);
 
-            Type messageType = obj.Data[0].GetType();
+            Type messageType = obj.Data.GetType();
 
             var codecWriteFunc = _codecFunctionsCache.WriteAsyncFunction(messageType);
 
-            foreach (var data in obj.Data)
-            {
-                var asyncResult = codecWriteFunc.BeginInvoke(data, writer, token, null, null);
-                await codecWriteFunc.EndInvoke(asyncResult);
-            }
+            await var asyncResult = codecWriteFunc.BeginInvoke(obj.Data, writer, token, null, null);
+            codecWriteFunc.EndInvoke(asyncResult);
         }
-
+       
         private static byte[] GenerateMetaDataEncoding(NsMessage<T> obj)
         {
             List<byte[]> metadataBytes = new List<byte[]>();
             byte[] sourceBytes = StringToBytes(obj.SourceId.ToString());
             byte[] dstBytes = StringToBytes(obj.DestId.ToString());
-            byte[] messageTypeBytes = StringToBytes(obj.Data[0].GetType().AssemblyQualifiedName);
-            byte[] messageCount = BitConverter.GetBytes(obj.Data.Count);
+            byte[] messageTypeBytes = StringToBytes(obj.Data.GetType().AssemblyQualifiedName);
 
             metadataBytes.Add(BitConverter.GetBytes(sourceBytes.Length));
             metadataBytes.Add(BitConverter.GetBytes(dstBytes.Length));
@@ -159,12 +144,11 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             metadataBytes.Add(sourceBytes);
             metadataBytes.Add(dstBytes);
             metadataBytes.Add(messageTypeBytes);
-            metadataBytes.Add(messageCount);
 
             return metadataBytes.SelectMany(i => i).ToArray();
         }
 
-        private Tuple<NsMessage<T>, int, Type> GenerateMetaDataDecoding(byte[] obj)
+        private Tuple<NsMessage<T>, Type> GenerateMetaDataDecoding(byte[] obj)
         {
             int srcCount = BitConverter.ToInt32(obj, 0);
             int dstCount = BitConverter.ToInt32(obj, sizeof(int));
@@ -177,10 +161,9 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             offset += dstCount;
             Type msgType = Type.GetType(BytesToString(obj.Skip(offset).Take(msgTypeCount).ToArray()));
             offset += msgTypeCount;
-            int messageCount = BitConverter.ToInt32(obj, offset);
 
             NsMessage<T> msg = new NsMessage<T>(_idFactory.Create(srcString), _idFactory.Create(dstString));
-            return new Tuple<NsMessage<T>, int, Type>(msg, messageCount, msgType);
+            return new Tuple<NsMessage<T>, Type>(msg, msgType);
         }
 
         private static byte[] StringToBytes(string str)

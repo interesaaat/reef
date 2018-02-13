@@ -44,7 +44,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         private readonly Dictionary<int, DataNode> _nodes;
         private readonly HashSet<string> _lostNodesToBeRemoved;
-        private readonly HashSet<string> _nodesWaitingToJoinTopology;
+        private HashSet<string> _nodesWaitingToJoinTopologyNextIteration;
+        private HashSet<string> _nodesWaitingToJoinTopology;
 
         private volatile int _availableDataPoints;
         private int _totNumberofNodes;
@@ -66,6 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             _nodes = new Dictionary<int, DataNode>();
             _lostNodesToBeRemoved = new HashSet<string>();
+            _nodesWaitingToJoinTopologyNextIteration = new HashSet<string>();
             _nodesWaitingToJoinTopology = new HashSet<string>();
         }
 
@@ -88,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 {
                     if (_nodes[id].FailState != DataNodeState.Reachable)
                     {
-                        _nodesWaitingToJoinTopology.Add(taskId);
+                        _nodesWaitingToJoinTopologyNextIteration.Add(taskId);
                         _nodes[id].FailState = DataNodeState.Unreachable;
                         return false;
                     }
@@ -102,7 +104,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (_finalized)
                 {
                     // New node but elastically added. It should be gracefully added to the topology.
-                    _nodesWaitingToJoinTopology.Add(taskId);
+                    _nodesWaitingToJoinTopologyNextIteration.Add(taskId);
                     _nodes[id].FailState = DataNodeState.Unreachable;
                     _nodes[_rootId].Children.Add(_nodes[id]);
                     failureMachine.AddDataPoints(1, true);
@@ -142,6 +144,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 DataNode node = _nodes[id];
                 var prevState = node.FailState;
                 node.FailState = DataNodeState.Lost;
+                _nodesWaitingToJoinTopologyNextIteration.Remove(taskId);
                 _nodesWaitingToJoinTopology.Remove(taskId);
                 _lostNodesToBeRemoved.Add(taskId);
 
@@ -218,12 +221,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 foreach (var tId in root.Children)
                 {
-                    if (tId.TaskId != _rootId)
-                    {
-                        confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.TopologyChildTaskIds, int>(
-                            GenericType<GroupCommunicationConfigurationOptions.TopologyChildTaskIds>.Class,
-                            tId.TaskId.ToString(CultureInfo.InvariantCulture));
-                    }
+                    confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.TopologyChildTaskIds, int>(
+                        GenericType<GroupCommunicationConfigurationOptions.TopologyChildTaskIds>.Class,
+                        tId.TaskId.ToString(CultureInfo.InvariantCulture));
                 }
             }
             confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
@@ -276,6 +276,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             LOGGER.Log(Level.Info, string.Format("Flat Topology for Operator {0} in Iteration {1} is closed with {2} nodes", OperatorId, iteration - 1, _availableDataPoints));
             _iteration = iteration;
             _totNumberofNodes += _availableDataPoints;
+
+            lock (_lock)
+            {
+                _nodesWaitingToJoinTopology = _nodesWaitingToJoinTopologyNextIteration;
+                _nodesWaitingToJoinTopologyNextIteration = new HashSet<string>();
+            }
         }
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
@@ -305,6 +311,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);
                 messages.Add(returnMessage);
+                _lostNodesToBeRemoved.Clear();
             }
 
             return messages;

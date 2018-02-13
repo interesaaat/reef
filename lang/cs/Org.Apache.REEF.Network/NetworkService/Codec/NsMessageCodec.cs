@@ -73,8 +73,8 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
                 IIdentifier destId = _idFactory.Create(proto.DestId);
                 NsMessage<T> message = new NsMessage<T>(sourceId, destId);
 
-                var messages = proto.Data.Select(byteArr => _codec.Decode(byteArr));
-                message.Data.AddRange(messages);
+                var payload = _codec.Decode(proto.Data);
+                message.Data = payload;
                 return message;
             }
         }

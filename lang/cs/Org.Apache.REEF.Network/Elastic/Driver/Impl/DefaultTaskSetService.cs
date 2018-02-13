@@ -50,6 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly int _numEvaluators;
         private readonly string _nameServerAddr;
         private readonly int _nameServerPort;
+        private readonly INameServer _nameServer;
         private readonly string _defaultSubscriptionName;
         private readonly IFailureStateMachine _defaultFailureMachine;
 
@@ -77,6 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _configSerializer = configSerializer;
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
 
+            _nameServer = nameServer;
             IPEndPoint localEndpoint = nameServer.LocalEndpoint;
             _nameServerAddr = localEndpoint.Address.ToString();
             _nameServerPort = localEndpoint.Port;
@@ -186,7 +188,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         }
 
         public void OnTaskFailure(IFailedTask value, ref List<IFailureEvent> failureEvents)
-        {       
+        {
+            var task = value.Id;
+            _nameServer.Unregister(task);
         }
 
         public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)

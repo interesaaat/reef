@@ -27,9 +27,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators
         {
         }
 
-        public override bool CanMerge
+        internal override bool CanMerge
         {
-            get { return true; }
+            get { return false; }
         }
 
         protected override int Reduce(int left, int right)

@@ -129,11 +129,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _position = PositionTracker.InSend;
 
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
-            var messages = new GroupCommunicationMessage[] { message };
 
-            Checkpoint(messages, message.Iteration);
+            Checkpoint(message, message.Iteration);
 
-            _topology.Send(messages, CancellationSource);
+            _topology.Send(message, CancellationSource);
 
             _position = PositionTracker.AfterSendBeforeReceive;
         }
@@ -145,6 +144,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
+            LOGGER.Log(Level.Info, "Waiting for task registration for ring operator");
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 
@@ -161,11 +161,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal void Checkpoint(GroupCommunicationMessage[] data, int iteration)
+        internal void Checkpoint(GroupCommunicationMessage data, int iteration)
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
-                var state = new CheckpointableObject<GroupCommunicationMessage[]>()
+                var state = new CheckpointableObject<GroupCommunicationMessage>()
                 {
                     Level = CheckpointLevel,
                     Iteration = iteration

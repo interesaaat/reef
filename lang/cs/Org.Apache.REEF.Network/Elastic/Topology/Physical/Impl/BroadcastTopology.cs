@@ -30,15 +30,19 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.NetworkService;
 using System.Collections.Concurrent;
+using System.Linq;
+using Org.Apache.REEF.Wake.Remote.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal class BroadcastTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
     {
         private readonly CheckpointService _checkpointService;
-        private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
+        private readonly ConcurrentDictionary<int, byte> _toRemove;
 
         private readonly ManualResetEvent _topologyUpdateReceived;
+
+        StreamingNetworkService<GroupCommunicationMessage> _networkService;
 
         [Inject]
         private BroadcastTopology(
@@ -51,10 +55,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationLayer commLayer,
-            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CheckpointService checkpointService,
+            StreamingNetworkService<GroupCommunicationMessage> networkService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
+            _networkService = networkService;
             _checkpointService = checkpointService;
-            _outOfOrderTopologyRemove = new ConcurrentDictionary<int, byte>();
+            _toRemove = new ConcurrentDictionary<int, byte>();
             _topologyUpdateReceived = new ManualResetEvent(_rootTaskId == taskId ? false : true);
 
             _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
@@ -136,22 +142,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
             }
 
-            Console.WriteLine("Received message from {0}", message.SourceId);
+            _messageQueue.Add(message.Data);
 
-            foreach (var payload in message.Data)
+            var topologyPayload = message.Data as DataMessageWithTopology;
+            var updates = topologyPayload.TopologyUpdates;
+
+            UpdateTopology(ref updates);
+            topologyPayload.TopologyUpdates = updates;
+
+            if (!_children.IsEmpty)
             {
-                _messageQueue.Add(payload);
-
-                var topologyPayload = payload as DataMessageWithTopology;
-                var updates = topologyPayload.TopologyUpdates;
-
-                UpdateTopology(ref updates);
-                topologyPayload.TopologyUpdates = updates;
-
-                if (!_children.IsEmpty)
-                {
-                    _sendQueue.Enqueue(payload);
-                }
+                _sendQueue.Enqueue(message.Data);
             }
 
             if (_initialized)
@@ -176,14 +177,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             if (rmsg.ToRemove == true)
             {
-                foreach (var list in rmsg.TopologyUpdates)
+                lock (_toRemove)
                 {
-                    foreach (var node in list)
+                    foreach (var list in rmsg.TopologyUpdates)
                     {
-                        var id = Utils.GetTaskNum(node);
-                        if (!_children.TryRemove(id, out string value))
+                        foreach (var node in list)
                         {
-                            _outOfOrderTopologyRemove.TryAdd(id, new byte());
+                            var id = Utils.GetTaskNum(node);
+                            _toRemove.TryAdd(id, new byte());
+                            _commLayer.RemoveConnection(node);
                         }
                     }
                 }
@@ -197,6 +199,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                     UpdateTopology(ref updates);
                     toSendmsgWithTop.TopologyUpdates = updates;
+                    
+                    lock (_toRemove)
+                    {
+                        foreach (var id in _toRemove.Keys)
+                        {
+                            _children.TryRemove(id, out string val);
+                        }
+                        _toRemove.Clear();
+                    }
                 }
 
                 _topologyUpdateReceived.Set();
@@ -241,9 +252,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     _topologyUpdateReceived.Reset();
                 }
 
-                foreach (var node in _children.Values)
+                foreach (var node in _children.Where(x => !_toRemove.TryGetValue(x.Key, out byte val)))
                 {
-                    _commLayer.Send(node, message, cancellationSource);
+                    _commLayer.Send(node.Value, message, cancellationSource);
                 }
             }
         }
@@ -259,7 +270,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     for (int i = 1; i < list.Count; i++)
                     {
                         var id = Utils.GetTaskNum(list[i]);
-                        if (!_outOfOrderTopologyRemove.TryRemove(id, out byte value))
+                        if (!_toRemove.TryRemove(id, out byte value))
                         {
                             _children.TryAdd(id, list[i]);
                         }

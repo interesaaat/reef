@@ -76,10 +76,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 Console.WriteLine("Slave has received model of size {0} in iteration {1}", rec.Length, workflow.Iteration);
 
                                 ////Update the model, die in case
-                                for (int i = 0; i < rec.Length; i++)
-                                {
-                                    rec[i] += 1;
-                                }
+                                ////for (int i = 0; i < rec.Length; i++)
+                                ////{
+                                ////    rec[i] += 1;
+                                ////}
 
                                 if (rand.Next(100) < 0)
                                 {

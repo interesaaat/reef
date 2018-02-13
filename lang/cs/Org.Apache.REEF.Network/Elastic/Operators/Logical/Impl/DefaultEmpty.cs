@@ -35,6 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             OperatorName = Constants.Empty;
             MasterId = 1;
+            WithinIteration = false;
         }
 
         internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)

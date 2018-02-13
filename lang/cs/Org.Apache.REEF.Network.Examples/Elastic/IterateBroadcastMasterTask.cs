@@ -59,9 +59,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var sender = workflow.Current as IElasticBroadcast<int>;
 
-                                System.Threading.Thread.Sleep(1000);
-
                                 sender.Send(number);
+
+                                System.Threading.Thread.Sleep(1000);
 
                                 Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
                                 break;

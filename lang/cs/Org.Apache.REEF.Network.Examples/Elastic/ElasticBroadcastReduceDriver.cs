@@ -39,6 +39,7 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -120,9 +121,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyType.Flat,
-                        new DefaultFailureStateMachine(),
-                        Network.Elastic.Failures.CheckpointLevel.None)
+            pipeline.Broadcast<int>(TopologyType.Flat)
                     .Reduce<int>(TopologyType.Flat, reduceFunctionConfig)
                     .Build();
 
@@ -153,8 +152,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            System.Threading.Thread.Sleep(10000);
-
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)

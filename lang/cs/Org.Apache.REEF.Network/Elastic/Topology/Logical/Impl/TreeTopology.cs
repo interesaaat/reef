@@ -92,9 +92,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new ArgumentException("Task has not been added to the topology");
             }
 
+            var rootId = node.Parent != null ? node.Parent.TaskId : _rootId;
+
             confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
                     GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
-                    _rootId.ToString(CultureInfo.InvariantCulture));
+                    rootId.ToString(CultureInfo.InvariantCulture));
 
             foreach (DataNode childNode in node.Children)
             {

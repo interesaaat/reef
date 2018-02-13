@@ -60,6 +60,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             MasterId = receiverId;
             OperatorName = Constants.Reduce;
+            WithinIteration = prev.WithinIteration;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
@@ -86,7 +87,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             var taskId = message.TaskId;
-                            LOGGER.Log(Level.Info, "{0} joins the topology", taskId);
+                            LOGGER.Log(Level.Info, "{0} joins the topology for operator {1}", taskId, _id);
 
                             _topology.AddTask(taskId, _failureMachine);
                         }
@@ -102,7 +103,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             return false;
                         }
 
-                        LOGGER.Log(Level.Info, "Received topology update request from {0}", message.TaskId);
+                        LOGGER.Log(Level.Info, "Received topology update request for reduce {0} from {1}", _id, message.TaskId);
 
                         if (!_stop)
                         {
@@ -130,7 +131,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reconfigure the broadcast operator");
+            LOGGER.Log(Level.Info, "Going to reconfigure the reduce operator");
 
             if (_stop)
             {
@@ -141,12 +142,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException)
                 {
-                    if (((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).OperatorId == _id)
-                    {
-                        var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
-                        var msg = _topology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
-                        reconfigureEvent.FailureResponse.AddRange(msg);
-                    }
+                    var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
+                    var msg = _topology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
+                    reconfigureEvent.FailureResponse.AddRange(msg);
                 }
                 else
                 {

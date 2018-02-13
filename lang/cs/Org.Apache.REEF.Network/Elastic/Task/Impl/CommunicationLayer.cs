@@ -153,6 +153,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 {
                     throw new IllegalStateException("Unable to send message after " + retry + " retry");
                 }
+                Thread.Sleep(_sleepTime);
+
                 retry++;
             }
         }
@@ -170,7 +172,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             var nsMessage = remoteMessage.Message;
-            var gcm = nsMessage.Data.First();
+            var gcm = nsMessage.Data;
             var gcMessageTaskSource = nsMessage.SourceId.ToString();
 
             if (gcm.GetType() == typeof(CheckpointMessageRequest))
@@ -274,7 +276,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="identifiers">The identifier to look up</param>
         /// <param name="cancellationSource">The token to cancel the operation</param>
-        internal void WaitForTaskRegistration(ConcurrentDictionary<int, string> identifiers, CancellationTokenSource cancellationSource)
+        internal void WaitForTaskRegistration(IList<string> identifiers, CancellationTokenSource cancellationSource)
         {
             using (Logger.LogFunction("CommunicationLayer::WaitForTaskRegistration"))
             {
@@ -288,7 +290,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     }
 
                     Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
-                    foreach (var identifier in identifiers.Values)
+                    foreach (var identifier in identifiers)
                     {
                         if (!foundList.Contains(identifier) && Lookup(identifier))
                         {
@@ -306,7 +308,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Thread.Sleep(_sleepTime);
                 }
 
-                ICollection<string> leftovers = foundList.Count == 0 ? identifiers.Values : identifiers.Values.Where(e => !foundList.Contains(e)).ToList();
+                ICollection<string> leftovers = foundList.Count == 0 ? identifiers : identifiers.Where(e => !foundList.Contains(e)).ToList();
                 var msg = string.Join(",", leftovers);
 
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);
@@ -323,6 +325,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             return _networkService.NamingClient.Lookup(identifier) != null;
         }
 
+        internal void RemoveConnection(string destination)
+        {
+            IIdentifier destId = _idFactory.Create(destination);
+            _networkService.RemoveConnection(destId);
+        }
+
         private bool Send(IIdentifier destId, GroupCommunicationMessage message)
         {
             var connection = _networkService.NewConnection(destId);
@@ -334,6 +342,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
 
                 connection.Write(message);
+                Console.WriteLine("message sent to {0}", destId);
             }
             catch (Exception e)
             {

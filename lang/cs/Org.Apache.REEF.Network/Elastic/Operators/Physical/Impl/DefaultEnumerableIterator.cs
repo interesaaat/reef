@@ -98,8 +98,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                     }
                     _checkpointState.MakeCheckpointable(checkpoint.State);
 
+                    Console.WriteLine("Actions " + _actions.Count);
+
                     foreach (var action in _actions)
                     {
+                        Console.WriteLine("Going to join topology");
                         action.Invoke();
                     }
                 }
@@ -133,6 +136,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
+            LOGGER.Log(Level.Info, "Waiting for task registration for iterate operator");
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 

@@ -126,9 +126,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        CheckpointLevel.PersistentMemoryMaster,
+                        CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Tree,
+                    .Broadcast<int>(TopologyType.Flat,
                         CheckpointLevel.None)
                     .Build();
 

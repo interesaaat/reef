@@ -101,6 +101,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// </summary>
         public string OperatorName { get; protected set; }
 
+        public bool WithinIteration { get; protected set; }
+
         /// <summary>
         /// The Subscription this Operator is part of
         /// </summary>

@@ -94,7 +94,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 failedOperatorId = opException.OperatorId;
             }
 
-            if (failedOperatorId <= _id)
+            if (WithinIteration || failedOperatorId <= _id)
             {
                 int lostDataPoints = _topology.RemoveTask(task.Id);
                 var failureState = _failureMachine.RemoveDataPoints(lostDataPoints);
@@ -105,9 +105,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         failureEvents.Add(new ReconfigureEvent(task, _id));
                         break;
                     case DefaultFailureStates.ContinueAndReschedule:
-                        var @event = new RescheduleEvent(task.Id, -1);
-                        @event.FailedTask = Optional<IFailedTask>.Of(task);
-                        failureEvents.Add(@event);
+                        if (failedOperatorId == _id)
+                        {
+                            var @event = new RescheduleEvent(task.Id, -1);
+                            @event.FailedTask = Optional<IFailedTask>.Of(task);
+                            failureEvents.Add(@event);
+                        }
                         break;
                     case DefaultFailureStates.StopAndReschedule:
                         failureEvents.Add(new StopEvent(task.Id, -1));
@@ -139,7 +142,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public override void EventDispatcher(ref IFailureEvent @event)
         {
-            if (@event.OperatorId == _id || @event.OperatorId < 0)
+            if (@event.OperatorId == _id || (@event.OperatorId < 0 && WithinIteration))
             {
                 switch ((DefaultFailureStateEvents)@event.FailureEvent)
                 {

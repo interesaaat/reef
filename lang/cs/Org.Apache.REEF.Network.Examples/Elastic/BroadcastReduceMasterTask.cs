@@ -35,7 +35,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("BroadcastReduce");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcastReduce");
         }
 
         public byte[] Call(byte[] memento)
@@ -51,23 +51,21 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 {
                     while (workflow.MoveNext())
                     {
-                        number = 1;
+                        number = (int)workflow.Iteration;
 
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
                                 var sender = workflow.Current as IElasticBroadcast<int>;
 
-                                System.Threading.Thread.Sleep(1000);
-
                                 sender.Send(number);
 
                                 Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+
+                                System.Threading.Thread.Sleep(1000);
                                 break;
                             case Constants.Reduce:
                                 var receiver = workflow.Current as IElasticReducer<int>;
-
-                                System.Threading.Thread.Sleep(1000);
 
                                 var receivedNumber = receiver.Receive();
 

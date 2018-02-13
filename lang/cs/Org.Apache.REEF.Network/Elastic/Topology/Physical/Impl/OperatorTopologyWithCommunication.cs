@@ -36,7 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected bool _initialized;
         internal CommunicationLayer _commLayer;
 
-        private readonly int _disposeTimeout;
+        protected readonly int _disposeTimeout;
         protected readonly int _timeout;
         protected readonly int _retry;
 
@@ -88,12 +88,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             return message;
         }
 
-        internal virtual void Send(GroupCommunicationMessage[] messages, CancellationTokenSource cancellationSource)
+        internal virtual void Send(GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
-            foreach (var message in messages)
-            {
-                _sendQueue.Enqueue(message);
-            }
+            _sendQueue.Enqueue(message);
 
             if (_initialized)
             {
@@ -118,7 +115,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             try
             {
-                _commLayer.WaitForTaskRegistration(_children, cancellationSource);
+                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource);
             }
             catch (Exception e)
             {
@@ -142,14 +139,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
             }
 
-            foreach (var payload in message.Data)
-            {
-                _messageQueue.Add(payload);
+            _messageQueue.Add(message.Data);
 
-                if (!_children.IsEmpty)
-                {
-                    _sendQueue.Enqueue(payload);
-                }
+            if (!_children.IsEmpty)
+            {
+                _sendQueue.Enqueue(message.Data);
             }
 
             if (_initialized)
@@ -168,17 +162,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _messageQueue.CompleteAdding();
         }
 
-        public void Dispose()
+        public override void WaitCompletionBeforeDisposing()
         {
-            _messageQueue.CompleteAdding();
-
             var elapsedTime = 0;
-            while (_sendQueue.Count > 0 && elapsedTime < _disposeTimeout)
+            while (_sendQueue.Count > 0  && elapsedTime < _disposeTimeout)
             {
                 // The topology is still trying to send messages, wait
                 Thread.Sleep(100);
                 elapsedTime += 100;
             }
+        }
+
+        public virtual void Dispose()
+        {
+            _messageQueue.CompleteAdding();
 
             _commLayer.Dispose();
         }

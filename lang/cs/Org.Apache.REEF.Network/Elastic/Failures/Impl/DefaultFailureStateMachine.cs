@@ -50,7 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         private readonly IDictionary<DefaultFailureStates, float> transitionWeights = new Dictionary<DefaultFailureStates, float>()
         {
             { DefaultFailureStates.ContinueAndReconfigure, 0.0F },
-            { DefaultFailureStates.ContinueAndReschedule, 0.0F },
+            { DefaultFailureStates.ContinueAndReschedule, 0.01F },
             { DefaultFailureStates.StopAndReschedule, 0.5F },
             { DefaultFailureStates.Fail, 0.5F }
         };
@@ -91,7 +91,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 {
                     float currentRate = (float)NumOfFailedDataPoints / NumOfDataPoints;
 
-                    while (currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
+                    while (currentRate > (int)DefaultFailureStates.Continue && currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
                     {
                         State.FailureState = (int)transitionMapDown[(DefaultFailureStates)State.FailureState];
                     }

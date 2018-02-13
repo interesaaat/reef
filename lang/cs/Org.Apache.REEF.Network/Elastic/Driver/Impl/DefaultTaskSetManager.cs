@@ -383,7 +383,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 _hasProgress = false;
                 LOGGER.Log(Level.Info, "Timeout alarm for Taskset initialized");
-                nextTimeouts.Add(new Failures.Impl.Timeout(_parameters.Timeout, this, Failures.Impl.Timeout.TimeoutType.Taskset));
+                ////nextTimeouts.Add(new Failures.Impl.Timeout(_parameters.Timeout, this, Failures.Impl.Timeout.TimeoutType.Taskset));
 
                 foreach (var sub in _subscriptions.Values)
                 {
@@ -500,7 +500,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             else
             {
                 _hasProgress = true;
-                Console.WriteLine("No Task in Evaluator");
+
                 if (!Completed() && !Failed())
                 {
                     var found = false;
@@ -508,7 +508,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     {
                         if (evaluator.FailedContexts[i].ParentContext.IsPresent())
                         {
-                            Console.WriteLine("Reusing context {0}", evaluator.FailedContexts[i].ParentContext.Value.Id);
                             var id = Utils.GetContextNum(evaluator.FailedContexts[i].ParentContext.Value);
                             _queuedContexts.Enqueue(id);
                             found = true;

@@ -126,9 +126,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
-                        CheckpointLevel.PersistentMemoryMaster,
+                        CheckpointLevel.None,
                         iteratorConfig)
-                    .AggregationRing<float[]>(CheckpointLevel.EphemeralAll)
+                    .AggregationRing<float[]>(CheckpointLevel.None)
                     .Build();
 
             // Build the subscription
@@ -148,8 +148,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(_numEvaluators)
-                .SetMegabytes(512)
-                .SetCores(1)
+                .SetMegabytes(6500)
+                .SetCores(4)
                 .SetRackName("WonderlandRack")
                 .SetEvaluatorBatchId("IterateAggregateEvaluator")
                 .Build();
@@ -158,6 +158,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
+            ////System.Threading.Thread.Sleep(5000);
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule

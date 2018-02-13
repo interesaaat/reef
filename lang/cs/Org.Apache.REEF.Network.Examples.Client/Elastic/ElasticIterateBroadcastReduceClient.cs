@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
         public void RunIterateBroadcastReduce(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 10;
+            const int numIterations = 100;
             const string driverId = "ElasticIterateBroadcastReduceDriver";
             const string subscription = "IterateBroadcastReduce";
 
@@ -51,6 +51,10 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
                     .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
                     .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<NumIterations, int>(
@@ -76,7 +80,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticIterateBroadcastReduceDriver), numTasks, "ElasticIterateBroadcastReduceDriver", runPlatform);
+            TestRun(merged, typeof(ElasticIterateBroadcastReduceDriver), numTasks, "IterateBroadcastReduce", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)

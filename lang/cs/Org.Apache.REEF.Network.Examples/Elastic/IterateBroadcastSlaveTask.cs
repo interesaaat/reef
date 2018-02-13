@@ -57,11 +57,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 2)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before");
 
-                                    if (rand.Next(100) < 50)
+                                    if (rand.Next(100) < 100)
                                     {
                                         throw new Exception("Die. before");
                                     }
@@ -73,11 +73,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 var rec = receiver.Receive();
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 2)
                                 {
                                     Console.WriteLine("I am going to die. Bye. after");
 
-                                    if (rand.Next(100) < 50)
+                                    if (rand.Next(100) < 100)
                                     {
                                         throw new Exception("Die. before");
                                     }

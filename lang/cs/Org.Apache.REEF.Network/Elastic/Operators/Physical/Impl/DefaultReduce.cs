@@ -99,7 +99,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <returns>The incoming data</returns>
         public T Receive()
         {
+            _topology.TopologyUpdateRequest();
+
             _position = PositionTracker.InReceive;
+
             var received = false;
             DataMessage<T> message = null;
             var isIterative = IteratorReference != null;
@@ -135,18 +138,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void Send(T data)
         {
-            ////_topology.TopologyUpdateRequest();
-
             _position = PositionTracker.InSend;
 
             int iteration = IteratorReference == null ? 0 : (int)IteratorReference.Current;
 
             var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, iteration, data);
-            var messages = new GroupCommunicationMessage[] { message };
 
-            Checkpoint(messages, message.Iteration);
+            Checkpoint(message, message.Iteration);
 
-            _topology.Send(new GroupCommunicationMessage[] { message }, CancellationSource);
+            _topology.Send(message, CancellationSource);
 
             _position = PositionTracker.AfterSend;
         }
@@ -158,15 +158,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
+            LOGGER.Log(Level.Info, "Waiting for task registration for reduce operator");
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 
         public void WaitCompletionBeforeDisposing()
         {
-            if (CheckpointLevel > CheckpointLevel.None)
-            {
-                _topology.WaitCompletionBeforeDisposing();
-            }
+            _topology.WaitCompletionBeforeDisposing();
         }
 
         public void Dispose()
@@ -178,11 +176,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal void Checkpoint(GroupCommunicationMessage[] data, int iteration)
+        internal void Checkpoint(GroupCommunicationMessage data, int iteration)
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
-                var state = new CheckpointableObject<GroupCommunicationMessage[]>()
+                var state = new CheckpointableObject<GroupCommunicationMessage>()
                 {
                     Level = CheckpointLevel,
                     Iteration = iteration
