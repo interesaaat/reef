@@ -129,12 +129,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .GetInstance<IPartitionedInputDataSet>();
 
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
-                Configurations.Merge(TaskConfiguration.ConfigurationModule
+                TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastPDMasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
                     .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDMasterTask>.Class)
-                    .Build()), masterDataSet.First().GetPartitionConfiguration())
+                    .Build(), masterDataSet.First().GetPartitionConfiguration())
                 .Build();
 
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
