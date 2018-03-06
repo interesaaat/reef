@@ -127,8 +127,8 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
 
             var codecWriteFunc = _codecFunctionsCache.WriteAsyncFunction(messageType);
 
-            await var asyncResult = codecWriteFunc.BeginInvoke(obj.Data, writer, token, null, null);
-            codecWriteFunc.EndInvoke(asyncResult);
+            var asyncResult = codecWriteFunc.BeginInvoke(obj.Data, writer, token, null, null);
+            await codecWriteFunc.EndInvoke(asyncResult);
         }
        
         private static byte[] GenerateMetaDataEncoding(NsMessage<T> obj)

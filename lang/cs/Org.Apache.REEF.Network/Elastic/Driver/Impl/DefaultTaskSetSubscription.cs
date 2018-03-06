@@ -29,8 +29,10 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Comm;
-using System;
+using System.Linq;
 using Org.Apache.REEF.Wake.Time.Event;
+using Org.Apache.REEF.IO.PartitionedData;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -47,9 +49,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly int _numTasks;
         private int _tasksAdded;
         private HashSet<string> _missingMasterTasks;
+        private HashSet<string> _masterTasks;
         private IFailureStateMachine _defaultFailureMachine;
 
         private int _numOperators;
+        private IConfiguration[] _datasetConfiguration;
+        private bool _isMasterGettingInputData;
 
         private readonly object _tasksLock;
         private readonly object _statusLock;
@@ -68,6 +73,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _numTasks = numTasks;
             _tasksAdded = 0;
             _missingMasterTasks = new HashSet<string>();
+            _masterTasks = new HashSet<string>();
             Completed = false;
             Service = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks, DefaultFailureStates.Fail);
@@ -95,6 +101,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public int GetNextOperatorId()
         {
             return Interlocked.Increment(ref _numOperators);
+        }
+
+        public void AddDataset(IPartitionedInputDataSet inputDataSet, bool isMasterGettingInputData = false)
+        {
+            _isMasterGettingInputData = isMasterGettingInputData;
+
+            _datasetConfiguration = inputDataSet.Select(x => x.GetPartitionConfiguration()).ToArray();
         }
 
         public bool AddTask(string taskId)
@@ -169,7 +182,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return id == 1;
         }
 
-        public void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
+        public IConfiguration GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
         {
             IList<string> serializedOperatorsConfs = new List<string>();
             builder = builder
@@ -178,9 +191,27 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                     SubscriptionName);
 
             RootOperator.GetTaskConfiguration(ref serializedOperatorsConfs, taskId);
-            builder.BindList<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs, string>(
-                GenericType<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs>.Class,
-                serializedOperatorsConfs);
+
+            var subConf = builder
+                .BindList<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs, string>(
+                    GenericType<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs>.Class,
+                    serializedOperatorsConfs)
+                .Build();
+
+            return subConf;
+        }
+
+        public Optional<IConfiguration> GetPartitionConf(string taskId)
+        {
+            if (_masterTasks.Contains(taskId) && !_isMasterGettingInputData)
+            {
+                return Optional<IConfiguration>.Empty();
+            }
+
+            var index = Utils.GetTaskNum(taskId) - 1;
+            index = _isMasterGettingInputData ? index : index - 1;
+
+            return Optional<IConfiguration>.Of(_datasetConfiguration[index]);
         }
 
         public IElasticTaskSetSubscription Build()
@@ -190,7 +221,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 throw new IllegalStateException("Subscription cannot be built more than once");
             }
 
+            var adjust = _isMasterGettingInputData ? 0 : 1;
+
+            if (_datasetConfiguration.Length + adjust < _numTasks)
+            {
+                throw new IllegalStateException(string.Format("Dataset is smaller than the number of tasks: re-submit with {0} tasks", _datasetConfiguration.Length + adjust));
+            }
+
             RootOperator.GatherMasterIds(ref _missingMasterTasks);
+            RootOperator.GatherMasterIds(ref _masterTasks);
 
             _finalized = true;
 

@@ -28,10 +28,10 @@ namespace Org.Apache.REEF.Network.Examples.Client
         {
             Console.WriteLine("start running client: " + DateTime.Now);
             bool runOnYarn = false;
-            int numNodes = 10;
+            int numNodes = 3;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "ElasticIterateBroadcastReduce";
+            string testToRun = "ElasticBroadcastPD";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -82,6 +82,12 @@ namespace Org.Apache.REEF.Network.Examples.Client
             {
                 new ElasticBroadcastClient().RunElasticBroadcast(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticRunBroadcast completed!!!");
+            }
+
+            if (testToRun.Equals("ElasticBroadcastPD".ToLower()) || testToRun.Equals("all"))
+            {
+                new ElasticBroadcastClientPD().RunElasticBroadcast(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticRunBroadcastPD completed!!!");
             }
 
             if (testToRun.Equals("ElasticIterateBroadcast".ToLower()) || testToRun.Equals("all"))

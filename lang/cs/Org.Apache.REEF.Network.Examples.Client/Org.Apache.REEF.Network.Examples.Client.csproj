@@ -54,6 +54,7 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="BroadcastAndReduceClient.cs" />
+    <Compile Include="Elastic\ElasticBroadcastClientPD.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSerSend.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSend.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSerialization.cs" />
@@ -117,6 +118,10 @@ under the License.
     <ProjectReference Include="$(SolutionDir)\Org.Apache.REEF.Wake\Org.Apache.REEF.Wake.csproj">
       <Project>{cdfb3464-4041-42b1-9271-83af24cd5008}</Project>
       <Name>Org.Apache.REEF.Wake</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Org.Apache.REEF.IO\Org.Apache.REEF.IO.csproj">
+      <Project>{DEC0F0A8-DBEF-4EBF-B69C-E2369C15ABF1}</Project>
+      <Name>Org.Apache.REEF.IO</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

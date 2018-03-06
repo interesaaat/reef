@@ -19,6 +19,8 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.IO.PartitionedData;
+using Org.Apache.REEF.Utilities;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -103,11 +105,21 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <param name="builder">The configuration builder the configuration will be appended to</param>
         /// <param name="taskId">The task id of the task that belongs to this Subscription</param>
         /// <returns>The configuration for the Task with added Subscription informations</returns>
-        void GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);
+        IConfiguration GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        Optional<IConfiguration> GetPartitionConf(string taskId);
 
         /// <summary>
         /// TODO
         /// </summary>
         string LogFinalStatistics();
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        void AddDataset(IPartitionedInputDataSet inputDataSet, bool isMasterGettingInputData = false);
     }
 }

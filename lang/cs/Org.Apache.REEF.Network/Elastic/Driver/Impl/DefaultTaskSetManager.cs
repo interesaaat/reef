@@ -640,12 +640,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             Interlocked.Increment(ref _tasksAdded);
             var subList = new List<IElasticTaskSetSubscription>();
             var id = Utils.GetTaskNum(taskId) - 1;
+            var partitionsConfs = new List<IConfiguration>() { partialTaskConfig };
 
             foreach (var sub in _subscriptions)
             {
                 if (sub.Value.AddTask(taskId))
                 {
                     subList.Add(sub.Value);
+                    var partitionConf = sub.Value.GetPartitionConf(taskId);
+
+                    if (partitionConf.IsPresent())
+                    {
+                        partitionsConfs.Add(partitionConf.Value);
+                    }
                 }
                 else
                 {
@@ -655,7 +662,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
             }
 
-            _taskInfos[id] = new TaskInfo(partialTaskConfig, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
+            var aggregatedConfs = partitionsConfs.Aggregate((x, y) => Configurations.Merge(x, y));
+
+            _taskInfos[id] = new TaskInfo(aggregatedConfs, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
 
             if (_scheduled)
             {
@@ -686,10 +695,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 foreach (var sub in subs)
                 {
                     ICsConfigurationBuilder confSubBuilder = TangFactory.GetTang().NewConfigurationBuilder();
-
-                    sub.GetTaskConfiguration(ref confSubBuilder, id + 1);
-
-                    var confSub = confSubBuilder.Build();
+                    var confSub = sub.GetTaskConfiguration(ref confSubBuilder, id + 1);
 
                     if (rescheduleConfs.TryGetValue(sub.SubscriptionName, out var confs))
                     {
