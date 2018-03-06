@@ -24,13 +24,16 @@ using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.IO.PartitionedData;
 using System.Collections.Generic;
+using Org.Apache.REEF.Common.Tasks.Events;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastPDSlaveTask : ITask
+    public class BroadcastPDSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
+        private readonly List<int> _values;
 
         private readonly CancellationTokenSource _cancellationSource;
 
@@ -43,10 +46,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
+            _values = new List<int>();
 
             foreach (var str in inputPartition.GetPartitionHandle())
             {
-                Console.WriteLine(str);
+                _values.Add(int.Parse(str));
             }
         }
 
@@ -63,11 +67,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
+                                var receiver = workflow.Current as IElasticBroadcast<int[]>;
 
                                 var rec = receiver.Receive();
 
-                                Console.WriteLine("Slave has received {0}", rec);
+                                Console.WriteLine("Slave has received {0}", string.Join(",", rec));
+
+                                Console.WriteLine("Diff is {0}", string.Join(",", _values.Where(x => !rec.Contains(x))));
                                 break;
                             default:
                                 break;
@@ -83,10 +89,23 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
+        }
+
         public void Dispose()
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

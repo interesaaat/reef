@@ -37,6 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         private readonly BroadcastTopology _topology;
         private volatile PositionTracker _position;
+        private readonly bool _isLast;
 
         /// <summary>
         /// Creates a new Broadcast operator.
@@ -47,11 +48,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private DefaultBroadcast(
             [Parameter(typeof(OperatorId))] int id,
             [Parameter(typeof(Checkpointing))] int level,
+            [Parameter(typeof(IsLast))] bool isLast,
             BroadcastTopology topology)
         {
             OperatorName = Constants.Broadcast;
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
+            _isLast = isLast;
             _topology = topology;
             _position = PositionTracker.Nil;
 
@@ -161,11 +164,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitCompletionBeforeDisposing()
         {
-            _topology.WaitCompletionBeforeDisposing();
+            _topology.WaitCompletionBeforeDisposing(CancellationSource);
         }
 
         public void Dispose()
         {
+            if (_isLast)
+            {
+                _topology.SignalSubscriptionComplete();
+            }
             _topology.Dispose();
         }
 

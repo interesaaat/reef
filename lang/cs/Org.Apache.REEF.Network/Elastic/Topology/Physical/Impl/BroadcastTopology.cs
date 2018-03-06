@@ -130,6 +130,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration, false);
         }
 
+        public void WaitCompletionBeforeDisposing(CancellationTokenSource cancellationSource)
+        {
+            if (_taskId == _rootTaskId)
+            {
+                foreach (var node in _children.Values)
+                {
+                    while (_commLayer.Lookup(node) == true && !cancellationSource.IsCancellationRequested)
+                    {
+                        Thread.Sleep(100);
+                    }
+                }   
+            }
+        }
+
         internal void TopologyUpdateRequest()
         {
             _commLayer.TopologyUpdateRequest(_taskId, OperatorId);

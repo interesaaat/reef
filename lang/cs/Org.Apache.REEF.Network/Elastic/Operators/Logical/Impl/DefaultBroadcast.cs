@@ -113,6 +113,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
                         return true;
                     }
+                case TaskMessageType.CompleteSubscription:
+                    {
+                        Subscription.Completed = true;
+
+                        return true;
+                    }
 
                 default:
                     return false;

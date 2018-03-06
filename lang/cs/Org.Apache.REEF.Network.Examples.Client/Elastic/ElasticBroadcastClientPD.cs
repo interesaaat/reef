@@ -30,6 +30,8 @@ using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Examples.Elastic;
 using System.Collections.Generic;
+using Org.Apache.REEF.IO.FileSystem.Hadoop;
+using Org.Apache.REEF.IO.FileSystem;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
@@ -48,6 +50,13 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             string partitionFilePath1 = MakeLocalTempFile(new string[] { "1", "2", "3", "4", "5", "6" });
             string partitionFilePath2 = MakeLocalTempFile(new string[] { "1", "2", "3", "4", "5", "7" });
 
+            if (runOnYarn)
+            {
+                modelFilePath = MakeRemoteTestFile(modelFilePath);
+                partitionFilePath1 = MakeRemoteTestFile(partitionFilePath1);
+                partitionFilePath2 = MakeRemoteTestFile(partitionFilePath2);
+            }
+
             ICsConfigurationBuilder driverConfigBuilder = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
                     .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticBroadcastPDDriver>.Class)
@@ -57,6 +66,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticBroadcastPDDriver>.Class)
                     .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticBroadcastPDDriver>.Class)
                     .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticBroadcastPDDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticBroadcastPDDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
@@ -114,13 +124,13 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                         .Set(LocalRuntimeClientConfiguration.RuntimeFolder, dir)
                         .Build();
                 case Yarn:
-                    return YARNClientConfiguration.ConfigurationModule.Build();
+                    return Configurations.Merge(HadoopFileSystemConfiguration.ConfigurationModule.Build(), YARNClientConfiguration.ConfigurationModule.Build());
                 default:
                     throw new Exception("Unknown runtime: " + runOnYarn);
             }
         }
 
-        internal static void MakeLocalTestFile(string filePath, string[] strings)
+        private static void MakeLocalTestFile(string filePath, string[] strings)
         {
             if (File.Exists(filePath))
             {
@@ -137,11 +147,30 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             }
         }
 
-        internal static string MakeLocalTempFile(string[] bytes)
+        private static string MakeLocalTempFile(string[] bytes)
         {
             var result = Path.GetTempFileName();
             MakeLocalTestFile(result, bytes);
             return result;
+        }
+
+        private static string MakeRemoteTestFile(string localTempFile)
+        {
+            IFileSystem fileSystem =
+                TangFactory.GetTang()
+                .NewInjector(HadoopFileSystemConfiguration.ConfigurationModule.Build())
+                .GetInstance<IFileSystem>();
+
+            string remoteFileName = "/tmp/TestHadoopFilePartition-" +
+                                    DateTime.Now.ToString("yyyyMMddHHmmssfff");
+
+            var remoteUri = fileSystem.CreateUriForPath(remoteFileName);
+            Console.WriteLine("remoteUri {0}: ", remoteUri);
+
+            fileSystem.CopyFromLocal(localTempFile, remoteUri);
+            Console.WriteLine("File CopyFromLocal {0}: ", localTempFile);
+
+            return remoteFileName;
         }
     }
 }

@@ -24,15 +24,18 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.IO.PartitionedData;
 using System.Collections.Generic;
+using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastPDMasterTask : ITask
+    public class BroadcastPDMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         private readonly CancellationTokenSource _cancellationSource;
+
+        private List<int> _values;
 
         [Inject]
         public BroadcastPDMasterTask(
@@ -43,10 +46,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _cancellationSource = new CancellationTokenSource();
 
             _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
+            _values = new List<int>();
 
             foreach (var str in inputPartition.GetPartitionHandle())
             {
-                Console.WriteLine(str);
+                _values.Add(int.Parse(str));
             }
         }
 
@@ -54,25 +58,20 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
-            var rand = new Random();
-            int number = 0;
-
             using (var workflow = _subscriptionClient.Workflow)
             {
                 try
                 {
                     while (workflow.MoveNext())
                     {
-                        number = rand.Next();
-
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                                var sender = workflow.Current as IElasticBroadcast<int[]>;
 
-                                sender.Send(number);
+                                sender.Send(_values.ToArray());
 
-                                Console.WriteLine("Master has sent {0}", number);
+                                Console.WriteLine("Master has sent {0}", string.Join(",", _values));
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
@@ -88,10 +87,23 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
+        }
+
         public void Dispose()
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

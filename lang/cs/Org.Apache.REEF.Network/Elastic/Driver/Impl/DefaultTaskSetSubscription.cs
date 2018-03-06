@@ -160,7 +160,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool ScheduleSubscription()
         {
-            if (_defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled())
+            if (_numTasks == _tasksAdded || (IsIterative && _defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled()))
             {
                 _scheduled = true;
 

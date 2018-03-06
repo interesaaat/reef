@@ -44,6 +44,7 @@ using System.IO;
 using Org.Apache.REEF.Tang.Formats;
 using System.Linq;
 using Org.Apache.REEF.IO.FileSystem;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -57,7 +58,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
         IObserver<IFailedEvaluator>,
-        IObserver<IFailedTask>
+        IObserver<IFailedTask>,
+        IObserver<ITaskMessage>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
 
@@ -81,7 +83,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             IElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
-            System.Threading.Thread.Sleep(20000);
             _numEvaluators = numEvaluators;
             _service = service;
             _evaluatorRequestor = evaluatorRequestor;
@@ -93,8 +94,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
+            _codecConfig = StreamingCodecConfiguration<int[]>.Conf
+                .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
                 .Build();
 
             var serializerConf = TangFactory.GetTang().NewConfigurationBuilder()
@@ -131,6 +132,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 Configurations.Merge(TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastPDMasterTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDMasterTask>.Class)
                     .Build()), masterDataSet.First().GetPartitionConfiguration())
                 .Build();
 
@@ -138,6 +141,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastPDSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDSlaveTask>.Class)
                     .Build())
                 .Build();
 
@@ -147,7 +152,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyType.Tree)
+            pipeline.Broadcast<int[]>(TopologyType.Tree)
                     .Build();
 
             // Build the subscription
@@ -226,6 +231,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 _taskManager.Dispose();
             }
+        }
+
+        public void OnNext(ITaskMessage taskMessage)
+        {
+            _taskManager.OnTaskMessage(taskMessage);
         }
 
         public void OnCompleted()
