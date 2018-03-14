@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// </summary>
     internal sealed class TopologyMessagePayload : DriverMessagePayload
     {
-        public TopologyMessagePayload(List<List<string>> updates, bool toRemove, string subscriptionName, int operatorId, int iteration)
+        public TopologyMessagePayload(List<TopologyUpdate> updates, bool toRemove, string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId, iteration)
         {
             MessageType = DriverMessageType.Topology;
@@ -36,54 +36,15 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             ToRemove = toRemove;
         }
 
-        internal List<List<string>> TopologyUpdates { get; private set; }
+        internal List<TopologyUpdate> TopologyUpdates { get; private set; }
 
         internal bool ToRemove { get; private set; }
-
-        internal override byte[] Serialize()
-        {
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
-            int offset = 0;
-            var totalLengthUpdates = TopologyUpdates.Sum(x => (x.Count * sizeof(int)) + x.Sum(y => y.Length)) + (TopologyUpdates.Count * sizeof(int));
-            byte[] buffer = new byte[sizeof(int) + totalLengthUpdates + sizeof(int) + subscriptionBytes.Length + sizeof(bool) + sizeof(int) + sizeof(int)];
-            byte[] tmpBuffer;
-
-            Buffer.BlockCopy(BitConverter.GetBytes(totalLengthUpdates), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-            foreach (var value in TopologyUpdates)
-            {
-                Buffer.BlockCopy(BitConverter.GetBytes(value.Count), 0, buffer, offset, sizeof(int));
-                offset += sizeof(int);
-                foreach (var innerValue in value)
-                {
-                    tmpBuffer = ByteUtilities.StringToByteArrays(innerValue);
-                    Buffer.BlockCopy(BitConverter.GetBytes(tmpBuffer.Length), 0, buffer, offset, sizeof(int));
-                    offset += sizeof(int);
-                    Buffer.BlockCopy(tmpBuffer, 0, buffer, offset, tmpBuffer.Length);
-                    offset += tmpBuffer.Length;
-                }
-            }
-
-            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-
-            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
-            offset += subscriptionBytes.Length;
-
-            Buffer.BlockCopy(BitConverter.GetBytes(ToRemove), 0, buffer, offset, sizeof(bool));
-            offset += sizeof(bool);
-            Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
-            offset += sizeof(int);
-            Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
-
-            return buffer;
-        }
 
         internal static DriverMessagePayload From(byte[] data, int offset = 0)
         {
             int length = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
-            List<List<string>> updates = Deserialize(data, length, offset);
+            List<TopologyUpdate> updates = TopologyUpdate.Deserialize(data, length, offset);
             offset += length;
 
             length = BitConverter.ToInt32(data, offset);
@@ -100,31 +61,31 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return new TopologyMessagePayload(updates, toRemove, subscription, operatorId, iteration);
         }
 
-        private static List<List<string>> Deserialize(byte[] data, int totLength, int start)
+        internal override byte[] Serialize()
         {
-            var result = new List<List<string>>();
-            var num = 0;
-            var length = 0;
-            var offset = 0;
-            string value;
+            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
+            int offset = 0;
+            var totalLengthUpdates = TopologyUpdates.Sum(x => x.Size);
+            byte[] buffer = new byte[sizeof(int) + totalLengthUpdates + sizeof(int) + subscriptionBytes.Length + sizeof(bool) + sizeof(int) + sizeof(int)];
 
-            while (offset < totLength)
-            {
-                num = BitConverter.ToInt32(data, start + offset);
-                offset += sizeof(int);
-                var tmp = new List<string>();
-                for (int i = 0; i < num; i++)
-                {
-                    length = BitConverter.ToInt32(data, start + offset);
-                    offset += sizeof(int);
-                    value = ByteUtilities.ByteArraysToString(data, start + offset, length);
-                    offset += length;
-                    tmp.Add(value);
-                }
-                result.Add(tmp);
-            }
+            Buffer.BlockCopy(BitConverter.GetBytes(totalLengthUpdates), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
 
-            return result;
+            TopologyUpdate.Serialize(buffer, ref offset, TopologyUpdates);
+
+            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+
+            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
+            offset += subscriptionBytes.Length;
+
+            Buffer.BlockCopy(BitConverter.GetBytes(ToRemove), 0, buffer, offset, sizeof(bool));
+            offset += sizeof(bool);
+            Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
+            offset += sizeof(int);
+            Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
+
+            return buffer;
         }
     }
 }

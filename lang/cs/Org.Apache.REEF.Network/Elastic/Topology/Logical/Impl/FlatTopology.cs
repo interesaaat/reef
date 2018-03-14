@@ -242,8 +242,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 lock (_lock)
                 {
                     var list = _nodesWaitingToJoinTopology.ToList();
-                    list.Insert(0, _rootTaskId);
-                    var data = new TopologyMessagePayload(new List<List<string>>() { list }, false, SubscriptionName, OperatorId, _iteration);
+                    var update = new TopologyUpdate(_rootTaskId, list);
+                    var data = new TopologyMessagePayload(new List<TopologyUpdate>() { update }, false, SubscriptionName, OperatorId, _iteration);
                     var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
 
                     returnMessages.Add(returnMessage);
@@ -306,7 +306,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     iter = iteration.Value;
                 }
 
-                var data = new TopologyMessagePayload(new List<List<string>>() { _lostNodesToBeRemoved.ToList() }, true, SubscriptionName, OperatorId, -1);
+                var children = _lostNodesToBeRemoved.ToList();
+                var data = new TopologyMessagePayload(new List<TopologyUpdate>() { new TopologyUpdate(_rootTaskId, children) }, true, SubscriptionName, OperatorId, -1);
                 var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
 
                 LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);

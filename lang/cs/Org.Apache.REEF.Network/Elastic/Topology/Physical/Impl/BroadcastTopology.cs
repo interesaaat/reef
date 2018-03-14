@@ -193,9 +193,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 lock (_toRemove)
                 {
-                    foreach (var list in rmsg.TopologyUpdates)
+                    foreach (var updates in rmsg.TopologyUpdates)
                     {
-                        foreach (var node in list)
+                        foreach (var node in updates.Children)
                         {
                             var id = Utils.GetTaskNum(node);
                             _toRemove.TryAdd(id, new byte());
@@ -273,20 +273,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        private void UpdateTopology(ref List<List<string>> updates)
+        private void UpdateTopology(ref List<TopologyUpdate> updates)
         {
-            List<string> toRemove = null;
-            foreach (var list in updates)
+            TopologyUpdate toRemove = null;
+            foreach (var update in updates)
             {
-                if (list[0] == _taskId)
+                if (update.Node == _taskId)
                 {
-                    toRemove = list;
-                    for (int i = 1; i < list.Count; i++)
+                    toRemove = update;
+                    foreach (var child in update.Children)
                     {
-                        var id = Utils.GetTaskNum(list[i]);
+                        var id = Utils.GetTaskNum(child);
                         if (!_toRemove.TryRemove(id, out byte value))
                         {
-                            _children.TryAdd(id, list[i]);
+                            _children.TryAdd(id, child);
                         }
                     }
                 }

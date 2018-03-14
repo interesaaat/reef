@@ -53,7 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private IFailureStateMachine _defaultFailureMachine;
 
         private int _numOperators;
-        private IConfiguration[] _datasetConfiguration;
+        private Optional<IConfiguration[]> _datasetConfiguration;
         private bool _isMasterGettingInputData;
 
         private readonly object _tasksLock;
@@ -74,6 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _tasksAdded = 0;
             _missingMasterTasks = new HashSet<string>();
             _masterTasks = new HashSet<string>();
+            _datasetConfiguration = Optional<IConfiguration[]>.Empty();
             Completed = false;
             Service = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks, DefaultFailureStates.Fail);
@@ -107,7 +108,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             _isMasterGettingInputData = isMasterGettingInputData;
 
-            _datasetConfiguration = inputDataSet.Select(x => x.GetPartitionConfiguration()).ToArray();
+            _datasetConfiguration = Optional<IConfiguration[]>.Of(inputDataSet.Select(x => x.GetPartitionConfiguration()).ToArray());
         }
 
         public bool AddTask(string taskId)
@@ -203,7 +204,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public Optional<IConfiguration> GetPartitionConf(string taskId)
         {
-            if (_masterTasks.Contains(taskId) && !_isMasterGettingInputData)
+            if (!_datasetConfiguration.IsPresent() || (_masterTasks.Contains(taskId) && !_isMasterGettingInputData))
             {
                 return Optional<IConfiguration>.Empty();
             }
@@ -211,7 +212,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             var index = Utils.GetTaskNum(taskId) - 1;
             index = _isMasterGettingInputData ? index : index - 1;
 
-            return Optional<IConfiguration>.Of(_datasetConfiguration[index]);
+            return Optional<IConfiguration>.Of(_datasetConfiguration.Value[index]);
         }
 
         public IElasticTaskSetSubscription Build()
@@ -221,15 +222,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 throw new IllegalStateException("Subscription cannot be built more than once");
             }
 
-            var adjust = _isMasterGettingInputData ? 0 : 1;
-
-            if (_datasetConfiguration.Length + adjust < _numTasks)
+            if (_datasetConfiguration.IsPresent())
             {
-                throw new IllegalStateException(string.Format("Dataset is smaller than the number of tasks: re-submit with {0} tasks", _datasetConfiguration.Length + adjust));
+                var adjust = _isMasterGettingInputData ? 0 : 1;
+
+                if (_datasetConfiguration.Value.Length + adjust < _numTasks)
+                {
+                    throw new IllegalStateException(string.Format("Dataset is smaller than the number of tasks: re-submit with {0} tasks", _datasetConfiguration.Value.Length + adjust));
+                }
+
+                RootOperator.GatherMasterIds(ref _masterTasks);
             }
 
             RootOperator.GatherMasterIds(ref _missingMasterTasks);
-            RootOperator.GatherMasterIds(ref _masterTasks);
 
             _finalized = true;
 

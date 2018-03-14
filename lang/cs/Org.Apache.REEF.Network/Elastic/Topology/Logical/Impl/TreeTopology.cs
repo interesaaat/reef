@@ -51,6 +51,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private readonly HashSet<string> _nodesWaitingToJoinTopology;
         private readonly HashSet<string> _nodesWaitingToJoinTopologyInNextIteration;
 
+        private List<TopologyUpdate> _cachedMessageUpdates;
+
         private readonly object _lock;
 
         public TreeTopology(
@@ -195,7 +197,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                 var parent = node.Parent;
                 parent.Children.Remove(node);
-                node.Parent = null;
                 var children = node.Children.GetEnumerator();
                 RemoveReachable(children, ref count);
                 _availableDataPoints -= count;
@@ -277,27 +278,23 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public void TopologyUpdateResponse(string taskId, ref List<IElasticDriverMessage> returnMessages, Optional<IFailureStateMachine> failureStateMachine)
         {
-            if (taskId == _rootTaskId)
+            if (!failureStateMachine.IsPresent())
             {
-                if (!failureStateMachine.IsPresent())
+                throw new IllegalStateException("Cannot update topology without failure machine");
+            }
+            lock (_lock)
+            {
+                if (_cachedMessageUpdates == null)
                 {
-                    throw new IllegalStateException("Cannot update topology without failure machine");
-                }
-                lock (_lock)
-                {
-                    var updates = new List<List<string>>();
+                    _cachedMessageUpdates = new List<TopologyUpdate>();
                     var queue = new Queue<int>();
                     queue.Enqueue(_rootId);
-                    BuildTopologyUpdateMessage(queue, updates, failureStateMachine.Value);
-
-                    var data = new TopologyMessagePayload(updates, false, SubscriptionName, OperatorId, _iteration);
-                    var returnMessage = new ElasticDriverMessageImpl(taskId, data);
-                    returnMessages.Add(returnMessage);
+                    BuildTopologyUpdateResponse(queue, _cachedMessageUpdates, failureStateMachine.Value);
                 }
-            }
-            else
-            {
-                throw new IllegalStateException(string.Format("Not {0} but only root tasks are supposed to request topology updates", taskId));
+
+                var data = new TopologyMessagePayload(_cachedMessageUpdates, false, SubscriptionName, OperatorId, _iteration);
+                var returnMessage = new ElasticDriverMessageImpl(taskId, data);
+                returnMessages.Add(returnMessage);
             }
         }
 
@@ -315,6 +312,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
 
                 _nodesWaitingToJoinTopologyInNextIteration.Clear();
+                _cachedMessageUpdates = null; // Reset the updates
             }
         }
 
@@ -330,6 +328,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             lock (_lock)
             {
                 int iter;
+                var updates = new List<TopologyUpdate>();
 
                 if (info.IsPresent())
                 {
@@ -340,11 +339,22 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     iter = iteration.Value;
                 }
 
-                var data = new TopologyMessagePayload(new List<List<string>>() { _lostNodesToBeRemoved.ToList() }, true, SubscriptionName, OperatorId, -1);
-                var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
+                foreach (var taskIdToRemove in _lostNodesToBeRemoved)
+                {
+                    var id = Utils.GetTaskNum(taskIdToRemove);
+                    var node = _nodes[id];
+                    var parentTaskId = Utils.BuildTaskId(_taskSubscription, node.Parent.TaskId);
 
-                LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);
-                messages.Add(returnMessage);
+                    updates.Add(new TopologyUpdate(parentTaskId, new List<string>() { taskIdToRemove }));
+
+                    var data = new TopologyMessagePayload(updates, true, SubscriptionName, OperatorId, iter);
+                    var returnMessage = new ElasticDriverMessageImpl(parentTaskId, data);
+
+                    LOGGER.Log(Level.Info, "Task {0} is removed from topology", taskId);
+                    messages.Add(returnMessage);
+                    node.Parent = null;
+                }
+                
                 _lostNodesToBeRemoved.Clear();
             }
 
@@ -387,7 +397,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     {
                         var taskId = Utils.BuildTaskId(_taskSubscription, children.Current.TaskId);
                         children.Current.FailState = DataNodeState.Unreachable;
-                        children.Current.Parent = null;
                         _nodesWaitingToJoinTopologyInNextIteration.Add(taskId);
                         count++;
 
@@ -399,7 +408,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             }
         }
 
-        private void BuildTopologyUpdateMessage(Queue<int> ids, List<List<string>> updates, IFailureStateMachine failureStateMachine)
+        private void BuildTopologyUpdateResponse(Queue<int> ids, List<TopologyUpdate> updates, IFailureStateMachine failureStateMachine)
         {
             lock (_lock)
             {
@@ -419,7 +428,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                         LOGGER.Log(Level.Info, string.Format("Tasks [{0}] are added to node {1} in iteration {2}", string.Join(",", children), taskId, _iteration));
 
-                        var buffer = new List<string> { Utils.BuildTaskId(_taskSubscription, id) };
+                        var buffer = new List<string>();
 
                         foreach (var child in children)
                         {
@@ -432,7 +441,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                             _availableDataPoints++;
                             failureStateMachine.AddDataPoints(1, false);
                         }
-                        updates.Add(buffer);
+                        updates.Add(new TopologyUpdate(Utils.BuildTaskId(_taskSubscription, id), buffer));
                     }
                     foreach (var child in _nodes[id].Children)
                     {
@@ -442,7 +451,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         }
                     }
 
-                    BuildTopologyUpdateMessage(ids, updates, failureStateMachine);
+                    BuildTopologyUpdateResponse(ids, updates, failureStateMachine);
                 }
             }
         }

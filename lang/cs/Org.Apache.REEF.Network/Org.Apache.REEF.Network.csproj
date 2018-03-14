@@ -79,6 +79,7 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Elastic\Comm\ControlMessageType.cs" />
+    <Compile Include="Elastic\Comm\Impl\TopologyUpdate.cs" />
     <Compile Include="Elastic\Comm\Impl\DataMessageWithTopologyStreamingCodec.cs" />
     <Compile Include="Elastic\Comm\Impl\DataMessageWithTopology.cs" />
     <Compile Include="Elastic\Comm\Impl\DriverMessagePayload.cs" />

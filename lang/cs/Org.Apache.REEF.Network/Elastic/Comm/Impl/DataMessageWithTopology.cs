@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Iteration = iteration;
         }
 
-        internal List<List<string>> TopologyUpdates { get; set; }
+        internal List<TopologyUpdate> TopologyUpdates { get; set; }
     }
 
     internal sealed class DataMessageWithTopology<T> : DataMessageWithTopology
@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int operatorId,
             int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
             T data,
-            List<List<string>> updates) : base(subscriptionName, operatorId, iteration)
+            List<TopologyUpdate> updates) : base(subscriptionName, operatorId, iteration)
         {
             Data = data;
             TopologyUpdates = updates;
@@ -47,7 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             string subscriptionName,
             int operatorId,
             int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
-            T data) : this(subscriptionName, operatorId, iteration, data, new List<List<string>>())
+            T data) : this(subscriptionName, operatorId, iteration, data, new List<TopologyUpdate>())
         {
         }
 

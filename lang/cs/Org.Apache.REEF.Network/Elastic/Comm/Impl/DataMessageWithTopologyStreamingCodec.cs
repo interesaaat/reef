@@ -95,7 +95,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             string subscriptionString = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
-            List<List<string>> update = res.Item4;
+            List<TopologyUpdate> update = res.Item4;
 
             return new DataMessageWithTopology<T>(subscriptionString, operatorId, iteration, data, update);
         }
@@ -119,10 +119,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         private static byte[] MetaDataEncoding(DataMessageWithTopology<T> obj)
         {
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
-            var totalLengthUpdates = obj.TopologyUpdates.Sum(x => (x.Count * sizeof(int)) + x.Sum(y => y.Length)) + (obj.TopologyUpdates.Count * sizeof(int));
+            var totalLengthUpdates = obj.TopologyUpdates.Sum(x => x.Size);
             byte[] buffer = new byte[sizeof(int) + totalLengthUpdates + sizeof(int) + subscriptionBytes.Length + sizeof(bool) + sizeof(int) + sizeof(int)];
             int offset = 0;
-            byte[] tmpBuffer;
 
             Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -138,24 +137,13 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             Buffer.BlockCopy(BitConverter.GetBytes(totalLengthUpdates), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
-            foreach (var value in obj.TopologyUpdates)
-            {
-                Buffer.BlockCopy(BitConverter.GetBytes(value.Count), 0, buffer, offset, sizeof(int));
-                offset += sizeof(int);
-                foreach (var innerValue in value)
-                {
-                    tmpBuffer = ByteUtilities.StringToByteArrays(innerValue);
-                    Buffer.BlockCopy(BitConverter.GetBytes(tmpBuffer.Length), 0, buffer, offset, sizeof(int));
-                    offset += sizeof(int);
-                    Buffer.BlockCopy(tmpBuffer, 0, buffer, offset, tmpBuffer.Length);
-                    offset += tmpBuffer.Length;
-                }
-            }
 
+            TopologyUpdate.Serialize(buffer, ref offset, obj.TopologyUpdates);
+           
             return buffer;
         }
 
-        private static Tuple<string, int, int, List<List<string>>> MetaDataDecoding(byte[] obj)
+        private static Tuple<string, int, int, List<TopologyUpdate>> MetaDataDecoding(byte[] obj)
         {
             int offset = 0;
             int subscriptionLength = BitConverter.ToInt32(obj, offset);
@@ -173,36 +161,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int length = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
-            var updates = TopologyDataDecoding(obj, length, offset);
+            var updates = TopologyUpdate.Deserialize(obj, length, offset);
 
-            return new Tuple<string, int, int, List<List<string>>>(subscriptionString, operatorInt, iterationInt, updates);
-        }
-
-        private static List<List<string>> TopologyDataDecoding(byte[] data, int totLength, int start)
-        {
-            var result = new List<List<string>>();
-            var num = 0;
-            var length = 0;
-            var offset = 0;
-            string value;
-
-            while (offset < totLength)
-            {
-                num = BitConverter.ToInt32(data, start + offset);
-                offset += sizeof(int);
-                var tmp = new List<string>();
-                for (int i = 0; i < num; i++)
-                {
-                    length = BitConverter.ToInt32(data, start + offset);
-                    offset += sizeof(int);
-                    value = ByteUtilities.ByteArraysToString(data, start + offset, length);
-                    offset += length;
-                    tmp.Add(value);
-                }
-                result.Add(tmp);
-            }
-
-            return result;
+            return new Tuple<string, int, int, List<TopologyUpdate>>(subscriptionString, operatorInt, iterationInt, updates);
         }
     }
 }
