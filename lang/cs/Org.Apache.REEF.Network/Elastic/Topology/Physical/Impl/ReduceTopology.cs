@@ -46,6 +46,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         private readonly HashSet<string> _aggregationQueueSources;
         private readonly ConcurrentDictionary<string, byte> _toRemove;
 
+        private readonly bool _requestUpdate;
         private readonly ManualResetEvent _topologyUpdateReceived;
 
         [Inject]
@@ -55,6 +56,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorId))] int operatorId,
+            [Parameter(typeof(RequestTopologyUpdate))] bool requestUpdate,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
@@ -63,6 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _reducer = reduceFunction;
+            _requestUpdate = requestUpdate;
 
             _checkpointService = checkpointService;
             _outOfOrderTopologyRemove = new ConcurrentDictionary<int, byte>();
@@ -157,6 +160,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 throw new IllegalStateException("Trying to add messages to a closed non-empty queue");
             }
 
+            Console.WriteLine("Received from {0}", message.SourceId.ToString());
+
             Merge(message.Data, message.SourceId.ToString());
         }
 
@@ -200,15 +205,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             var rmsg = message as TopologyMessagePayload;
-           
-            foreach (var list in rmsg.TopologyUpdates)
+            Console.WriteLine("Received message " + rmsg.ToRemove);
+
+            foreach (var updates in rmsg.TopologyUpdates)
             {   
                 if (rmsg.ToRemove)
                 {
                     lock (_lock)
                     {
-                        foreach (var node in list)
+                        foreach (var node in updates.Children)
                         {
+                            Console.WriteLine("Removing " + node);
                             _toRemove.TryAdd(node, 0);
                             _commLayer.RemoveConnection(node);
                         }
@@ -216,27 +223,41 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
                 else
                 {
-                    if (list.Count > 0 && list[0] == _taskId)
+                    if (updates.Node == _taskId)
                     {
-                        foreach (var node in list.Skip(1))
+                        lock (_lock)
                         {
-                            var id = Utils.GetTaskNum(node);
-
-                            if (!_children.TryAdd(id, node))
+                            foreach (var node in updates.Children)
                             {
-                                if (!_toRemove.TryRemove(node, out byte val))
+                                var id = Utils.GetTaskNum(node);
+
+                                if (!_children.TryAdd(id, node))
                                 {
-                                    Logger.Log(Level.Warning, string.Format("Trying to remove unknown task {0}: ignoring", node));
+                                    if (!_toRemove.TryRemove(node, out byte val))
+                                    {
+                                        Logger.Log(Level.Warning, string.Format("Trying to remove unknown task {0}: ignoring", node));
+                                    }
                                 }
                             }
+
+                            if (_rootTaskId != _taskId)
+                            {
+                                _rootTaskId = updates.Root;
+                                Console.WriteLine("Updated Root: " + _rootTaskId);
+                            }
+                            Console.WriteLine("Updated Children: " + string.Join(",", _children.Values));
                         }
                     }
                 }
             }
 
+            Console.WriteLine("Root: " + _rootTaskId);
+            Console.WriteLine("Children: " + string.Join(",", _children.Values));
+
             if (!rmsg.ToRemove)
             {
                 _topologyUpdateReceived.Set();
+                Console.WriteLine("Setting");
             }
 
             Reduce();
@@ -244,8 +265,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void Send(GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
-            if (_children.Count == 0 && _initialized)
+            if (_requestUpdate)
             {
+                Console.WriteLine("Waiting");
+                TopologyUpdateRequest();
+                _topologyUpdateReceived.WaitOne();
+                Console.WriteLine("After Waiting");
+            }
+
+            if (_children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)).Count() == 0 && _initialized)
+            {
+                Console.WriteLine("sending directly");
+                _topologyUpdateReceived.Reset();
                 _sendQueue.Enqueue(message);
                 Send(new CancellationTokenSource());
             }
@@ -260,6 +291,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             GroupCommunicationMessage message;
             while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
+                Console.WriteLine("reduce sending to {0}", _rootTaskId);
                 _commLayer.Send(_rootTaskId, message, cancellationSource);
             }
         }
@@ -302,11 +334,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     GroupCommunicationMessage finalAggregatedMessage;
                     if (!_reducer.CanMerge)
                     {
-                        int diff = _taskId == _rootTaskId ? 1 : 0;
-                        if (_aggregationQueueData.Count != _aggregationQueueSources.Count() - diff)
-                        {
-                            throw new IllegalStateException(string.Format("Number of partially aggregated messages {0} do not match with count {1}", _aggregationQueueData.Count, _aggregationQueueSources.Count() - diff));
-                        }
+                        ////int diff = _taskId == _rootTaskId ? 1 : 0;
+                        ////if (_aggregationQueueData.Count != _aggregationQueueSources.Count() - diff)
+                        ////{
+                        ////    throw new IllegalStateException(string.Format("Number of partially aggregated messages {0} do not match with count {1}", _aggregationQueueData.Count, _aggregationQueueSources.Count() - diff));
+                        ////}
                         _reducer.Reduce(_aggregationQueueData);
                     }
                     
@@ -320,8 +352,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         throw new IllegalStateException("Pipeline of aggregation message not supported");
                     }
 
+                    Console.WriteLine("sending because got all {0} messages", _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)).Count());
                     _aggregationQueueSources.Clear();
                     _topologyUpdateReceived.Reset();
+                    Console.WriteLine("Resetting");
 
                     foreach (var node in _toRemove.Keys)
                     {
@@ -340,6 +374,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         _sendQueue.Enqueue(finalAggregatedMessage);
                         Send(new CancellationTokenSource());
                     }
+                }
+                else
+                {
+                    Console.WriteLine("Missing nodes {0}", string.Join(",", _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)).Where(x => !_aggregationQueueSources.Where(y => _toRemove.TryGetValue(y, out byte val)).Contains(x.Value))));
                 }
             }
         }

@@ -101,6 +101,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public T Receive()
         {
             _position = PositionTracker.InReceive;
+
             var received = false;
             DataMessageWithTopology<T> message = null;
             var isIterative = IteratorReference != null;

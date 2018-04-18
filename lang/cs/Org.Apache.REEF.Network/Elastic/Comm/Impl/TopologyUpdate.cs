@@ -35,9 +35,13 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         {
         }
 
+        public TopologyUpdate(string node, string root) : this(node, new List<string>(), root)
+        {
+        }
+
         public string Node { get; private set; }
 
-        public List<string> Children { get; private set; }
+        public List<string> Children { get; set; }
 
         public string Root { get; private set; }
 
@@ -82,13 +86,16 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
                     offset += tmpBuffer.Length;
                 }
 
-                var rootSize = value.Root == null ? 0 : value.Root.Length;
-                Buffer.BlockCopy(BitConverter.GetBytes(rootSize), 0, buffer, offset, sizeof(int));
-                offset += sizeof(int);
-
-                if (rootSize != 0)
+                if (value.Root == null)
+                {
+                    Buffer.BlockCopy(BitConverter.GetBytes(0), 0, buffer, offset, sizeof(int));
+                    offset += sizeof(int);
+                }
+                else
                 {
                     tmpBuffer = ByteUtilities.StringToByteArrays(value.Root);
+                    Buffer.BlockCopy(BitConverter.GetBytes(tmpBuffer.Length), 0, buffer, offset, sizeof(int));
+                    offset += sizeof(int);
                     Buffer.BlockCopy(tmpBuffer, 0, buffer, offset, tmpBuffer.Length);
                     offset += tmpBuffer.Length;
                 }
@@ -129,6 +136,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
                 if (length > 0)
                 {
                     value = ByteUtilities.ByteArraysToString(data, start + offset, length);
+                    offset += length;
                     result.Add(new TopologyUpdate(node, tmp, value));
                 }
                 else

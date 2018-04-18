@@ -35,6 +35,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient = serviceClient;
 
+            System.Threading.Thread.Sleep(20000);
+
             _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcastReduce");
         }
 

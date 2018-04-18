@@ -57,7 +57,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Broadcast:
                                 var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before receive");
 
@@ -79,21 +79,21 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Reduce:
                                 var sender = workflow.Current as IElasticReducer<int>;
 
-                                if (rand.Next(100) < 1)
-                                {
-                                    Console.WriteLine("I am going to die. Bye. before send");
+                                ////if (rand.Next(100) < 1)
+                                ////{
+                                ////    Console.WriteLine("I am going to die. Bye. before send");
 
-                                    throw new Exception("Die. before send");
-                                }
+                                ////    throw new Exception("Die. before send");
+                                ////}
 
                                 sender.Send(received);
 
-                                if (rand.Next(100) < 1)
-                                {
-                                    Console.WriteLine("I am going to die. Bye. after send");
+                                ////if (rand.Next(100) < 1)
+                                ////{
+                                ////    Console.WriteLine("I am going to die. Bye. after send");
 
-                                   throw new Exception("Die. after send");
-                                }
+                                ////    throw new Exception("Die. after send");
+                                ////}
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", received, workflow.Iteration);
                                 break;

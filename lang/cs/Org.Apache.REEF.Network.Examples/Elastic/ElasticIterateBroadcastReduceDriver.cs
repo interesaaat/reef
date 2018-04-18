@@ -136,8 +136,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Flat)
-                    .Reduce<int>(TopologyType.Flat, reduceFunctionConfig)
+                    .Broadcast<int>(TopologyType.Tree)
+                    .Reduce<int>(TopologyType.Tree, reduceFunctionConfig)
                     .Build();
 
             // Build the subscription

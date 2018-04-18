@@ -804,7 +804,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                                 LOGGER.Log(Level.Warning, msg + " Ignoring");
                             }
 
-                            return;
+                            continue;
                         }
 
                         _taskInfos[destination].TaskRunner.Send(returnMessage.Serialize());

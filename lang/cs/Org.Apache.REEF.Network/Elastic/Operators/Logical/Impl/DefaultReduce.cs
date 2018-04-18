@@ -28,10 +28,8 @@ using Org.Apache.REEF.Network.Elastic.Comm;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Utilities;
-using Org.Apache.REEF.Network.Group.Operators;
-using Org.Apache.REEF.Tang.Types;
-using System.Linq;
-using Org.Apache.REEF.Tang.Implementations.Configuration;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using System.Globalization;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -65,7 +63,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultReduce<T>>.Class);
+            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultReduce<T>>.Class)
+                       .BindNamedParameter<RequestTopologyUpdate, bool>(
+                            GenericType<RequestTopologyUpdate>.Class,
+                            (_topology.GetType() == typeof(TreeTopology)).ToString(CultureInfo.InvariantCulture));
             SetMessageType(typeof(Physical.Impl.DefaultReduce<T>), ref confBuilder);
         }
 

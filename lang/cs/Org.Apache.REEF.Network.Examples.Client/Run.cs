@@ -28,10 +28,10 @@ namespace Org.Apache.REEF.Network.Examples.Client
         {
             Console.WriteLine("start running client: " + DateTime.Now);
             bool runOnYarn = false;
-            int numNodes = 3;
+            int numNodes = 10;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "ElasticBroadcastPD";
+            string testToRun = "ElasticIterateBroadcastReduce";
             testToRun = testToRun.ToLower();
 
             if (args != null)

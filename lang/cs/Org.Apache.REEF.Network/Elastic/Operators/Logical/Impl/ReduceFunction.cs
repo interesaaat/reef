@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
@@ -52,6 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
                 {
                     if (ground.Iteration != dataElement.Iteration)
                     {
+                        Console.WriteLine("{0} is different than {1}", ground.Iteration, dataElement.Iteration);
                         throw new IllegalStateException("Aggregating not matching iterations");
                     }
 

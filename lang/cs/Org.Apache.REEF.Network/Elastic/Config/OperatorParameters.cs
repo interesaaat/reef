@@ -34,6 +34,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
     {
     }
 
+    [NamedParameter("Request topology update", defaultValue: "false")]
+    public sealed class RequestTopologyUpdate : Name<bool>
+    {
+    }
+
     [NamedParameter("Number of iterations")]
     public sealed class NumIterations : Name<int>
     {

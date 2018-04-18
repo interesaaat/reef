@@ -37,6 +37,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient = serviceClient;
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
+
+            System.Threading.Thread.Sleep(20000);
         }
 
         public byte[] Call(byte[] memento)
