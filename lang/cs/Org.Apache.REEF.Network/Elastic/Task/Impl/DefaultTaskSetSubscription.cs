@@ -59,6 +59,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task
 
             Workflow.CancellationSource = _cancellationSource;
 
+            System.Threading.Thread.Sleep(20000);
+
             foreach (string operatorConfigStr in operatorConfigs)
             {
                 IConfiguration operatorConfig = configSerializer.FromString(operatorConfigStr);

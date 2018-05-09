@@ -252,7 +252,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
 
             Console.WriteLine("Root: " + _rootTaskId);
-            Console.WriteLine("Children: " + string.Join(",", _children.Values));
+            Console.WriteLine("Children: " + string.Join(",", _children.Values.Where(x => !_toRemove.ContainsKey(x))));
 
             if (!rmsg.ToRemove)
             {

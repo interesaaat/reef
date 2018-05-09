@@ -44,6 +44,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
     {
     }
 
+    [NamedParameter("Number of element to scatter for each node", defaultValue: "0")]
+    public sealed class NumScatterElements : Name<int>
+    {
+    }
+
     [NamedParameter("Iteration number to begin with", defaultValue: "1")]
     internal sealed class StartIteration : Name<int>
     {

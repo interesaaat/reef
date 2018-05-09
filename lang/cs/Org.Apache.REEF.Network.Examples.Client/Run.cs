@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 10;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "ElasticIterateBroadcastReduce";
+            string testToRun = "ElasticIterateScatter";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -94,6 +94,12 @@ namespace Org.Apache.REEF.Network.Examples.Client
             {
                 new ElasticIterateBroadcastClient().RunIterateBroadcast(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticIterateBroadcast completed!!!");
+            }
+
+            if (testToRun.Equals("ElasticIterateScatter".ToLower()) || testToRun.Equals("all"))
+            {
+                new ElasticIterateScatterClient().RunIterateScatter(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticIterateScatter completed!!!");
             }
 
             if (testToRun.Equals("ElasticIterateAggregate".ToLower()) || testToRun.Equals("all"))

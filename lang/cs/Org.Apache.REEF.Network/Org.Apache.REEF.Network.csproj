@@ -79,6 +79,7 @@ under the License.
       <Link>Properties\SharedAssemblyInfo.cs</Link>
     </Compile>
     <Compile Include="Elastic\Comm\ControlMessageType.cs" />
+    <Compile Include="Elastic\Comm\Impl\SplittableDataMessageWithTopology.cs" />
     <Compile Include="Elastic\Comm\Impl\TopologyUpdate.cs" />
     <Compile Include="Elastic\Comm\Impl\DataMessageWithTopologyStreamingCodec.cs" />
     <Compile Include="Elastic\Comm\Impl\DataMessageWithTopology.cs" />
@@ -93,7 +94,12 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\OperatorAlarm.cs" />
     <Compile Include="Elastic\Failures\Impl\Timeout.cs" />
     <Compile Include="Elastic\Failures\Impl\FailuresClock.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultOneToN.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultScatter.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticScatter.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticReducer.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultScatter.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultOneToN.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultReduce.cs" />
     <Compile Include="Elastic\Task\Impl\CheckpointService.cs" />
     <Compile Include="Elastic\Failures\Impl\CheckpointState.cs" />
@@ -140,6 +146,8 @@ under the License.
     <Compile Include="Elastic\Topology\Logical\Impl\RingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\ICheckpointingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\ScatterTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\OneToNTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\ReduceTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\BroadcastTopology.cs" />
     <Compile Include="Elastic\Task\Impl\TaskToDriverMessageDispatcher.cs" />

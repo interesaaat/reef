@@ -443,9 +443,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <summary>
         /// TODO
         /// </summary>
-        public ElasticOperator Scatter(string senderTaskId, ElasticOperator prev, TopologyType topologyType = TopologyType.Flat)
+        public abstract ElasticOperator Scatter<T>(int senderId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+
+        public ElasticOperator Scatter<T>(TopologyType topologyType, params IConfiguration[] configurations)
         {
-            throw new NotImplementedException();
+            return Scatter<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
         public void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)

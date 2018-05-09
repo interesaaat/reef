@@ -15,42 +15,52 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
-    internal abstract class DataMessageWithTopology : DataMessage
+    internal abstract class SplittableDataMessageWithTopology : DataMessageWithTopology
     {
-        public DataMessageWithTopology(string subscriptionName, int operatorId, int iteration)
+        public SplittableDataMessageWithTopology(string subscriptionName, int operatorId, int iteration, List<TopologyUpdate> updates)
             : base(subscriptionName, operatorId, iteration)
         {
-        }
-
-        internal List<TopologyUpdate> TopologyUpdates { get; set; }
-    }
-
-    internal class DataMessageWithTopology<T> : DataMessageWithTopology
-    {
-        public DataMessageWithTopology(
-            string subscriptionName,
-            int operatorId,
-            int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
-            T data,
-            List<TopologyUpdate> updates) : base(subscriptionName, operatorId, iteration)
-        {
-            Data = data;
             TopologyUpdates = updates;
         }
 
-        public DataMessageWithTopology(
+        public abstract IEnumerable<DataMessageWithTopology> GetSplits(int numElements);
+    }
+
+    internal sealed class SplittableDataMessageWithTopology<T> : SplittableDataMessageWithTopology
+    {
+        public SplittableDataMessageWithTopology(
             string subscriptionName,
             int operatorId,
             int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
-            T data) : this(subscriptionName, operatorId, iteration, data, new List<TopologyUpdate>())
+            T[] data,
+            List<TopologyUpdate> updates) : base(subscriptionName, operatorId, iteration, updates)
+        {
+            Data = data;
+        }
+
+        public SplittableDataMessageWithTopology(
+            string subscriptionName,
+            int operatorId,
+            int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
+            T[] data) : this(subscriptionName, operatorId, iteration, data, new List<TopologyUpdate>())
         {
         }
 
-        internal T Data { get; set; }
+        internal T[] Data { get; set; }
+
+        public override IEnumerable<DataMessageWithTopology> GetSplits(int numElements)
+        {
+            int size = Data.Length / numElements;
+
+            for (var i = 0; i < numElements; i++)
+            {
+                yield return new DataMessageWithTopology<T[]>(SubscriptionName, OperatorId, Iteration, Data.Skip(i * size).Take(size).ToArray(), TopologyUpdates);
+            }
+        }
     }
 }

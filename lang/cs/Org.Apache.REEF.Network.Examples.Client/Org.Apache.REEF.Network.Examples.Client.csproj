@@ -55,6 +55,7 @@ under the License.
     </Compile>
     <Compile Include="BroadcastAndReduceClient.cs" />
     <Compile Include="Elastic\ElasticBroadcastClientPD.cs" />
+    <Compile Include="Elastic\ElasticIterateScatterClient.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSerSend.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSend.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSerialization.cs" />

@@ -16,12 +16,10 @@
 // under the License.
 
 using System;
-using System.Linq;
 using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
-using Org.Apache.REEF.Network.Group.Pipelining.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -37,10 +35,8 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
@@ -48,11 +44,11 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
+    /// Example implementation of an iterative scatter pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticIterateBroadcastReduceDriver :
-        IObserver<IAllocatedEvaluator>,
-        IObserver<IActiveContext>,
+    public class ElasticIterateScatterDriver : 
+        IObserver<IAllocatedEvaluator>, 
+        IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
@@ -60,7 +56,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IFailedTask>,
         IObserver<ITaskMessage>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastReduceDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateScatterDriver));
 
         private readonly int _numEvaluators;
         private readonly int _numIterations;
@@ -74,7 +70,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticIterateBroadcastReduceDriver(
+        private ElasticIterateScatterDriver(
             [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
@@ -94,12 +90,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
-                .Build();
-
-            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int>.Conf
-                .Set(ReduceFunctionConfiguration<int>.ReduceFunction, GenericType<IntSumFunction>.Class)
+            _codecConfig = StreamingCodecConfiguration<int[]>.Conf
+                .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -110,9 +102,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<BroadcastReduceMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateScatterMasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastReduceMasterTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateScatterMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -120,13 +112,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
-                    TaskConfiguration.ConfigurationModule
-                        .Set(TaskConfiguration.Identifier, taskId)
-                        .Set(TaskConfiguration.Task, GenericType<BroadcastReduceSlaveTask>.Class)
-                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                        .Set(TaskConfiguration.OnClose, GenericType<BroadcastReduceSlaveTask>.Class)
-                        .Build())
-                    .Build();
+                TaskConfiguration.ConfigurationModule
+                    .Set(TaskConfiguration.Identifier, taskId)
+                    .Set(TaskConfiguration.Task, GenericType<IterateScatterSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateScatterSlaveTask>.Class)
+                    .Build())
+                .Build();
 
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
 
@@ -136,8 +128,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Flat)
-                    .Reduce<int>(TopologyType.Flat, reduceFunctionConfig)
                     .Scatter<int>(TopologyType.Flat)
                     .Build();
 
@@ -161,13 +151,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("IterateBroadcastReduceEvaluator")
+                .SetEvaluatorBatchId("IterateScatterEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
+            ////System.Threading.Thread.Sleep(1000);
             string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
@@ -191,10 +182,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(ICompletedTask value)
         {
+            LOGGER.Log(Level.Info, "Task {0} completed.", value.Id);
             _taskManager.OnTaskCompleted(value);
 
             if (_taskManager.IsDone())
             {
+                LOGGER.Log(Level.Info, "TaskSet completed.");
                 _taskManager.Dispose();
             }
         }
@@ -202,6 +195,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
+
+            if (_taskManager.IsDone())
+            {
+                _taskManager.Dispose();
+            }
         }
 
         public void OnNext(IFailedTask failedTask)
@@ -221,12 +219,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
-            throw new NotImplementedException();
+            _taskManager.Dispose();
         }
 
         public void OnError(Exception error)
         {
-            throw new NotImplementedException();
+            _taskManager.Dispose();
         }
     }
 }

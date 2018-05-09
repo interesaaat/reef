@@ -206,6 +206,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 bool isMaster = IsMasterTaskContext(activeContext).Any();
                 var taskId = Utils.BuildTaskId(SubscriptionsId, id + 1);
 
+                LOGGER.Log(Level.Info, "Task {0} to be scheduled on {1}", taskId, activeContext.EvaluatorId);
+
                 IConfiguration partialTaskConf;
 
                 if (isMaster)

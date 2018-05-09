@@ -26,9 +26,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// <summary>
     /// Broadcast operator implementation.
     /// </summary>
-    class DefaultBroadcast<T> : DefaultOneToN<T>, IElasticBroadcast
+    class DefaultScatter<T> : DefaultOneToN<T>, IElasticScatter
     {
-        public DefaultBroadcast(
+        public DefaultScatter(
             int senderId,
             ElasticOperator prev,
             ITopology topology,
@@ -42,13 +42,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 checkpointLevel,
                 configurations)
         {
-            OperatorName = Constants.Broadcast;
+            OperatorName = Constants.Scatter;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultBroadcast<T>>.Class);
-            SetMessageType(typeof(Physical.Impl.DefaultBroadcast<T>), ref confBuilder);
+            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultScatter<T>>.Class);
+            SetMessageType(typeof(Physical.Impl.DefaultScatter<T>), ref confBuilder);
         }
     }
 }

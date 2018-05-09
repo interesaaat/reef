@@ -30,15 +30,18 @@ using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class BroadcastTopology : OneToNTopology
+    internal class ScatterTopology : OneToNTopology
     {
+        private readonly int _numElements;
+
         [Inject]
-        private BroadcastTopology(
+        private ScatterTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             [Parameter(typeof(OperatorId))] int operatorId,
+            [Parameter(typeof(NumScatterElements))] int numElements,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
@@ -57,6 +60,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 checkpointService,
                 networkService)
         {
+            _numElements = numElements;
         }
 
         protected override void Send(CancellationTokenSource cancellationSource)
@@ -93,9 +97,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     _topologyUpdateReceived.Reset();
                 }
 
-                foreach (var node in _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)))
+                var sm = message as SplittableDataMessageWithTopology;
+                var children = _children.Values.Where(x => !_toRemove.TryGetValue(x, out byte val));
+
+                foreach (var pair in children.Zip(sm.GetSplits(children.Count()), (lhs, rhs) => Tuple.Create(lhs, rhs)))
                 {
-                    _commLayer.Send(node.Value, message, cancellationSource);
+                    _commLayer.Send(pair.Item1, pair.Item2, cancellationSource);
                 }
             }
         }

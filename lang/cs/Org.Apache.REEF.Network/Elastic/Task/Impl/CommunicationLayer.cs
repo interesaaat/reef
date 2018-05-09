@@ -276,8 +276,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="identifiers">The identifier to look up</param>
         /// <param name="cancellationSource">The token to cancel the operation</param>
-        internal void WaitForTaskRegistration(IList<string> identifiers, CancellationTokenSource cancellationSource)
+        internal void WaitForTaskRegistration(IList<string> identifiers, CancellationTokenSource cancellationSource, ConcurrentDictionary<string, byte> removed = null)
         {
+            if (removed == null)
+            {
+                removed = new ConcurrentDictionary<string, byte>();
+            }
+
             using (Logger.LogFunction("CommunicationLayer::WaitForTaskRegistration"))
             {
                 IList<string> foundList = new List<string>();
@@ -292,7 +297,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
                     foreach (var identifier in identifiers)
                     {
-                        if (!foundList.Contains(identifier) && Lookup(identifier))
+                        var notFound = !foundList.Contains(identifier);
+                        if (notFound && removed.ContainsKey(identifier))
+                        {
+                            foundList.Add(identifier);
+                            Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, dependent id {0} was removed at loop {1}.", identifier, i);
+                        }
+                        else if (notFound && Lookup(identifier))
                         {
                             foundList.Add(identifier);
                             Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, find a dependent id {0} at loop {1}.", identifier, i);

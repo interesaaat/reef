@@ -25,17 +25,17 @@ using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateScatterMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateBroadcastMasterTask(IElasticTaskSetService serviceClient)
+        public IterateScatterMasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateScatter");
 
             System.Threading.Thread.Sleep(20000);
         }
@@ -45,7 +45,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient.WaitForTaskRegistration();
 
             var rand = new Random();
-            int number = 0;
+            int[] numbers = new int[10];
+
+            for (int i = 0; i < 10; i++)
+            {
+                numbers[i] = rand.Next();
+            }
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -53,18 +58,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 {
                     while (workflow.MoveNext())
                     {
-                        number = rand.Next();
-
                         switch (workflow.Current.OperatorName)
                         {
-                            case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                            case Constants.Scatter:
+                                var sender = workflow.Current as IElasticScatter<int>;
 
-                                sender.Send(number);
+                                sender.Send(numbers);
 
                                 System.Threading.Thread.Sleep(1000);
 
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+                                Console.WriteLine("Master has sent {0} in iteration {1}", string.Join(",", numbers), workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");

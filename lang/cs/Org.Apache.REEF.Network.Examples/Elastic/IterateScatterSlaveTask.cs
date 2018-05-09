@@ -25,25 +25,24 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastReduceSlaveTask : ITask, IObserver<ICloseEvent>
+    public class IterateScatterSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public BroadcastReduceSlaveTask(
+        public IterateScatterSlaveTask(
             IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcastReduce");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateScatter");
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration();
 
-            var received = 0;
             var rand = new Random();
 
             using (var workflow = _subscriptionClient.Workflow)
@@ -54,48 +53,39 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     {
                         switch (workflow.Current.OperatorName)
                         {
-                            case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
+                            case Constants.Scatter:
+                                var receiver = workflow.Current as IElasticScatter<int>;
 
-                                if (rand.Next(100) < 5)
+                                if (rand.Next(100) < 1)
                                 {
-                                    Console.WriteLine("I am going to die. Bye. before receive");
+                                    Console.WriteLine("I am going to die. Bye. before");
 
-                                    throw new Exception("Die. before receive");
+                                    if (rand.Next(100) < 100)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        Environment.Exit(0);
+                                    }
                                 }
 
-                                received = receiver.Receive();
+                                var rec = receiver.Receive();
 
-                                if (rand.Next(100) < 5)
+                                if (rand.Next(100) < 1)
                                 {
-                                    Console.WriteLine("I am going to die. Bye. after receive");
+                                    Console.WriteLine("I am going to die. Bye. after");
 
-                                    throw new Exception("Die. after receive");
+                                    if (rand.Next(100) < 100)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        Environment.Exit(0);
+                                    }
                                 }
-
-                                Console.WriteLine("Slave has received {0} in iteration {1}", received, workflow.Iteration);
-                                break;
-
-                            case Constants.Reduce:
-                                var sender = workflow.Current as IElasticReducer<int>;
-
-                                if (rand.Next(100) < 5)
-                                {
-                                    Console.WriteLine("I am going to die. Bye. before send");
-
-                                    throw new Exception("Die. before send");
-                                }
-
-                                sender.Send(received);
-
-                                if (rand.Next(100) < 5)
-                                {
-                                    Console.WriteLine("I am going to die. Bye. after send");
-
-                                    throw new Exception("Die. after send");
-                                }
-
-                                Console.WriteLine("Slave has sent {0} in iteration {1}", received, workflow.Iteration);
+                                Console.WriteLine("Slave has received {0} in iteration {1}", string.Join(",", rec), workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation {0} in workflow not implemented");
@@ -109,6 +99,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
 
             return null;
+        }
+
+        public void Handle(IDriverMessage message)
+        {
         }
 
         public void Dispose()

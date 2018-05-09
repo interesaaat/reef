@@ -84,6 +84,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
+        public override ElasticOperator Scatter<T>(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        {
+            _next = new DefaultScatter<T>(senderTaskId, this, topology ?? new FlatTopology(senderTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return _next;
+        }
+
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var failedOperatorId = _id;
