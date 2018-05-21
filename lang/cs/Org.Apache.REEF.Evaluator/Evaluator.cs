@@ -68,6 +68,7 @@ namespace Org.Apache.REEF.Evaluator
         /// <param name="args"></param>
         public static void Main(string[] args)
         {
+            EvaluatorRuntime.OpenPorts();
             DefaultUnhandledExceptionHandler.Register();
 
             if (args.Count() != 1)

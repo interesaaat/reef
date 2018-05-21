@@ -18,6 +18,7 @@
 using System;
 using System.Linq;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Net.Sockets;
 
 namespace Org.Apache.REEF.Wake.Util
@@ -35,6 +36,25 @@ namespace Org.Apache.REEF.Wake.Util
         {
             get
             {
+                if (_localAddress != null)
+                {
+                    return _localAddress;
+                }
+                foreach (var network in NetworkInterface.GetAllNetworkInterfaces())
+                {
+                    foreach (var addr in network.GetIPProperties().UnicastAddresses)
+                    {
+                        if (!addr.IsDnsEligible)
+                        {
+                            continue;
+                        }
+                        if (!IsPrivate(addr.Address) && addr.Address.AddressFamily == AddressFamily.InterNetwork)
+                        {
+                            _localAddress = addr.Address;
+                            return _localAddress;
+                        }
+                    }
+                }
                 if (_localAddress == null)
                 {
                     IPAddress[] localIps = Dns.GetHostAddresses(Dns.GetHostName());
@@ -42,9 +62,25 @@ namespace Org.Apache.REEF.Wake.Util
                                             .OrderBy(ip => ip.ToString())
                                             .First();
                 }
-                
                 return _localAddress;
-            } 
+            }
+        }
+
+        private static bool IsPrivate(IPAddress addr)
+        {
+            byte[] ipBytes = addr.GetAddressBytes();
+            switch (ipBytes[0])
+            {
+            case 10:
+            case 127:
+                return true;
+            case 172:
+                return ipBytes[1] >= 16 && ipBytes[1] < 32;
+            case 192:
+                return ipBytes[1] == 168;
+            default:
+                return false;
+            }
         }
 
         /// <summary>

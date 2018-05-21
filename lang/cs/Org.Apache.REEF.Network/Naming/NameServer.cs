@@ -67,6 +67,7 @@ namespace Org.Apache.REEF.Network.Naming
             _server = new TransportServer<NamingEvent>(
                 new IPEndPoint(addressProvider.LocalAddress, port), handler, 
                 codec, tcpPortProvider);
+            Logger.Log(Level.Info, "Server endpoint:" + _server.LocalEndpoint.Address.ToString());
             _server.Run();
             LocalEndpoint = _server.LocalEndpoint;
         }

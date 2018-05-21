@@ -28,6 +28,9 @@ using Org.Apache.REEF.Utilities.Diagnostics;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Wake.Time;
 using Org.Apache.REEF.Wake.Time.Runtime.Event;
+using System.Diagnostics;
+using System.Threading;
+using System.Text;
 
 namespace Org.Apache.REEF.Common.Runtime.Evaluator
 {
@@ -76,6 +79,64 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator
 
                 // start the heart beat
                 _clock.ScheduleAlarm(0, _heartBeatManager);
+            }
+        }
+
+        public static void OpenPorts()
+        {
+            string inRuleName = "\"REEF EvaluatorRuntime TCP All In\"";
+            string outRuleName = "\"REEF EvaluatorRuntime TCP All Out\"";
+
+            CreatePortRule(inRuleName, true);
+            CreatePortRule(outRuleName, false);
+        }
+
+        private static Process MakeProcess(string cmd)
+        {
+            var p = new Process();
+            var stdout = new StringBuilder();
+            var stderr = new StringBuilder();
+            p.StartInfo.UseShellExecute = false;
+            p.StartInfo.CreateNoWindow = true;
+            p.StartInfo.RedirectStandardOutput = true;
+            p.StartInfo.RedirectStandardError = true;
+            p.StartInfo.FileName = "netsh";
+            p.StartInfo.Verb = "runas";
+            p.OutputDataReceived += (sender, e) => { stdout.AppendLine(e.Data); };
+            p.ErrorDataReceived += (sender, e) => { stderr.AppendLine(e.Data); };
+            p.StartInfo.Arguments = cmd;
+
+            return p;
+        }
+
+        private static void CreatePortRule(string ruleName, bool isIn)
+        {
+            string dirStr = isIn ? "in" : "out";
+
+            string checkRuleCmd = string.Format("advfirewall firewall show rule name={0}", ruleName);
+
+            string addRuleCmd = string.Format("advfirewall firewall add rule name={0} dir={1} " +
+                "action=allow protocol=TCP localport=any remoteport=any", ruleName, dirStr);
+
+            using (var pCheck = MakeProcess(checkRuleCmd))
+            {
+                pCheck.Start();
+                pCheck.WaitForExit();
+
+                if (pCheck.ExitCode == 1)
+                {
+                    using (var pAdd = MakeProcess(addRuleCmd))
+                    {
+                        pAdd.Start();
+                        pAdd.WaitForExit();
+                        Logger.Log(Level.Info, "ExitCode for Add Process: " + pAdd.ExitCode);
+                        Logger.Log(Level.Info, "Add Firewall Rule: " + ruleName);
+                    }
+                }
+                else
+                {
+                    Logger.Log(Level.Info, "Firewall Rule Already Exists: " + ruleName);
+                }
             }
         }
 

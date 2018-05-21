@@ -19,6 +19,7 @@ using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Common.Runtime.Evaluator;
 using Org.Apache.REEF.Driver.Bridge.Clr2java;
 using Org.Apache.REEF.Driver.Bridge.Events;
 using Org.Apache.REEF.Driver.Context;
@@ -281,6 +282,7 @@ namespace Org.Apache.REEF.Driver.Bridge
             string httpServerPort,
             IEvaluatorRequestorClr2Java evaluatorRequestorClr2Java)
         {
+            EvaluatorRuntime.OpenPorts();
             IEvaluatorRequestor evaluatorRequestor = new EvaluatorRequestor(evaluatorRequestorClr2Java);
             using (LOGGER.LogFunction("ClrSystemHandlerWrapper::Call_ClrSystem_SetupBridgeHandlerManager"))
             {

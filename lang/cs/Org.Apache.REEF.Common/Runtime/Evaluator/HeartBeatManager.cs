@@ -36,6 +36,7 @@ using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Wake.Time;
 using Org.Apache.REEF.Wake.Time.Event;
+using System.Diagnostics;
 
 namespace Org.Apache.REEF.Common.Runtime.Evaluator
 {
@@ -71,6 +72,8 @@ namespace Org.Apache.REEF.Common.Runtime.Evaluator
         private readonly IInjectionFuture<ContextManager> _contextManager;
 
         private bool _isCompletedHeartbeatQueued = false;
+
+        private static readonly Logger Logger = Logger.GetLogger(typeof(HeartBeatManager));
 
         // the queue can only contains the following:
         // 1. all failed heartbeats (regular and event-based) before entering RECOVERY state

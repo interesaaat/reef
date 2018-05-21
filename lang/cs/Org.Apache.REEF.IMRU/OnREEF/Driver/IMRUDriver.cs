@@ -48,6 +48,7 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Utilities.Diagnostics;
 using Org.Apache.REEF.Utilities.Logging;
+using System.Diagnostics;
 
 namespace Org.Apache.REEF.IMRU.OnREEF.Driver
 {
