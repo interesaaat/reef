@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -17,17 +17,13 @@ under the License.
 -->
   <PropertyGroup>
     <AssemblyName>Org.Apache.REEF.Tang.Tests</AssemblyName>
-    <TargetFrameworks>net46;net451</TargetFrameworks>
   </PropertyGroup>
-  <Import Project="..\build.DotNet.props" />
+  <Import Project="..\build.DotNetTest.props" />
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="protobuf-net" Version="$(ProtobufVersion)" />
     <PackageReference Include="Microsoft.Avro.Core" Version="$(AvroVersion)" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
   </ItemGroup>
-  <Import Project="..\xunit.DotNet.props" />
   <ItemGroup>
       <None Include="simpleConstructorJavaProto.bin">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
@@ -40,4 +36,5 @@ under the License.
     <ProjectReference Include="..\Org.Apache.REEF.Tang\Org.Apache.REEF.Tang.DotNet.csproj" />
     <ProjectReference Include="..\Org.Apache.REEF.Wake\Org.Apache.REEF.Wake.DotNet.csproj" />
   </ItemGroup>
+  <Import Project="..\build.DotNetTest.targets" />
 </Project>

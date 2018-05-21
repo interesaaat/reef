@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -21,23 +21,19 @@ under the License.
     <AssemblyName>Org.Apache.REEF.Common</AssemblyName>
     <Description>REEF Common Infrastructure</Description>
     <PackageTags>REEF Common Infrastructure</PackageTags>
-    <TargetFrameworks>netstandard2.0;netcoreapp2.0;net46;net451</TargetFrameworks>
   </PropertyGroup>
-  <Import Project="..\build.DotNet.props" />
+  <Import Project="..\build.DotNetLibrary.props" />
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="protobuf-net" Version="$(ProtobufVersion)" />
     <PackageReference Include="Microsoft.Avro.Core" Version="$(AvroVersion)" />
     <PackageReference Include="System.Reactive.Core" Version="$(SystemReactiveVersion)" />
     <PackageReference Include="System.Reactive.Interfaces" Version="$(SystemReactiveVersion)" />
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="System.Runtime.Serialization" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Org.Apache.REEF.Tang\Org.Apache.REEF.Tang.DotNet.csproj" />
     <ProjectReference Include="..\Org.Apache.REEF.Utilities\Org.Apache.REEF.Utilities.DotNet.csproj" />
     <ProjectReference Include="..\Org.Apache.REEF.Wake\Org.Apache.REEF.Wake.DotNet.csproj" />
   </ItemGroup>
+  <Import Project="..\build.DotNet.targets" />
 </Project>

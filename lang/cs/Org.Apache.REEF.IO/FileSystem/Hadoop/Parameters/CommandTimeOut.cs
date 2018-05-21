@@ -22,7 +22,7 @@ namespace Org.Apache.REEF.IO.FileSystem.Hadoop.Parameters
     /// <summary>
     /// The timeout (in milliseconds) for HDFS commands. Defaults to 300000 (5 minutes).
     /// </summary>
-    [NamedParameter("he timeout (in milliseconds) for HDFS commands.", defaultValue: "300000")]
+    [NamedParameter("The timeout (in milliseconds) for HDFS commands.", defaultValue: "300000")]
     internal sealed class CommandTimeOut : Name<int>
     {
     }

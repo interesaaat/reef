@@ -42,19 +42,21 @@ namespace Org.Apache.REEF.IO.FileSystem.AzureBlob
         }
 
         /// <summary>
-        /// Not supported for Azure Blobs, will throw <see cref="NotSupportedException"/>.
+        /// Returns a Stream object to the blob specified by the fileUri.
         /// </summary>
         public Stream Open(Uri fileUri)
         {
-            throw new NotSupportedException("Open is not supported for AzureBlockBlobFileSystem.");
+            return _client.GetBlockBlobReference(fileUri).Open();
         }
 
         /// <summary>
-        /// Not supported for Azure Blobs, will throw <see cref="NotSupportedException"/>.
+        /// Creates a blob for the specified fileUri and returns a write Stream object to it.
         /// </summary>
         public Stream Create(Uri fileUri)
         {
-            throw new NotSupportedException("Open is not supported for AzureBlockBlobFileSystem.");
+            var blockBlob = _client.GetBlockBlobReference(fileUri);
+            _client.GetContainerReference(blockBlob.Blob.Container.Name).CreateIfNotExists();
+            return blockBlob.Create();
         }
 
         /// <summary>
@@ -81,8 +83,9 @@ namespace Org.Apache.REEF.IO.FileSystem.AzureBlob
         /// </summary>
         public void Copy(Uri sourceUri, Uri destinationUri)
         {
-            _client.GetBlockBlobReference(destinationUri).StartCopy(sourceUri);
             var blockBlob = _client.GetBlockBlobReference(destinationUri);
+            _client.GetContainerReference(blockBlob.Blob.Container.Name).CreateIfNotExists();
+            blockBlob.StartCopy(sourceUri);
             blockBlob.FetchAttributes();
 
             while (blockBlob.CopyState.Status == CopyStatus.Pending)
@@ -107,7 +110,9 @@ namespace Org.Apache.REEF.IO.FileSystem.AzureBlob
         /// </summary>
         public void CopyFromLocal(string localFileName, Uri remoteFileUri)
         {
-            _client.GetBlockBlobReference(remoteFileUri).UploadFromFile(localFileName, FileMode.Open);
+            var blockBlob = _client.GetBlockBlobReference(remoteFileUri);
+            _client.GetContainerReference(blockBlob.Blob.Container.Name).CreateIfNotExists();
+            blockBlob.UploadFromFile(localFileName, FileMode.Open);
         }
 
         /// <summary>
@@ -147,7 +152,7 @@ namespace Org.Apache.REEF.IO.FileSystem.AzureBlob
 
             foreach (var blob in directory.ListBlobs(true).OfType<ICloudBlob>())
             {
-                blob.DeleteIfExists();
+                blob.DeleteIfExistsAsync().Wait();
             }
         }
 

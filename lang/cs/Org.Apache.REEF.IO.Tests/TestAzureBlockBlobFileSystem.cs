@@ -35,25 +35,31 @@ namespace Org.Apache.REEF.IO.Tests
     /// </summary>
     public sealed class TestAzureBlockBlobFileSystem
     {
-        private readonly static Uri FakeUri = new Uri("http://fake.com");
+        private static readonly Uri FakeUri = new Uri("http://fake.com/container/file");
 
         [Fact]
-        public void TestCreateNotSupported()
+        public void TestCreate()
         {
-            Assert.Throws<NotSupportedException>(() => new TestContext().GetAzureFileSystem().Create(FakeUri));
+            var testContext = new TestContext();
+            Stream stream = testContext.GetAzureFileSystem().Create(FakeUri);
+            testContext.TestCloudBlockBlob.Received(1).Create();
+            Assert.Equal(testContext.TestCreateStream, stream);
         }
 
         [Fact]
-        public void TestOpenNotSupported()
+        public void TestOpen()
         {
-            Assert.Throws<NotSupportedException>(() => new TestContext().GetAzureFileSystem().Open(FakeUri));
+            var testContext = new TestContext();
+            Stream stream = testContext.GetAzureFileSystem().Open(FakeUri);
+            testContext.TestCloudBlockBlob.Received(1).Open();
+            Assert.Equal(testContext.TestOpenStream, stream);
         }
 
         [Fact]
         public void TestDelete()
         {
             var testContext = new TestContext();
-            testContext.GetAzureFileSystem().Delete(new Uri(FakeUri, "container/file"));
+            testContext.GetAzureFileSystem().Delete(FakeUri);
             testContext.TestCloudBlockBlob.Received(1).Delete();
         }
 
@@ -92,7 +98,7 @@ namespace Org.Apache.REEF.IO.Tests
         [Fact]
         public void TestDeleteDirectoryFails()
         {
-            Assert.Throws<StorageException>(() => new TestContext().GetAzureFileSystem().DeleteDirectory(FakeUri));
+            Assert.Throws<StorageException>(() => new TestContext().GetAzureFileSystem().DeleteDirectory(new Uri(FakeUri.GetLeftPart(UriPartial.Authority))));
         }
 
         [Fact]
@@ -114,15 +120,14 @@ namespace Org.Apache.REEF.IO.Tests
             testContext.TestCloudBlobContainer.Received(1).GetDirectoryReference("directory");
             testContext.TestCloudBlobDirectory.Received(1).GetDirectoryReference("directory");
             testContext.TestCloudBlobDirectory.Received(1).ListBlobs(true);
-            testContext.TestCloudBlob.Received(5).DeleteIfExists();
+            testContext.TestCloudBlob.Received(5).DeleteIfExistsAsync();
         }
 
         [Fact]
         public void TestCreateUriForPath()
         {
             var testContext = new TestContext();
-            const string dirStructure = "container/directory";
-            Assert.Equal(new Uri(FakeUri, dirStructure), testContext.GetAzureFileSystem().CreateUriForPath(dirStructure));
+            Assert.Equal(FakeUri, testContext.GetAzureFileSystem().CreateUriForPath(FakeUri.LocalPath));
         }
 
         private sealed class TestContext
@@ -132,6 +137,8 @@ namespace Org.Apache.REEF.IO.Tests
             public readonly ICloudBlockBlob TestCloudBlockBlob = Substitute.For<ICloudBlockBlob>();
             public readonly ICloudBlobContainer TestCloudBlobContainer = Substitute.For<ICloudBlobContainer>();
             public readonly ICloudBlobDirectory TestCloudBlobDirectory = Substitute.For<ICloudBlobDirectory>();
+            public readonly Stream TestOpenStream = Substitute.For<Stream>();
+            public readonly Stream TestCreateStream = Substitute.For<Stream>();
 
             public IFileSystem GetAzureFileSystem()
             {
@@ -142,7 +149,10 @@ namespace Org.Apache.REEF.IO.Tests
                 var injector = TangFactory.GetTang().NewInjector(conf);
                 injector.BindVolatileInstance(TestCloudBlobClient);
                 var fs = injector.GetInstance<AzureBlockBlobFileSystem>();
-                TestCloudBlobClient.BaseUri.ReturnsForAnyArgs(FakeUri);
+                TestCloudBlobClient.BaseUri.ReturnsForAnyArgs(new Uri(FakeUri.GetLeftPart(UriPartial.Authority)));
+                TestCloudBlockBlob.Open().Returns(TestOpenStream);
+                TestCloudBlockBlob.Create().Returns(TestCreateStream);
+                TestCloudBlockBlob.Blob.ReturnsForAnyArgs(new CloudBlockBlob(FakeUri));
                 TestCloudBlobClient.GetBlockBlobReference(FakeUri).ReturnsForAnyArgs(TestCloudBlockBlob);
                 TestCloudBlobClient.GetContainerReference("container").ReturnsForAnyArgs(TestCloudBlobContainer);
                 TestCloudBlobContainer.GetDirectoryReference("directory").ReturnsForAnyArgs(TestCloudBlobDirectory);

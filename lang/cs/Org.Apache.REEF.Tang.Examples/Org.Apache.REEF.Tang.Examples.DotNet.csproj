@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -21,15 +21,11 @@ under the License.
     <AssemblyName>Org.Apache.REEF.Tang.Examples</AssemblyName>
     <Description>Examples using the Tang framework</Description>
     <PackageTags> Apache REEF tang dependency injection examples</PackageTags>
-    <TargetFrameworks>net46;net451</TargetFrameworks>
   </PropertyGroup>
-  <Import Project="..\build.DotNet.props" />
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-  </ItemGroup>
+  <Import Project="..\build.DotNetLibrary.props" />
   <ItemGroup>
     <ProjectReference Include="..\Org.Apache.REEF.Tang\Org.Apache.REEF.Tang.DotNet.csproj" />
     <ProjectReference Include="..\Org.Apache.REEF.Wake\Org.Apache.REEF.Wake.DotNet.csproj" />
   </ItemGroup>
+  <Import Project="..\build.DotNet.targets"/>
 </Project>

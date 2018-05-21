@@ -15,15 +15,11 @@ KIND, either express or implied.  See the License for the
 specific language governing permissions and limitations
 under the License.
 -->
-<ItemGroup>
-    <PackageReference Include="xunit" Version="2.2.0"/>
-    <PackageReference Include="xunit.abstractions" Version="2.0.1"/>
-    <PackageReference Include="xunit.assert" Version="2.2.0"/>
-    <PackageReference Include="xunit.core" Version="2.2.0"/>
-    <PackageReference Include="xunit.extensibility.core" Version="2.2.0"/>
-    <PackageReference Include="xunit.extensibility.execution" Version="2.2.0"/>
-    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0"/>
-</ItemGroup>
-
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" NoWarn="NU1701"/>
+    <PackageReference Include="xunit" Version="2.2.0" NoWarn="NU1701"/>
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" NoWarn="NU1701"/>
+    <PackageReference Include="xunit.runner.console" Version="2.2.0" NoWarn="NU1701"/>
+  </ItemGroup>
 </Project>
 

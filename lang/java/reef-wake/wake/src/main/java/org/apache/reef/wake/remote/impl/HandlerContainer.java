@@ -44,7 +44,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
       EventHandler<RemoteMessage<? extends T>>> msgTypeToHandlerMap = new ConcurrentHashMap<>();
 
   private final ConcurrentMap<Tuple2<RemoteIdentifier, Class<? extends T>>,
-      EventHandler<? extends T>> tupleToHandlerMap = new ConcurrentHashMap<>();
+      EventHandler<? super T>> tupleToHandlerMap = new ConcurrentHashMap<>();
 
   private final Codec<T> codec;
   private final String name;
@@ -80,7 +80,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
   public AutoCloseable registerHandler(
       final RemoteIdentifier sourceIdentifier,
       final Class<? extends T> messageType,
-      final EventHandler<? extends T> theHandler) {
+      final EventHandler<? super T> theHandler) {
 
     final Tuple2<RemoteIdentifier, Class<? extends T>> tuple =
         new Tuple2<RemoteIdentifier, Class<? extends T>>(sourceIdentifier, messageType);
@@ -89,7 +89,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
 
     LOG.log(Level.FINER,
         "Add handler for tuple: {0},{1}",
-        new Object[] {tuple.getT1(), tuple.getT2().getName()});
+        new Object[] {tuple.getT1(), tuple.getT2().getCanonicalName()});
 
     return new SubscriptionHandler<>(tuple, this.unsubscribeTuple);
   }
@@ -106,7 +106,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
 
     this.msgTypeToHandlerMap.put(messageType, theHandler);
 
-    LOG.log(Level.FINER, "Add handler for class: {0}", messageType.getName());
+    LOG.log(Level.FINER, "Add handler for class: {0}", messageType.getCanonicalName());
 
     return new SubscriptionHandler<>(messageType, this.unsubscribeClass);
   }
@@ -141,7 +141,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
       this.msgTypeToHandlerMap.remove(token);
     } else {
       throw new RemoteRuntimeException(
-          "Unknown subscription type: " + subscription.getClass().getName());
+          "Unknown subscription type: " + subscription.getClass().getCanonicalName());
     }
   }
 
@@ -187,7 +187,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
     LOG.log(Level.FINER, "RemoteManager: {0} value: {1}", new Object[] {this.name, value});
 
     final T decodedEvent = this.codec.decode(value.getEvent());
-    final Class<?> clazz = decodedEvent.getClass();
+    final Class<? extends T> clazz = (Class<? extends T>) decodedEvent.getClass();
 
     LOG.log(Level.FINEST, "RemoteManager: {0} decoded event {1} :: {2}",
         new Object[] {this.name, clazz.getCanonicalName(), decodedEvent});
@@ -195,9 +195,10 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
     // check remote identifier and message type
     final SocketRemoteIdentifier id = new SocketRemoteIdentifier((InetSocketAddress)value.remoteAddress());
 
-    final Tuple2<RemoteIdentifier, Class<?>> tuple = new Tuple2<RemoteIdentifier, Class<?>>(id, clazz);
+    final Tuple2<RemoteIdentifier, Class<? extends T>> tuple =
+        new Tuple2<RemoteIdentifier, Class<? extends T>>(id, clazz);
 
-    final EventHandler<T> tupleHandler = (EventHandler<T>) this.tupleToHandlerMap.get(tuple);
+    final EventHandler<? super T> tupleHandler = this.tupleToHandlerMap.get(tuple);
 
     if (tupleHandler != null) {
 
@@ -219,7 +220,7 @@ final class HandlerContainer<T> implements EventHandler<RemoteEvent<byte[]>> {
 
       LOG.log(Level.FINER, "Message handler: {0}", clazz.getCanonicalName());
 
-      messageHandler.onNext(new DefaultRemoteMessage(id, decodedEvent));
+      messageHandler.onNext(new DefaultRemoteMessage<>(id, decodedEvent));
     }
   }
 }

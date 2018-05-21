@@ -31,9 +31,16 @@ namespace Org.Apache.REEF.IO.FileSystem.AzureBlob
             _container = container;
         }
 
+        public bool CreateIfNotExists()
+        {
+            var task = _container.CreateIfNotExistsAsync();
+            task.Wait();
+            return task.Result;
+        }
+
         public void DeleteIfExists()
         {
-            _container.DeleteIfExists();
+            _container.DeleteIfExistsAsync().Wait();
         }
 
         public ICloudBlobDirectory GetDirectoryReference(string directoryName)

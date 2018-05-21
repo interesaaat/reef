@@ -109,6 +109,7 @@ public final class EvaluatorRequestorImpl implements EvaluatorRequestor {
           .addRackNames(req.getRackNames())
           .setRelaxLocality(relaxLocality)
           .setRuntimeName(req.getRuntimeName())
+          .setNodeLabelExpression(req.getNodeLabelExpression())
           .build();
       this.resourceRequestHandler.onNext(request);
     }
@@ -129,6 +130,7 @@ public final class EvaluatorRequestorImpl implements EvaluatorRequestor {
    * {@link EvaluatorRequest}s are built using this builder.
    */
   public final class Builder extends EvaluatorRequest.Builder<Builder> {
+    @Override
     public synchronized void submit() {
       EvaluatorRequestorImpl.this.submit(this.build());
     }

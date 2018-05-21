@@ -59,43 +59,65 @@ namespace Org.Apache.REEF.IO.FileSystem.AzureBlob
             _blob = new CloudBlockBlob(uri, credentials);
         }
 
+        public Stream Open()
+        {
+            #if REEF_DOTNET_BUILD
+                var task = _blob.OpenReadAsync();
+                task.Wait();
+                return task.Result;
+            #else
+                return _blob.OpenRead();
+            #endif
+        }
+
+        public Stream Create()
+        {
+            #if REEF_DOTNET_BUILD
+                var task = _blob.OpenWriteAsync();
+                task.Wait();
+                return task.Result;
+            #else
+                return _blob.OpenWrite();
+            #endif
+        }
+
         public bool Exists()
         {
-            return _blob.Exists();
+            var task = _blob.ExistsAsync();
+            task.Wait();
+            return task.Result;
         }
 
         public void Delete()
         {
-            _blob.Delete();
+            _blob.DeleteAsync().Wait();
         }
 
         public void DeleteIfExists()
         {
-            _blob.DeleteIfExists();
+            _blob.DeleteIfExistsAsync().Wait();
         }
 
         public string StartCopy(Uri source)
         {
-            return _blob.StartCopy(source);
+            var task = _blob.StartCopyAsync(source);
+            task.Wait();
+            return task.Result;
         }
 
         public void DownloadToFile(string path, FileMode mode)
         {
-            _blob.DownloadToFile(path, mode);
+            _blob.DownloadToFileAsync(path, mode).Wait();
         }
 
         public void UploadFromFile(string path, FileMode mode)
         {
-            #if DOTNET_BUILD
-                _blob.UploadFromFile(path);
-            #else
-                _blob.UploadFromFile(path, mode);
-            #endif
+            _blob.UploadFromFileAsync(path).Wait();
         }
 
         public void FetchAttributes()
         {
-            _blob.FetchAttributes();
+            _blob.FetchAttributesAsync().Wait();
         }
     }
 }

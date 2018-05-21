@@ -16,10 +16,12 @@
 // under the License.
 
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
+using Newtonsoft.Json;
 using Org.Apache.REEF.Client.API;
+using Org.Apache.REEF.Client.Avro.YARN;
 using Org.Apache.REEF.Client.Common;
 using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Client.YARN;
@@ -30,6 +32,7 @@ using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
+using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Examples.HelloREEF
@@ -58,7 +61,7 @@ namespace Org.Apache.REEF.Examples.HelloREEF
         private readonly IList<string> _nodeNames;
 
         [Inject]
-        private HelloREEFYarn(IYarnREEFClient reefClient, 
+        private HelloREEFYarn(IYarnREEFClient reefClient,
             JobRequestBuilder jobRequestBuilder,
             [Parameter(typeof(NodeNames))] ISet<string> nodeNames)
         {
@@ -75,7 +78,8 @@ namespace Org.Apache.REEF.Examples.HelloREEF
             // The driver configuration contains all the needed handler bindings
             var helloDriverConfiguration = DriverConfiguration.ConfigurationModule
                 .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<HelloDriverYarn>.Class)
-                .Set(DriverConfiguration.OnDriverStarted, GenericType<HelloDriverYarn>.Class)              
+                .Set(DriverConfiguration.OnDriverStarted, GenericType<HelloDriverYarn>.Class)
+                .Set(DriverConfiguration.CustomTraceLevel, Level.Verbose.ToString())
                 .Build();
 
             var driverConfig = TangFactory.GetTang()
@@ -85,12 +89,13 @@ namespace Org.Apache.REEF.Examples.HelloREEF
             {
                 driverConfig.BindSetEntry<NodeNames, string>(GenericType<NodeNames>.Class, n);
             }
-            
+
             // The JobSubmission contains the Driver configuration as well as the files needed on the Driver.
             var helloJobRequest = _jobRequestBuilder
                 .AddDriverConfiguration(driverConfig.Build())
                 .AddGlobalAssemblyForType(typeof(HelloDriverYarn))
                 .SetJobIdentifier("HelloREEF")
+                .SetJobSubmissionEnvironmentVariable("UserDefineKey", "value1")
                 .SetJavaLogLevel(JavaLoggingSetting.Verbose)
                 .Build();
 
@@ -129,8 +134,8 @@ namespace Org.Apache.REEF.Examples.HelloREEF
             }
             else
             {
-                Logger.Log(Level.Info, 
-                    "Failed to kill application {0}, possible reasons are application id is invalid or application has completed.", 
+                Logger.Log(Level.Info,
+                    "Failed to kill application {0}, possible reasons are application id is invalid or application has completed.",
                     appId);
             }
         }
@@ -155,28 +160,29 @@ namespace Org.Apache.REEF.Examples.HelloREEF
         /// <summary>
         /// Get runtime configuration
         /// </summary>
-        /// <returns></returns>
         private static IConfiguration GetRuntimeConfiguration(string[] args)
         {
-            var c = YARNClientConfiguration.ConfigurationModule
-                .Set(YARNClientConfiguration.SecurityTokenKind, TrustedApplicationTokenIdentifier)
-                .Set(YARNClientConfiguration.SecurityTokenService, TrustedApplicationTokenIdentifier)
+            var token = new SecurityToken(
+                TrustedApplicationTokenIdentifier,
+                TrustedApplicationTokenIdentifier,
+                ByteUtilities.StringToByteArrays(args[0]),
+                Encoding.ASCII.GetBytes(args[1]));
+
+            var clientConfig = YARNClientConfiguration.ConfigurationModule
+                .Set(YARNClientConfiguration.SecurityTokenStr, JsonConvert.SerializeObject(token))
                 .Build();
 
-            File.WriteAllText(SecurityTokenId, args[0]);
-            File.WriteAllText(SecurityTokenPwd, args[1]);
-
-            IConfiguration tcpPortConfig = TcpPortConfigurationModule.ConfigurationModule
+            var tcpPortConfig = TcpPortConfigurationModule.ConfigurationModule
                 .Set(TcpPortConfigurationModule.PortRangeStart, args.Length > 2 ? args[2] : DefaultPortRangeStart)
                 .Set(TcpPortConfigurationModule.PortRangeCount, args.Length > 3 ? args[3] : DefaultPortRangeCount)
                 .Build();
 
-            return Configurations.Merge(c, tcpPortConfig);
+            return Configurations.Merge(clientConfig, tcpPortConfig);
         }
 
         /// <summary>
         /// HelloREEF example running on YARN
-        /// Usage: Org.Apache.REEF.Examples.HelloREEF SecurityTokenId SecurityTokenPw [portRangerStart] [portRangeCount] [nodeName1] [nodeName2]...
+        /// Usage: Org.Apache.REEF.Examples.HelloREEF TrustedApplicaitonLLQ SecurityTokenPw [portRangerStart] [portRangeCount] [nodeName1] [nodeName2]...
         /// </summary>
         /// <param name="args"></param>
         public static void MainYarn(string[] args)

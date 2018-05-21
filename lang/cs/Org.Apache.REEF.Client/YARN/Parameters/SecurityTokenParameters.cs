@@ -19,13 +19,17 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Client.YARN.Parameters
 {
-    [NamedParameter("Security token kind.", defaultValue: "NULL")]
+    [System.Obsolete("TODO[JIRA REEF-1887] Deprecated. Remove in REEF 0.18.")]
+    [NamedParameter("Security token kind.", defaultValue: DefaultTokenKind)]
     public sealed class SecurityTokenKindParameter : Name<string>
     {
+        public const string DefaultTokenKind = "NULL";
     }
 
-    [NamedParameter("Security token service name.", defaultValue: "NULL")]
+    [System.Obsolete("TODO[JIRA REEF-1887] Deprecated. Remove in REEF 0.18.")]
+    [NamedParameter("Security token service name.", defaultValue: DefaultService)]
     public sealed class SecurityTokenServiceParameter : Name<string>
     {
+        public const string DefaultService = "NULL";
     }
 }

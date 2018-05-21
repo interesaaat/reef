@@ -48,13 +48,19 @@ namespace Org.Apache.REEF.Client.Common
         @"    </assemblyBinding>" +
         @"  </runtime>" +
         @"</configuration>";
-        private const string EvaluatorExecutable = "Org.Apache.REEF.Evaluator.exe.config";
+        private const string EvaluatorExecutableConfig = "Org.Apache.REEF.Evaluator.exe.config";
 
         private static readonly Logger Logger = Logger.GetLogger(typeof(DriverFolderPreparationHelper));
         private readonly AvroConfigurationSerializer _configurationSerializer;
         private readonly REEFFileNames _fileNames;
         private readonly FileSets _fileSets;
         private readonly ISet<IConfigurationProvider> _driverConfigurationProviders;
+
+        /// <summary>
+        /// The folder in which we search for the client jar.
+        /// In the manner of JavaClientLauncher.cs.
+        /// </summary>
+        private const string JarFolder = "./";
 
         [Inject]
         internal DriverFolderPreparationHelper(
@@ -76,24 +82,32 @@ namespace Org.Apache.REEF.Client.Common
         /// <param name="driverFolderPath"></param>
         internal void PrepareDriverFolder(AppParameters appParameters, string driverFolderPath)
         {
-            Logger.Log(Level.Verbose, "Preparing Driver filesystem layout in " + driverFolderPath);
-
-            // Setup the folder structure
-            CreateDefaultFolderStructure(appParameters, driverFolderPath);
-
             // Add the appParameters into that folder structure
             _fileSets.AddJobFiles(appParameters);
 
-            // Create the driver configuration
-            CreateDriverConfiguration(appParameters, driverFolderPath);
+            // Add the reef-bridge-client jar to the local files in the manner of JavaClientLauncher.cs.
+            _fileSets.AddToLocalFiles(Directory.GetFiles(JarFolder)
+                .Where(file => !string.IsNullOrWhiteSpace(file))
+                .Where(jarFile => Path.GetFileName(jarFile).ToLower().StartsWith(ClientConstants.ClientJarFilePrefix)));
 
-            // Add the REEF assemblies
-            AddAssemblies();
+            InternalPrepareDriverFolder(appParameters, driverFolderPath);
+        }
 
-            // Initiate the final copy
-            _fileSets.CopyToDriverFolder(driverFolderPath);
+        /// <summary>
+        /// Prepares the working directory for a Driver in driverFolderPath.
+        /// </summary>
+        /// <param name="appParameters"></param>
+        /// <param name="driverFolderPath"></param>
+        internal void PrepareDriverFolderWithGlobalBridgeJar(AppParameters appParameters, string driverFolderPath)
+        {
+            // Add the appParameters into that folder structure
+            _fileSets.AddJobFiles(appParameters);
 
-            Logger.Log(Level.Info, "Done preparing Driver filesystem layout in " + driverFolderPath);
+            // Add the reef-bridge-client jar to the global files in the manner of JavaClientLauncher.cs.
+            _fileSets.AddToGlobalFiles(Directory.GetFiles(JarFolder)
+                .Where(jarFile => Path.GetFileName(jarFile).ToLower().StartsWith(ClientConstants.ClientJarFilePrefix)));
+
+            InternalPrepareDriverFolder(appParameters, driverFolderPath);
         }
 
         /// <summary>
@@ -136,7 +150,7 @@ namespace Org.Apache.REEF.Client.Common
                     File.WriteAllBytes(fileName, resourceHelper.GetBytes(fileResources.Value));
                 }
             }
-            
+
             // generate .config file for bridge executable
             var config = DefaultDriverConfigurationFileContents;
             if (!string.IsNullOrEmpty(appParameters.DriverConfigurationFileContents))
@@ -146,36 +160,32 @@ namespace Org.Apache.REEF.Client.Common
             File.WriteAllText(Path.Combine(driverFolderPath, _fileNames.GetBridgeExeConfigPath()), config);
 
             // generate .config file for Evaluator executable
-            File.WriteAllText(Path.Combine(driverFolderPath, _fileNames.GetGlobalFolderPath(), EvaluatorExecutable), 
-                DefaultDriverConfigurationFileContents);
-        }
+            var userDefinedEvaluatorConfigFileName = Path.Combine(JarFolder, EvaluatorExecutableConfig);
+            var evaluatorConfigFilName = Path.Combine(driverFolderPath, _fileNames.GetGlobalFolderPath(), EvaluatorExecutableConfig);
+            string evaluatorAppConfigString = DefaultDriverConfigurationFileContents;
 
-        /// <summary>
-        /// Adds all Assemlies to the Global folder in the Driver.
-        /// </summary>
-        private void AddAssemblies()
-        {
-            // TODO: Be more precise, e.g. copy the JAR only to the driver.
-            var assemblies = Directory.GetFiles(@".\").Where(IsAssemblyToCopy);
-            _fileSets.AddToGlobalFiles(assemblies);
-        }
-
-        /// <summary>
-        /// Returns true, if the given file path references a DLL or EXE or JAR.
-        /// </summary>
-        /// <param name="filePath"></param>
-        /// <returns></returns>
-        private static bool IsAssemblyToCopy(string filePath)
-        {
-            var fileName = Path.GetFileName(filePath);
-            if (string.IsNullOrWhiteSpace(fileName))
+            if (File.Exists(userDefinedEvaluatorConfigFileName))
             {
-                return false;
+                evaluatorAppConfigString = File.ReadAllText(userDefinedEvaluatorConfigFileName);
             }
-            var lowerCasePath = fileName.ToLower();
-            return lowerCasePath.EndsWith(DLLFileNameExtension) ||
-                   lowerCasePath.EndsWith(EXEFileNameExtension) ||
-                   lowerCasePath.StartsWith(ClientConstants.ClientJarFilePrefix);
+            Logger.Log(Level.Verbose, "Create EvaluatorConfigFile {0} with config {1}.", evaluatorConfigFilName, evaluatorAppConfigString);
+            File.WriteAllText(evaluatorConfigFilName, evaluatorAppConfigString);
+        }
+
+        private void InternalPrepareDriverFolder(AppParameters appParameters, string driverFolderPath)
+        {
+            Logger.Log(Level.Info, "Preparing Driver filesystem layout in {0}", driverFolderPath);
+
+            // Setup the folder structure
+            CreateDefaultFolderStructure(appParameters, driverFolderPath);
+
+            // Create the driver configuration
+            CreateDriverConfiguration(appParameters, driverFolderPath);
+
+            // Initiate the final copy
+            _fileSets.CopyToDriverFolder(driverFolderPath);
+
+            Logger.Log(Level.Info, "Done preparing Driver filesystem layout in {0}", driverFolderPath);
         }
     }
 }

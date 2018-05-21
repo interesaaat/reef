@@ -23,10 +23,17 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading;
 using System.Threading.Tasks;
+#if REEF_DOTNET_BUILD
+using Microsoft.Practices.EnterpriseLibrary.TransientFaultHandling;
+#else
+using Microsoft.Practices.TransientFaultHandling;
+#endif
 using Newtonsoft.Json;
 using Org.Apache.REEF.Client.API;
+using Org.Apache.REEF.Client.YARN.RestClient;
 using Org.Apache.REEF.Client.YARN.RestClient.DataModel;
 using Org.Apache.REEF.Utilities.Logging;
+using HttpClient = System.Net.Http.HttpClient;
 
 namespace Org.Apache.REEF.Client.Common
 {
@@ -48,7 +55,17 @@ namespace Org.Apache.REEF.Client.Common
         private readonly HttpClient _client;
         private readonly IREEFClient _reefClient;
 
-        internal JobSubmissionResult(IREEFClient reefClient, string filePath)
+        /// <summary>
+        /// Number of retries when connecting to the Driver's HTTP endpoint.
+        /// </summary>
+        private readonly int _numberOfRetries;
+
+        /// <summary>
+        /// Retry interval in ms when connecting to the Driver's HTTP endpoint.
+        /// </summary>
+        private readonly TimeSpan _retryInterval;
+
+        internal JobSubmissionResult(IREEFClient reefClient, string filePath, int numberOfRetries, int retryInterval)
         {
             _reefClient = reefClient;
             _client = new HttpClient
@@ -58,12 +75,15 @@ namespace Org.Apache.REEF.Client.Common
             _client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue(AppJson));
 
             _driverUrl = GetDriverUrl(filePath);
+
+            _numberOfRetries = numberOfRetries;
+            _retryInterval = TimeSpan.FromMilliseconds(retryInterval);
         }
 
         /// <summary>
         /// Returns http end point of the web server running in the driver
         /// </summary>
-        public string DriverUrl 
+        public string DriverUrl
         {
             get { return _driverUrl; }
         }
@@ -96,6 +116,52 @@ namespace Org.Apache.REEF.Client.Common
             return task.Result;
         }
 
+        public void WaitForDriverToFinish()
+        {
+            DriverStatus status = FetchFirstDriverStatus();
+
+            if (DriverStatus.UNKNOWN == status)
+            {
+                // We were unable to connect to the Driver at least once.
+                throw new WebException("Unable to connect to the Driver.");
+            }
+            
+            while (status.IsActive())
+            {
+                try
+                {
+                    status = FetchDriverStatus();
+                }
+                catch (WebException)
+                {
+                    // If we no longer can reach the Driver, it must have exited.
+                    status = DriverStatus.UNKNOWN_EXITED;
+                }
+            }
+        }
+
+        private DriverStatus FetchDriverStatus()
+        {
+            string statusUrl = DriverUrl + "driverstatus/v1";
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(statusUrl);
+            using (StreamReader reader = new StreamReader(request.GetResponse().GetResponseStream()))
+            {
+                string statusString = reader.ReadToEnd();
+                LOGGER.Log(Level.Verbose, "Status received: {0}", statusString);
+                return DriverStatusMethods.Parse(statusString);
+            }
+        }
+
+        /// <summary>
+        /// Fetches the Driver Status for the 1st time.
+        /// </summary>
+        /// <returns>The obtained Driver Status or DriverStatus.UNKNOWN, if the Driver was never reached.</returns>
+        private DriverStatus FetchFirstDriverStatus()
+        {
+            var policy = new RetryPolicy<AllErrorsTransientStrategy>(_numberOfRetries, _retryInterval);
+            return policy.ExecuteAction<DriverStatus>(FetchDriverStatus);
+        }
+
         protected abstract string GetDriverUrl(string filepath);
 
         enum UrlResultKind
@@ -116,7 +182,7 @@ namespace Org.Apache.REEF.Client.Common
                 var rmList = new List<string>();
                 var rmUri = sr.ReadLine();
                 while (rmUri != null)
-                {                    
+                {
                     rmList.Add(rmUri);
                     rmUri = sr.ReadLine();
                 }
@@ -134,12 +200,12 @@ namespace Org.Apache.REEF.Client.Common
             LOGGER.Log(Level.Warning, "CallUrl result " + result.Item2);
             return result.Item2;
         }
-        
+
         internal async Task<string> GetAppIdTrackingUrl(string url)
         {
             var result = await TryGetUri(url);
-            if (HasCommandFailed(result) ||  
-                result.Item2 == null)                
+            if (HasCommandFailed(result) ||
+                result.Item2 == null)
             {
                 return null;
             }
@@ -298,7 +364,7 @@ namespace Org.Apache.REEF.Client.Common
                     _driverUrl = values[TrackingUrlKey].ToString();
                     LOGGER.Log(Level.Info, "trackingUrl[" + _driverUrl + "]");
 
-                    if (0 == string.Compare(_driverUrl, UnAssigned))
+                    if (string.Compare(_driverUrl, UnAssigned) == 0)
                     {
                         resultKind = UrlResultKind.UrlNotAssignedYet;
                     }
