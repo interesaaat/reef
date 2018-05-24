@@ -51,3 +51,4 @@ tmp
 ml-data
 tang.conf
 profile-*.json
+*.config
