@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -91,6 +91,10 @@ under the License.
     <ProjectReference Include="..\Org.Apache.REEF.IMRU.Examples\Org.Apache.REEF.IMRU.Examples.csproj">
       <Project>{6dc3b04e-2b99-4fda-bd23-2c7864f4c477}</Project>
       <Name>Org.Apache.REEF.IMRU.Examples</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Org.Apache.REEF.Network.Examples\Org.Apache.REEF.Network.Examples.csproj">
+      <Project>{b1b43b60-ddd0-4805-a9b4-ba84a0ccb7c7}</Project>
+      <Name>Org.Apache.REEF.Network.Examples</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

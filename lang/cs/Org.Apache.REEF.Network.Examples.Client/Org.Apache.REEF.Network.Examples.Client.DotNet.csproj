@@ -21,6 +21,7 @@ under the License.
     <AssemblyName>Org.Apache.REEF.Network.Examples.Client</AssemblyName>
     <Description>REEF Network Client examples</Description>
     <PackageTags>REEF Examples Network Client</PackageTags>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <Import Project="..\build.DotNetApp.props" />
   <ItemGroup>

@@ -18,7 +18,7 @@ under the License.
 <package >
   <metadata>
     <id>Org.Apache.REEF.FatNuGet</id>
-    <version>0.16.0-BING</version>
+    <version>0.17.0-MATTEO</version>
     <title>Org.Apache.REEF.FatNuGet</title>
     <authors>The Apache REEF project</authors>
     <owners>The Apache REEF project</owners>
@@ -36,33 +36,6 @@ under the License.
     </dependencies>
   </metadata>
   <files>
-<<<<<<< HEAD
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\NugetExeFix.txt" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Client.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Client.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Common.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Common.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Driver.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Driver.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Evaluator.exe" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Examples.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Examples.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.FatNuGet.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.FatNuGet.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.IMRU.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.IMRU.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.IMRU.Examples.exe" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.IO.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.IO.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Network.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Network.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Tang.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Tang.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Utilities.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Utilities.pdb" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Wake.dll" target="lib\net45" />
-    <file src="..\bin\x64\Release\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Wake.pdb" target="lib\net45" />
-=======
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\NugetExeFix.txt" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Bridge.CLR.dll" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Client.dll" target="lib\net45" />
@@ -83,12 +56,13 @@ under the License.
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.IO.pdb" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Network.dll" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Network.pdb" target="lib\net45" />
+    <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Network.Examples.dll" target="lib\net45" />
+    <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Network.Examples.pdb" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Tang.dll" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Tang.pdb" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Utilities.dll" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Utilities.pdb" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Wake.dll" target="lib\net45" />
     <file src="..\bin\$Platform$\$Configuration$\Org.Apache.REEF.FatNuGet\Org.Apache.REEF.Wake.pdb" target="lib\net45" />
->>>>>>> master
   </files>
 </package>

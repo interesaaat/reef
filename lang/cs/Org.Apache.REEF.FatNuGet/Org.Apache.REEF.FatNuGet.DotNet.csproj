@@ -49,6 +49,7 @@ under the License.
     <ProjectReference Include="..\Org.Apache.REEF.IMRU\Org.Apache.REEF.IMRU.DotNet.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\Org.Apache.REEF.IO\Org.Apache.REEF.IO.DotNet.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\Org.Apache.REEF.Network\Org.Apache.REEF.Network.DotNet.csproj" PrivateAssets="All"/>
+    <ProjectReference Include="..\Org.Apache.REEF.Network.Examples\Org.Apache.REEF.Network.Examples.DotNet.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\Org.Apache.REEF.Tang\Org.Apache.REEF.Tang.DotNet.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\Org.Apache.REEF.Utilities\Org.Apache.REEF.Utilities.DotNet.csproj" PrivateAssets="All"/>
     <ProjectReference Include="..\Org.Apache.REEF.Wake\Org.Apache.REEF.Wake.DotNet.csproj" PrivateAssets="All"/>

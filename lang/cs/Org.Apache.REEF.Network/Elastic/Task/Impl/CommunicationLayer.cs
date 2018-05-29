@@ -26,7 +26,6 @@ using Org.Apache.REEF.Wake;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Threading;
-using System.Runtime.Remoting;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
@@ -323,7 +322,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 var msg = string.Join(",", leftovers);
 
                 Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);
-                throw new RemotingException("Failed to find parent/children nodes");
+                throw new Exception("Failed to find parent/children nodes");
             }
         }
 
