@@ -29,22 +29,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public abstract class DefaultOneToN<T>
+    public abstract class DefaultNToOne<T>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultOneToN<>));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultNToOne<>));
 
-        internal readonly OneToNTopology _topology;
+        private readonly NToOneTopology<T> _topology;
 
-        protected volatile PositionTracker _position;
+        private volatile PositionTracker _position;
 
         private readonly bool _isLast;
 
         /// <summary>
-        /// Creates a new Broadcast operator.
+        /// Creates a new Reduce Operator.
         /// </summary>
         /// <param name="id">The operator identifier</param>
         /// <param name="topology">The operator topology layer</param>
-        internal DefaultOneToN(int id, int level, bool isLast, OneToNTopology topology)
+        internal DefaultNToOne(int id, int level, bool isLast, NToOneTopology<T> topology)
         {
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
@@ -80,28 +80,30 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             }
         }
 
-        public IElasticIterator IteratorReference { protected get;  set; }
+        public IElasticIterator IteratorReference { private get;  set; }
 
         public CancellationTokenSource CancellationSource { get; set; }
 
         public Action OnTaskRescheduled { get; private set; }
 
         /// <summary>
-        /// Receive a message from neighbors broadcasters.
+        /// Receive a message from neighbors receivers.
         /// </summary>
         /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
         /// <returns>The incoming data</returns>
         public T Receive()
         {
+            _topology.TopologyUpdateRequest();
+
             _position = PositionTracker.InReceive;
 
             var received = false;
-            DataMessageWithTopology<T> message = null;
+            DataMessage<T> message = null;
             var isIterative = IteratorReference != null;
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource) as DataMessageWithTopology<T>;
+                message = _topology.Receive(CancellationSource) as DataMessage<T>;
 
                 if (isIterative && message.Iteration < (int)IteratorReference.Current)
                 {
@@ -128,6 +130,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             return message.Data;
         }
 
+        public void Send(T data)
+        {
+            _position = PositionTracker.InSend;
+
+            int iteration = IteratorReference == null ? 0 : (int)IteratorReference.Current;
+
+            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, iteration, data);
+
+            Checkpoint(message, message.Iteration);
+
+            _topology.Send(message, CancellationSource);
+
+            _position = PositionTracker.AfterSend;
+        }
+
         public void ResetPosition()
         {
             _position = PositionTracker.Nil;
@@ -135,13 +152,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            LOGGER.Log(Level.Info, "Waiting for task registration for {0} operator", OperatorName);
+            LOGGER.Log(Level.Info, "Waiting for task registration for reduce operator");
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 
         public void WaitCompletionBeforeDisposing()
         {
-            _topology.WaitCompletionBeforeDisposing(CancellationSource);
+            _topology.WaitCompletionBeforeDisposing();
         }
 
         public void Dispose()

@@ -25,10 +25,10 @@ using Org.Apache.REEF.Network.Elastic.Operators.Logical;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class ReduceTopology<T> : NToOneTopology<T>
+    internal class GatherTopology<T> : NToOneTopology<T>
     {
         [Inject]
-        private ReduceTopology(
+        private GatherTopology(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,

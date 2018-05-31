@@ -22,6 +22,12 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Driver.Task;
+using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Comm;
+using System;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
 
@@ -30,11 +36,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// <summary>
     /// Reduce operator implementation.
     /// </summary>
-    class DefaultReduce<T> : DefaultNToOne<T>, IElasticReduce
+    class DefaultGather<T> : DefaultNToOne<T>, IElasticGather
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultReduce<>));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultGather<>));
 
-        public DefaultReduce(
+        public DefaultGather(
             int receiverId,
             ElasticOperator prev,
             TopologyType topologyType,
@@ -53,11 +59,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultReduce<T>>.Class)
+            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultGather<T>>.Class)
                        .BindNamedParameter<RequestTopologyUpdate, bool>(
                             GenericType<RequestTopologyUpdate>.Class,
                             (_topology.GetType() == typeof(TreeTopology)).ToString(CultureInfo.InvariantCulture));
-            SetMessageType(typeof(Physical.Impl.DefaultReduce<T>), ref confBuilder);
+            SetMessageType(typeof(Physical.Impl.DefaultGather<T>), ref confBuilder);
         }
     }
 }

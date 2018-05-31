@@ -94,10 +94,16 @@ under the License.
     <Compile Include="Elastic\Failures\Impl\OperatorAlarm.cs" />
     <Compile Include="Elastic\Failures\Impl\Timeout.cs" />
     <Compile Include="Elastic\Failures\Impl\FailuresClock.cs" />
+    <Compile Include="Elastic\Operators\Logical\IElasticGather.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultOneToN.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultNToOne.cs" />
+    <Compile Include="Elastic\Operators\Logical\Impl\DefaultGather.cs" />
     <Compile Include="Elastic\Operators\Logical\Impl\DefaultScatter.cs" />
+    <Compile Include="Elastic\Operators\Physical\IElasticGather.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticScatter.cs" />
     <Compile Include="Elastic\Operators\Physical\IElasticReducer.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultNToOne.cs" />
+    <Compile Include="Elastic\Operators\Physical\Impl\DefaultGather.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultScatter.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultOneToN.cs" />
     <Compile Include="Elastic\Operators\Physical\Impl\DefaultReduce.cs" />
@@ -146,6 +152,8 @@ under the License.
     <Compile Include="Elastic\Topology\Logical\Impl\RingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\ICheckpointingTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\AggregationRingTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\NToOneTopology.cs" />
+    <Compile Include="Elastic\Topology\Physical\Impl\GatherTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\ScatterTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\OneToNTopology.cs" />
     <Compile Include="Elastic\Topology\Physical\Impl\ReduceTopology.cs" />

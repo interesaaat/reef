@@ -28,26 +28,26 @@ using Org.Apache.REEF.Utilities.Logging;
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Group Communication Operator used to gather messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultReduce<T> : DefaultNToOne<T>, IElasticReducer<T>
+    public sealed class DefaultGather<T> : DefaultNToOne<T[]>, IElasticGather<T>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultReduce<>));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultGather<>));
 
         /// <summary>
-        /// Creates a new Reduce Operator.
+        /// Creates a new Gather Operator.
         /// </summary>
         /// <param name="id">The operator identifier</param>
         /// <param name="topology">The operator topology layer</param>
         [Inject]
-        private DefaultReduce(
+        private DefaultGather(
             [Parameter(typeof(OperatorId))] int id,
             [Parameter(typeof(Checkpointing))] int level,
             [Parameter(typeof(IsLast))] bool isLast,
-            ReduceTopology<T> topology) : base(id, level, isLast, topology)
+            GatherTopology<T[]> topology) : base(id, level, isLast, topology)
         {
-            OperatorName = Constants.Reduce;
+            OperatorName = Constants.Gather;
         }
     }
 }

@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one
 or more contributor license agreements.  See the NOTICE file
@@ -55,6 +55,7 @@ under the License.
     </Compile>
     <Compile Include="BroadcastAndReduceClient.cs" />
     <Compile Include="Elastic\ElasticBroadcastClientPD.cs" />
+    <Compile Include="Elastic\ElasticIterateGatherClient.cs" />
     <Compile Include="Elastic\ElasticIterateScatterClient.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSerSend.cs" />
     <Compile Include="Minibenchmarks\MiniBenchmarkSend.cs" />
