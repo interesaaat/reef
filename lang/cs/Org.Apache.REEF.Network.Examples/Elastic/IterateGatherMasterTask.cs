@@ -54,11 +54,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Gather:
-                                var sender = workflow.Current as IElasticGather<int>;
+                                var receiver = workflow.Current as IElasticGather<int>;
 
-                                var numbers = sender.Receive();
-
-                                System.Threading.Thread.Sleep(1000);
+                                var numbers = receiver.Receive();
 
                                 Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", numbers), workflow.Iteration);
                                 break;
