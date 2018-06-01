@@ -40,6 +40,8 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Extension;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -102,9 +104,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    ////.Set(TaskConfiguration.Task, GenericType<IterateGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateGatherMasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    ////.Set(TaskConfiguration.OnClose, GenericType<IterateGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateGatherMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -114,9 +116,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    ////.Set(TaskConfiguration.Task, GenericType<IterateGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateGatherSlaveTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    ////.Set(TaskConfiguration.OnClose, GenericType<IterateGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateGatherSlaveTask>.Class)
                     .Build())
                 .Build();
 
@@ -142,6 +144,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Build the task set manager
             _taskManager.Build();
+
+            System.Threading.Thread.Sleep(20000);
+
+            Matrix<float> m = Matrix<float>.Build.Random(4, 5);
+            var r = m.Reshape(5);
+
+            Console.WriteLine(m.ToString());
+            Console.WriteLine(r.ToString());
         }
 
         public void OnNext(IDriverStarted value)

@@ -21,11 +21,11 @@ using Org.Apache.REEF.Tang.Annotations;
 using System.Collections.Generic;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
-using Org.Apache.REEF.Network.Elastic.Operators.Logical;
+using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class GatherTopology<T> : NToOneTopology<T>
+    internal class GatherTopology<T> : NToOneTopology<T[]>
     {
         [Inject]
         private GatherTopology(
@@ -38,7 +38,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            ReduceFunction<T> reduceFunction,
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(
                 subscription, 
@@ -50,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 retry,
                 timeout,
                 disposeTimeout,
-                reduceFunction,
+                new UnionFunction<T>(),
                 commLayer,
                 checkpointService)
         {

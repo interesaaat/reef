@@ -20,33 +20,34 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Network.Elastic.Operators;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Extension;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastReduceMasterTask : ITask, IObserver<ICloseEvent>
+    using static MatrixExtensionMethods;
+
+    public class IterateGatherSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public BroadcastReduceMasterTask(IElasticTaskSetService serviceClient)
+        public IterateGatherSlaveTask(
+            IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            System.Threading.Thread.Sleep(20000);
-
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcastReduce");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateGather");
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration();
 
-            var rand = new Random();
-            int number = 0;
+            var number = new Random().Next();
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -54,28 +55,17 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 {
                     while (workflow.MoveNext())
                     {
-                        number = (int)workflow.Iteration;
-
                         switch (workflow.Current.OperatorName)
                         {
-                            case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                            case Constants.Gather:
+                                var sender = workflow.Current as IElasticGather<int>;
 
-                                sender.Send(number);
+                                sender.Send(new int[] { number });
 
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
-
-                                System.Threading.Thread.Sleep(1000);
-                                break;
-                            case Constants.Reduce:
-                                var receiver = workflow.Current as IElasticReducer<int>;
-
-                                var receivedNumber = receiver.Receive();
-
-                                Console.WriteLine("Master has received {0} in iteration {1}", receivedNumber, workflow.Iteration);
+                                Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                                throw new InvalidOperationException("Operation {0} in workflow not implemented");
                         }
                     }
                 }
@@ -88,15 +78,24 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
-        public void OnNext(ICloseEvent value)
+        private static void Reshape(Matrix<double> m, int size)
         {
-            _subscriptionClient.Cancel();
+            return;
+        }
+
+        public void Handle(IDriverMessage message)
+        {
         }
 
         public void Dispose()
         {
             _subscriptionClient.Cancel();
             _serviceClient.Dispose();
+        }
+
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
         }
 
         public void OnError(Exception error)

@@ -22,12 +22,6 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Driver.Task;
-using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Comm;
-using System;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
 

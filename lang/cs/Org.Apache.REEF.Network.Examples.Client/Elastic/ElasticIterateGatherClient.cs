@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
         public void RunIterateGather(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
             const int numIterations = 100;
-            const string driverId = "ElasticIterateGatherDriver";
+            const string driverId = "IterateGatherDriver";
             const string subscription = "IterateGather";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
@@ -80,7 +80,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticIterateGatherDriver), numTasks, "ElasticIterateGatherDriver", runPlatform);
+            TestRun(merged, typeof(ElasticIterateGatherDriver), numTasks, "ID", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)

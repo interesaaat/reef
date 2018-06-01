@@ -26,27 +26,24 @@ using MathNet.Numerics.LinearAlgebra;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastReduceMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateGatherMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public BroadcastReduceMasterTask(IElasticTaskSetService serviceClient)
+        public IterateGatherMasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            System.Threading.Thread.Sleep(20000);
+            _subscriptionClient = _serviceClient.GetSubscription("IterateGather");
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcastReduce");
+            System.Threading.Thread.Sleep(20000);
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration();
-
-            var rand = new Random();
-            int number = 0;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -54,25 +51,16 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 {
                     while (workflow.MoveNext())
                     {
-                        number = (int)workflow.Iteration;
-
                         switch (workflow.Current.OperatorName)
                         {
-                            case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                            case Constants.Gather:
+                                var sender = workflow.Current as IElasticGather<int>;
 
-                                sender.Send(number);
-
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+                                var numbers = sender.Receive();
 
                                 System.Threading.Thread.Sleep(1000);
-                                break;
-                            case Constants.Reduce:
-                                var receiver = workflow.Current as IElasticReducer<int>;
 
-                                var receivedNumber = receiver.Receive();
-
-                                Console.WriteLine("Master has received {0} in iteration {1}", receivedNumber, workflow.Iteration);
+                                Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", numbers), workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");

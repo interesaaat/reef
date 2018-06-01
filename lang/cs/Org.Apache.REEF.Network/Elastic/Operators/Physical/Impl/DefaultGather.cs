@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             [Parameter(typeof(OperatorId))] int id,
             [Parameter(typeof(Checkpointing))] int level,
             [Parameter(typeof(IsLast))] bool isLast,
-            GatherTopology<T[]> topology) : base(id, level, isLast, topology)
+            GatherTopology<T> topology) : base(id, level, isLast, topology)
         {
             OperatorName = Constants.Gather;
         }

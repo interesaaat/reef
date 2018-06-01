@@ -515,7 +515,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                             found = true;
                         }
                     }
-                    SpawnNewEvaluator();
+                    SpawnNewEvaluator("_" + DateTime.Now);
                 }
             }
         }
