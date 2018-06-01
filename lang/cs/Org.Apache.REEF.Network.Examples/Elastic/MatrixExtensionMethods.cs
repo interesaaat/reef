@@ -4,9 +4,9 @@ namespace MathNet.Numerics.LinearAlgebra.Extension
 {
     public static class MatrixExtensionMethods
     {
-        public static Matrix<float> Reshape(this Matrix<float> m, int size)
+        public static Matrix<float> Reshape(this Matrix<float> m, int rowSize, int columnSize)
         {
-            return Matrix<float>.Build.Dense(m.RowCount * size, m.ColumnCount / size, m.Enumerate().ToArray());
+            return Matrix<float>.Build.Dense(rowSize, columnSize, m.Enumerate().ToArray());
         }
     }
 }

@@ -80,7 +80,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticIterateScatterDriver), numTasks, "ElasticIterateScatterDriver", runPlatform);
+            TestRun(merged, typeof(ElasticIterateScatterDriver), numTasks, "IS", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)
