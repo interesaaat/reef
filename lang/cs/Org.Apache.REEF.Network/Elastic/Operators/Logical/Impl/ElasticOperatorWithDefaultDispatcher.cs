@@ -90,9 +90,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override ElasticOperator Gather<T>(int receiverTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator Gather<T>(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultScatter<T>(receiverTaskId, this, topology ?? new FlatTopology(receiverTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultGather<T>(receiverTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
         }
 

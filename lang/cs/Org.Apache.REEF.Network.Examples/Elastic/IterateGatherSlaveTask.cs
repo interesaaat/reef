@@ -41,13 +41,17 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient = serviceClient;
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateGather");
+
+            System.Threading.Thread.Sleep(20000);
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration();
 
-            var number = new Random().Next();
+            var rand = new Random();
+
+            var number = rand.Next();
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -60,12 +64,43 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Gather:
                                 var sender = workflow.Current as IElasticGather<int>;
 
+                                if (rand.Next(100) < 0)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. before");
+
+                                    if (rand.Next(100) < 100)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        Environment.Exit(0);
+                                    }
+                                }
+
                                 sender.Send(new int[] { number });
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
+
+                                if (rand.Next(100) < 0)
+                                {
+                                    Console.WriteLine("I am going to die. Bye. after");
+
+                                    if (rand.Next(100) < 100)
+                                    {
+                                        throw new Exception("Die. before");
+                                    }
+                                    else
+                                    {
+                                        Environment.Exit(0);
+                                    }
+                                }
+
+                                System.Threading.Thread.Sleep(1000);
+
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation {0} in workflow not implemented");
+                                throw new InvalidOperationException(string.Format("Operation {0} in workflow not implemented", workflow.Current.OperatorName));
                         }
                     }
                 }

@@ -144,14 +144,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             // Build the task set manager
             _taskManager.Build();
-
-            System.Threading.Thread.Sleep(20000);
-
-            Matrix<float> m = Matrix<float>.Build.Random(4, 5);
-            var r = m.Reshape(20, 1);
-
-            Console.WriteLine(m.ToString());
-            Console.WriteLine(r.ToString());
         }
 
         public void OnNext(IDriverStarted value)
