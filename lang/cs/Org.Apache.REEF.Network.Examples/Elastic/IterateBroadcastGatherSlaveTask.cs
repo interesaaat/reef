@@ -29,13 +29,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     using static MatrixExtensionMethods;
 
-    public class IterateGatherSlaveTask : ITask, IObserver<ICloseEvent>
+    public class IterateBroadcastGatherSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateGatherSlaveTask(
+        public IterateBroadcastGatherSlaveTask(
             IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
@@ -61,10 +61,18 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     {
                         switch (workflow.Current.OperatorName)
                         {
+                            case Constants.Broadcast:
+                                var receiver = workflow.Current as IElasticBroadcast<int>;
+
+                                receiver.Receive();
+
+                                Console.WriteLine("Slave has received in iteration {0}", workflow.Iteration);
+                                break;
+
                             case Constants.Gather:
                                 var sender = workflow.Current as IElasticGather<int>;
 
-                                if (rand.Next(100) < 0)
+                                if (rand.Next(100) < 1)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before");
 
@@ -82,21 +90,19 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
 
-                                if (rand.Next(100) < 0)
+                                if (rand.Next(100) < 1)
                                 {
                                     Console.WriteLine("I am going to die. Bye. after");
 
                                     if (rand.Next(100) < 100)
                                     {
-                                        throw new Exception("Die. before");
+                                        throw new Exception("Die. After");
                                     }
                                     else
                                     {
                                         Environment.Exit(0);
                                     }
                                 }
-
-                                System.Threading.Thread.Sleep(1000);
 
                                 break;
                             default:

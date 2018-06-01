@@ -43,6 +43,17 @@ namespace Org.Apache.REEF.Network.Elastic.Config
                 GenericType<DataMessageStreamingCodec<T>>.Class)
             .BindImplementation(GenericType<IStreamingCodec<DataMessageWithTopology<T>>>.Class,
                 GenericType<DataMessageWithTopologyStreamingCodec<T>>.Class)
+            .Build();
+
+        /// <summary>
+        /// Configuration Module for Codec
+        /// </summary>
+        public static ConfigurationModule ConfWithCheckpoint = new StreamingCodecConfiguration<T>()
+            .BindImplementation(GenericType<IStreamingCodec<T>>.Class, Codec)
+            .BindImplementation(GenericType<IStreamingCodec<DataMessage<T>>>.Class,
+                GenericType<DataMessageStreamingCodec<T>>.Class)
+            .BindImplementation(GenericType<IStreamingCodec<DataMessageWithTopology<T>>>.Class,
+                GenericType<DataMessageWithTopologyStreamingCodec<T>>.Class)
             .BindImplementation(GenericType<IStreamingCodec<CheckpointMessage>>.Class,
                 GenericType<CheckpointMessageStreamingCodec<T>>.Class)
             .BindImplementation(GenericType<IStreamingCodec<CheckpointMessageRequest>>.Class,

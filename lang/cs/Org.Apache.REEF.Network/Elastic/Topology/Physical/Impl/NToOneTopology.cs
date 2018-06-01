@@ -361,6 +361,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                     if (_rootTaskId == _taskId)
                     {
+                        if (finalAggregatedMessage == null)
+                        {
+                            Console.WriteLine("here");
+                        }
                         _aggregationQueueSources.Add(_taskId);
                         _messageQueue.Add(finalAggregatedMessage);
                     }

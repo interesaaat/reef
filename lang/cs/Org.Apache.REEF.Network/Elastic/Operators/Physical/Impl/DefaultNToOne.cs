@@ -115,6 +115,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                 }
             }
 
+            if (message == null)
+            {
+                throw new OperationCanceledException("Impossible to receive messages: operation canceled");
+            }
+
             if (isIterative)
             {
                 IteratorReference.SyncIteration(message.Iteration);

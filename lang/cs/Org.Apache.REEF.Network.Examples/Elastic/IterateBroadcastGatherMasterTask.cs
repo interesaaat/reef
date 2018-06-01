@@ -22,17 +22,16 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
-using MathNet.Numerics.LinearAlgebra;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateGatherMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateBroadcastGatherMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateGatherMasterTask(IElasticTaskSetService serviceClient)
+        public IterateBroadcastGatherMasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
@@ -53,6 +52,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     {
                         switch (workflow.Current.OperatorName)
                         {
+                            case Constants.Broadcast:
+                                var sender = workflow.Current as IElasticBroadcast<int>;
+
+                                sender.Send(1);
+
+                                Console.WriteLine("Master has sent in iteration {0}", workflow.Iteration);
+
+                                System.Threading.Thread.Sleep(1000);
+                                break;
                             case Constants.Gather:
                                 var receiver = workflow.Current as IElasticGather<int>;
 

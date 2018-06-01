@@ -40,15 +40,13 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using MathNet.Numerics.LinearAlgebra;
-using MathNet.Numerics.LinearAlgebra.Extension;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
     /// Example implementation of an iterative scatter pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticIterateGatherDriver : 
+    public class ElasticIterateBroadcastGatherDriver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
@@ -58,13 +56,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IFailedTask>,
         IObserver<ITaskMessage>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateGatherDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastGatherDriver));
 
         private readonly int _numEvaluators;
         private readonly int _numIterations;
 
         private readonly IConfiguration _tcpPortProviderConfig;
-        private readonly IConfiguration _codecConfig;
+        private readonly IConfiguration _codecConfigBroad;
+        private readonly IConfiguration _codecConfigGather;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
         private readonly IElasticTaskSetService _service;
@@ -72,7 +71,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticIterateGatherDriver(
+        private ElasticIterateBroadcastGatherDriver(
             [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
@@ -92,7 +91,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int[]>.Conf
+            _codecConfigBroad = StreamingCodecConfiguration<int>.Conf
+                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
+                .Build();
+
+            _codecConfigGather = StreamingCodecConfiguration<int[]>.Conf
                 .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
                 .Build();
 
@@ -104,9 +107,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<IterateGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherMasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<IterateGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -116,9 +119,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<IterateGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherSlaveTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<IterateGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherSlaveTask>.Class)
                     .Build())
                 .Build();
 
@@ -130,6 +133,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
+                    .Broadcast<int>(TopologyType.Flat)
                     .Gather<int>(TopologyType.Flat)
                     .Build();
 
@@ -168,7 +172,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
             IConfiguration serviceConf = _service.GetServiceConfiguration();
 
-            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
+            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfigBroad, _codecConfigGather);
             allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
         }
 
