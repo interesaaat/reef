@@ -148,7 +148,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             System.Threading.Thread.Sleep(20000);
 
             Matrix<float> m = Matrix<float>.Build.Random(4, 5);
-            var r = m.Reshape(5);
+            var r = m.Reshape(20, 1);
 
             Console.WriteLine(m.ToString());
             Console.WriteLine(r.ToString());
