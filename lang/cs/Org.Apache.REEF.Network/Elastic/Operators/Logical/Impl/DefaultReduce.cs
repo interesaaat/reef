@@ -22,12 +22,6 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Driver.Task;
-using System.Collections.Generic;
-using Org.Apache.REEF.Network.Elastic.Comm;
-using System;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
 
@@ -36,11 +30,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// <summary>
     /// Reduce operator implementation.
     /// </summary>
-    class DefaultReduce<T> : ElasticOperatorWithDefaultDispatcher, IElasticReduce
+    class DefaultReduce<T> : DefaultNToOne<T>, IElasticReduce
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultReduce<>));
-
-        private volatile bool _stop;
 
         public DefaultReduce(
             int receiverId,
@@ -49,16 +41,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
-                null, 
-                prev, 
-                topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(receiverId) : (ITopology)new TreeTopology(receiverId), 
+                receiverId,
+                prev,
+                topologyType,
                 failureMachine,
                 checkpointLevel,
                 configurations)
         {
-            MasterId = receiverId;
             OperatorName = Constants.Reduce;
-            WithinIteration = prev.WithinIteration;
         }
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
@@ -68,106 +58,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             GenericType<RequestTopologyUpdate>.Class,
                             (_topology.GetType() == typeof(TreeTopology)).ToString(CultureInfo.InvariantCulture));
             SetMessageType(typeof(Physical.Impl.DefaultReduce<T>), ref confBuilder);
-        }
-
-        protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
-        {
-            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
-
-            switch (msgReceived)
-            {
-                case TaskMessageType.JoinTopology:
-                    {
-                        var operatorId = BitConverter.ToInt32(message.Message, 2);
-
-                        if (operatorId != _id)
-                        {
-                            return false;
-                        }
-
-                        if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
-                        {
-                            var taskId = message.TaskId;
-                            LOGGER.Log(Level.Info, "{0} joins the topology for operator {1}", taskId, _id);
-
-                            _topology.AddTask(taskId, _failureMachine);
-                        }
-
-                        return true;
-                    }
-                case TaskMessageType.TopologyUpdateRequest:
-                    {
-                        var operatorId = BitConverter.ToInt32(message.Message, sizeof(ushort));
-
-                        if (operatorId != _id)
-                        {
-                            return false;
-                        }
-
-                        LOGGER.Log(Level.Info, "Received topology update request for reduce {0} from {1}", _id, message.TaskId);
-
-                        if (!_stop)
-                        {
-                            _topology.TopologyUpdateResponse(message.TaskId, ref returnMessages, Optional<IFailureStateMachine>.Of(_failureMachine));
-                        }
-                        else
-                        {
-                            LOGGER.Log(Level.Info, "Operator {0} is in stopped: Ignoring", OperatorName);
-                        }
-
-                        return true;
-                    }
-
-                case TaskMessageType.CompleteSubscription:
-                    {
-                        Subscription.Completed = true;
-
-                        return true;
-                    }
-
-                default:
-                    return false;
-            }
-        }
-
-        public override void OnReconfigure(ref IReconfigure reconfigureEvent)
-        {
-            LOGGER.Log(Level.Info, "Going to reconfigure the reduce operator");
-
-            if (_stop)
-            {
-                _stop = false;
-            }
-
-            if (reconfigureEvent.FailedTask.IsPresent())
-            {
-                if (reconfigureEvent.FailedTask.Value.AsError() is OperatorException)
-                {
-                    var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
-                    var msg = _topology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
-                    reconfigureEvent.FailureResponse.AddRange(msg);
-                }
-                else
-                {
-                    var msg = _topology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, Optional<string>.Empty(), reconfigureEvent.Iteration);
-                    reconfigureEvent.FailureResponse.AddRange(msg);
-                }
-            }
-        }
-
-        public override void OnReschedule(ref IReschedule rescheduleEvent)
-        {
-            var reconfigureEvent = rescheduleEvent as IReconfigure;
-
-            OnReconfigure(ref reconfigureEvent);
-        }
-
-        public override void OnStop(ref IStop stopEvent)
-        {
-            if (!_stop)
-            {
-                _stop = true;
-            }
         }
     }
 }

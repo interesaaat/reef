@@ -97,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter(Documentation = "Batch id used when a new evaluator is requested after a failure", DefaultValue = "IterateAggregateEvaluator")]
+        [NamedParameter(Documentation = "Batch id used when a new evaluator is requested after a failure", DefaultValue = "IterateBroadcast")]
         public class NewEvaluatorBatchId : Name<string>
         {
         }

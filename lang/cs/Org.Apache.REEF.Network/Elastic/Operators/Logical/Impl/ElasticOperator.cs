@@ -450,6 +450,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return Scatter<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
         }
 
+        /// <summary>
+        /// TODO
+        /// </summary>
+        public abstract ElasticOperator Gather<T>(int receiverId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations);
+
+        public ElasticOperator Gather<T>(TopologyType topologyType, params IConfiguration[] configurations)
+        {
+            return Scatter<T>(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), _failureMachine.Clone(), CheckpointLevel.None, configurations);
+        }
+
         public void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
             var hasReacted = ReactOnTaskMessage(message, ref returnMessages);

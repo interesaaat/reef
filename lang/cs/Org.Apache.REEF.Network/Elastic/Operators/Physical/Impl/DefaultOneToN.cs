@@ -16,7 +16,6 @@
 // under the License.
 
 using System.Threading;
-using Org.Apache.REEF.Tang.Annotations;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;

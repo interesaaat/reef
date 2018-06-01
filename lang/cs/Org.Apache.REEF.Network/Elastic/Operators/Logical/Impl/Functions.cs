@@ -17,6 +17,8 @@
 
 using Org.Apache.REEF.Network.Elastic.Operators.Logical;
 using Org.Apache.REEF.Tang.Annotations;
+using System;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators
 {
@@ -35,6 +37,33 @@ namespace Org.Apache.REEF.Network.Elastic.Operators
         protected override int Reduce(int left, int right)
         {
             return left + right;
+        }
+    }
+
+    public class UnionFunction<T> : ReduceFunction<T[]>
+    {
+        [Inject]
+        public UnionFunction()
+        {
+        }
+
+        internal override bool CanMerge
+        {
+            get { return false; }
+        }
+
+        protected override T[] Reduce(T[] left, T[] right)
+        {
+            var ll = left.Length;
+            var rl = right.Length;
+            Array.Resize(ref left, ll + rl);
+            
+            for (int i = 0; i < right.Length; i++)
+            {
+                left[ll + i] = right[i];
+            }
+
+            return left;
         }
     }
 }

@@ -40,7 +40,6 @@ using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
@@ -246,9 +245,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 identifier = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
             }
-            else
+
+            if (identifier == null)
             {
-                throw new IllegalStateException("Initializing a number of contexts different than configured");
+                LOGGER.Log(Level.Warning, string.Format("Initializing a number of contexts different than configured"));
+                allocatedEvaluator.Dispose();
             }
 
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule

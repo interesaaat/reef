@@ -90,6 +90,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
+        public override ElasticOperator Gather<T>(int receiverTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        {
+            _next = new DefaultScatter<T>(receiverTaskId, this, topology ?? new FlatTopology(receiverTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            return _next;
+        }
+
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var failedOperatorId = _id;
