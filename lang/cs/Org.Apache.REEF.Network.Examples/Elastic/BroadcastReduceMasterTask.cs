@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -58,11 +59,23 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
+                                //// var sender = workflow.Current as IElasticBroadcast<float[]>;
                                 var sender = workflow.Current as IElasticBroadcast<int>;
 
+                                //// Generating a vector and broadcast it
+
+                                Vector<float> v = Vector<float>.Build.Random(4);
+
+                                //// Computing the SVD of a matrix
+                                Matrix<float> m = Matrix<float>.Build.Random(4, 4);
+                                var svd = m.Svd();
+                                var v_message = v.ToArray();
+
                                 sender.Send(number);
+                                //// sender.Send(v_message);
 
                                 Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+                                Console.WriteLine("Master has generated the vector {0} in iteration {1}", v, workflow.Iteration);
 
                                 System.Threading.Thread.Sleep(1000);
                                 break;

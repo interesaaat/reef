@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Common.Tasks.Events;
 using Org.Apache.REEF.Network.Elastic.Operators;
+using MathNet.Numerics.LinearAlgebra;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -65,6 +66,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 }
 
                                 received = receiver.Receive();
+
+                                Matrix<double> m = Matrix<double>.Build.Random(4, 4);
+                                Vector<double> v = Vector<double>.Build.Random(4);
+                                
+                                var v2 = m.Multiply(v);
+
+                                Console.WriteLine("Slave has done the matrix-vector multiplication and obtained {0}", v2);
 
                                 if (rand.Next(100) < 5)
                                 {

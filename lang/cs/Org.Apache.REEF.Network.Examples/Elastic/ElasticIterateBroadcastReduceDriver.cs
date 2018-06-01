@@ -138,7 +138,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         iteratorConfig)
                     .Broadcast<int>(TopologyType.Flat)
                     .Reduce<int>(TopologyType.Flat, reduceFunctionConfig)
-                    .Scatter<int>(TopologyType.Flat)
                     .Build();
 
             // Build the subscription
