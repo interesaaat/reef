@@ -64,7 +64,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Gather:
                                 var sender = workflow.Current as IElasticGather<int>;
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before");
 
@@ -82,7 +82,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. after");
 

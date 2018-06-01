@@ -105,7 +105,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             {
                 message = _topology.Receive(CancellationSource) as DataMessage<T>;
 
-                if (isIterative && message.Iteration < (int)IteratorReference.Current)
+                if (message != null && isIterative && message.Iteration < (int)IteratorReference.Current)
                 {
                     LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
                 }
@@ -113,11 +113,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                 {
                     received = true;
                 }
-            }
-
-            if (message == null)
-            {
-                throw new OperationCanceledException("Impossible to receive messages: operation canceled");
             }
 
             if (isIterative)
