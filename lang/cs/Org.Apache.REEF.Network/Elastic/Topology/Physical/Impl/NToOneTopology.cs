@@ -299,7 +299,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 if (_aggregationQueueSources.Add(taskId))
                 {
-                    if (_aggregationQueueData.Count() == 1 || !_reducer.CanMerge)
+                    if (_aggregationQueueData.Count() <= 1 || !_reducer.CanMerge)
                     {
                         _aggregationQueueData.Enqueue(message);
                     }

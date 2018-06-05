@@ -24,7 +24,7 @@ import org.apache.reef.tang.annotations.NamedParameter;
 /**
  * Number of cores assigned to the Driver Container.
  */
-@NamedParameter(doc = "Number of CPU Cores allocated to the Driver.", default_value = "1")
+@NamedParameter(doc = "Number of CPU Cores allocated to the Driver.", default_value = "4")
 public final class DriverCPUCores implements Name<Integer> {
   private DriverCPUCores() {
   }
