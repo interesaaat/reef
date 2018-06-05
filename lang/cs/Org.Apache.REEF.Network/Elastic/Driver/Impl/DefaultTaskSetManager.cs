@@ -64,6 +64,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private readonly ConcurrentQueue<int> _queuedTasks;
         private readonly ConcurrentQueue<int> _queuedContexts;
+        // Used both for knowing which evaluator the task set is responsible for and to 
+        // maintain a mapping betwween evaluators and contextes.
+        // This latter is necessary because evaluators may fail between context init
+        // and the time when the context is installed on the evaluator
+        private readonly ConcurrentDictionary<string, int> _evaluatorToContextIdMapping;
         private IFailureState _failureStatus;
         private volatile bool _hasProgress;
 
@@ -96,6 +101,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
             _queuedTasks = new ConcurrentQueue<int>();
             _queuedContexts = new ConcurrentQueue<int>();
+            _evaluatorToContextIdMapping = new ConcurrentDictionary<string, int>();
             _failureStatus = new DefaultFailureState();
             _hasProgress = true;
 
@@ -126,28 +132,36 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
              return _contextsAdded < _numTasks;
         }
 
-        public string GetNextTaskContextId(IAllocatedEvaluator evaluator)
+        public bool TryGetNextTaskContextId(IAllocatedEvaluator evaluator, out string identifier)
         {
             int id;
 
             if (_queuedTasks.TryDequeue(out id))
             {
-                return Utils.BuildContextId(SubscriptionsId, id);
+                identifier = Utils.BuildContextId(SubscriptionsId, id);
+                _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+                return true;
             }
 
             if (_queuedContexts.TryDequeue(out id))
             {
-                return Utils.BuildContextId(SubscriptionsId, id);
+                identifier = Utils.BuildContextId(SubscriptionsId, id);
+                _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+                return true;
             }
 
             id = Interlocked.Increment(ref _contextsAdded);
 
             if (_contextsAdded > _numTasks)
             {
-                throw new IllegalStateException("Trying to schedule too many contexts");
+                LOGGER.Log(Level.Warning, "Trying to schedule too many contexts");
+                identifier = string.Empty;
+                return false;
             }
 
-            return Utils.BuildContextId(SubscriptionsId, id);
+            identifier = Utils.BuildContextId(SubscriptionsId, id);
+            _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+            return true;
         }
 
         public string GetTaskId(IActiveContext context)
@@ -187,6 +201,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 activeContext.Dispose();
                 return;
             }
+
+            LOGGER.Log(Level.Info, "Evaluator {0} is scheduled on node {1}", activeContext.EvaluatorId, activeContext.EvaluatorDescriptor.NodeDescriptor.HostName);
 
             var id = Utils.GetContextNum(activeContext) - 1;
 
@@ -264,7 +280,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskRunning(IRunningTask task)
         {
-            if (BelongsTo(task.Id))
+            if (TaskBelongsTo(task.Id))
             {
                 var id = Utils.GetTaskNum(task.Id) - 1;
                 _hasProgress = true;
@@ -307,7 +323,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskCompleted(ICompletedTask taskInfo)
         {
-            if (BelongsTo(taskInfo.Id))
+            if (TaskBelongsTo(taskInfo.Id))
             {
                 Interlocked.Decrement(ref _tasksRunning);
                 var id = Utils.GetTaskNum(taskInfo.Id) - 1;
@@ -329,7 +345,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskMessage(ITaskMessage message)
         {
-            if (BelongsTo(message.TaskId))
+            if (TaskBelongsTo(message.TaskId))
             {
                 var id = Utils.GetTaskNum(message.TaskId) - 1;
                 var returnMessages = new List<IElasticDriverMessage>();
@@ -385,7 +401,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 _hasProgress = false;
                 LOGGER.Log(Level.Info, "Timeout alarm for Taskset initialized");
-                ////nextTimeouts.Add(new Failures.Impl.Timeout(_parameters.Timeout, this, Failures.Impl.Timeout.TimeoutType.Taskset));
+                nextTimeouts.Add(new Failures.Impl.Timeout(_parameters.Timeout, this, Failures.Impl.Timeout.TimeoutType.Taskset));
 
                 foreach (var sub in _subscriptions.Values)
                 {
@@ -435,7 +451,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnTaskFailure(IFailedTask info, ref List<IFailureEvent> failureEvents)
         {
-            if (BelongsTo(info.Id))
+            if (TaskBelongsTo(info.Id))
             {
                 LOGGER.Log(Level.Info, "Received a failure from " + info.Id, info.AsError());
 
@@ -485,6 +501,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public void OnEvaluatorFailure(IFailedEvaluator evaluator)
         {
             LOGGER.Log(Level.Info, "Received a failure from " + evaluator.Id, evaluator.EvaluatorException);
+
             _totFailedEvaluators++;
 
             if (evaluator.FailedTask.IsPresent())
@@ -498,6 +515,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
 
                 OnTaskFailure(failedTask);
+                _evaluatorToContextIdMapping.TryRemove(evaluator.Id, out id);
             }
             else
             {
@@ -505,17 +523,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (!Completed() && !Failed())
                 {
-                    var found = false;
-                    for (int i = 0; i < evaluator.FailedContexts.Count && !found; i++)
+                    if (_evaluatorToContextIdMapping.TryRemove(evaluator.Id, out int id))
                     {
-                        if (evaluator.FailedContexts[i].ParentContext.IsPresent())
-                        {
-                            var id = Utils.GetContextNum(evaluator.FailedContexts[i].ParentContext.Value);
-                            _queuedContexts.Enqueue(id);
-                            found = true;
-                        }
+                        _queuedContexts.Enqueue(id);
                     }
-                    SpawnNewEvaluator("_" + DateTime.Now);
+                    SpawnNewEvaluator();
                 }
             }
         }
@@ -744,20 +756,31 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private void SpawnNewEvaluator(string id = "")
         {
+            LOGGER.Log(Level.Warning, "Spawning new evaluator with batchId " + _parameters.NewEvaluatorBatchId + id);
+
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(1)
                 .SetMegabytes(_parameters.NewEvaluatorMemorySize)
                 .SetCores(_parameters.NewEvaluatorNumCores)
                 .SetRackName(_parameters.NewEvaluatorRackName)
-                .SetEvaluatorBatchId(_parameters.NewEvaluatorBatchId + id)
                 .Build();
 
             _evaluatorRequestor.Submit(request);
         }
 
-        private bool BelongsTo(string id)
+        public bool TaskBelongsTo(string id)
         {
             return Utils.GetTaskSubscriptions(id) == SubscriptionsId;
+        }
+
+        public bool ContextBelongsTo(string id)
+        {
+            return Utils.GetContextSubscriptions(id) == SubscriptionsId;
+        }
+
+        public bool EvaluatorBelongsTo(string id)
+        {
+            return _evaluatorToContextIdMapping.ContainsKey(id);
         }
 
         private void SendToTasks(IList<IElasticDriverMessage> messages, int retry = 0)

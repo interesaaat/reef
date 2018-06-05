@@ -239,11 +239,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
             if (_serversTaskManager.HasMoreContextToAdd())
             {
-                identifier = _serversTaskManager.GetNextTaskContextId(allocatedEvaluator);
+                _serversTaskManager.TryGetNextTaskContextId(allocatedEvaluator, out identifier);
             }
-            else if (_workersTaskManager.HasMoreContextToAdd())
+            else if (_workersTaskManager.HasMoreContextToAdd() && identifier == null)
             {
-                identifier = _workersTaskManager.GetNextTaskContextId(allocatedEvaluator);
+                _workersTaskManager.TryGetNextTaskContextId(allocatedEvaluator, out identifier);
             }
 
             if (identifier == null)
@@ -263,31 +263,51 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IActiveContext activeContext)
         {
-            bool isServerContext = _serversTaskManager.SubscriptionsId == _service.GetContextSubscriptions(activeContext);
-
-            if (isServerContext)
+            if (_serversTaskManager.ContextBelongsTo(activeContext.Id))
             {
                 _serversTaskManager.OnNewActiveContext(activeContext);
             }
-            else
+            else if (_workersTaskManager.ContextBelongsTo(activeContext.Id))
             {
                 _workersTaskManager.OnNewActiveContext(activeContext);
             }
+            else
+            {
+                throw new IllegalStateException(string.Format("Task manager for context {0} not found", activeContext.Id));
+            }
         }
 
-        public void OnNext(IRunningTask value)
+        public void OnNext(IRunningTask task)
         {
-            _serversTaskManager.OnTaskRunning(value);
-
-            _workersTaskManager.OnTaskRunning(value);
+            if (_serversTaskManager.TaskBelongsTo(task.Id))
+            {
+                _serversTaskManager.OnTaskRunning(task);
+            }
+            else if (_workersTaskManager.TaskBelongsTo(task.Id))
+            {
+                _workersTaskManager.OnTaskRunning(task);
+            }
+            else
+            {
+                throw new IllegalStateException(string.Format("Task manager for task {0} not found", task.Id));
+            }
         }
 
-        public void OnNext(ICompletedTask value)
+        public void OnNext(ICompletedTask task)
         {
-            _serversTaskManager.OnTaskCompleted(value);
-
-            _workersTaskManager.OnTaskCompleted(value);
-
+            if (_serversTaskManager.TaskBelongsTo(task.Id))
+            {
+                _serversTaskManager.OnTaskCompleted(task);
+            }
+            else if (_workersTaskManager.TaskBelongsTo(task.Id))
+            {
+                _workersTaskManager.OnTaskCompleted(task);
+            }
+            else
+            {
+                throw new IllegalStateException(string.Format("Task manager for task {0} not found", task.Id));
+            }
+            
             if (_serversTaskManager.IsDone())
             {
                 _serversTaskManager.Dispose();
@@ -301,9 +321,18 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
-            _serversTaskManager.OnEvaluatorFailure(failedEvaluator);
-
-            _workersTaskManager.OnEvaluatorFailure(failedEvaluator);
+            if (_serversTaskManager.EvaluatorBelongsTo(failedEvaluator.Id))
+            {
+                _serversTaskManager.OnEvaluatorFailure(failedEvaluator);
+            }
+            else if (_workersTaskManager.EvaluatorBelongsTo(failedEvaluator.Id))
+            {
+                _workersTaskManager.OnEvaluatorFailure(failedEvaluator);
+            }
+            else
+            {
+                throw new IllegalStateException(string.Format("Task manager for evaluator {0} not found", failedEvaluator.Id));
+            }
 
             if (_serversTaskManager.IsDone())
             {
@@ -316,11 +345,20 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             }
         }
 
-        public void OnNext(IFailedTask failedTask)
+        public void OnNext(IFailedTask task)
         {
-            _serversTaskManager.OnTaskFailure(failedTask);
-
-            _workersTaskManager.OnTaskFailure(failedTask);
+            if (_serversTaskManager.TaskBelongsTo(task.Id))
+            {
+                _serversTaskManager.OnTaskFailure(task);
+            }
+            else if (_workersTaskManager.TaskBelongsTo(task.Id))
+            {
+                _workersTaskManager.OnTaskFailure(task);
+            }
+            else
+            {
+                throw new IllegalStateException(string.Format("Task manager for task {0} not found", task.Id));
+            }
 
             if (_serversTaskManager.IsDone())
             {

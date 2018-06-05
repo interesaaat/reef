@@ -157,23 +157,27 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("IterateScatterEvaluator")
+                .SetEvaluatorBatchId("IterateGatherEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            ////System.Threading.Thread.Sleep(1000);
-            string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
+            if (_taskManager.TryGetNextTaskContextId(allocatedEvaluator, out string identifier))
+            {
+                IConfiguration contextConf = ContextConfiguration.ConfigurationModule
+                    .Set(ContextConfiguration.Identifier, identifier)
+                    .Build();
+                IConfiguration serviceConf = _service.GetServiceConfiguration();
 
-            IConfiguration contextConf = ContextConfiguration.ConfigurationModule
-                .Set(ContextConfiguration.Identifier, identifier)
-                .Build();
-            IConfiguration serviceConf = _service.GetServiceConfiguration();
-
-            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfigBroad, _codecConfigGather);
-            allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
+                serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfigBroad, _codecConfigGather);
+                allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
+            }
+            else
+            {
+                allocatedEvaluator.Dispose();
+            }
         }
 
         public void OnNext(IActiveContext activeContext)

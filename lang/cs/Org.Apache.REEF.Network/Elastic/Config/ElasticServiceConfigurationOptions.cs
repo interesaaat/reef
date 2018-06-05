@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Timeout after which computation is consider inactive", defaultValue: "60000")]
+        [NamedParameter("Timeout after which computation is consider inactive", defaultValue: "600000")]
         public class Timeout : Name<int>
         {
         }

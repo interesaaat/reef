@@ -47,6 +47,16 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
+        /// Gets the subscriptions associated with the Context id.
+        /// </summary>
+        /// <param name="id">The context id to check</param>
+        /// <returns>The subscription names associated with the context id</returns>
+        public static string GetContextSubscriptions(string id)
+        {
+            return GetValue(1, id);
+        }
+
+        /// <summary>
         /// Gets the subscriptions associated with the Task id.
         /// </summary>
         /// <param name="taskId">The task id to check</param>

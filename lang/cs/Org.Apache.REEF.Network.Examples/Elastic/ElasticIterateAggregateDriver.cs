@@ -158,16 +158,20 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
-            ////System.Threading.Thread.Sleep(5000);
-            string identifier = _taskManager.GetNextTaskContextId(allocatedEvaluator);
+            if (_taskManager.TryGetNextTaskContextId(allocatedEvaluator, out string identifier))
+            {
+                IConfiguration contextConf = ContextConfiguration.ConfigurationModule
+                    .Set(ContextConfiguration.Identifier, identifier)
+                    .Build();
+                IConfiguration serviceConf = _service.GetServiceConfiguration();
 
-            IConfiguration contextConf = ContextConfiguration.ConfigurationModule
-                .Set(ContextConfiguration.Identifier, identifier)
-                .Build();
-            IConfiguration serviceConf = _service.GetServiceConfiguration();
-
-            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
-            allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
+                serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
+                allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
+            }
+            else
+            {
+                allocatedEvaluator.Dispose();
+            }
         }
 
         public void OnNext(IActiveContext activeContext)

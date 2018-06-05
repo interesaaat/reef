@@ -55,7 +55,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="evaluator">The evaluator the context will run on</param>
         /// <returns>A new unique context id</returns>
-        string GetNextTaskContextId(IAllocatedEvaluator evaluator);
+        bool TryGetNextTaskContextId(IAllocatedEvaluator evaluator, out string identifier);
 
         /// <summary>
         /// Method used to generate unique task ids.
@@ -101,6 +101,21 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// </summary>
         /// <param name="task">A message from a task</param>
         void OnTaskMessage(ITaskMessage message);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        bool TaskBelongsTo(string id);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        bool ContextBelongsTo(string id);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        bool EvaluatorBelongsTo(string id);
 
         /// <summary>
         /// TODO

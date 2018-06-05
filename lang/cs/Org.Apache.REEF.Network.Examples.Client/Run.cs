@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
             int numNodes = 10;
             int startPort = 8900;
             int portRange = 1000;
-            string testToRun = "ElasticIterateGather";
+            string testToRun = "ElasticIterateAllReduce";
             testToRun = testToRun.ToLower();
 
             if (args != null)
@@ -102,10 +102,16 @@ namespace Org.Apache.REEF.Network.Examples.Client
                 Console.WriteLine("ElasticIterateScatter completed!!!");
             }
 
-            if (testToRun.Equals("ElasticIterateGather".ToLower()) || testToRun.Equals("all"))
+            if (testToRun.Equals("ElasticIterateBroadcastGather".ToLower()) || testToRun.Equals("all"))
             {
-                new ElasticIterateGatherClient().RunIterateGather(runOnYarn, numNodes, startPort, portRange);
-                Console.WriteLine("ElasticIterateGather completed!!!");
+                new ElasticIterateBroadcastGatherClient().RunIterateBroadcastGather(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticIterateBroadcastGather completed!!!");
+            }
+
+            if (testToRun.Equals("ElasticIterateAllReduce".ToLower()) || testToRun.Equals("all"))
+            {
+                new ElasticIterateAllReduceClient().RunIterateAllReduce(runOnYarn, numNodes, startPort, portRange);
+                Console.WriteLine("ElasticIterateAllReduce completed!!!");
             }
 
             if (testToRun.Equals("ElasticIterateAggregate".ToLower()) || testToRun.Equals("all"))
