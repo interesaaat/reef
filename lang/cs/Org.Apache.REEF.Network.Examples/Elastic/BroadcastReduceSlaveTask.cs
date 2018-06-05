@@ -23,9 +23,13 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Common.Tasks.Events;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using MathNet.Numerics.LinearAlgebra;
+using MathNet.Numerics.LinearAlgebra.Extension;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
+
+    using static MatrixExtensionMethods;
+
     public class BroadcastReduceSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
@@ -44,8 +48,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration();
 
-            var received = 0;
+            float[] received;
             var rand = new Random();
+            int number = 0;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -56,7 +61,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
+                                var receiver = workflow.Current as IElasticBroadcast<float[]>;
 
                                 if (rand.Next(100) < 5)
                                 {
@@ -65,14 +70,24 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     throw new Exception("Die. before receive");
                                 }
 
-                                received = receiver.Receive();
+                                Matrix<float> m = Matrix<float>.Build.Random(4, 4);
+                                var m_reshape_1 = m.Reshape(2, 8);
+                                var m_reshape_2 = m.Reshape(8, 2);
 
-                                Matrix<double> m = Matrix<double>.Build.Random(4, 4);
-                                Vector<double> v = Vector<double>.Build.Random(4);
-                                
+                                Console.WriteLine("The matrix before reshape is {0}", m);
+                                Console.WriteLine("The matrix before reshape is {0}", m_reshape_1);
+                                Console.WriteLine("The matrix before reshape is {0}", m_reshape_2);
+
+                                received = receiver.Receive();
+                                var V = Vector<float>.Build;
+                                var v = V.Dense(received);
+
+                                Console.WriteLine("Slave has received the vector {0}", v);
+
                                 var v2 = m.Multiply(v);
 
                                 Console.WriteLine("Slave has done the matrix-vector multiplication and obtained {0}", v2);
+
 
                                 if (rand.Next(100) < 5)
                                 {
@@ -94,7 +109,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     throw new Exception("Die. before send");
                                 }
 
-                                sender.Send(received);
+                                sender.Send(number);
 
                                 if (rand.Next(100) < 5)
                                 {
@@ -103,7 +118,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     throw new Exception("Die. after send");
                                 }
 
-                                Console.WriteLine("Slave has sent {0} in iteration {1}", received, workflow.Iteration);
+                                Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
                                 break;
                             default:
                                 throw new InvalidOperationException("Operation {0} in workflow not implemented");

@@ -91,12 +91,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfigBroad = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
-                .Build();
-
-            _codecConfigGather = StreamingCodecConfiguration<int[]>.Conf
-                .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
+            _codecConfigBroad = StreamingCodecConfiguration<float[]>.Conf
+                .Set(StreamingCodecConfiguration<float[]>.Codec, GenericType<FloatArrayStreamingCodec>.Class)
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -133,8 +129,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Flat)
-                    .Gather<int>(TopologyType.Flat)
+                    .Broadcast<float[]>(TopologyType.Flat)
+                    .Gather<float>(TopologyType.Flat)
                     .Build();
 
             // Build the subscription
@@ -172,7 +168,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
             IConfiguration serviceConf = _service.GetServiceConfiguration();
 
-            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfigBroad, _codecConfigGather);
+            serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfigBroad);
             allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
         }
 

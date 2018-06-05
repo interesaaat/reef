@@ -27,6 +27,7 @@ using MathNet.Numerics.LinearAlgebra.Extension;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
+    using System.Linq;
     using static MatrixExtensionMethods;
 
     public class IterateBroadcastGatherSlaveTask : ITask, IObserver<ICloseEvent>
@@ -49,9 +50,35 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration();
 
+            //// Define some initial settings
+
+            int node_Id = 1;
+            int num_workers = 2;
+            int receive_size = 100;
+            int send_size = 100;
+            int feature_dimension = 100;
+            int num_data = 250;
+            var V = Vector<float>.Build;
+            var M = Matrix<float>.Build;
+
+            //// Define the variables that need to be updated during each iteration
+
+            Vector<float> v_receive = V.Dense(receive_size);
+            Vector<float> v_send = V.Dense(send_size);
+
+            //// Define the data matrices
+
+            Matrix<float> data = M.Random(num_data, feature_dimension);
+
+            Console.WriteLine("Slave has generated the data and obtained {0}", data);
+
+            //// These are some original settings
+
             var rand = new Random();
 
-            var number = rand.Next();
+            float number = new Random().Next(100);
+
+            float[] received;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -62,16 +89,53 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                                receiver.Receive();
+                                var receiver = workflow.Current as IElasticBroadcast<float[]>;
 
-                                Console.WriteLine("Slave has received in iteration {0}", workflow.Iteration);
+                                if (workflow.Iteration.Equals(1))
+                                {
+                                    Console.WriteLine("No receive in the first iteration!");
+
+                                    break;
+                                }
+
+                                //// The matrix vector multiplication part
+
+                                received = receiver.Receive();
+
+                                v_receive = V.Dense(received);
+
+                                Console.WriteLine("Slave has received the vector {0}", v_receive);
+
+                                v_send = data.Transpose().Multiply(data.Multiply(v_receive));
+
+                                Console.WriteLine("Slave has done the gradient computation and obtained {0}", v_send);
+
                                 break;
 
                             case Constants.Gather:
-                                var sender = workflow.Current as IElasticGather<int>;
+                                var sender = workflow.Current as IElasticGather<float>;
 
+                                if (workflow.Iteration.Equals(1))
+                                {
+
+                                    //// In the first iteration, the worker node sends the data to the master node
+                                    //// TODO: For now I just send the data set. However, it should be the case that the system does the thing for you
+                                    //// Ideally, what should be the case is that the data are already stored at the workers
+
+                                    float[] data_slave = data.Transpose().Enumerate().ToArray();
+
+                                    sender.Send(data_slave);
+
+                                    Console.WriteLine("The slave sends its data, this is not ideal and should be changed!");
+
+                                    Console.WriteLine("The data are {0}", data);
+
+                                    break;
+
+                                }
+
+                                /*
                                 if (rand.Next(100) < 1)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before");
@@ -85,11 +149,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                         Environment.Exit(0);
                                     }
                                 }
+                                */
 
-                                sender.Send(new int[] { number });
+                                //// sender.Send(new float[] { number,number,number });
+                                sender.Send(v_send.ToArray());
 
-                                Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
+                                Console.WriteLine("Slave has sent {0} in iteration {1}", v_send, workflow.Iteration);
 
+                                /*
                                 if (rand.Next(100) < 1)
                                 {
                                     Console.WriteLine("I am going to die. Bye. after");
@@ -103,6 +170,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                         Environment.Exit(0);
                                     }
                                 }
+                                */
 
                                 break;
                             default:

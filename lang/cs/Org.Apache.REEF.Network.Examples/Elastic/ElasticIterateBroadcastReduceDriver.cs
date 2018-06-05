@@ -94,8 +94,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
+            _codecConfig = StreamingCodecConfiguration<float[]>.Conf
+                .Set(StreamingCodecConfiguration<float[]>.Codec, GenericType<FloatArrayStreamingCodec>.Class)
                 .Build();
 
             IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int>.Conf
@@ -136,7 +136,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Flat)
+                    .Broadcast<float[]>(TopologyType.Flat)
                     .Reduce<int>(TopologyType.Flat, reduceFunctionConfig)
                     .Build();
 

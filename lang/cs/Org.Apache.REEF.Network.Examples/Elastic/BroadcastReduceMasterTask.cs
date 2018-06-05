@@ -59,8 +59,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                //// var sender = workflow.Current as IElasticBroadcast<float[]>;
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                                var sender = workflow.Current as IElasticBroadcast<float[]>;
 
                                 //// Generating a vector and broadcast it
 
@@ -71,11 +70,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 var svd = m.Svd();
                                 var v_message = v.ToArray();
 
-                                sender.Send(number);
-                                //// sender.Send(v_message);
+                                Console.WriteLine("Master has generated the vector {0}", v);
+                                sender.Send(v_message);
 
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
-                                Console.WriteLine("Master has generated the vector {0} in iteration {1}", v, workflow.Iteration);
+                                Console.WriteLine("Master has sent the vector {0} in iteration {1}", v, workflow.Iteration);
 
                                 System.Threading.Thread.Sleep(1000);
                                 break;
