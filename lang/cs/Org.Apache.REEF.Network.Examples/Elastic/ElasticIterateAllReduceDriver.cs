@@ -16,10 +16,12 @@
 // under the License.
 
 using System;
+using System.Linq;
 using System.Globalization;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
+using Org.Apache.REEF.Network.Group.Pipelining.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
@@ -35,23 +37,20 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
+using Org.Apache.REEF.Network.Elastic.Operators;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
-using Org.Apache.REEF.IO.PartitionedData;
-using Org.Apache.REEF.IO.PartitionedData.FileSystem;
-using System.Collections.Generic;
-using Org.Apache.REEF.IO.FileSystem.Local;
-using System.IO;
-using Org.Apache.REEF.Tang.Formats;
-using System.Linq;
-using Org.Apache.REEF.IO.FileSystem;
+using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of broadcasting using the elastic group communication service.
+    /// Example implementation of a broadcast and reduce pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticBroadcastPDDriver :
+    public class ElasticIterateAllReduceDriver :
         IObserver<IAllocatedEvaluator>,
         IObserver<IActiveContext>,
         IObserver<IDriverStarted>,
@@ -61,9 +60,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IFailedTask>,
         IObserver<ITaskMessage>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastReduceDriver));
 
         private readonly int _numEvaluators;
+        private readonly int _numIterations;
 
         private readonly IConfiguration _tcpPortProviderConfig;
         private readonly IConfiguration _codecConfig;
@@ -74,15 +74,15 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticBroadcastPDDriver(
+        private ElasticIterateAllReduceDriver(
+            [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
-            [Parameter(typeof(ModelFilePath))] string modelFilePath,
-            [Parameter(typeof(PartitionedDatasetFilesPath))] ISet<string> partitionedFiles,
             IElasticTaskSetService service,
             IEvaluatorRequestor evaluatorRequestor)
         {
+            _numIterations = numIterations;
             _numEvaluators = numEvaluators;
             _service = service;
             _evaluatorRequestor = evaluatorRequestor;
@@ -94,65 +94,50 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int[]>.Conf
-                .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
+            _codecConfig = StreamingCodecConfiguration<int>.Conf
+                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
                 .Build();
 
-            var serializerConf = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindImplementation<IFileDeSerializer<IEnumerable<string>>, StringSerializer>(GenericType<IFileDeSerializer<IEnumerable<string>>>.Class,
-                    GenericType<StringSerializer>.Class)
+            IConfiguration reduceFunctionConfig = ReduceFunctionConfiguration<int>.Conf
+                .Set(ReduceFunctionConfiguration<int>.ReduceFunction, GenericType<IntSumFunction>.Class)
                 .Build();
 
-            var serializerConfString = (new AvroConfigurationSerializer()).ToString(serializerConf);
-
-            IPartitionedInputDataSet masterDataSet = TangFactory.GetTang()
-                .NewInjector(FileSystemInputPartitionConfiguration<IEnumerable<string>>.ConfigurationModule
-                    .Set(FileSystemInputPartitionConfiguration<IEnumerable<string>>.FilePathForPartitions, modelFilePath)
-                    .Set(FileSystemInputPartitionConfiguration<IEnumerable<string>>.FileSerializerConfig, serializerConfString)
-                    .Set(FileSystemInputPartitionConfiguration<IEnumerable<string>>.CopyToLocal, "true")
-                .Build(),
-                  LocalFileSystemConfiguration.ConfigurationModule.Build())
-                .GetInstance<IPartitionedInputDataSet>();
-
-            var inputDataSetConf = FileSystemInputPartitionConfiguration<IEnumerable<string>>.ConfigurationModule
-                    .Set(FileSystemInputPartitionConfiguration<IEnumerable<string>>.FileSerializerConfig, serializerConfString)
-                    .Set(FileSystemInputPartitionConfiguration<IEnumerable<string>>.CopyToLocal, "true");
-
-            foreach (var partition in partitionedFiles)
-            {
-                inputDataSetConf = inputDataSetConf.Set(FileSystemInputPartitionConfiguration<IEnumerable<string>>.FilePathForPartitions, partition);
-            }
-
-            IPartitionedInputDataSet inputDataSet = TangFactory.GetTang()
-                .NewInjector(inputDataSetConf.Build(),
-                  LocalFileSystemConfiguration.ConfigurationModule.Build())
-                .GetInstance<IPartitionedInputDataSet>();
+            IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
+                .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
+                    numIterations.ToString(CultureInfo.InvariantCulture))
+               .Build();
 
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<BroadcastPDMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<BroadcastReduceMasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDMasterTask>.Class)
-                    .Build(), masterDataSet.First().GetPartitionConfiguration())
+                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastReduceMasterTask>.Class)
+                    .Build())
+                .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
+                    GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
+                    _numEvaluators.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
-                TaskConfiguration.ConfigurationModule
-                    .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<BroadcastPDSlaveTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDSlaveTask>.Class)
-                    .Build())
-                .Build();
+                    TaskConfiguration.ConfigurationModule
+                        .Set(TaskConfiguration.Identifier, taskId)
+                        .Set(TaskConfiguration.Task, GenericType<BroadcastReduceSlaveTask>.Class)
+                        .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                        .Set(TaskConfiguration.OnClose, GenericType<BroadcastReduceSlaveTask>.Class)
+                        .Build())
+                    .Build();
 
             IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
-            subscription.AddDataset(inputDataSet);
 
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int[]>(TopologyType.Tree)
+            pipeline.Iterate(new DefaultFailureStateMachine(),
+                        CheckpointLevel.None,
+                        iteratorConfig)
+                    .Reduce<int>(TopologyType.Flat)
+                    .Broadcast<int>(TopologyType.Flat)
                     .Build();
 
             // Build the subscription
@@ -175,7 +160,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("BroadcastPDEvaluator")
+                .SetEvaluatorBatchId("IterateAllReduceEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
@@ -221,11 +206,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void OnNext(IFailedEvaluator failedEvaluator)
         {
             _taskManager.OnEvaluatorFailure(failedEvaluator);
-
-            if (_taskManager.IsDone())
-            {
-                _taskManager.Dispose();
-            }
         }
 
         public void OnNext(IFailedTask failedTask)
@@ -245,51 +225,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
-            _taskManager.Dispose();
+            throw new NotImplementedException();
         }
 
         public void OnError(Exception error)
         {
-            _taskManager.Dispose();
-        }
-    }
-
-    [NamedParameter(Documentation = "Model file path")]
-    public class ModelFilePath : Name<string>
-    {
-    }
-
-    [NamedParameter(documentation: "Partitioned datasets paths")]
-    public class PartitionedDatasetFilesPath : Name<ISet<string>>
-    {
-    }
-
-    internal class StringSerializer : IFileDeSerializer<IEnumerable<string>>
-    {
-        [Inject]
-        private StringSerializer()
-        {
-        }
-
-        /// <summary>
-        /// Read bytes from all the files in the set and return one by one
-        /// </summary>
-        /// <param name="filePaths"></param>
-        /// <returns></returns>
-        public IEnumerable<string> Deserialize(ISet<string> filePaths)
-        {
-            foreach (var f in filePaths)
-            {
-                using (FileStream stream = File.Open(f, FileMode.Open))
-                {
-                    StreamReader reader = new StreamReader(stream);
-                    string line;
-                    while ((line = reader.ReadLine()) != null)
-                    {
-                        yield return line;
-                    }
-                }
-            }
+            throw new NotImplementedException();
         }
     }
 }

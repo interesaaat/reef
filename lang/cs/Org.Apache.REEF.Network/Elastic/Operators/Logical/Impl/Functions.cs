@@ -56,6 +56,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators
         {
             var ll = left.Length;
             var rl = right.Length;
+
+            if (left[0].Equals(right[0]))
+            {
+                Console.WriteLine("found");
+            }
+
             Array.Resize(ref left, ll + rl);
             
             for (int i = 0; i < right.Length; i++)

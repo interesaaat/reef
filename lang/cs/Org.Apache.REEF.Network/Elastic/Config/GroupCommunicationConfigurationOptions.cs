@@ -61,7 +61,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         /// Each Communication group needs to check and wait until all the other nodes in the group are registered to the NameServer
         /// Sleep time is set between each retry. 
         /// </summary>
-        [NamedParameter("sleep time to wait for nodes to be registered", defaultValue: "1000")]
+        [NamedParameter("sleep time (in milliseconds) to wait for nodes to be registered", defaultValue: "60000")]
         internal sealed class SleepTimeWaitingForRegistration : Name<int>
         {
         }
@@ -72,9 +72,8 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         /// <remarks>
         /// If a node is waiting for others that need to download data, the waiting time could be long. 
         /// As we can use cancellation token to cancel the waiting for registration, setting this number higher should be OK.
-        /// Current default sleep time is 2000ms. Default retry is 900. Total is 1800s, that is 30 min.
         /// </remarks>
-        [NamedParameter("Retry times to wait for nodes to be registered", defaultValue: "10")]
+        [NamedParameter("Retry times to wait for nodes to be registered", defaultValue: "30")]
         internal sealed class RetryCountWaitingForRegistration : Name<int>
         {
         }

@@ -169,6 +169,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Removing task from a not finalized topology");
             }
 
+            if (taskId == _rootTaskId)
+            {
+                throw new NotImplementedException("Failure on master not supported yet");
+            }
+
             var id = Utils.GetTaskNum(taskId);
             int count = 1;
 
@@ -318,11 +323,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public IList<IElasticDriverMessage> Reconfigure(string taskId, Optional<string> info, Optional<int> iteration)
         {
-            if (taskId == _rootTaskId)
-            {
-                throw new NotImplementedException("Failure on master not supported yet");
-            }
-
             List<IElasticDriverMessage> messages = new List<IElasticDriverMessage>();
 
             lock (_lock)

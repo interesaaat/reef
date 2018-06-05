@@ -132,6 +132,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new ArgumentNullException("taskId");
             }
 
+            if (taskId == _rootTaskId)
+            {
+                throw new NotImplementedException("Failure on master not supported yet");
+            }
+
             var id = Utils.GetTaskNum(taskId);
 
             lock (_lock)

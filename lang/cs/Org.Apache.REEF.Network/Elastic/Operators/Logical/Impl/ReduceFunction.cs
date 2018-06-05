@@ -57,6 +57,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
                         throw new IllegalStateException("Aggregating not matching iterations");
                     }
 
+                    if (ground.Data.Equals(dataElement.Data))
+                    {
+                        Console.WriteLine("Ops");
+                    }
+
                     ground.Data = Reduce(ground.Data, dataElement.Data);
                 }
             }

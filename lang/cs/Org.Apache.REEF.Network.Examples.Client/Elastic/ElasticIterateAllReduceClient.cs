@@ -29,37 +29,32 @@ using Org.Apache.REEF.Client.Local;
 using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Examples.Elastic;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
-    public class ElasticIterateGatherClient
+    public class ElasticIterateAllReduceClient
     {
         const string Local = "local";
         const string Yarn = "yarn";
         const string DefaultRuntimeFolder = "REEF_LOCAL_RUNTIME";
 
-        public void RunIterateGather(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
+        public void RunIterateAllReduce(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 100;
-            const string driverId = "IterateGatherDriver";
-            const string subscription = "IterateGather";
+            const string driverId = "ElasticIterativeAllReduceDriver";
+            const string subscription = "IterativeAllReduce";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
-                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
+                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateAllReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateAllReduceDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<NumIterations, int>(
-                    GenericType<NumIterations>.Class,
-                    numIterations.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
                     numTasks.ToString(CultureInfo.InvariantCulture))
@@ -80,7 +75,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticIterateBroadcastGatherDriver), numTasks, "ID", runPlatform);
+            TestRun(merged, typeof(ElasticIterateAllReduceDriver), numTasks, "IA", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)
