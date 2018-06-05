@@ -122,7 +122,7 @@ namespace Org.Apache.REEF.Network.Examples.Client
 
             if (testToRun.Equals("ElasticIterateGather".ToLower()) || testToRun.Equals("all"))
             {
-                new ElasticIterateGatherClient().RunIterateGather(runOnYarn, numNodes, startPort, portRange);
+                new ElasticIterateBroadcastGatherClient().RunIterateBroadcastGather(runOnYarn, numNodes, startPort, portRange);
                 Console.WriteLine("ElasticIterateGather completed!!!");
             }
 
