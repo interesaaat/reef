@@ -22,6 +22,7 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -59,12 +60,17 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 Console.WriteLine("Master has sent in iteration {0}", workflow.Iteration);
 
-                                System.Threading.Thread.Sleep(1000);
+                                System.Threading.Thread.Sleep(100);
                                 break;
                             case Constants.Gather:
                                 var receiver = workflow.Current as IElasticGather<int>;
 
                                 var numbers = receiver.Receive();
+
+                                if (numbers.Skip(1).Any(x => x == numbers[0]))
+                                {
+                                    Console.WriteLine("here!");
+                                }
 
                                 Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", numbers), workflow.Iteration);
                                 break;

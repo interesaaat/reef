@@ -52,6 +52,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             var rand = new Random();
 
             var number = rand.Next();
+            var numbers = new int[100];
+            for (int i = 0; i < 100; i++)
+            {
+                numbers[i] = rand.Next();
+            }
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -72,7 +77,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                             case Constants.Gather:
                                 var sender = workflow.Current as IElasticGather<int>;
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before");
 
@@ -86,11 +91,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     }
                                 }
 
-                                sender.Send(new int[] { number });
+                                sender.Send(numbers);
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. after");
 
