@@ -115,6 +115,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             var injector = TangFactory.GetTang().NewInjector(confs);
             Type parametersType = typeof(TaskSetManagerParameters);
             _parameters = injector.GetInstance(parametersType) as TaskSetManagerParameters;
+
+            // Set up the timeout
+            List<IElasticDriverMessage> msgs = null;
+            var nextTimeouts = new List<Failures.Impl.Timeout>();
+
+            OnTimeout(new TasksetAlarm(0, this), ref msgs, ref nextTimeouts);
         }
 
         public void AddTaskSetSubscription(IElasticTaskSetSubscription subscription)
@@ -135,6 +141,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public bool TryGetNextTaskContextId(IAllocatedEvaluator evaluator, out string identifier)
         {
             int id;
+            _hasProgress = true;
 
             if (_queuedTasks.TryDequeue(out id))
             {
@@ -204,9 +211,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             LOGGER.Log(Level.Info, "Evaluator {0} is scheduled on node {1}", activeContext.EvaluatorId, activeContext.EvaluatorDescriptor.NodeDescriptor.HostName);
 
+            _hasProgress = true;
             var id = Utils.GetContextNum(activeContext) - 1;
 
-            if (_taskInfos[id] != null)
+            // We reschedule the task only if the context was active (_taskInfos[id] != null) and the task was actually scheduled at least once (_taskInfos[id].TaskStatus > TaskStatus.Init)
+            if (_taskInfos[id] != null && _taskInfos[id].TaskStatus > TaskStatus.Init)
             {
                 LOGGER.Log(Level.Info, "{0} already part of Task Set: going to directly submit it", Utils.BuildTaskId(SubscriptionsId, id + 1));
 
@@ -241,22 +250,26 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool StartSubmitTasks()
         {
-            if (_subscriptions.All(sub => sub.Value.ScheduleSubscription()))
+            lock (_statusLock)
             {
-                LOGGER.Log(Level.Info, string.Format("Scheduling {0} tasks from Taskset {1}", _tasksAdded, SubscriptionsId));
+                if (_scheduled)
+                {
+                    return false;
+                }
 
-                _scheduled = true;
+                if (_subscriptions.All(sub => sub.Value.ScheduleSubscription()))
+                {
+                    _scheduled = true;
+
+                    LOGGER.Log(Level.Info, string.Format("Scheduling {0} tasks from Taskset {1}", _tasksAdded, SubscriptionsId));
+                }
             }
+
             return _scheduled;
         }
 
         public void SubmitTasks()
         {
-            List<IElasticDriverMessage> msgs = null;
-            var nextTimeouts = new List<Failures.Impl.Timeout>();
-
-            OnTimeout(new TasksetAlarm(0, this), ref msgs, ref nextTimeouts);
-
             for (int i = 0; i < _numTasks; i++)
             {
                 if (_taskInfos[i] != null)
@@ -412,9 +425,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             {
                 if (!_hasProgress)
                 {
-                    LOGGER.Log(Level.Error, "Taskset made no progress in the last {0}ms. Aborting.", _parameters.Timeout);
-                    OnFail();
-                    return;
+                    if (Completed() || Failed())
+                    {
+                        LOGGER.Log(Level.Warning, "Taskset made no progress in the last {0}ms. Forcing Disposal.", _parameters.Timeout);
+                        Dispose();
+                    }
+                    else
+                    {
+                        LOGGER.Log(Level.Error, "Taskset made no progress in the last {0}ms. Aborting.", _parameters.Timeout);
+                        OnFail();
+                        return;
+                    }
                 }
                 else
                 {
@@ -440,13 +461,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public void OnNext(Alarm value)
         {
-            if (!Completed() && !Failed())
-            {
-                var msgs = new List<IElasticDriverMessage>();
-                var nextTimeouts = new List<Failures.Impl.Timeout>();
+            var msgs = new List<IElasticDriverMessage>();
+            var nextTimeouts = new List<Failures.Impl.Timeout>();
 
-                OnTimeout(value, ref msgs, ref nextTimeouts);
-            }
+            OnTimeout(value, ref msgs, ref nextTimeouts);
         }
 
         public void OnTaskFailure(IFailedTask info, ref List<IFailureEvent> failureEvents)
@@ -525,6 +543,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     if (_evaluatorToContextIdMapping.TryRemove(evaluator.Id, out int id))
                     {
+                        if (_taskInfos[id - 1] != null)
+                        {
+                            lock (_taskInfos[id - 1].Lock)
+                            {
+                                _taskInfos[id - 1].DropRuntime();
+                            }
+                        }
+
                         _queuedContexts.Enqueue(id);
                     }
                     SpawnNewEvaluator();

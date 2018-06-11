@@ -201,6 +201,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _prev.Build();
             }
 
+            if (OperatorName == Constants.Iterate)
+            {
+                Subscription.IsIterative = true;
+            }
+
             _operatorFinalized = true;
 
             return this;
@@ -231,11 +236,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _topology.Build();
 
             LogOperatorState();
-
-            if (OperatorName == Constants.Iterate)
-            {
-                Subscription.IsIterative = true;
-            }
 
             _operatorStateFinalized = true;
            

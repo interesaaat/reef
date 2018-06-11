@@ -22,30 +22,26 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateSlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateBroadcastMasterTask(IElasticTaskSetService serviceClient)
+        public IterateSlaveTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
-
-            System.Threading.Thread.Sleep(20000);
+            _subscriptionClient = _serviceClient.GetSubscription("Iterate");
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration();
-
-            var rand = new Random();
-            int number = 0;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -53,21 +49,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 {
                     while (workflow.MoveNext())
                     {
-                        number = rand.Next();
-
                         switch (workflow.Current.OperatorName)
                         {
-                            case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
-
-                                sender.Send(number);
-
-                                System.Threading.Thread.Sleep(100);
-
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
-                                break;
                             default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                                Console.WriteLine("Iteration {0}", workflow.Iteration);
+
+                                System.Threading.Thread.Sleep(1000);
+                                break;
                         }
                     }
                 }
@@ -97,6 +85,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnCompleted()
         {
+        }
+
+        static float NextFloat(Random random)
+        {
+            double mantissa = (random.NextDouble() * 2.0) - 1.0;
+            double exponent = Math.Pow(2.0, random.Next(-126, 128));
+            return (float)(mantissa * exponent);
         }
     }
 }

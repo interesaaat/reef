@@ -81,16 +81,24 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _totTime = 0;
         }
 
-        internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
+        public override bool AddTask(string taskId)
         {
-            if (_operatorFinalized != true)
+            if (_operatorFinalized == false)
             {
-                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
+                throw new IllegalStateException("Operator needs to be built before adding tasks");
             }
+
+            _topology.AddTask(taskId, _failureMachine);
 
             if (_next != null)
             {
-                _next.GatherMasterIds(ref missingMasterTasks);
+                // A task is new if it got added by at least one operator
+                return _next.AddTask(taskId);
+            }
+            else
+            {
+                // If iterate is the only operator, by default each node is new
+                return true;
             }
         }
 

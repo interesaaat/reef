@@ -19,6 +19,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
@@ -99,7 +100,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             if (_position == _iteratorPosition)
             {
-                var iteratorOperator = Current as IElasticIterator;
+                var iteratorOperator = _operators[_position] as IElasticIterator;
 
                 if (iteratorOperator.MoveNext())
                 {
@@ -115,7 +116,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
             }
 
-            if (_operators.Count == _position)
+            if (_operators.Count <= _position)
             {
                 if (_iteratorPosition == -1)
                 {
@@ -155,7 +156,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public IElasticOperator Current
         {
-            get { return _position == -1 ? _operators[0] : _operators[_position]; }
+            get
+            {
+                // If the workflow is composed by an iterator operator only, return a empty operator
+                if (_operators.Count == 1 && _iteratorPosition != -1)
+                {
+                    return new EmptyOperator();
+                }
+                return _position == -1 ? _operators[0] : _operators[_position];
+            }
         }
 
         public ICheckpointableState GetCheckpointableState()

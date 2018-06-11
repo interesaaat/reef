@@ -72,7 +72,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _scheduled = false;
             _numTasks = numTasks;
             _tasksAdded = 0;
-            _missingMasterTasks = new HashSet<string>();
             _masterTasks = new HashSet<string>();
             _datasetConfiguration = Optional<IConfiguration[]>.Empty();
             Completed = false;
@@ -109,6 +108,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _isMasterGettingInputData = isMasterGettingInputData;
 
             _datasetConfiguration = Optional<IConfiguration[]>.Of(inputDataSet.Select(x => x.GetPartitionConfiguration()).ToArray());
+        }
+
+        public void AddDataset(IConfiguration[] inputDataSet, bool isMasterGettingInputData = false)
+        {
+            _isMasterGettingInputData = isMasterGettingInputData;
+
+            _datasetConfiguration = Optional<IConfiguration[]>.Of(inputDataSet);
         }
 
         public bool AddTask(string taskId)
@@ -161,7 +167,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool ScheduleSubscription()
         {
-            if (_numTasks == _tasksAdded || (IsIterative && _defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled()))
+            if (!_scheduled && (_numTasks == _tasksAdded || (IsIterative && _defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled())))
             {
                 _scheduled = true;
 
@@ -180,7 +186,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
 
             int id = Utils.GetContextNum(activeContext);
-            return id == 1;
+            return _masterTasks.Select(Utils.GetTaskNum).Any(x => x == id);
         }
 
         public IConfiguration GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
@@ -210,7 +216,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
 
             var index = Utils.GetTaskNum(taskId) - 1;
-            index = _isMasterGettingInputData ? index : index - 1;
+            index = _masterTasks.Count == 0 || _isMasterGettingInputData ? index : index - 1;
+
+            if (index < 0 || index >= _datasetConfiguration.Value.Length)
+            {
+                throw new IllegalStateException(string.Format("Asking for a not existing partition configuration {0}.", index));
+            }
 
             return Optional<IConfiguration>.Of(_datasetConfiguration.Value[index]);
         }
@@ -230,11 +241,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     throw new IllegalStateException(string.Format("Dataset is smaller than the number of tasks: re-submit with {0} tasks", _datasetConfiguration.Value.Length + adjust));
                 }
-
-                RootOperator.GatherMasterIds(ref _masterTasks);
             }
 
-            RootOperator.GatherMasterIds(ref _missingMasterTasks);
+            RootOperator.GatherMasterIds(ref _masterTasks);
+            _missingMasterTasks = new HashSet<string>(_masterTasks);
 
             _finalized = true;
 
