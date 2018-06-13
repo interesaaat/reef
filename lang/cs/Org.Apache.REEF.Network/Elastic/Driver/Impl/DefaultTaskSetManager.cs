@@ -195,7 +195,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return _subscriptions.Values.Where(sub => sub.IsMasterTaskContext(activeContext));
         }
 
-        public void OnNewActiveContext(IActiveContext activeContext)
+        public void OnNewActiveContext(IActiveContext activeContext, params IConfiguration[] taskConfs)
         {
             if (_finalized != true)
             {
@@ -233,18 +233,20 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 LOGGER.Log(Level.Info, "Task {0} to be scheduled on {1}", taskId, activeContext.EvaluatorId);
 
-                IConfiguration partialTaskConf;
+                List<IConfiguration> partialTaskConfs = taskConfs.ToList();
 
                 if (isMaster)
                 {
-                    partialTaskConf = _masterTaskConfiguration(taskId);
+                    partialTaskConfs.Add(_masterTaskConfiguration(taskId));
                 }
                 else
                 {
-                    partialTaskConf = _slaveTaskConfiguration(taskId);
+                    partialTaskConfs.Add(_slaveTaskConfiguration(taskId));
                 }
 
-                AddTask(taskId, partialTaskConf, activeContext);
+                
+
+                AddTask(taskId, activeContext, partialTaskConfs);
             }
         }
 
@@ -675,12 +677,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        private void AddTask(string taskId, IConfiguration partialTaskConfig, IActiveContext activeContext)
+        private void AddTask(string taskId, IActiveContext activeContext, List<IConfiguration> partialTaskConfigs)
         {
             Interlocked.Increment(ref _tasksAdded);
             var subList = new List<IElasticTaskSetSubscription>();
             var id = Utils.GetTaskNum(taskId) - 1;
-            var partitionsConfs = new List<IConfiguration>() { partialTaskConfig };
 
             foreach (var sub in _subscriptions)
             {
@@ -691,7 +692,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                     if (partitionConf.IsPresent())
                     {
-                        partitionsConfs.Add(partitionConf.Value);
+                        partialTaskConfigs.Add(partitionConf.Value);
                     }
                 }
                 else
@@ -702,7 +703,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
             }
 
-            var aggregatedConfs = partitionsConfs.Aggregate((x, y) => Configurations.Merge(x, y));
+            var aggregatedConfs = partialTaskConfigs.Aggregate((x, y) => Configurations.Merge(x, y));
 
             _taskInfos[id] = new TaskInfo(aggregatedConfs, activeContext, activeContext.EvaluatorId, TaskStatus.Init, subList);
 
