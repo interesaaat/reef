@@ -489,6 +489,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         _taskInfos[id].SetTaskStatus(TaskStatus.Failed);
                     }
 
+                    _taskInfos[id].Dispose();
+
                     return;
                 }
 

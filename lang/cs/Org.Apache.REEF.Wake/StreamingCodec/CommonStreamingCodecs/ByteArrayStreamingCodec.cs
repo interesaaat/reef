@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
         public byte[] Read(IDataReader reader)
         {
             int length = reader.ReadInt32();
-            byte[] buffer = new byte[sizeof(byte) * length];
+            byte[] buffer = new byte[length];
             reader.Read(ref buffer, 0, buffer.Length);
             return buffer;
         }
@@ -92,7 +92,7 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
             {
                 throw new ArgumentNullException("obj", "float array is null");
             }
-            var length = obj.Length * sizeof(float);
+            var length = obj.Length;
             await writer.WriteInt32Async(obj.Length, token);
             writer.WriteAsync(obj, 0, length, token);
         }

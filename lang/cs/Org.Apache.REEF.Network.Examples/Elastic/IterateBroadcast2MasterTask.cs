@@ -22,21 +22,20 @@ using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
-using System.Linq;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastGatherMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateBroadcast2MasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateBroadcastGatherMasterTask(IElasticTaskSetService serviceClient)
+        public IterateBroadcast2MasterTask(IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateGather");
+            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
 
             System.Threading.Thread.Sleep(20000);
         }
@@ -45,32 +44,52 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration();
 
+            var rand = new Random();
+            int number = 0;
+
+            System.Threading.Thread.Sleep(20000);
+
             using (var workflow = _subscriptionClient.Workflow)
             {
                 try
                 {
                     while (workflow.MoveNext())
                     {
+                        number = rand.Next();
+
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
                                 var sender = workflow.Current as IElasticBroadcast<byte[]>;
 
-                                sender.Send(new byte[1] { 1 });
-
-                                Console.WriteLine("Master has sent in iteration {0}", workflow.Iteration);
+                                sender.Send(new byte[] { 1 });
 
                                 System.Threading.Thread.Sleep(100);
-                                break;
-                            case Constants.Gather:
-                                var receiver = workflow.Current as IElasticGather<byte>;
 
-                                var numbers = receiver.Receive();
-
-                                Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", numbers), workflow.Iteration);
+                                Console.WriteLine("Master has sent {0} in first workflow iteration {1}", number, workflow.Iteration);
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                                throw new InvalidOperationException("Operation " + workflow.Current + " in first workflow not implemented");
+                        }
+                    }
+
+                    while (workflow.MoveNext())
+                    {
+                        number = rand.Next();
+
+                        switch (workflow.Current.OperatorName)
+                        {
+                            case Constants.Broadcast:
+                                var sender = workflow.Current as IElasticBroadcast<byte[]>;
+
+                                sender.Send(new byte[] { 1 });
+
+                                System.Threading.Thread.Sleep(100);
+
+                                Console.WriteLine("Master has sent {0} in second workflow iteration {1}", number, workflow.Iteration);
+                                break;
+                            default:
+                                throw new InvalidOperationException("Operation " + workflow.Current + " in second workflow not implemented");
                         }
                     }
                 }

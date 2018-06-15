@@ -105,6 +105,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 var opException = task.AsError() as OperatorException;
                 failedOperatorId = opException.OperatorId;
             }
+            else
+            {
+                LOGGER.Log(Level.Info, "Failure from {0} cannot be properly managed: failing", task.Id);
+                failureEvents.Add(new FailEvent(task.Id));
+            }
 
             if (WithinIteration || failedOperatorId <= _id)
             {

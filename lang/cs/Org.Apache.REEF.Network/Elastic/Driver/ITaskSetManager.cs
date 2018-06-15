@@ -17,11 +17,11 @@
 
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Context;
-using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using System;
+using Org.Apache.REEF.Tang.Interface;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -82,7 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <summary>
         /// TODO
         /// </summary>
-        void OnNewActiveContext(IActiveContext activeContext);
+        void OnNewActiveContext(IActiveContext activeContext, params IConfiguration[] additionalTaskConfs);
 
         /// <summary>
         /// Actions to execute when a notification that a task is running is received.

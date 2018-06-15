@@ -49,6 +49,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         private readonly Stopwatch _timer;
         private long _totTime;
 
+        private bool _isLast;
+
         public DefaultEnumerableIterator(
             int masterTaskId,
             ElasticOperator prev,
@@ -65,6 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             MasterId = masterTaskId;
             OperatorName = Constants.Iterate;
             WithinIteration = true;
+            _isLast = false;
             _iteration = 0;
 
             foreach (var conf in _configurations)
@@ -79,6 +82,38 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
             _timer = new Stopwatch();
             _totTime = 0;
+        }
+
+        /// <summary>
+        /// Finalizes the Operator.
+        /// </summary>
+        /// <returns>The same finalized Operator</returns>
+        public override ElasticOperator Build()
+        {
+            if (_operatorFinalized == true)
+            {
+                throw new IllegalStateException("Operator cannot be built more than once");
+            }
+
+            if (_prev != null)
+            {
+                _prev.Build();
+            }
+
+            Subscription.IsIterative = true;
+
+            // Pipelines can have more then 1 iterator: make the last one aware that it has to 
+            // complete the subscription when done
+            _isLast = _next.CheckIfLastIterator();
+
+            _operatorFinalized = true;
+
+            return this;
+        }
+
+        public override bool CheckIfLastIterator()
+        {
+            return false;
         }
 
         public override bool AddTask(string taskId)
@@ -116,7 +151,14 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             switch (msgReceived)
             {
                 case TaskMessageType.IterationNumber:
-                    var newIteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, 2));
+                    var operatorId = BitConverter.ToInt16(message.Message, sizeof(ushort));
+
+                    if (operatorId != _id)
+                    {
+                        return false;
+                    }
+
+                    var newIteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, sizeof(ushort) + sizeof(ushort)));
 
                     if (_iteration < newIteration)
                     {
@@ -195,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return string.Format("\nNumber of Iterations {0}\nTotal computation time {1}s\nAverage iteration time {2}ms", Math.Min(actualIteration, _numIterations), (float)_totTime / 1000.0, _totTime / actualIteration);
         }
 
-        protected override void OnNewIteration(int iteration)
+        private new void OnNewIteration(int iteration)
         {
             _timer.Stop();
             _totTime += _timer.ElapsedMilliseconds;
@@ -204,7 +246,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
             if (_iteration > _numIterations)
             {
-                Subscription.Completed = true;
+                if (_isLast)
+                {
+                    Subscription.Completed = true;
+                }
             }
             else
             {

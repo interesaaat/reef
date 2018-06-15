@@ -224,9 +224,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskToDriverDispatcher.NextDataRequest(taskId, iteration);
         }
 
-        public void IterationNumber(string taskId, int iteration)
+        public void IterationNumber(string taskId, int operatorId, int iteration)
         {
-            _taskToDriverDispatcher.IterationNumber(taskId, iteration);
+            _taskToDriverDispatcher.IterationNumber(taskId, operatorId, iteration);
         }
 
         public void JoinTopology(string taskId, int operatorId)

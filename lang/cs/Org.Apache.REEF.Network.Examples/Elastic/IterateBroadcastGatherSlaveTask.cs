@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
+                                var receiver = workflow.Current as IElasticBroadcast<byte[]>;
 
                                 receiver.Receive();
 
@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 break;
 
                             case Constants.Gather:
-                                var sender = workflow.Current as IElasticGather<int>;
+                                var sender = workflow.Current as IElasticGather<byte>;
 
                                 if (rand.Next(100) < 0)
                                 {
@@ -91,7 +91,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                     }
                                 }
 
-                                sender.Send(numbers);
+                                sender.Send( new byte[1] { 1 });
 
                                 Console.WriteLine("Slave has sent {0} in iteration {1}", number, workflow.Iteration);
 

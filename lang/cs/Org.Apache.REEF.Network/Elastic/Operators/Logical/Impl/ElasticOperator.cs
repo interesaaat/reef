@@ -201,14 +201,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _prev.Build();
             }
 
-            if (OperatorName == Constants.Iterate)
-            {
-                Subscription.IsIterative = true;
-            }
-
             _operatorFinalized = true;
 
             return this;
+        }
+
+        public virtual bool CheckIfLastIterator()
+        {
+            if (_next == null)
+            {
+                return true;
+            }
+
+            return _next.CheckIfLastIterator();
         }
 
         /// <summary>
@@ -576,7 +581,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <summary>
         /// TODO
         /// </summary>
-        protected virtual void OnNewIteration(int iteration)
+        protected void OnNewIteration(int iteration)
         {
             _topology.OnNewIteration(iteration);
 

@@ -36,11 +36,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _heartBeatManager = heartBeatManager;
         }
 
-        internal void IterationNumber(string taskId, int iteration)
+        internal void IterationNumber(string taskId, int operatorId, int iteration)
         {
             byte[] message = new byte[6];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.IterationNumber), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)operatorId), 0, message, sizeof(ushort), sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)iteration), 0, message, sizeof(ushort) + sizeof(ushort), sizeof(ushort));
 
             Logger.Log(Level.Info, string.Format("Sending current iteration number ({0}) through heartbeat", iteration));
 
@@ -51,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             var message = new byte[6];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.JoinTopology), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(operatorId), 0, message, sizeof(ushort), sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)operatorId), 0, message, sizeof(ushort), sizeof(ushort));
 
             Logger.Log(Level.Info, string.Format("Operator {0} requesting to join the topology through heartbeat", operatorId));
 
@@ -62,7 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             var message = new byte[10];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.TopologyUpdateRequest), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(operatorId), 0, message, sizeof(ushort), sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)operatorId), 0, message, sizeof(ushort), sizeof(ushort));
      
             Logger.Log(Level.Info, string.Format("Operator {0} requesting a topology update through heartbeat", operatorId));
 
@@ -73,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             var message = new byte[6];
             Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.NextDataRequest), 0, message, 0, sizeof(ushort));
-            Buffer.BlockCopy(BitConverter.GetBytes(iteration), 0, message, sizeof(ushort), sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)iteration), 0, message, sizeof(ushort), sizeof(ushort));
 
             Logger.Log(Level.Info, "Sending request for data through heartbeat");
 

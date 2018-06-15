@@ -44,9 +44,9 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of an iterative scatter pipeline using the elastic group communication service.
+    /// Example implementation of an iterative broadcast pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticIterateBroadcastGatherDriver : 
+    public class ElasticIterateBroadcast2Driver : 
         IObserver<IAllocatedEvaluator>, 
         IObserver<IActiveContext>, 
         IObserver<IDriverStarted>,
@@ -56,14 +56,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IFailedTask>,
         IObserver<ITaskMessage>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastGatherDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcast2Driver));
 
         private readonly int _numEvaluators;
         private readonly int _numIterations;
 
         private readonly IConfiguration _tcpPortProviderConfig;
-        private readonly IConfiguration _codecConfigBroad;
-        private readonly IConfiguration _codecConfigGather;
+        private readonly IConfiguration _codecConfig;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
         private readonly IElasticTaskSetService _service;
@@ -71,7 +70,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticIterateBroadcastGatherDriver(
+        private ElasticIterateBroadcast2Driver(
             [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
@@ -91,11 +90,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfigBroad = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
-                .Build();
-
-            _codecConfigGather = StreamingCodecConfiguration<byte[]>.Conf
+            _codecConfig = StreamingCodecConfiguration<byte[]>.Conf
                 .Set(StreamingCodecConfiguration<byte[]>.Codec, GenericType<ByteArrayStreamingCodec>.Class)
                 .Build();
 
@@ -107,9 +102,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcast2MasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcast2MasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -119,9 +114,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcast2SlaveTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcast2SlaveTask>.Class)
                     .Build())
                 .Build();
 
@@ -133,8 +128,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<byte[]>(TopologyType.Flat)
-                    .Gather<byte>(TopologyType.Flat)
+                    .Broadcast<byte[]>(TopologyType.Tree,
+                        CheckpointLevel.None)
+                    .Iterate(new DefaultFailureStateMachine(),
+                        CheckpointLevel.None,
+                        iteratorConfig)
+                    .Broadcast<byte[]>(TopologyType.Tree,
+                        CheckpointLevel.None)
                     .Build();
 
             // Build the subscription
@@ -157,7 +157,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .SetMegabytes(512)
                 .SetCores(1)
                 .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("IterateGatherEvaluator")
+                .SetEvaluatorBatchId("IterateBroadcastEvaluator")
                 .Build();
             _evaluatorRequestor.Submit(request);
         }
@@ -171,7 +171,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     .Build();
                 IConfiguration serviceConf = _service.GetServiceConfiguration();
 
-                serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfigBroad, _codecConfigGather);
+                serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
                 allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
             }
             else

@@ -58,9 +58,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                                var sender = workflow.Current as IElasticBroadcast<byte[]>;
 
-                                sender.Send(number);
+                                sender.Send(new byte[] { 1 });
 
                                 System.Threading.Thread.Sleep(100);
 

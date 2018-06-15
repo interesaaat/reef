@@ -20,30 +20,30 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
-using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastGatherMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateBroadcast2SlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateBroadcastGatherMasterTask(IElasticTaskSetService serviceClient)
+        public IterateBroadcast2SlaveTask(
+            IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateGather");
-
-            System.Threading.Thread.Sleep(20000);
+            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
         }
 
         public byte[] Call(byte[] memento)
         {
             _serviceClient.WaitForTaskRegistration();
+
+            var rand = new Random();
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -54,23 +54,30 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<byte[]>;
+                                var receiver = workflow.Current as IElasticBroadcast<byte[]>;
 
-                                sender.Send(new byte[1] { 1 });
+                                var rec = receiver.Receive();
 
-                                Console.WriteLine("Master has sent in iteration {0}", workflow.Iteration);
-
-                                System.Threading.Thread.Sleep(100);
-                                break;
-                            case Constants.Gather:
-                                var receiver = workflow.Current as IElasticGather<byte>;
-
-                                var numbers = receiver.Receive();
-
-                                Console.WriteLine("Master has received {0} in iteration {1}", string.Join(",", numbers), workflow.Iteration);
+                                Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                                throw new InvalidOperationException(string.Format("Operation {0} in workflow not implemented", workflow.Current.OperatorName));
+                        }
+                    }
+
+                    while (workflow.MoveNext())
+                    {
+                        switch (workflow.Current.OperatorName)
+                        {
+                            case Constants.Broadcast:
+                                var receiver = workflow.Current as IElasticBroadcast<byte[]>;
+
+                                var rec = receiver.Receive();
+
+                                Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
+                                break;
+                            default:
+                                throw new InvalidOperationException(string.Format("Operation {0} in workflow not implemented", workflow.Current.OperatorName));
                         }
                     }
                 }
@@ -83,15 +90,19 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
-        public void OnNext(ICloseEvent value)
+        public void Handle(IDriverMessage message)
         {
-            _subscriptionClient.Cancel();
         }
 
         public void Dispose()
         {
             _subscriptionClient.Cancel();
             _serviceClient.Dispose();
+        }
+
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
         }
 
         public void OnError(Exception error)
