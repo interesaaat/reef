@@ -243,9 +243,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     partialTaskConfs.Add(_slaveTaskConfiguration(taskId));
                 }
-
-                
-
+                                
                 AddTask(taskId, activeContext, partialTaskConfs);
             }
         }
@@ -731,6 +729,13 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             lock (_taskInfos[id].Lock)
             {
+                // Check that the task was not already submitted. This may happen for instance if _scheduled is set to true
+                // and a new active context message is received.
+                if (_taskInfos[id].TaskStatus == TaskStatus.Submitted)
+                {
+                    return;
+                }
+
                 var subs = _taskInfos[id].Subscriptions;
                 ICsConfigurationBuilder confBuilder = TangFactory.GetTang().NewConfigurationBuilder();
                 var rescheduleConfs = _taskInfos[id].RescheduleConfigurations;

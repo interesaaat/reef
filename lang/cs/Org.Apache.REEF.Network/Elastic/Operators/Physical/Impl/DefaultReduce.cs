@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     /// Group Communication Operator used to receive broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
-    public sealed class DefaultReduce<T> : DefaultNToOne<T>, IElasticReducer<T>
+    public sealed class DefaultReduce<T> : DefaultNToOne<T>, IElasticReduce<T>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultReduce<>));
 
