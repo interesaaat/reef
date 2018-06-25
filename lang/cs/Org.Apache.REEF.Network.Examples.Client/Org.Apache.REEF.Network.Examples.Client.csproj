@@ -26,6 +26,9 @@ under the License.
     <Optimize>false</Optimize>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net461|x64'">
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
   <Import Project="..\build.App.props" />
   <ItemGroup>
     <ProjectReference Include="..\Org.Apache.REEF.Client\Org.Apache.REEF.Client.csproj" />

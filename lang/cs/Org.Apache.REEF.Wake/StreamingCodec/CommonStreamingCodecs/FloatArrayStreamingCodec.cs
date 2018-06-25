@@ -30,17 +30,12 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
     {
         private const int MAX_SIZE = 1024 * 256;
 
-        private readonly byte[] _writeBuffer;
-        private readonly byte[] _readBuffer;
-
         /// <summary>
         /// Injectable constructor
         /// </summary>
         [Inject]
         private FloatArrayStreamingCodec()
         {
-            _writeBuffer = new byte[MAX_SIZE];
-            _readBuffer = new byte[MAX_SIZE];
         }
 
         /// <summary>
@@ -92,6 +87,7 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
             {
                 var total = 0;
                 var toRead = 0;
+                var _readBuffer = new byte[MAX_SIZE];
 
                 while (total < length)
                 {
@@ -103,6 +99,7 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
             }
             else
             {
+                var _readBuffer = new byte[length];
                 await reader.ReadAsync(_readBuffer, 0, length, token);
                 Buffer.BlockCopy(_readBuffer, 0, floatArr, 0, length);
             }
@@ -129,6 +126,7 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
             {
                 var total = 0;
                 var toWrite = 0;
+                var _writeBuffer = new byte[MAX_SIZE];
 
                 while (total < length)
                 {
@@ -139,7 +137,8 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
                 }
             }
             else
-            {  
+            {
+                var _writeBuffer = new byte[length];
                 Buffer.BlockCopy(obj, 0, _writeBuffer, 0, length);
                 writer.WriteAsync(_writeBuffer, 0, length, token);
             }

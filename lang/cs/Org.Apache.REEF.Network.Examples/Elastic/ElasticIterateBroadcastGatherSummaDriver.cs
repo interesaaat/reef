@@ -46,9 +46,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
     /// <summary>
     /// Example implementation of an iterative scatter pipeline using the elastic group communication service.
     /// </summary>
-    public class ElasticIterateBroadcastGatherDriver : 
-        IObserver<IAllocatedEvaluator>, 
-        IObserver<IActiveContext>, 
+    public class ElasticIterateBroadcastGatherSummaDriver :
+        IObserver<IAllocatedEvaluator>,
+        IObserver<IActiveContext>,
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
@@ -56,7 +56,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         IObserver<IFailedTask>,
         IObserver<ITaskMessage>
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastGatherDriver));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticIterateBroadcastGatherSummaDriver));
 
         private readonly int _numEvaluators;
         private readonly int _numIterations;
@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly ITaskSetManager _taskManager;
 
         [Inject]
-        private ElasticIterateBroadcastGatherDriver(
+        private ElasticIterateBroadcastGatherSummaDriver(
             [Parameter(typeof(NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
@@ -103,9 +103,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherSummaMasterTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherMasterTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherSummaMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
@@ -115,9 +115,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherSummaSlaveTask>.Class)
                     .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherSummaSlaveTask>.Class)
                     .Build())
                 .Build();
 
