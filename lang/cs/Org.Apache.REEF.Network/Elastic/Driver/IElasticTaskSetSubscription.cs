@@ -121,5 +121,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// TODO
         /// </summary>
         void AddDataset(IPartitionedInputDataSet inputDataSet, bool isMasterGettingInputData = false);
+
+        /// <summary>
+        /// TODO
+        /// </summary>
+        void AddDataset(IConfiguration[] inputDataSet, bool isMasterGettingInputData = false);
     }
 }

@@ -90,8 +90,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            _codecConfig = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
+            _codecConfig = StreamingCodecConfiguration<byte[]>.Conf
+                .Set(StreamingCodecConfiguration<byte[]>.Codec, GenericType<ByteArrayStreamingCodec>.Class)
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -128,7 +128,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<int>(TopologyType.Tree,
+                    .Broadcast<byte[]>(TopologyType.Tree,
                         CheckpointLevel.None)
                     .Build();
 

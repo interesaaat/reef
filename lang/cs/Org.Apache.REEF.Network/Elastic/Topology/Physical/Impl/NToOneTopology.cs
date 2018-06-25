@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
         private readonly object _lock;
 
-        private readonly ConcurrentQueue<GroupCommunicationMessage> _aggregationQueueData;
+        private readonly Queue<Tuple<string, GroupCommunicationMessage>> _aggregationQueueData;
         private readonly HashSet<string> _aggregationQueueSources;
         private readonly ConcurrentDictionary<string, byte> _toRemove;
 
@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _aggregationQueueSources.Add(_taskId);
             }
 
-            _aggregationQueueData = new ConcurrentQueue<GroupCommunicationMessage>();
+            _aggregationQueueData = new Queue<Tuple<string, GroupCommunicationMessage>>();
 
             _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
             _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
@@ -301,11 +301,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     if (_aggregationQueueData.Count() <= 1 || !_reducer.CanMerge)
                     {
-                        _aggregationQueueData.Enqueue(message);
+                        _aggregationQueueData.Enqueue(Tuple.Create(taskId, message));
                     }
                     else
                     {
-                        _reducer.Reduce(_aggregationQueueData, message as DataMessage<T>);
+                        _reducer.OnlineReduce(_aggregationQueueData, message as DataMessage<T>);
                     }
                 }
                 else
@@ -327,29 +327,19 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 if (_topologyUpdateReceived.WaitOne(1) && _aggregationQueueSources.Where(x => !_toRemove.TryGetValue(x, out byte val)).Count() > _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)).Count())
                 {
                     GroupCommunicationMessage finalAggregatedMessage;
-                    if (!_reducer.CanMerge)
+                    if (_reducer.CanMerge)
                     {
-                        ////int diff = _taskId == _rootTaskId ? 1 : 0;
-                        ////if (_aggregationQueueData.Count != _aggregationQueueSources.Count() - diff)
-                        ////{
-                        ////    throw new IllegalStateException(string.Format("Number of partially aggregated messages {0} do not match with count {1}", _aggregationQueueData.Count, _aggregationQueueSources.Count() - diff));
-                        ////}
-                        _reducer.Reduce(_aggregationQueueData);
+                        finalAggregatedMessage = _aggregationQueueData.Dequeue().Item2;
+                    }
+                    else
+                    {
+                        finalAggregatedMessage = _reducer.Reduce(_aggregationQueueData);
                     }
                     
-                    if (!_aggregationQueueData.TryDequeue(out finalAggregatedMessage))
-                    {
-                        throw new IllegalStateException("Message not found");
-                    }
-
-                    if (_aggregationQueueData.Count > 0)
-                    {
-                        throw new IllegalStateException("Pipeline of aggregation message not supported");
-                    }
-
                     Console.WriteLine("sending because got all {0} messages", _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)).Count());
                     _aggregationQueueSources.Clear();
                     _topologyUpdateReceived.Reset();
+                    _aggregationQueueData.Clear();
                     Console.WriteLine("Resetting");
 
                     foreach (var node in _toRemove.Keys)

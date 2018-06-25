@@ -33,28 +33,28 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
-    public class ElasticIterateBroadcastClient
+    public class ElasticIterateClient
     {
         const string Local = "local";
         const string Yarn = "yarn";
         const string DefaultRuntimeFolder = "REEF_LOCAL_RUNTIME";
 
-        public void RunIterateBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
+        public void RunIterate(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 100;
-            const string driverId = "ElasticIterateBroadcastDriver";
-            const string subscription = "IterateBroadcast";
+            const int numIterations = 1;
+            const string driverId = "ElasticIterateDriver";
+            const string subscription = "Iterate";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
-                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<NumIterations, int>(
@@ -80,7 +80,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticIterateBroadcastDriver), numTasks, "IB", runPlatform);
+            TestRun(merged, typeof(ElasticIterateBroadcastDriver), numTasks, "I", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)

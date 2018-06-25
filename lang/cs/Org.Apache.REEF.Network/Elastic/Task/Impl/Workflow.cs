@@ -19,12 +19,14 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
@@ -39,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly object _lock;
 
         private readonly IList<IElasticOperator> _operators;
-        private int _iteratorPosition = -1; // For the moment we are not considering nested iterators
+        private List<int> _iteratorsPosition;
 
         [Inject]
         private Workflow()
@@ -48,19 +50,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _failed = false;
             _disposed = false;
             _lock = new object();
+            _iteratorsPosition = new List<int>();
         }
 
         public object Iteration
         {
             get
             {
-                if (_iteratorPosition == -1)
+                if (_iteratorsPosition.Count == 0)
                 {
                     return 0;
                 }
                 else
                 {
-                    var iterator = _operators[_iteratorPosition] as IElasticIterator;
+                    var iterPos = _iteratorsPosition[0];
+                    var iterator = _operators[iterPos] as IElasticIterator;
                     return iterator.Current;
                 }
             }
@@ -74,9 +78,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             _operators.Add(op);
 
-            if (_iteratorPosition >= 0)
+            if (_iteratorsPosition.Count > 0)
             {
-                var iterator = _operators[_iteratorPosition] as IElasticIterator;
+                var iterPos = _iteratorsPosition.Last();
+                var iterator = _operators[iterPos] as IElasticIterator;
 
                 op.IteratorReference = iterator;
                 iterator.RegisterActionOnTaskRescheduled(op.OnTaskRescheduled);
@@ -84,7 +89,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             if (op.OperatorName == Constants.Iterate)
             {
-                _iteratorPosition = _operators.Count - 1;
+                _iteratorsPosition.Add(_operators.Count - 1);
             }
         }
 
@@ -97,9 +102,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 return false;
             }
 
-            if (_position == _iteratorPosition)
+            // Check if we need to iterate
+            if (_iteratorsPosition.Count > 0 && _position == _iteratorsPosition[0])
             {
-                var iteratorOperator = Current as IElasticIterator;
+                var iteratorOperator = _operators[_position] as IElasticIterator;
 
                 if (iteratorOperator.MoveNext())
                 {
@@ -111,19 +117,27 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
                 else
                 {
+                    if (_iteratorsPosition.Count > 1)
+                    {
+                        _iteratorsPosition.RemoveAt(0);
+
+                        _position = _iteratorsPosition[0] - 1;
+                    }
+                    
                     return false;
                 }
             }
 
-            if (_operators.Count == _position)
+            // In case we have one or zero iterators (or we are at the last iterator when multiple iterators exists)
+            if (_position >= _operators.Count || (_iteratorsPosition.Count > 1 && _position == _iteratorsPosition[1]))
             {
-                if (_iteratorPosition == -1)
+                if (_iteratorsPosition.Count == 0)
                 {
                     return false;
                 }
                 else
                 {
-                    _position = _iteratorPosition - 1;
+                    _position = _iteratorsPosition[0] - 1;
 
                     return MoveNext();
                 }
@@ -150,19 +164,35 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void Reset()
         {
-            _position = Math.Max(0, _iteratorPosition);
+            if (_iteratorsPosition.Count > 0)
+            {
+                _position = _iteratorsPosition[0];
+            }
+            else
+            {
+                _position = 0;
+            }
         }
 
         public IElasticOperator Current
         {
-            get { return _position == -1 ? _operators[0] : _operators[_position]; }
+            get
+            {
+                // If the workflow is composed by an iterator operator only, return a empty operator
+                if (_operators.Count == 1 && _iteratorsPosition[0] > 0)
+                {
+                    return new EmptyOperator();
+                }
+
+                return _position == -1 ? _operators[0] : _operators[_position];
+            }
         }
 
         public ICheckpointableState GetCheckpointableState()
         {
-            if (_iteratorPosition != -1 && _operators[_iteratorPosition] is ICheckpointingOperator)
+            if (_iteratorsPosition.Count > 0 && _operators[_iteratorsPosition[0]] is ICheckpointingOperator)
             {
-                var checkpointable = (_operators[_iteratorPosition] as ICheckpointingOperator).CheckpointState;
+                var checkpointable = (_operators[_iteratorsPosition[0]] as ICheckpointingOperator).CheckpointState;
 
                 if (!(checkpointable is NoCheckpointableState))
                 {

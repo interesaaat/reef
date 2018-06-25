@@ -33,28 +33,28 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
-    public class ElasticIterateBroadcastClient
+    public class ElasticIterateBroadcast2Client
     {
         const string Local = "local";
         const string Yarn = "yarn";
         const string DefaultRuntimeFolder = "REEF_LOCAL_RUNTIME";
 
-        public void RunIterateBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
+        public void RunTwiceIterateBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 100;
+            const int numIterations = 1;
             const string driverId = "ElasticIterateBroadcastDriver";
             const string subscription = "IterateBroadcast";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
-                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcast2Driver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcast2Driver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<NumIterations, int>(

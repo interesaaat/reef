@@ -206,6 +206,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return this;
         }
 
+        public virtual bool CheckIfLastIterator()
+        {
+            if (_next == null)
+            {
+                return true;
+            }
+
+            return _next.CheckIfLastIterator();
+        }
+
         /// <summary>
         /// Finalizes the Operator state. After BuildState, no more tasks can be added
         /// to the Operator
@@ -231,11 +241,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _topology.Build();
 
             LogOperatorState();
-
-            if (OperatorName == Constants.Iterate)
-            {
-                Subscription.IsIterative = true;
-            }
 
             _operatorStateFinalized = true;
            
@@ -576,7 +581,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <summary>
         /// TODO
         /// </summary>
-        protected virtual void OnNewIteration(int iteration)
+        protected void OnNewIteration(int iteration)
         {
             _topology.OnNewIteration(iteration);
 

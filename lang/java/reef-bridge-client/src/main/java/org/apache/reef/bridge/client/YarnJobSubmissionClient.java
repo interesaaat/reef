@@ -162,7 +162,7 @@ public final class YarnJobSubmissionClient {
           .addLocalResource(this.fileNames.getREEFFolderName(), jarFileOnDFS)
           .addLocalResource(fileNames.getYarnBootstrapJobParamFilePath(), jobFileOnDFS)
           .setApplicationName(yarnSubmission.getJobId())
-          .setDriverResources(yarnSubmission.getDriverMemory(), 1)
+          .setDriverResources(yarnSubmission.getDriverMemory(), 4)
           .setPriority(yarnSubmission.getPriority())
           .setQueue(yarnSubmission.getQueue())
           .setMaxApplicationAttempts(yarnSubmission.getMaxApplicationSubmissions())

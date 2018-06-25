@@ -68,6 +68,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 _hasRoot = true;
             }
 
+            // RootTopology does not take track of nodes, therefore it always return false.
             return false;
         }
 

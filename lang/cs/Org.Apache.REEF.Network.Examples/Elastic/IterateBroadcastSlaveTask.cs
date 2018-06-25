@@ -55,9 +55,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
+                                var receiver = workflow.Current as IElasticBroadcast<byte[]>;
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. before");
 
@@ -73,7 +73,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
                                 var rec = receiver.Receive();
 
-                                if (rand.Next(100) < 1)
+                                if (rand.Next(100) < 0)
                                 {
                                     Console.WriteLine("I am going to die. Bye. after");
 

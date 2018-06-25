@@ -65,7 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 case TaskMessageType.JoinTopology:
                     {
-                        var operatorId = BitConverter.ToInt32(message.Message, 2);
+                        var operatorId = BitConverter.ToInt16(message.Message, sizeof(ushort));
 
                         if (operatorId != _id)
                         {
@@ -84,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.TopologyUpdateRequest:
                     {
-                        var operatorId = BitConverter.ToInt32(message.Message, sizeof(ushort));
+                        var operatorId = BitConverter.ToInt16(message.Message, sizeof(ushort));
 
                         if (operatorId != _id)
                         {

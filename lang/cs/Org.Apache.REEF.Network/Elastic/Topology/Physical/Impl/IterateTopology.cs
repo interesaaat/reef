@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (_taskId == _rootTaskId)
             {
-                _commLayer.IterationNumber(_taskId, iteration);
+                _commLayer.IterationNumber(_taskId, OperatorId, iteration);
             }
         }
 

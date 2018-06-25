@@ -53,11 +53,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
         internal T[] Data { get; set; }
 
-        public override IEnumerable<DataMessageWithTopology> GetSplits(int numElements)
+        public override IEnumerable<DataMessageWithTopology> GetSplits(int numSplits)
         {
-            int size = Data.Length / numElements;
+            int size = Data.Length / numSplits;
 
-            for (var i = 0; i < numElements; i++)
+            for (var i = 0; i < numSplits; i++)
             {
                 yield return new DataMessageWithTopology<T[]>(SubscriptionName, OperatorId, Iteration, Data.Skip(i * size).Take(size).ToArray(), TopologyUpdates);
             }

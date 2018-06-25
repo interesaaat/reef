@@ -20,24 +20,23 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Network.Elastic.Operators;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class IterateBroadcastMasterTask : ITask, IObserver<ICloseEvent>
+    public class IterateBroadcast2SlaveTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
 
         [Inject]
-        public IterateBroadcastMasterTask(IElasticTaskSetService serviceClient)
+        public IterateBroadcast2SlaveTask(
+            IElasticTaskSetService serviceClient)
         {
             _serviceClient = serviceClient;
 
             _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
-
-            System.Threading.Thread.Sleep(20000);
         }
 
         public byte[] Call(byte[] memento)
@@ -45,7 +44,6 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             _serviceClient.WaitForTaskRegistration();
 
             var rand = new Random();
-            int number = 0;
 
             using (var workflow = _subscriptionClient.Workflow)
             {
@@ -53,21 +51,33 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 {
                     while (workflow.MoveNext())
                     {
-                        number = rand.Next();
-
                         switch (workflow.Current.OperatorName)
                         {
                             case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<byte[]>;
+                                var receiver = workflow.Current as IElasticBroadcast<byte[]>;
 
-                                sender.Send(new byte[] { 1 });
+                                var rec = receiver.Receive();
 
-                                System.Threading.Thread.Sleep(100);
-
-                                Console.WriteLine("Master has sent {0} in iteration {1}", number, workflow.Iteration);
+                                Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
                                 break;
                             default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
+                                throw new InvalidOperationException(string.Format("Operation {0} in workflow not implemented", workflow.Current.OperatorName));
+                        }
+                    }
+
+                    while (workflow.MoveNext())
+                    {
+                        switch (workflow.Current.OperatorName)
+                        {
+                            case Constants.Broadcast:
+                                var receiver = workflow.Current as IElasticBroadcast<byte[]>;
+
+                                var rec = receiver.Receive();
+
+                                Console.WriteLine("Slave has received {0} in iteration {1}", rec, workflow.Iteration);
+                                break;
+                            default:
+                                throw new InvalidOperationException(string.Format("Operation {0} in workflow not implemented", workflow.Current.OperatorName));
                         }
                     }
                 }
@@ -80,15 +90,19 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             return null;
         }
 
-        public void OnNext(ICloseEvent value)
+        public void Handle(IDriverMessage message)
         {
-            _subscriptionClient.Cancel();
         }
 
         public void Dispose()
         {
             _subscriptionClient.Cancel();
             _serviceClient.Dispose();
+        }
+
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
         }
 
         public void OnError(Exception error)

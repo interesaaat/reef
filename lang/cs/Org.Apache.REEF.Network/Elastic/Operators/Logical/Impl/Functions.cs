@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Network.Elastic.Operators.Logical;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
-using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators
 {
@@ -29,12 +28,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators
         {
         }
 
-        internal override bool CanMerge
+        public override bool CanMerge
         {
             get { return false; }
         }
 
-        protected override int Reduce(int left, int right)
+        public override bool RequireSorting
+        {
+            get { return false; }
+        }
+
+        protected override int Combine(int left, int right)
         {
             return left + right;
         }
@@ -47,20 +51,20 @@ namespace Org.Apache.REEF.Network.Elastic.Operators
         {
         }
 
-        internal override bool CanMerge
+        public override bool CanMerge
         {
             get { return false; }
         }
 
-        protected override T[] Reduce(T[] left, T[] right)
+        public override bool RequireSorting
+        {
+            get { return true; }
+        }
+
+        protected override T[] Combine(T[] left, T[] right)
         {
             var ll = left.Length;
             var rl = right.Length;
-
-            if (left[0].Equals(right[0]))
-            {
-                Console.WriteLine("found");
-            }
 
             Array.Resize(ref left, ll + rl);
             
