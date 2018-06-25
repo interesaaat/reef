@@ -65,13 +65,18 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
         {
             if (obj == null)
             {
-                throw new ArgumentNullException("obj", "float array is null");
+                throw new ArgumentNullException("obj", "byte array is null");
             }
 
             writer.WriteInt32(obj.Length);
 
             for (int i = 0; i < obj.Length; i++)
             {
+                if (obj == null)
+                {
+                    throw new ArgumentNullException("obj[i]", "byte array is null");
+                }
+
                 writer.WriteInt32(obj[i].Length);
                 writer.Write(obj[i], 0, obj[i].Length);
             }           
@@ -116,6 +121,11 @@ namespace Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs
 
             for (int i = 0; i < obj.Length; i++)
             {
+                if (obj == null)
+                {
+                    throw new ArgumentNullException("obj[i]", "byte array is null");
+                }
+
                 await writer.WriteInt32Async(obj[i].Length, token);
                 await writer.WriteAsync(obj[i], 0, obj[i].Length, token);
             }
