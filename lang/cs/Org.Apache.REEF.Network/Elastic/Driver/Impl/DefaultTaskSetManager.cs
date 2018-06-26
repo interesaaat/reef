@@ -168,6 +168,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             identifier = Utils.BuildContextId(SubscriptionsId, id);
             _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+
+            LOGGER.Log(Level.Info, "Evaluator {0} is scheduled on node {1}", evaluator.Id, evaluator.GetEvaluatorDescriptor().NodeDescriptor.HostName);
+
             return true;
         }
 
@@ -208,8 +211,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 activeContext.Dispose();
                 return;
             }
-
-            LOGGER.Log(Level.Info, "Evaluator {0} is scheduled on node {1}", activeContext.EvaluatorId, activeContext.EvaluatorDescriptor.NodeDescriptor.HostName);
 
             _hasProgress = true;
             var id = Utils.GetContextNum(activeContext) - 1;
