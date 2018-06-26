@@ -95,6 +95,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Set(StreamingCodecConfiguration<float[]>.Codec, GenericType<FloatArrayStreamingCodec>.Class)
                 .Build();
 
+            _codecConfigGather = StreamingCodecConfiguration<int[]>.Conf
+                .Set(StreamingCodecConfiguration<int[]>.Codec, GenericType<IntArrayStreamingCodec>.Class)
+                .Build();
+
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
@@ -129,8 +133,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Iterate(new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         iteratorConfig)
-                    .Broadcast<float[]>(TopologyType.Flat)
-                    .Gather<float>(TopologyType.Flat)
+                    .Broadcast<int>(TopologyType.Flat)
+                    .Gather<int>(TopologyType.Flat)
                     .Build();
 
             // Build the subscription
