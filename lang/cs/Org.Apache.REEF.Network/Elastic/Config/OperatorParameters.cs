@@ -50,7 +50,12 @@ namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
     }
 
     [NamedParameter("Iteration number to begin with", defaultValue: "1")]
-    internal sealed class StartIteration : Name<int>
+    public sealed class StartIteration : Name<int>
+    {
+    }
+
+    [NamedParameter("Master Id")]
+    public sealed class MasterId : Name<int>
     {
     }
 

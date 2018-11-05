@@ -15,14 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
-using System;
-using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl

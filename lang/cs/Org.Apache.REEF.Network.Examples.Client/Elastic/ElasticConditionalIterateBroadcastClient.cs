@@ -33,33 +33,29 @@ using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
-    public class ElasticIterateBroadcastReduceClient
+    public class ElasticConditionalIterateBroadcastClient
     {
-        private const string Local = "local";
-        private const string Yarn = "yarn";
-        private const string DefaultRuntimeFolder = "REEF_LOCAL_RUNTIME";
+        const string Local = "local";
+        const string Yarn = "yarn";
+        const string DefaultRuntimeFolder = "REEF_LOCAL_RUNTIME";
 
-        public void RunIterateBroadcastReduce(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
+        public void RunConditionalIterateBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
-            const int numIterations = 100;
-            const string driverId = "ElasticIterateBroadcastReduceDriver";
-            const string subscription = "IterateBroadcastReduce";
+            const string driverId = "ElasticCondiationalIterateBroadcastDriver";
+            const string subscription = "IterateBroadcast";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
-                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
-                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastReduceDriver>.Class)
+                    .Set(DriverConfiguration.OnDriverStarted, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorAllocated, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnEvaluatorFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnContextActive, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticIterateBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<NumIterations, int>(
-                    GenericType<NumIterations>.Class,
-                    numIterations.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,
                     numTasks.ToString(CultureInfo.InvariantCulture))
@@ -80,7 +76,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
             IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
-            TestRun(merged, typeof(ElasticIterateBroadcastReduceDriver), numTasks, "IterateBroadcastReduce", runPlatform);
+            TestRun(merged, typeof(ElasticIterateBroadcastDriver), numTasks, "IB", runPlatform);
         }
 
         internal static void TestRun(IConfiguration driverConfig, Type globalAssemblyType, int numberOfEvaluator, string jobIdentifier = "myDriver", string runOnYarn = "local", string runtimeFolder = DefaultRuntimeFolder)

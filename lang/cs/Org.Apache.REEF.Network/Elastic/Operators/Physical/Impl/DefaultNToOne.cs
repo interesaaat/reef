@@ -84,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public CancellationTokenSource CancellationSource { get; set; }
 
-        public Action OnTaskRescheduled { get; private set; }
+        public Action OnTaskRescheduled { get; protected set; }
 
         /// <summary>
         /// Receive a message from neighbors receivers.
@@ -161,7 +161,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.WaitCompletionBeforeDisposing();
         }
 
-        public void Dispose()
+        public virtual void Dispose()
         {
             if (_isLast)
             {

@@ -32,6 +32,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Wake.Time.Event;
+using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -406,22 +407,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public abstract ElasticOperator EnumerableIterate(int masterId, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations);
 
         /// <summary>
-        /// TODO
-        /// </summary>
-        public ElasticOperator Iterate(TopologyType topologyType, IFailureStateMachine failureMachine = null, Failures.CheckpointLevel checkpointLevel = Failures.CheckpointLevel.None, params IConfiguration[] configurations)
-        {
-            return ConditionalIterate(MasterId, topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(MasterId) : (ITopology)new TreeTopology(MasterId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
-        }
-
-        /// <summary>
-        /// TODO
-        /// </summary>
-        public ElasticOperator Iterate(int coordinatorTaskId, params IConfiguration[] configurations)
-        {
-            return ConditionalIterate(coordinatorTaskId, new FlatTopology(coordinatorTaskId), _failureMachine.Clone(), Failures.CheckpointLevel.None, configurations);
-        }
-
-        /// <summary>
         /// Adds an instance of the Enumerable Iterate Operator to the operator pipeline.
         /// This Operator Iterate a user provided number of times.
         /// </summary>
@@ -431,7 +416,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         /// <returns>The same operator pipeline with the added Enumerable Iterate operator</returns>
         public ElasticOperator Iterate(IFailureStateMachine failureMachine, Failures.CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            return EnumerableIterate(MasterId, failureMachine, checkpointLevel, configurations);
+            var isEnum = configurations.Any(x => x.GetNamedParameters().Any(y => y.GetType() == typeof(NumIterations)));
+            var isCond = false; //// configurations.Any(x => x.GetBoundImplementations().Any(y => y.GetType() == typeof(ICondition)));
+            if (isEnum && isCond)
+            {
+                throw new ArgumentException("Cannot determine which type of iterator to use: either set the number of iterations or a condition");
+            }
+
+            if (isCond)
+            {
+                return ConditionalIterate(MasterId, null, failureMachine, checkpointLevel, configurations);
+            }
+            else
+            {
+                return EnumerableIterate(MasterId, failureMachine, checkpointLevel, configurations); 
+            }
         }
 
         /// <summary>

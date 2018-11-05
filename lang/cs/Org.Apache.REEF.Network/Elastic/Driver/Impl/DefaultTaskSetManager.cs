@@ -141,7 +141,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public bool TryGetNextTaskContextId(IAllocatedEvaluator evaluator, out string identifier)
         {
             int id;
-            _hasProgress = true;
 
             if (_queuedTasks.TryDequeue(out id))
             {

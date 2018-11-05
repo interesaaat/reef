@@ -78,7 +78,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 break;
 
                             case Constants.Reduce:
-                                var sender = workflow.Current as IElasticReducer<int>;
+                                var sender = workflow.Current as IElasticReduce<int>;
 
                                 if (rand.Next(100) < 1)
                                 {

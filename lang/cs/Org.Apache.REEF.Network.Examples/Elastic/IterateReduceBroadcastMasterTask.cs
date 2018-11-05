@@ -65,7 +65,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                                 System.Threading.Thread.Sleep(1000);
                                 break;
                             case Constants.Reduce:
-                                var receiver = workflow.Current as IElasticReducer<int>;
+                                var receiver = workflow.Current as IElasticReduce<int>;
 
                                 receivedNumber = receiver.Receive();
 

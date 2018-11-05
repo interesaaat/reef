@@ -91,7 +91,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
                 {
                     float currentRate = (float)NumOfFailedDataPoints / NumOfDataPoints;
 
-                    while (currentRate > (int)DefaultFailureStates.Continue && currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
+                    while (State.FailureState > (int)DefaultFailureStates.Continue && currentRate < transitionWeights[(DefaultFailureStates)State.FailureState])
                     {
                         State.FailureState = (int)transitionMapDown[(DefaultFailureStates)State.FailureState];
                     }
@@ -193,7 +193,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         {
             var newMachine = new DefaultFailureStateMachine(initalPoints, (DefaultFailureStates)initalState);
 
-            foreach (DefaultFailureStates state in transitionWeights.Keys)
+            foreach (DefaultFailureStates state in transitionWeights.Keys.OrderByDescending(x => x))
             {
                 newMachine.SetThreashold(new DefaultFailureState((int)state), transitionWeights[state]);
             }
