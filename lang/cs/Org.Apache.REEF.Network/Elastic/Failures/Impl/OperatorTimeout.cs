@@ -15,48 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Wake.Time.Event;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    public class Timeout
+    public class OperatorTimeout : ITimeout
     {
-        private readonly TimeoutType _type;
         private readonly IObserver<Alarm> _handler;
         private readonly long _timeout;
         private readonly string _id;
 
-        public Timeout(long timeout, IObserver<Alarm> handler, TimeoutType type, string id = "")
+        public OperatorTimeout(long timeout, IObserver<Alarm> handler, string id = "")
         {
-            if (handler == null)
-            {
-                throw new ArgumentNullException("handler");
-            }
-            _handler = handler;
+            _handler = handler ?? throw new ArgumentNullException(nameof(handler));
             _timeout = timeout;
-            _type = type;
             _id = id;
         }
 
-        internal Alarm GetAlarm(long realTimeout)
+        public Alarm GetAlarm(long realTimeout)
         {
-            switch (_type)
-            {
-                case TimeoutType.Taskset:
-                    return new TasksetAlarm(realTimeout + _timeout, _handler);
-                case TimeoutType.Operator:
-                    return new OperatorAlarm(realTimeout + _timeout, _handler, _id);
-                default:
-                    throw new IllegalStateException("Timeout type not recognized");
-            }
-        }
-
-        public enum TimeoutType : int
-        {
-            Taskset = 1,
-            Operator = 2
+            return new OperatorAlarm(realTimeout + _timeout, _handler, _id);
         }
     }
 }

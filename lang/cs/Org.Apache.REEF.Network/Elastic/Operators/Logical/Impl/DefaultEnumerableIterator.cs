@@ -248,7 +248,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 if (_isLast)
                 {
-                    Subscription.Completed = true;
+                    Subscription.IsCompleted = true;
                 }
             }
             else

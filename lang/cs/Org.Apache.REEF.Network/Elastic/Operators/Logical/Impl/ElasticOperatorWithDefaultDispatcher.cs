@@ -149,7 +149,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)
+        public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
             if (_next != null)
             {

@@ -33,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private volatile bool _isActiveContextDisposed;
         private volatile bool _isDisposed;
 
-        internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskStatus status, IList<IElasticTaskSetSubscription> subscriptions)
+        internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskState status, IList<IElasticTaskSetSubscription> subscriptions)
         {
             _isTaskDisposed = false;
             _isActiveContextDisposed = false;
@@ -65,7 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal IRunningTask TaskRunner { get; private set; }
 
-        internal TaskStatus TaskStatus { get; private set; }
+        internal TaskState TaskStatus { get; private set; }
 
         internal int NumRetry { get; set; }
 
@@ -77,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _isTaskDisposed = false;
         }
 
-        internal void SetTaskStatus(TaskStatus status)
+        internal void SetTaskStatus(TaskState status)
         {
             TaskStatus = status;
         }

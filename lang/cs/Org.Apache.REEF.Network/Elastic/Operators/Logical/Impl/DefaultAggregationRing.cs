@@ -101,7 +101,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             return false;
                         }
 
-                        if (!Subscription.Completed && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
+                        if (!Subscription.IsCompleted && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             LOGGER.Log(Level.Info, "{0} joins the ring", message.TaskId);
 
@@ -147,7 +147,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
-        public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)
+        public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
             var isInit = msgs == null;
             var isComputationStarted = _count > 0;

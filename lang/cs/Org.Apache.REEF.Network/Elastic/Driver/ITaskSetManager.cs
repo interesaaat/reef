@@ -15,31 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using System;
-using Org.Apache.REEF.Tang.Interface;
+using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
     /// <summary>
     /// Class defining how groups of tasks sharing similar scheduling semantics are managed.
-    /// TaskSets subscribe to Subscriptions in order to define tasks logic.
-    /// TaskSets schedule and manage group of tasks running in the cluster.
+    /// Task set managers subscribe to subscriptions in order to define tasks logic.
+    /// Task set managers schedule and manage group of tasks running in the cluster.
     /// </summary>
     public interface ITaskSetManager : IFailureResponse, IDisposable
     {
         /// <summary>
         /// An identifier for the set of Subscriptions the Task Manager is subscribed to.
-        /// The Task Set has to be built before retrieving its subscriptions id.
+        /// The task set has to be built before retrieving its subscriptions id.
         /// </summary>
         string SubscriptionsId { get; }
 
         /// <summary>
-        /// Subscribe the current Task Set to a new Subscription.
+        /// Subscribe the current task set manager to a new subscription.
         /// </summary>
         /// <param name="subscription">The subscription to subscribe to</param>
         void AddTaskSetSubscription(IElasticTaskSetSubscription subscription);
@@ -54,7 +53,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// Method used to generate unique context ids.
         /// </summary>
         /// <param name="evaluator">The evaluator the context will run on</param>
-        /// <returns>A new unique context id</returns>
+        /// <param name="identifier">A new unique context id</param>
+        /// <returns>True if an new context id is sucessufully created</returns>
         bool TryGetNextTaskContextId(IAllocatedEvaluator evaluator, out string identifier);
 
         /// <summary>
@@ -65,68 +65,72 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         string GetTaskId(IActiveContext context);
 
         /// <summary>
-        /// Finalizes the Task Set.
-        /// After the Task set has been finalized, no more Subscriptions can be added.
+        /// Finalizes the task set manager.
+        /// After the task set has been finalized, no more subscriptions can be added.
         /// </summary>
-        /// <returns>The same finalized Task Set</returns>
+        /// <returns>The same finalized task set manager</returns>
         ITaskSetManager Build();
 
         /// <summary>
-        /// Retrieves all Subscriptions having the context passed as a parameter
+        /// Retrieves all subscriptions having the context passed as a parameter
         /// as master task context.
         /// </summary>
         /// <param name="context">The target context</param>
-        /// <returns>A list of Subscriptions having the master task running on context</returns>
+        /// <returns>A list of subscriptions having the master task running on context</returns>
         IEnumerable<IElasticTaskSetSubscription> IsMasterTaskContext(IActiveContext context);
 
         /// <summary>
-        /// TODO
+        /// Method implementing how the task set manager should react when a new context is active.
         /// </summary>
-        void OnNewActiveContext(IActiveContext activeContext, params IConfiguration[] additionalTaskConfs);
+        /// <param name="activeContext">The new active context</param>
+        void OnNewActiveContext(IActiveContext activeContext);
 
         /// <summary>
-        /// Actions to execute when a notification that a task is running is received.
+        /// Method implementing how the task set manager should react when a notification that a task is running is received.
         /// </summary>
         /// <param name="task">The running task</param>
         void OnTaskRunning(IRunningTask task);
 
         /// <summary>
-        /// Actions to execute when a notification that a task is completed is received.
+        /// Method implementing how the task set manager should react when a notification that a task is completed is received.
         /// </summary>
         /// <param name="task">The completed task</param>
         void OnTaskCompleted(ICompletedTask task);
 
         /// <summary>
-        /// Actions to execute when a task message is received.
+        /// Method implementing how the task set manager should react when a task message is received.
         /// </summary>
         /// <param name="task">A message from a task</param>
         void OnTaskMessage(ITaskMessage message);
 
         /// <summary>
-        /// TODO
+        /// Whether the imput task is managed by this task set manger.
         /// </summary>
-        bool TaskBelongsTo(string id);
+        /// <param name="id">The task identifier</param>
+        bool IsTaskManagedBy(string id);
 
         /// <summary>
-        /// TODO
+        /// Whether the imput context is managed by this task set manger.
         /// </summary>
-        bool ContextBelongsTo(string id);
+        /// <param name="id">The context identifier</param>
+        bool IsContextManagedBy(string id);
 
         /// <summary>
-        /// TODO
+        /// Whether the imput evaluator is managed by this task set manger.
         /// </summary>
-        bool EvaluatorBelongsTo(string id);
+        /// <param name="id">The context identifier</param>
+        bool IsEvaluatorManagedBy(string id);
 
         /// <summary>
-        /// TODO
+        /// Whether this task set manger is done.
         /// </summary>
-        bool IsDone();
+        bool IsCompleted();
 
         /// <summary>
-        /// Used to react of a failure of a task.
+        /// Used to react on a task failure.
         /// </summary>
-        /// <param name="evaluator">The failed task</param>
-        void OnTaskFailure(IFailedTask info);
+        /// <param name="task">The failed task</param>
+        void OnTaskFailure(IFailedTask task);
 
         /// <summary>
         /// Used to react of a failure event occurred on an evaluator.

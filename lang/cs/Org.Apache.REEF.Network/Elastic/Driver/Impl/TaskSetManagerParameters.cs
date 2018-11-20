@@ -22,6 +22,7 @@ using System;
 using Org.Apache.REEF.Wake.Time.Event;
 using System.Threading.Tasks;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
@@ -75,7 +76,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _clock.ScheduleAlarm(timeout, alarm);
         }
 
-        internal void ScheduleAlarm(Timeout timeout)
+        internal void ScheduleAlarm(ITimeout timeout)
         {
             _clock.ScheduleAlarm(timeout);
         }

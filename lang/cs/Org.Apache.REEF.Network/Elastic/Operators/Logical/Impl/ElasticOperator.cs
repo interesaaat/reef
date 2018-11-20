@@ -476,7 +476,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         public abstract void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
-        public abstract void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Failures.Impl.Timeout> nextTimeouts);
+        public abstract void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts);
 
         public abstract void EventDispatcher(ref IFailureEvent @event);
 

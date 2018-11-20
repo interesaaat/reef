@@ -179,7 +179,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             get
             {
                 // If the workflow is composed by an iterator operator only, return a empty operator
-                if (_operators.Count == 1 && _iteratorsPosition[0] > 0)
+                if (_operators.Count == 1 && _iteratorsPosition.Count > 0 &&_iteratorsPosition[0] > 0)
                 {
                     return new EmptyOperator();
                 }

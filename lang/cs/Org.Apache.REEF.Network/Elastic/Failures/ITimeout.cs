@@ -15,22 +15,12 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Network.Elastic.Comm;
-using System.Collections.Generic;
+using Org.Apache.REEF.Wake.Time.Event;
 
-namespace Org.Apache.REEF.Network.Elastic.Driver
+namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    /// <summary>
-    /// Used to propagate task reponses through operators and subscriptions.
-    /// </summary>
-    public interface ITaskMessageResponse
+    public interface ITimeout
     {
-        /// <summary>
-        /// Method triggered when a Task to Driver message is received. 
-        /// </summary>
-        /// <param name="message">The task message for the operator</param>
-        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
-        void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages);
+        Alarm GetAlarm(long realTimeout);
     }
 }

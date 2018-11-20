@@ -119,8 +119,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 var subscription = new DefaultTaskSetSubscription(
                     subscriptionName,
-                    _configSerializer,
-                    numTasks, this, failureMachine ?? _defaultFailureMachine.Clone(numTasks, (int)DefaultFailureStates.Fail));
+                    numTasks, 
+                    this, 
+                    failureMachine ?? _defaultFailureMachine.Clone(numTasks, (int)DefaultFailureStates.Fail));
                 _subscriptions[subscriptionName] = subscription;
 
                 return subscription;
@@ -193,7 +194,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _nameServer.Unregister(task);
         }
 
-        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Timeout> nextTimeouts)
+        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
         }
 

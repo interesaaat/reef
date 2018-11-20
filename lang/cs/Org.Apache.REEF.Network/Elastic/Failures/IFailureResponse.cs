@@ -17,7 +17,6 @@
 
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Wake.Time.Event;
 using System.Collections.Generic;
 
@@ -31,23 +30,28 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     {
         /// <summary>
         /// Used to react on a failure occurred on a task.
-        /// It gets a failed task as input and in response it produces zero or more failure events
+        /// It gets a failed task as input and in response it produces zero or more failure events.
         /// </summary>
         /// <param name="task">The failed task</param>
-        /// <param name="failureEvents">A list of events encoding the type of action to be triggered</param>
-        /// <returns>Zero or more events for triggering failure mitigation mechanisms</returns>
+        /// <param name="failureEvents">A list of events encoding the type of actions to be triggered so far</param>
         void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents);
 
-        // TODO
-        void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Impl.Timeout> nextTimeouts);
+        /// <summary>
+        /// Used to react when a timeout event is triggered.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="alarm">The alarm triggering the timeput</param>
+        /// <param name="msgs">A list of messages encoding how remote Tasks need to reach</param>
+        /// /// <param name="nextTimeouts">The next timeouts to be scheduled</param>
+        void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts);
 
         /// <summary>
-        /// When a new failure state is raised, this method is used to dispatch
+        /// When a new failure state is reached, this method is used to dispatch
         /// such event to the proper failure mitigation logic.
-        /// It gets a failure event as input and produces zero or more failure response messages for tasks
+        /// It gets a failure event as input and produces zero or more failure response messages
+        /// for tasks (appended into the event).
         /// </summary>
         /// <param name="event">The failure event to react upon</param>
-        /// <returns>Zero or more events for the tasks</returns>
         void EventDispatcher(ref IFailureEvent @event);
     }
 }

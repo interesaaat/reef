@@ -113,7 +113,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         /// </summary>
         /// <param name="offset">The offset in the future to schedule the alarm, in msec</param>
         /// <param name="handler">The IObserver to be called</param>
-        public void ScheduleAlarm(Timeout timeout)
+        public void ScheduleAlarm(ITimeout timeout)
         {
             if (_disposed)
             {

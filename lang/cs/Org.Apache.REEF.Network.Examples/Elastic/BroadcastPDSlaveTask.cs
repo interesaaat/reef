@@ -58,6 +58,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _serviceClient.WaitForTaskRegistration(_cancellationSource);
 
+            Thread.Sleep(20000);
+
             using (var workflow = _subscriptionClient.Workflow)
             {
                 try

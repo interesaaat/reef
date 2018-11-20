@@ -44,7 +44,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private bool _finalized;
         private volatile bool _scheduled;
-        private readonly AvroConfigurationSerializer _confSerializer;
 
         private readonly int _numTasks;
         private int _tasksAdded;
@@ -61,12 +60,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal DefaultTaskSetSubscription(
             string subscriptionName,
-            AvroConfigurationSerializer confSerializer,
             int numTasks,
             IElasticTaskSetService elasticService,
             IFailureStateMachine failureMachine = null)
         {
-            _confSerializer = confSerializer;
             SubscriptionName = subscriptionName;
             _finalized = false;
             _scheduled = false;
@@ -74,10 +71,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _tasksAdded = 0;
             _masterTasks = new HashSet<string>();
             _datasetConfiguration = Optional<IConfiguration[]>.Empty();
-            Completed = false;
+            IsCompleted = false;
             Service = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks, DefaultFailureStates.Fail);
-            FailureStatus = _defaultFailureMachine.State;
+            FailureState = _defaultFailureMachine.State;
             RootOperator = new DefaultEmpty(this, _defaultFailureMachine.Clone());
 
             IsIterative = false;
@@ -94,9 +91,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool IsIterative { get; set; }
 
-        public IFailureState FailureStatus { get; private set; }
+        public IFailureState FailureState { get; private set; }
 
-        public bool Completed { get; set; }
+        public bool IsCompleted { get; set; }
 
         public int GetNextOperatorId()
         {
@@ -119,9 +116,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         public bool AddTask(string taskId)
         {
-            if (Completed || (_scheduled && FailureStatus.FailureState == (int)DefaultFailureStates.Fail))
+            if (IsCompleted || (_scheduled && FailureState.FailureState == (int)DefaultFailureStates.Fail))
             {
-                LOGGER.Log(Level.Warning, string.Format("Taskset {0}", Completed ? "completed." : "failed."));
+                LOGGER.Log(Level.Warning, string.Format("Taskset {0}", IsCompleted ? "completed." : "failed."));
                 return false;
             }
 
@@ -141,11 +138,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     if (tooManyTasks)
                     {
-                        LOGGER.Log(Level.Warning, string.Format("Already added {0} tasks when total tasks request is {1}", _tasksAdded, _numTasks));
+                        LOGGER.Log(Level.Warning, $"Already added {_tasksAdded} tasks when total tasks request is {_numTasks}");
                     }
                     if (notAddingMaster)
                     {
-                        LOGGER.Log(Level.Warning, string.Format("Already added {0} over {1} but missing master task(s)", _tasksAdded, _numTasks));
+                        LOGGER.Log(Level.Warning, $"Already added {_tasksAdded} over {_numTasks} but missing master task(s)");
                     }
                     return false;
                 }
@@ -220,7 +217,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
             if (index < 0 || index >= _datasetConfiguration.Value.Length)
             {
-                throw new IllegalStateException(string.Format("Asking for a not existing partition configuration {0}.", index));
+                throw new IllegalStateException($"Asking for a not existing partition configuration {index}.");
             }
 
             return Optional<IConfiguration>.Of(_datasetConfiguration.Value[index]);
@@ -239,7 +236,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (_datasetConfiguration.Value.Length + adjust < _numTasks)
                 {
-                    throw new IllegalStateException(string.Format("Dataset is smaller than the number of tasks: re-submit with {0} tasks", _datasetConfiguration.Value.Length + adjust));
+                    throw new IllegalStateException($"Dataset is smaller than the number of tasks: re-submit with {_datasetConfiguration.Value.Length + adjust} tasks");
                 }
             }
 
@@ -256,7 +253,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
-        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<Failures.Impl.Timeout> nextTimeouts)
+        public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
             var isInit = msgs == null;
 
@@ -311,7 +308,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
+                FailureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReconfigure));
             }
         }
 
@@ -319,7 +316,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
+                FailureState.Merge(new DefaultFailureState((int)DefaultFailureStates.ContinueAndReschedule));
             }
         }
 
@@ -327,7 +324,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
+                FailureState.Merge(new DefaultFailureState((int)DefaultFailureStates.StopAndReschedule));
             }
         }
 
@@ -335,12 +332,17 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             lock (_statusLock)
             {
-                FailureStatus = FailureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
+                FailureState = FailureState.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
             }
         }
 
         public string LogFinalStatistics()
         {
+            if (!IsCompleted)
+            {
+                throw new IllegalStateException($"Cannot log statistics before Subscription {SubscriptionName} is completed");
+            }
+
             return RootOperator.LogFinalStatistics();
         }
     }
