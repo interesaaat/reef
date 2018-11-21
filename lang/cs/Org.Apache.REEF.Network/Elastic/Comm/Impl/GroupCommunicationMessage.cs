@@ -15,21 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent by MPI Operators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by Network Service
+    /// Message sent by Group Communication operators. 
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public abstract class GroupCommunicationMessage : ICloneable
     {
         /// <summary>
-        /// Create new CommunicationGroupMessage.
+        /// Create a new Group Communication Message.
         /// </summary>
-        /// <param name="operatorName">The name of the MPI operator</param>
-        /// <param name="source">The message source</param>
+        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="operatorId">The id of the operator sending the message</param>
         protected GroupCommunicationMessage(
             string subscriptionName,
             int operatorId)
@@ -47,9 +48,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// </summary>
         internal int OperatorId { get; private set; }
 
-        public virtual object Clone()
-        {
-            return this;
-        }
+        /// <summary>
+        /// Returns the Operator id.
+        /// </summary>
+        public abstract object Clone();
     }
 }

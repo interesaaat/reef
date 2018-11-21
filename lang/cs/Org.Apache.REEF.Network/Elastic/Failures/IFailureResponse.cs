@@ -17,6 +17,7 @@
 
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Wake.Time.Event;
 using System.Collections.Generic;
 
@@ -26,6 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// Entry point for classes expected to be aware and act over failures.
     /// Used to propagate failures through operators, subscriptions and the service.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IFailureResponse
     {
         /// <summary>

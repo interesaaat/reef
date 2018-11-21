@@ -43,6 +43,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
@@ -149,7 +150,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             pipeline.Iterate(iteratorConfig)
-                    .Broadcast<int>(1, new FlatTopology(1))
+                    .Broadcast<int>(1, new FlatTopology(1),
+                        new DefaultFailureStateMachine(),
+                        CheckpointLevel.None)
                     .Build();
 
             _serversSubscription = subscription.Build();
@@ -161,7 +164,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce<int>(1, TopologyType.Tree,
+                    .Reduce<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
@@ -176,7 +179,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                     .Reduce<int>(2, TopologyType.Tree,
+                     .Reduce<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)
@@ -191,7 +194,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None)
-                    .Reduce<int>(3, TopologyType.Tree,
+                    .Reduce<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
                         CheckpointLevel.None,
                         reduceFunctionConfig)

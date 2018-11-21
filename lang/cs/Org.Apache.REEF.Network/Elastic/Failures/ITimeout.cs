@@ -15,12 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Wake.Time.Event;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
+    /// <summary>
+    /// Failure event due to a timeout.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface ITimeout
     {
-        Alarm GetAlarm(long realTimeout);
+        /// <summary>
+        /// Method used to schedule a timer event of the proper type. 
+        /// </summary>
+        /// <param name="timeout">How long to wait before the timer event is triggered</param>
+        /// <returns>A timer event</returns>
+        Alarm GetAlarm(long timeout);
     }
 }

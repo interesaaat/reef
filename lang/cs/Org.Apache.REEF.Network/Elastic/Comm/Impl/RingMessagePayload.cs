@@ -33,6 +33,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             NextTaskId = nextTaskId;
         }
 
+        public override object Clone()
+        {
+            return new RingMessagePayload(NextTaskId, SubscriptionName, OperatorId, Iteration);
+        }
+
         internal string NextTaskId { get; private set; }
 
         internal override byte[] Serialize()

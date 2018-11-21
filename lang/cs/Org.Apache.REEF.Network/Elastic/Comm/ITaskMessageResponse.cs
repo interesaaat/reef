@@ -15,21 +15,23 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+using Org.Apache.REEF.Driver.Task;
+using Org.Apache.REEF.Utilities.Attributes;
+using System.Collections.Generic;
+
+namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
-    /// Definition of supported checkpointing policies
+    /// Used to propagate task reponses through operators and subscriptions.
     /// </summary>
-    public enum CheckpointLevel : int
+    [Unstable("0.16", "Types may change")]
+    public interface ITaskMessageResponse
     {
-        None = 0,
-
-        EphemeralMaster = 10,
-
-        EphemeralAll = 11,
-
-        PersistentMemoryMaster = 20,
-
-        PersistentMemoryAll = 21
+        /// <summary>
+        /// Method triggered when a task to driver message is received. 
+        /// </summary>
+        /// <param name="message">The task message for the operator</param>
+        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
+        void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages);
     }
 }

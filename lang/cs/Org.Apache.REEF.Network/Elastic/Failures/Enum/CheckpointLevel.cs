@@ -15,19 +15,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Comm
+using Org.Apache.REEF.Utilities.Attributes;
+
+namespace Org.Apache.REEF.Network.Elastic.Failures.Enum
 {
     /// <summary>
-    /// Possible types of Driver message payloads
+    /// Definition of supported checkpointing policies.
     /// </summary>
-    public enum DriverMessageType : ushort
+    [Unstable("0.16", "Policies may change")]
+    public enum CheckpointLevel : int
     {
-        Failure = 1,
+        None = 0, // No checkpointing
 
-        Ring = 2,
+        EphemeralMaster = 10, // Checkpointing on the master task, not tolerant to task failures
 
-        Resume = 3,
+        EphemeralAll = 11, // Checkpointing on all tasks, not tolerant to task failures
 
-        Topology = 4
+        PersistentMemoryMaster = 20, // Checkpointing on the master memory, tolerant to task failures but not evaluator failures
+
+        PersistentMemoryAll = 21 // Checkpointing on the tasks memory, tolerant to tasks failures but not evaluators failures
     }
 }

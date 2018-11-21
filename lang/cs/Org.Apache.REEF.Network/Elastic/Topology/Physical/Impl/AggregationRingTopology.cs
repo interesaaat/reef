@@ -30,6 +30,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {

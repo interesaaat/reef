@@ -41,6 +41,7 @@ using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

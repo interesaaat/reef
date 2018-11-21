@@ -24,6 +24,7 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -37,13 +38,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public DefaultGather(
             int receiverId,
             ElasticOperator prev,
-            TopologyType topologyType,
+            ITopology topology,
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
                 receiverId,
                 prev,
-                topologyType,
+                topology,
                 failureMachine,
                 checkpointLevel,
                 configurations)

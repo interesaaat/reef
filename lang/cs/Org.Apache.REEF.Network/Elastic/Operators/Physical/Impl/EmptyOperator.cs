@@ -1,4 +1,5 @@
 ﻿using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using System;
 using System.Collections.Generic;
 using System.Text;

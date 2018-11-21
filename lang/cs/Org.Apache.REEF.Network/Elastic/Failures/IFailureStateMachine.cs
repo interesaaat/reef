@@ -17,20 +17,22 @@
 
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Where the decision is made on what to do when a failure happen.
-    /// A decision is made based on the ration between the initial data points
+    /// A decision is made based on the ratio between the initial data points
     /// and how many data points are lost.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     [DefaultImplementation(typeof(DefaultFailureStateMachine))]
     public interface IFailureStateMachine
     {
         /// <summary>
-        /// The Machine current failure state.
+        /// The machine current failure state.
         /// </summary>
         IFailureState State { get; }
 
@@ -56,22 +58,22 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <summary>
         /// A utility method for setting multiple threshold at once.
         /// </summary>
-        /// <param name="weights">Pairs of failure states with related new threshold</param>
+        /// <param name="weights">Pairs of failure states with related new thresholds</param>
         void SetThreasholds(Tuple<IFailureState, float>[] weights);
 
         /// <summary>
-        /// Add new data point(s) to the Failure Machine.
+        /// Add new data point(s) to the failure machine.
         /// This method can be called either at initialization, or when
         /// new data points becomes available at runtime e.g., after a failure
         /// is resolved.
         /// </summary>
         /// <param name="points">How many data point to add</param>
-        /// <param name="isNew">Whether the data point is new of restored from a previous failed point</param>
+        /// <param name="isNew">Whether the data point is new or restored from a previous failed points</param>
         /// <returns>The failure state resulting from the addition of the data points</returns>
         IFailureState AddDataPoints(int points, bool isNew);
 
         /// <summary>
-        /// Remove data point(s) from the Failure Machine as a result of a runtime failure.
+        /// Remove data point(s) from the failure machine as a result of a runtime failure.
         /// </summary>
         /// <param name="points">How many data point to remove</param>
         /// <returns>A failure event resulting from the removal of the data points</returns>
@@ -81,7 +83,8 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// Utility method used to clone the target failure machine.
         /// Only the thresholds are cloned, while the machine state is not.
         /// </summary>
-        /// TODO
+        /// <param name="initalPoints">How many data points are avaialble in the new state machine</param>
+        /// <param name="initalState">The state from which the new machine should start</param>
         /// <returns>A new failure machine with the same settings</returns>
         IFailureStateMachine Clone(int initalPoints = 0, int initalState = 0);
     }

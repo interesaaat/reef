@@ -15,26 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
     /// Message sent by the driver to operators on running tasks. 
-    /// This message contains instructions from the Driver to Tasks.
+    /// This message contains instructions from the driver to tasks's operators.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IElasticDriverMessage
     {
         /// <summary>
-        /// The destination task of the message
+        /// The destination task of the message.
         string Destination { get; }
 
         /// <summary>
-        /// Operator and situation specific payload of the message
+        /// Operator and event specific payload of the message.
         /// </summary>
         DriverMessagePayload Message { get; }
 
         /// <summary>
-        /// Utility method to serialize the message for communication
+        /// Utility method to serialize the message for communication over the network.
         /// </summary>
+        /// <returns>The serialized message</returns>
         byte[] Serialize();
     }
 }

@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
@@ -31,5 +32,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         }
 
         public ICheckpointState Payload { get; set; }
+
+        public override object Clone()
+        {
+            return new CheckpointMessage(Payload);
+        }
     }
 }

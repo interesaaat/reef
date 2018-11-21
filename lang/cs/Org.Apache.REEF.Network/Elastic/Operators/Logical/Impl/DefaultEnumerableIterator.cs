@@ -33,6 +33,7 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Types;
 using Org.Apache.REEF.Utilities;
 using System.Diagnostics;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {

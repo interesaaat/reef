@@ -28,6 +28,7 @@ using Org.Apache.REEF.Network.NetworkService;
 using System.Collections.Concurrent;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical;
 using System.Linq;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {

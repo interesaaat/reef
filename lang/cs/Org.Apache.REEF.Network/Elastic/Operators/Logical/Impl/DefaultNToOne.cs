@@ -26,6 +26,7 @@ using Org.Apache.REEF.Network.Elastic.Comm;
 using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -41,13 +42,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public DefaultNToOne(
             int receiverId,
             ElasticOperator prev,
-            TopologyType topologyType,
+            ITopology topology,
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
                 null, 
                 prev, 
-                topologyType == TopologyType.Flat ? (ITopology)new FlatTopology(receiverId) : (ITopology)new TreeTopology(receiverId), 
+                topology, 
                 failureMachine,
                 checkpointLevel,
                 configurations)

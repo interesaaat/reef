@@ -15,18 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Base interface defining both the possible failure states and the current status.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IFailureState
     {
         /// <summary>
         /// The current failure state. It is assumed that bigger values mean worst
         /// failure state.
         /// </summary>
-        /// <returns>A value identifing the failure state</returns>
         int FailureState { get; set; }
 
         /// <summary>

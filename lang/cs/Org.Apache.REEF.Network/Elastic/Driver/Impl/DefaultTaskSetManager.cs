@@ -887,4 +887,54 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
         }
     }
+
+    /// <summary>
+    /// Definition of the the different states in which a task can be.
+    /// </summary>
+    internal enum TaskState
+    {
+        Init = 1,
+
+        Queued = 2,
+
+        Submitted = 3,
+
+        Recovering = 4,
+
+        Running = 5,
+
+        Failed = 6,
+
+        Completed = 7
+    }
+
+    /// <summary>
+    /// Utility class used to recognize particular task states.
+    /// </summary>
+    internal static class TaskStateUtils
+    {
+        private static List<TaskState> recoverable = new List<TaskState>() { TaskState.Failed, TaskState.Queued };
+
+        private static List<TaskState> notRunnable = new List<TaskState>() { TaskState.Failed, TaskState.Completed };
+
+        /// <summary>
+        /// Whether a task is recoverable or not.
+        /// </summary>
+        /// <param name="state">The current state of the task</param>
+        /// <returns>True if the task is recoverable</returns>
+        internal static bool IsRecoverable(TaskState state)
+        {
+            return recoverable.Contains(state);
+        }
+
+        /// <summary>
+        /// Whether a task can be run or not.
+        /// </summary>
+        /// <param name="state">The current state of the task</param>
+        /// <returns>True if the task can be run</returns>
+        internal static bool IsRunnable(TaskState state)
+        {
+            return !notRunnable.Contains(state);
+        }
+    }
 }

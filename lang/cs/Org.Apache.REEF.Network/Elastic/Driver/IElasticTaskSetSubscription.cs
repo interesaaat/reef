@@ -21,6 +21,8 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.IO.PartitionedData;
+using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver
 {
@@ -29,6 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// All operators in the same subscriptions share similar semantics and behavior 
     /// under failures. Subscriptions can only be created by a service.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IElasticTaskSetSubscription : IFailureResponse, ITaskMessageResponse
     {
         /// <summary>

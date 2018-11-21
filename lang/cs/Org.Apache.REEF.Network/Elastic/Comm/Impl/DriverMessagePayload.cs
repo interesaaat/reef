@@ -16,16 +16,22 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Utilities;
-using System;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
-    /// Payload of Driver messages.
+    /// Payload for messages going from the driver to tasks.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public abstract class DriverMessagePayload : GroupCommunicationMessage
     {
+        /// <summary>
+        /// Construct a payload for messages created at the driver and directed to tasks.
+        /// </summary>
+        /// <param name="subscriptionName">The name of the subsription</param>
+        /// <param name="operatorId">The id of the operator within the subscription</param>
+        /// <param name="iteration">The iteration number in which the message is sent</param>
         public DriverMessagePayload(string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId)
         {
@@ -33,20 +39,32 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
         }
 
         /// <summary>
-        /// The type of payload
+        /// The type of payload.
         /// </summary>
         internal DriverMessageType MessageType { get; set; }
 
+        /// <summary>
+        /// The iteration number in which the message is sent.
+        /// </summary>
         internal int Iteration { get; private set; }
 
         /// <summary>
-        /// Utility method to serialize the payload for communication
+        /// Utility method to serialize the payload for communication.
         /// </summary>
+        /// <returns>The serialized payload</returns>
         internal abstract byte[] Serialize();
+    }
 
-        public override object Clone()
-        {
-            return this;
-        }
+    /// <summary>
+    /// Possible types of driver message payloads.
+    /// </summary>
+    [Unstable("0.16", "Types may change")]
+    internal enum DriverMessageType : ushort
+    {
+        Ring = 1,
+
+        Resume = 2,
+
+        Topology = 3
     }
 }

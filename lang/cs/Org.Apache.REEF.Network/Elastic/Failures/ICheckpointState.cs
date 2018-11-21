@@ -16,7 +16,6 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {

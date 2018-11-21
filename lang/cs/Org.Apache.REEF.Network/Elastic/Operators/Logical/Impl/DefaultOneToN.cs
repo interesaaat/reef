@@ -25,6 +25,7 @@ using Org.Apache.REEF.Driver.Task;
 using System.Collections.Generic;
 using System;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {

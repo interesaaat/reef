@@ -29,6 +29,7 @@ using Org.Apache.REEF.Utilities;
 using System;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Wake.Time.Event;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -49,13 +50,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
         }
 
-        public override ElasticOperator Broadcast<T>(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator Broadcast<T>(int senderTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new DefaultBroadcast<T>(senderTaskId, this, topology ?? new FlatTopology(senderTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultBroadcast<T>(senderTaskId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             if (checkpointLevel > 0 && (int)checkpointLevel % 2 == 0)
             {
@@ -66,33 +67,33 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             return _next;
         }
 
-        public override ElasticOperator Reduce<T>(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        public override ElasticOperator Reduce<T>(int receiverTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new DefaultReduce<T>(receiverTaskId, this, topologyType, failureMachine, checkpointLevel, configurations);
+            _next = new DefaultReduce<T>(receiverTaskId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator ConditionalIterate(int coordinatorTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator ConditionalIterate(int coordinatorTaskId,IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new DefaultConditionalIterator(coordinatorTaskId, this, topology ?? new FlatTopology(coordinatorTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultConditionalIterator(coordinatorTaskId, this, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator EnumerableIterate(int masterTaskId, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator EnumerableIterate(int masterTaskId, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new DefaultEnumerableIterator(masterTaskId, this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultEnumerableIterator(masterTaskId, this, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator Scatter<T>(int senderTaskId, ITopology topology = null, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator Scatter<T>(int senderTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultScatter<T>(senderTaskId, this, topology ?? new FlatTopology(senderTaskId), failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultScatter<T>(senderTaskId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator Gather<T>(int receiverTaskId, TopologyType topologyType, IFailureStateMachine failureMachine = null, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        public override ElasticOperator Gather<T>(int receiverTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultGather<T>(receiverTaskId, this, topologyType, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultGather<T>(receiverTaskId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 

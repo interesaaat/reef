@@ -19,6 +19,7 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Collections.Generic;
 
@@ -29,6 +30,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// Task set managers subscribe to subscriptions in order to define tasks logic.
     /// Task set managers schedule and manage group of tasks running in the cluster.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface ITaskSetManager : IFailureResponse, IDisposable
     {
         /// <summary>

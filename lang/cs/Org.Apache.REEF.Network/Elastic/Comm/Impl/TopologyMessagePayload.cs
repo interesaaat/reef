@@ -36,6 +36,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             ToRemove = toRemove;
         }
 
+        public override object Clone()
+        {
+            return new TopologyMessagePayload(TopologyUpdates, ToRemove, SubscriptionName, OperatorId, Iteration);
+        }
+
         internal List<TopologyUpdate> TopologyUpdates { get; private set; }
 
         internal bool ToRemove { get; private set; }

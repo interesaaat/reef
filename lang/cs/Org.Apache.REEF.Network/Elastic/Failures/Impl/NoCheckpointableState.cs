@@ -17,8 +17,7 @@
 
 using System;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Wake.StreamingCodec;
-using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {

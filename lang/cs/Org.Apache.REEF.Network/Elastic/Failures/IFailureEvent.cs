@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -25,6 +26,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     /// state. The event specifies which action have to be executed in response
     /// to the change in the failure state.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IFailureEvent
     {
         /// <summary>
@@ -35,15 +37,19 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         int FailureEvent { get; }
 
         /// <summary>
-        /// The Task id where the failure occurred
+        /// The task id where the failure occurred.
         /// </summary>
         string TaskId { get; }
 
         /// <summary>
-        /// The Operator id where the failure occurred
+        /// The operator id where the failure occurred.
         /// </summary>
         int OperatorId { get; }
 
+        /// <summary>
+        /// The response message generated to react to the failure event.
+        /// 
+        /// </summary>
         List<IElasticDriverMessage> FailureResponse { get; }
     }
 }

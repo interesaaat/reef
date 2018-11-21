@@ -19,6 +19,7 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using System;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -30,13 +31,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         public DefaultConditionalIterator(
             int coordinatortId,
             ElasticOperator prev,
-            ITopology topology,
             IFailureStateMachine failureMachine,
             CheckpointLevel checkpointLevel,
             params IConfiguration[] configurations) : base(
                 null,
                 prev,
-                topology,
+                null,
                 failureMachine,
                 checkpointLevel)
         {

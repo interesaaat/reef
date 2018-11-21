@@ -446,7 +446,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (node.TaskId == taskId && node.Iteration == iteration)
                 {
                     var dest = node.Prev.TaskId;
-                    var data = new ResumeMessagePayload(node.TaskId, node.Iteration, SubscriptionName, OperatorId);
+                    var data = new ResumeMessagePayload(node.TaskId, SubscriptionName, OperatorId, node.Iteration);
                     returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
                     LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, node.Iteration);
                     return;

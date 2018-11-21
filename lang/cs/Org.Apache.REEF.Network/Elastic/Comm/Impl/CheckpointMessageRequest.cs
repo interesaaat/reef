@@ -31,6 +31,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Iteration = iteration;
         }
 
-        public int Iteration { get; set; }
+        public override object Clone()
+        {
+            return new CheckpointMessageRequest(SubscriptionName, OperatorId, Iteration);
+        }
+
+        internal int Iteration { get; set; }
     }
 }
