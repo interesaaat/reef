@@ -15,14 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
+using Org.Apache.REEF.Utilities.Attributes;
+
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum
 {
-    public enum DataNodeState : int
+    /// <summary>
+    /// Enum defining the supported type of (logical) topologies 
+    /// in which networked nodes are organized.
+    /// </summary>
+    [Unstable("0.16", "Types may change")]
+    public enum TopologyType
     {
-        Reachable = 1,
+        Flat = 0,
 
-        Unreachable = 2,
+        Tree = 1,
 
-        Lost = 3
+        Ring = 2
     }
 }

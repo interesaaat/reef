@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         public ResumeMessagePayload(string nextTaskId, string subscriptionName, int operatorId, int iteration)
             : base(nextTaskId, subscriptionName, operatorId, iteration)
         {
-            MessageType = DriverMessageType.Resume;
+            PayloadType = DriverMessagePayloadType.Resume;
         }
 
         public override object Clone()

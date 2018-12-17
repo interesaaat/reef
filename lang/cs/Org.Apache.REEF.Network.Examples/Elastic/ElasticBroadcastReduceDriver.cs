@@ -40,6 +40,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

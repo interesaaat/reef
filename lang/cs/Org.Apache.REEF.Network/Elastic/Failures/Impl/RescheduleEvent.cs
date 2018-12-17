@@ -22,18 +22,21 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
     /// Reconfigure the execution to work with fewer tasks
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public class RescheduleEvent : IReschedule
     {
-        public RescheduleEvent(string taskId, int operatorId)
+        public RescheduleEvent(string taskId)
         {
             TaskId = taskId;
-            OperatorId = operatorId;
+            OperatorId = -1;
             FailureResponse = new List<IElasticDriverMessage>();
             RescheduleTaskConfigurations = new Dictionary<string, IList<IConfiguration>>();
             Iteration = Optional<int>.Empty();

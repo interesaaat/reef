@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
         /// <summary>
         /// The type of payload.
         /// </summary>
-        internal DriverMessageType MessageType { get; set; }
+        internal DriverMessagePayloadType PayloadType { get; set; }
 
         /// <summary>
         /// The iteration number in which the message is sent.
@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     /// Possible types of driver message payloads.
     /// </summary>
     [Unstable("0.16", "Types may change")]
-    internal enum DriverMessageType : ushort
+    internal enum DriverMessagePayloadType : ushort
     {
         Ring = 1,
 

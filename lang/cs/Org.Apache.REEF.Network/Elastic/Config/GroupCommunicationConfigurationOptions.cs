@@ -22,26 +22,6 @@ namespace Org.Apache.REEF.Network.Elastic.Config
 {
     public sealed class GroupCommunicationConfigurationOptions
     {
-        [NamedParameter("Serialized operator configuration")]
-        public class SerializedOperatorConfigs : Name<IList<string>>
-        {
-        }
-
-        [NamedParameter("Id of root task in operator topology", defaultValue: "-1")]
-        public class TopologyRootTaskId : Name<int>
-        {
-        }
-
-        [NamedParameter("Ids of child tasks in operator topology")]
-        public class TopologyChildTaskIds : Name<ISet<int>>
-        {
-        }
-
-        [NamedParameter("Name of the subscriptions")]
-        public class SubscriptionName : Name<string>
-        {
-        }
-
         [NamedParameter("Timeout for sending or receiving messages", defaultValue: "600000")]
         public class Timeout : Name<int>
         {

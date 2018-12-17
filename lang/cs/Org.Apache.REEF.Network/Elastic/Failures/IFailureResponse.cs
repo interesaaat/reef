@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// </summary>
         /// <param name="alarm">The alarm triggering the timeput</param>
         /// <param name="msgs">A list of messages encoding how remote Tasks need to reach</param>
-        /// /// <param name="nextTimeouts">The next timeouts to be scheduled</param>
+        /// <param name="nextTimeouts">The next timeouts to be scheduled</param>
         void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts);
 
         /// <summary>

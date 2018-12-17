@@ -20,100 +20,104 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
+    ///<summary>
+    ///Class wrapping the configuration option for the elastic 
+    ///group communication service.
+    ///</summary>
     public sealed class ElasticServiceConfigurationOptions
     {
         [NamedParameter("Number of Evaluators")]
-        public class NumEvaluators : Name<int>
+        public sealed class NumEvaluators : Name<int>
         {
         }
 
         [NamedParameter("Number of Servers")]
-        public class NumServers : Name<int>
+        public sealed class NumServers : Name<int>
         {
         }
 
         [NamedParameter("Number of Workers")]
-        public class NumWorkers : Name<int>
+        public sealed class NumWorkers : Name<int>
         {
         }
 
         [NamedParameter(Documentation = "Number of retry when a failure occurs", DefaultValue = "1")]
-        public class RetryAfterFailure : Name<int>
+        public sealed class RetryAfterFailure : Name<int>
         {
         }
 
         [NamedParameter(Documentation = "Starting port for TcpPortProvider", DefaultValue = "8900")]
-        public class StartingPort : Name<int>
+        public sealed class StartingPort : Name<int>
         {
         }
 
         [NamedParameter(Documentation = "Port Range count for TcpPortProvider", DefaultValue = "1000")]
-        public class PortRange : Name<int>
+        public sealed class PortRange : Name<int>
         {
         }
 
         [NamedParameter("Driver identifier")]
-        public class DriverId : Name<string>
+        public sealed class DriverId : Name<string>
         {
         }
 
         [NamedParameter("Default Group name", defaultValue: "Subscription1")]
-        public class DefaultSubscriptionName : Name<string>
+        public sealed class DefaultSubscriptionName : Name<string>
         {
         }
 
         [NamedParameter("Number of tasks", defaultValue: "5")]
-        public class NumberOfTasks : Name<int>
+        public sealed class NumberOfTasks : Name<int>
         {
         }
 
         [NamedParameter("Serialized subscriptions configuration")]
-        public class SerializedSubscriptionConfigs : Name<ISet<string>>
+        public sealed class SerializedSubscriptionConfigs : Name<ISet<string>>
         {
         }
 
         [NamedParameter("Timeout after which computation is consider inactive", defaultValue: "600000")]
-        public class Timeout : Name<int>
+        public sealed class Timeout : Name<int>
         {
         }
 
         [NamedParameter("Number of retry to send a message", defaultValue: "50")]
-        public class SendRetry : Name<int>
+        public sealed class SendRetry : Name<int>
         {
         }
 
         [NamedParameter("Number of millisecond between each message retry", defaultValue: "1000")]
-        public class RetryWaitTime : Name<int>
+        public sealed class RetryWaitTime : Name<int>
         {
         }
 
         [NamedParameter("Number of failures before a task abort the task set", defaultValue: "100")]
-        public class NumTaskFailures : Name<int>
+        public sealed class NumTaskFailures : Name<int>
         {
         }
 
         [NamedParameter(Documentation = "Rack name used when a new evaluator is requested after a failure", DefaultValue = "WonderlandRack")]
-        public class NewEvaluatorRackName : Name<string>
+        public sealed class NewEvaluatorRackName : Name<string>
         {
         }
 
         [NamedParameter(Documentation = "Batch id used when a new evaluator is requested after a failure", DefaultValue = "IterateBroadcast")]
-        public class NewEvaluatorBatchId : Name<string>
+        public sealed class NewEvaluatorBatchId : Name<string>
         {
         }
 
         [NamedParameter(Documentation = "Number of cores used when a new evaluator is requested after a failure", DefaultValue = "1")]
-        public class NewEvaluatorNumCores : Name<int>
+        public sealed class NewEvaluatorNumCores : Name<int>
         {
         }
 
         [NamedParameter(Documentation = "Memory size used when a new evaluator is requested after a failure", DefaultValue = "512")]
-        public class NewEvaluatorMemorySize : Name<int>
+        public sealed class NewEvaluatorMemorySize : Name<int>
         {
         }
 
         [NamedParameter("Number of checkpoints to store per operator", defaultValue: "1")]
-        public class NumCheckpoints : Name<int>
+        public sealed class NumCheckpoints : Name<int>
         {
         }
     }

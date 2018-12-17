@@ -24,7 +24,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     /// <summary>
     /// Used to propagate task reponses through operators and subscriptions.
     /// </summary>
-    [Unstable("0.16", "Types may change")]
+    [Unstable("0.16", "API may change")]
     public interface ITaskMessageResponse
     {
         /// <summary>

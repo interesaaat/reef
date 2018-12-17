@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
@@ -27,7 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
     public class CheckpointableModel<T> : CheckpointableObject<T[]> where T : struct 
     {
         [Inject]
-        private CheckpointableModel([Parameter(typeof(Checkpointing))] int level)
+        private CheckpointableModel([Parameter(typeof(OperatorParameters.Checkpointing))] int level)
         {
             Level = (CheckpointLevel)level;
         }

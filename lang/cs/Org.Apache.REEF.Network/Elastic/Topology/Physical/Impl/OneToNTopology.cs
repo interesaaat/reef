@@ -193,7 +193,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void OnMessageFromDriver(DriverMessagePayload message)
         {
-            if (message.MessageType != DriverMessageType.Topology)
+            if (message.PayloadType != DriverMessagePayloadType.Topology)
             {
                 throw new IllegalStateException("Message not appropriate for NToOne Topology");
             }

@@ -26,7 +26,6 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
@@ -41,9 +40,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task
 
         [Inject]
         private DefaultTaskSetSubscription(
-           [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscriptionName,
-           [Parameter(typeof(GroupCommunicationConfigurationOptions.SerializedOperatorConfigs))] IList<string> operatorConfigs,
-           [Parameter(typeof(StartIteration))] int startIteration,
+           [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
+           [Parameter(typeof(OperatorParameters.SerializedOperatorConfigs))] IList<string> operatorConfigs,
+           [Parameter(typeof(OperatorParameters.StartIteration))] int startIteration,
            AvroConfigurationSerializer configSerializer,
            Workflow workflow,
            CommunicationLayer commLayer,
@@ -66,8 +65,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task
                 IConfiguration operatorConfig = configSerializer.FromString(operatorConfigStr);
 
                 IInjector operatorInjector = injector.ForkInjector(operatorConfig);
-                string msgType = operatorInjector.GetNamedInstance<MessageType, string>(
-                    GenericType<MessageType>.Class);
+                string msgType = operatorInjector.GetNamedInstance<OperatorParameters.MessageType, string>(
+                    GenericType<OperatorParameters.MessageType>.Class);
 
                 Type groupCommOperatorGenericInterface = typeof(IElasticTypedOperator<>);
                 Type groupCommOperatorInterface = groupCommOperatorGenericInterface.MakeGenericType(Type.GetType(msgType));

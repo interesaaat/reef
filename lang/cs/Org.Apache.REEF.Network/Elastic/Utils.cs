@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Globalization;
 
@@ -24,10 +25,11 @@ namespace Org.Apache.REEF.Network.Elastic
     /// <summary>
     /// Utility class.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal static class Utils
     {
         /// <summary>
-        /// Gets the context number associated with the Active Context id.
+        /// Gets the context number associated with the active context id.
         /// </summary>
         /// <param name="activeContext">The active context to check</param>
         /// <returns>The context number associated with the active context id</returns>
@@ -37,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
-        /// Gets the subscriptions associated with the Active Context id.
+        /// Gets the subscriptions associated with the active context id.
         /// </summary>
         /// <param name="activeContext">The active context to check</param>
         /// <returns>The subscription names associated with the active context id</returns>
@@ -47,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
-        /// Gets the subscriptions associated with the Context id.
+        /// Gets the subscriptions associated with the context id.
         /// </summary>
         /// <param name="id">The context id to check</param>
         /// <returns>The subscription names associated with the context id</returns>
@@ -77,23 +79,6 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
-        /// Utility method returning a requested field out of an identifier
-        /// </summary>
-        /// <param name="field">The field of interest</param>
-        /// <param name="identifier">The id to check</param>
-        /// <returns>The field value extracted from the identifier</returns>
-        private static string GetValue(int field, string identifer)
-        {
-            string[] parts = identifer.Split('-');
-            if (parts.Length != 3 || field < 0 || field > 2)
-            {
-                throw new ArgumentException("Invalid identifier");
-            }
-
-            return parts[field];
-        }
-
-        /// <summary>
         /// Builds a context identifier out of a subscription(s) and a context number.
         /// </summary>
         /// <param name="subscriptionName">The subscriptions active in the context</param>
@@ -116,7 +101,7 @@ namespace Org.Apache.REEF.Network.Elastic
         }
 
         /// <summary>
-        /// Gets the context associated with the Task id.
+        /// Gets the context associated with the task id.
         /// </summary>
         /// <param name="taskId">The task id to check</param>
         /// <returns>The context id associated with the task id</returns>
@@ -135,6 +120,23 @@ namespace Org.Apache.REEF.Network.Elastic
         private static string BuildIdentifier(string first, string second, int third)
         {
             return string.Format(CultureInfo.InvariantCulture, "{0}-{1}-{2}", first, second, third);
+        }
+
+        /// <summary>
+        /// Utility method returning a requested field out of an identifier
+        /// </summary>
+        /// <param name="field">The field of interest</param>
+        /// <param name="identifier">The id to check</param>
+        /// <returns>The field value extracted from the identifier</returns>
+        private static string GetValue(int field, string identifer)
+        {
+            string[] parts = identifer.Split('-');
+            if (parts.Length != 3 || field < 0 || field > 2)
+            {
+                throw new ArgumentException("Invalid identifier");
+            }
+
+            return parts[field];
         }
     }
 }

@@ -28,6 +28,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -96,14 +97,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             var rootId = node.Parent != null ? node.Parent.TaskId : _rootId;
 
-            confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
-                    GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
+            confBuilder.BindNamedParameter<OperatorParameters.TopologyRootTaskId, int>(
+                    GenericType<OperatorParameters.TopologyRootTaskId>.Class,
                     rootId.ToString(CultureInfo.InvariantCulture));
 
             foreach (DataNode childNode in node.Children)
             {
-                confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.TopologyChildTaskIds, int>(
-                    GenericType<GroupCommunicationConfigurationOptions.TopologyChildTaskIds>.Class,
+                confBuilder.BindSetEntry<OperatorParameters.TopologyChildTaskIds, int>(
+                    GenericType<OperatorParameters.TopologyChildTaskIds>.Class,
                     childNode.TaskId.ToString(CultureInfo.InvariantCulture));
             }
         }

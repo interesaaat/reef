@@ -21,46 +21,28 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
-    /// Empty operator implementing the default failure logic. To use only as root.
+    /// Empty operator implementing the default failure logic. To use only as root of pipelines.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     class DefaultEmpty : ElasticOperatorWithDefaultDispatcher
     {
-        public DefaultEmpty(IElasticTaskSetSubscription subscription, IFailureStateMachine filureMachine) : 
-            base(subscription, null, new EmptyTopology(), filureMachine)
+        /// <summary>
+        /// Basic constructor for the empty operator.
+        /// </summary>
+        /// <param name="subscription">The subscription the operator is part of</param>
+        /// <param name="failureMachine">The failure machine goverining the opeartor</param>
+        public DefaultEmpty(IElasticTaskSetSubscription subscription, IFailureStateMachine failureMachine) : 
+            base(subscription, null, new EmptyTopology(), failureMachine)
         {
             OperatorName = Constants.Empty;
             MasterId = 1;
             WithinIteration = false;
-        }
-
-        internal override void GatherMasterIds(ref HashSet<string> missingMasterTasks)
-        {
-            if (_operatorFinalized != true)
-            {
-                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
-            }
-
-            if (_next != null)
-            {
-                _next.GatherMasterIds(ref missingMasterTasks);
-            }
-        }
-
-        protected override void LogOperatorState()
-        {
-        }
-
-        protected override void GetOperatorConfiguration(ref IList<string> serializedOperatorsConfs, int taskId)
-        {
-        }
-
-        protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
-        {
         }
 
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
@@ -68,6 +50,47 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             if (_next != null)
             {
                 _next.OnTaskFailure(task, ref failureEvents);
+            }
+        }
+
+        /// <summary>
+        /// Logs the current operator state. 
+        /// </summary>
+        protected override void LogOperatorState()
+        {
+        }
+
+        /// <summary>
+        /// This method is operator specific and serializes the operator configuration into the input list.
+        /// </summary>
+        /// <param name="serializedOperatorsConfs">A list the serialized operator configuration will be appended to</param>
+        /// <param name="taskId">The task id of the task that belongs to this operator</param>
+        protected override void GetOperatorConfiguration(ref IList<string> serializedOperatorsConfs, int taskId)
+        {
+        }
+
+        /// <summary>
+        /// Binding from logical to physical operator. 
+        /// </summary>
+        /// <param name="builder">The configuration builder the binding will be added to</param>
+        protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
+        {
+        }
+
+        /// <summary>
+        /// Utility method gathering the set of master task ids of the operators in the current pipeline.
+        /// </summary>
+        /// <param name="masterTasks">The id of the master tasks of the current and successive operators</param>
+        internal override void GatherMasterIds(ref HashSet<string> masterTasks)
+        {
+            if (!_operatorFinalized)
+            {
+                throw new IllegalStateException("Operator need to be build before finalizing the subscription");
+            }
+
+            if (_next != null)
+            {
+                _next.GatherMasterIds(ref masterTasks);
             }
         }
     }

@@ -29,7 +29,6 @@ using Org.Apache.REEF.Client.Local;
 using Org.Apache.REEF.Client.Yarn;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Examples.Elastic;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 
 namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 {
@@ -57,8 +56,8 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticIterateBroadcastGatherDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
-                .BindNamedParameter<NumIterations, int>(
-                    GenericType<NumIterations>.Class,
+                .BindNamedParameter<OperatorParameters.NumIterations, int>(
+                    GenericType<OperatorParameters.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
                     GenericType<ElasticServiceConfigurationOptions.NumEvaluators>.Class,

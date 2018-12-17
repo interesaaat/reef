@@ -29,10 +29,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public void OnNext(DriverMessagePayload message)
         {
-            switch (message.MessageType)
+            switch (message.PayloadType)
             {
-                case DriverMessageType.Ring:
-                case DriverMessageType.Topology:
+                case DriverMessagePayloadType.Ring:
+                case DriverMessagePayloadType.Topology:
                     OnMessageFromDriver(message);
                     break;
                 default:

@@ -17,16 +17,24 @@
 
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Reschedule task event.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IReschedule : IReconfigure
     {
+        /// <summary>
+        /// The configurations for the subscriptions of the task.
+        /// </summary>
         Dictionary<string, IList<IConfiguration>> RescheduleTaskConfigurations { get; }
 
+        /// <summary>
+        /// Whether the task should be rescheduled as consequence of this event.
+        /// </summary>
         bool Reschedule { get; }
     }
 }

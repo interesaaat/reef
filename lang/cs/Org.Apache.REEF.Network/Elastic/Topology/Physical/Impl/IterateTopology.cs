@@ -24,7 +24,7 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.NetworkService;
@@ -43,10 +43,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private IterateTopology(
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            [Parameter(typeof(OperatorId))] int operatorId,
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId)
         {

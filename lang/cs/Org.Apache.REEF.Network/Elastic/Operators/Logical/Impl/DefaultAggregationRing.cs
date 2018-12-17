@@ -157,7 +157,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             if (isInit)
             {
                 LOGGER.Log(Level.Warning, "Timeout for Operator {0} in Subscription {1} initialized", _id, Subscription.SubscriptionName);
-                ////nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
+                nextTimeouts.Add(new OperatorTimeout(10000, alarm.Handler, id));
 
                 return;
             }
@@ -188,12 +188,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                                 _3sigma = new3Sigma;
                             }
 
-                            ////nextTimeouts.Add(new Timeout(Math.Max(10000, (long)_3sigma), alarm.Handler, Timeout.TimeoutType.Operator, id));
+                            nextTimeouts.Add(new OperatorTimeout(Math.Max(10000, (long)_3sigma), alarm.Handler, id));
                         }
                     }
                     else
                     {
-                        ////nextTimeouts.Add(new Timeout(10000, alarm.Handler, Timeout.TimeoutType.Operator, id));
+                        nextTimeouts.Add(new OperatorTimeout(10000, alarm.Handler, id));
                     }
 
                     _ignoreTimeout = false;

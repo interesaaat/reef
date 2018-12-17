@@ -17,12 +17,10 @@
 
 using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
-using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using System;
-using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
@@ -47,8 +45,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="topology">The operator topology layer</param>
         [Inject]
         private DefaultAggregationRing(
-            [Parameter(typeof(OperatorId))] int id,
-            [Parameter(typeof(Checkpointing))] int level,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
+            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
             AggregationRingTopology topology)
         {
             OperatorName = Constants.AggregationRing;

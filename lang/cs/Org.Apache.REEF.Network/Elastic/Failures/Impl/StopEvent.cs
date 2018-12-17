@@ -16,6 +16,8 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
@@ -23,12 +25,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// <summary>
     /// Reconfigure the execution to work with fewer tasks
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public class StopEvent : IStop
     {
-        public StopEvent(string taskId, int operatorId)
+        public StopEvent(string taskId)
         {
             TaskId = taskId;
-            OperatorId = operatorId;
+            OperatorId = -1;
             FailureResponse = new List<IElasticDriverMessage>();
         }
 

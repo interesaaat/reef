@@ -15,36 +15,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.Elastic.Failures.Enum;
-using System;
-using System.Collections.Generic;
+using Org.Apache.REEF.Utilities.Attributes;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
+namespace Org.Apache.REEF.Network.Elastic.Failures.Enum
 {
     /// <summary>
-    /// Reconfigure the execution to work with fewer tasks
+    /// The list of default failure events triggered by default state chages.
     /// </summary>
-    public class NoEvent : IFailureEvent
+    [Unstable("0.16", "The default evens may change")]
+    public enum DefaultFailureStateEvents : int
     {
-        public int FailureEvent
-        {
-            get { return (int)DefaultFailureStateEvents.Continue; }
-        }
+        Continue = 1,
 
-        public string TaskId
-        {
-            get { return string.Empty; }
-        }
+        Reconfigure = 2,
 
-        public int OperatorId
-        {
-            get { return -1; }
-        }
+        Reschedule = 3,
 
-        public List<IElasticDriverMessage> FailureResponse
-        {
-            get { return new List<IElasticDriverMessage>(); }
-        }
+        Stop = 4,
+
+        Fail = 5
     }
 }

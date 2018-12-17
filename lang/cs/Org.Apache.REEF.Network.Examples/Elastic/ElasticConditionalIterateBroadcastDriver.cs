@@ -36,12 +36,9 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Topology.Logical;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

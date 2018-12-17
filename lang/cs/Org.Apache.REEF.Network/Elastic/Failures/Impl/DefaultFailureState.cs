@@ -15,51 +15,51 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 /// <summary>
 /// The default implementation for IFailureState.
-/// This events are generated based on the default failure states.
+/// These events are generated based on the default failure states defined in the enum.
 /// </summary>
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    public class DefaultFailureState : IFailureState
+    [Unstable("0.16", "API may change")]
+    internal sealed class DefaultFailureState : IFailureState
     {
+        /// <summary>
+        /// Create a default failure state for 0 (Continue).
+        /// </summary>
         public DefaultFailureState()
         {
             FailureState = (int)DefaultFailureStates.Continue;
         }
 
+        /// <summary>
+        /// Create a default failure state for the input state.
+        /// </summary>
+        /// <param name="state">The input state we want to create a failure state from</param>
         public DefaultFailureState(int state)
         {
             FailureState = state;
         }
 
+        /// <summary>
+        /// The current failure state. It is assumed that bigger values mean worst
+        /// failure state.
+        /// </summary>
         public int FailureState { get; set; }
 
+        /// <summary>
+        /// A utility method to merge the current failure states and a new one passed as
+        /// parameter. The merging is based on user defined semantic.
+        /// </summary>
+        /// <param name="that">A new failure state</param>
+        /// <returns>The merge of the two failure states</returns>
         public IFailureState Merge(IFailureState that)
         {
             return new DefaultFailureState(Math.Max(FailureState, that.FailureState));
         }
-    }
-
-    public enum DefaultFailureStates : int
-    {
-        Continue = 0,
-
-        ContinueAndReconfigure = 1,
-
-        ContinueAndReschedule = 2,
-
-        StopAndReschedule = 3,
-
-        Fail = 4
-    }
-
-    public enum DefaultSubscriptionStates : int
-    {
-        Go = 0,
-
-        Stop = 1
     }
 }

@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
@@ -27,8 +27,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         [Inject]
         private ForLoopEnumerator(
-            [Parameter(typeof(NumIterations))] int iterations,
-            [Parameter(typeof(StartIteration))] int start)
+            [Parameter(typeof(OperatorParameters.NumIterations))] int iterations,
+            [Parameter(typeof(OperatorParameters.StartIteration))] int start)
         {
             _iterations = iterations;
             _start = start - 1;

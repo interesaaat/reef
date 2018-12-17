@@ -15,12 +15,25 @@
 // specific language governing permissions and limitations
 // under the License.
 
-namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
+
+using Org.Apache.REEF.Utilities.Attributes;
+
+namespace Org.Apache.REEF.Network.Elastic.Failures.Enum
 {
-    public enum TopologyType
+    /// <summary>
+    /// The default failure states.
+    /// </summary>
+    [Unstable("0.16", "The default states may change")]
+    public enum DefaultFailureStates : int
     {
-        Flat = 0,
-        Tree = 1,
-        Ring = 2
+        Continue = 0, // When a failre is detected, just ignore it continue the computation
+
+        ContinueAndReconfigure = 1, // When a failre is detected, continue the computation by properly reconfiguring the operators
+
+        ContinueAndReschedule = 2, // When a failre is detected, continue the computation by reconfiguring the operators and try to reschedule the task
+
+        StopAndReschedule = 3, // When a failre is detected, stop the computation and try to reschedule the task
+
+        Fail = 4 // Fail
     }
 }

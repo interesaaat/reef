@@ -40,17 +40,17 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         }
 
         /// <summary>
-        /// Returns the Subscription
+        /// Clone the message.
+        /// </summary>
+        public abstract object Clone();
+
+        /// <summary>
+        /// Returns the Subscription.
         internal string SubscriptionName { get; private set; }
 
         /// <summary>
         /// Returns the Operator id.
         /// </summary>
         internal int OperatorId { get; private set; }
-
-        /// <summary>
-        /// Returns the Operator id.
-        /// </summary>
-        public abstract object Clone();
     }
 }

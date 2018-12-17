@@ -27,7 +27,7 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Implementations.Tang;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Types;
@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 foreach (INamedParameterNode opt in conf.GetNamedParameters())
                 {
-                    if (opt.GetName() == typeof(NumIterations).FullName)
+                    if (opt.GetName() == typeof(OperatorParameters.NumIterations).FullName)
                     {
                         _numIterations = int.Parse(conf.GetNamedParameter(opt));
                     }
@@ -210,8 +210,8 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 var reconfigureEvent = rescheduleEvent as IReconfigure;
                 var checkpointConf = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<StartIteration, int>(
-                    GenericType<StartIteration>.Class,
+                .BindNamedParameter<OperatorParameters.StartIteration, int>(
+                    GenericType<OperatorParameters.StartIteration>.Class,
                     0.ToString(CultureInfo.InvariantCulture))
                 .Build();
 

@@ -36,9 +36,6 @@ using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Topology.Logical;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
@@ -72,7 +69,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         [Inject]
         private ElasticIterateDriver(
-            [Parameter(typeof(NumIterations))] int numIterations,
+            [Parameter(typeof(OperatorParameters.NumIterations))] int numIterations,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
@@ -98,7 +95,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 .Build();
 
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<NumIterations, int>(GenericType<NumIterations>.Class,
+                .BindNamedParameter<OperatorParameters.NumIterations, int>(GenericType<OperatorParameters.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
                .Build();
 

@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Runtime.Serialization;
 
@@ -24,24 +25,16 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// A serializable exception that represents a task operator error.
     /// </summary>
     [Serializable]
+    [Unstable("0.16", "API may change")]
     public class OperatorException : Exception, ISerializable
     {
         public readonly int _id;
         public readonly string _additionalInfo;
 
-        public int OperatorId 
-        {
-            get { return _id;  }
-        }
-
-        public string AdditionalInfo
-        {
-            get { return _additionalInfo; }
-        }
-
         /// <summary>
         /// Constructor. A serializable exception object that represents a task operator error.
-        /// All the operator related errors should be captured in this type of exception. 
+        /// All the operator related errors should be captured in this type of exception in order
+        /// to be proprierly handled by the elastic framework.
         /// <param name="message">The exception message</param>
         /// <param name="id">The id of the operator where the exception is triggered</param>
         /// </summary>
@@ -52,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Constructor. A serializable exception object that represents a task operator error and wraps an inner exception
+        /// Constructor. A serializable exception object that represents a task operator error and wraps an inner exception.
         /// </summary>
         /// <param name="message">The exception message</param>
         /// <param name="id">The id of the operator where the exception is triggered</param>
@@ -65,7 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
         /// <summary>
         /// Constructor. A serializable exception object that represents a task operator error and wraps an inner exception
-        /// plus some additional operator specific information
+        /// plus some additional operator specific information.
         /// </summary>
         /// <param name="message">The exception message</param>
         /// <param name="id">The id of the operator where the exception is triggered</param>
@@ -78,6 +71,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             _additionalInfo = info;
         }
 
+        /// <summary>
+        /// Constructor that generate an operator exception from a serialized buffer.
+        /// </summary>
+        /// <param name="info">The buffer containing the exception information</param>
+        /// <param name="context">The streaming context</param>
         public OperatorException(SerializationInfo info, StreamingContext context)
             : base(info, context)
         {
@@ -85,6 +83,27 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             _additionalInfo = info.GetString("info");
         }
 
+        /// <summary>
+        /// The identifier of the operator throwing the exception.
+        /// </summary>
+        public int OperatorId
+        {
+            get { return _id; }
+        }
+
+        /// <summary>
+        /// Some additional info for the exception.
+        /// </summary>
+        public string AdditionalInfo
+        {
+            get { return _additionalInfo; }
+        }
+
+        /// <summary>
+        /// Serialize the exception.
+        /// </summary>
+        /// <param name="info">The buffer where to add the exception information</param>
+        /// <param name="context">The streaming context</param>
         public new void GetObjectData(SerializationInfo info, StreamingContext context)
         {
             base.GetObjectData(info, context);

@@ -37,12 +37,18 @@ using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Wake.Time.Event;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    public sealed class DefaultTaskSetService : 
-        IElasticTaskSetService,
-        IDefaultFailureEventResponse
+    /// <summary>
+    /// Default implementation for the task service.
+    /// This is mainly used to create subscription.
+    /// Also manages configurations for Elastic Group Communication operators/services.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    public sealed class DefaultTaskSetService : IElasticTaskSetService, IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetService));
 
@@ -56,9 +62,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
         private readonly AvroConfigurationSerializer _configSerializer;
-        private IFailureState _failureStatus;
+
         private readonly object _subsLock = new object();
         private readonly object _statusLock = new object();
+
+        private IFailureState _failureStatus;
 
         [Inject]
         private DefaultTaskSetService(
@@ -84,6 +92,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _nameServerPort = localEndpoint.Port;
         }
 
+        /// <summary>
+        /// Returns a subscription with the default settings (default name and failure machine).
+        /// </summary>
+        /// <returns>A subscription with default settings</returns>
         public IElasticTaskSetSubscription DefaultTaskSetSubscription()
         {
             lock (_subsLock)
@@ -95,10 +107,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 {
                     NewTaskSetSubscription(_defaultSubscriptionName, _numEvaluators, _defaultFailureMachine.Clone(_numEvaluators, (int)DefaultFailureStates.Fail));
                 }
+
                 return _subscriptions[_defaultSubscriptionName];
             }
         }
 
+        /// <summary>
+        /// Creates a new subscription.
+        ///  The subscription lifecicle is managed by the service.
+        /// </summary>
+        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="numTasks">The number of tasks required by the subscription</param>
+        /// <param name="failureMachine">An optional failure machine governing the subscription</param>
+        /// <returns>The new task Set subscrption</returns>
         public IElasticTaskSetSubscription NewTaskSetSubscription(
             string subscriptionName, 
             int numTasks, 
@@ -106,15 +127,19 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             if (string.IsNullOrEmpty(subscriptionName))
             {
-               throw new ArgumentNullException("Subscription Name can not be null");
+               throw new ArgumentNullException($"{nameof(subscriptionName)} cannot be null.");
+            }
+
+            if (numTasks <= 0)
+            {
+                throw new ArgumentException($"{nameof(numTasks)} is required to be greater than 0.");
             }
 
             lock (_subsLock)
             {
                 if (_subscriptions.ContainsKey(subscriptionName))
                 {
-                    throw new ArgumentException(
-                        "Subscription Name already registered with TaskSetSubscriptionDriver");
+                    throw new ArgumentException($"Subscription {subscriptionName} already registered with the service.");
                 }
 
                 var subscription = new DefaultTaskSetSubscription(
@@ -128,25 +153,38 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Remove a task Set subscription from the service.
+        /// </summary>
+        /// <param name="subscriptionName">The name of the subscription to be removed</param>
         public void RemoveTaskSetSubscription(string subscriptionName)
         {
             lock (_subsLock)
             {
                 if (!_subscriptions.ContainsKey(subscriptionName))
                 {
-                    throw new ArgumentException(
-                        "Subscription Name is not registered with TaskSetSubscriptionDriver");
+                    throw new ArgumentException($"Subscription {subscriptionName} is not registered with the service.");
                 }
  
                 _subscriptions.Remove(subscriptionName);
             }
         }
 
+        /// <summary>
+        /// Get the subscriptions names from the context.
+        /// </summary>
+        /// <param name="activeContext">An activeContext</param>
+        /// <returns>The subscriptions representented in the context</returns>
         public string GetContextSubscriptions(IActiveContext activeContext)
         {
             return Utils.GetContextSubscriptions(activeContext);
         }
 
+        /// <summary>
+        /// Generate the service configuration object.
+        /// This method is used to properly configure Contexts with the service.
+        /// </summary>
+        /// <returns>The service Configuration</returns>
         public IConfiguration GetServiceConfiguration()
         {
             IConfiguration serviceConfig = ServiceConfiguration.ConfigurationModule
@@ -167,6 +205,11 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 .Build();
         }
 
+        /// <summary>
+        /// Creates a generic task Configuration object for the tasks registering to the service.
+        /// </summary>
+        /// <param name="subscriptionsConf">The configuration of the subscription the task will register to</param>
+        /// <returns>The configuration for the task with added service parameters</returns>
         public IConfiguration GetTaskConfiguration(ICsConfigurationBuilder subscriptionsConf)
         {
             return subscriptionsConf
@@ -176,6 +219,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 .Build();
         }
 
+        /// <summary>
+        /// Appends a subscription configuration to a configuration builder object.
+        /// </summary>
+        /// <param name="confBuilder">The configuration where the subscription configuration will be appended to</param>
+        /// <param name="subscriptionConf">The subscription configuration at hand</param>
+        /// <returns>The configuration containing the serialized subscription configuration</returns>
         public void SerializeSubscriptionConfiguration(ref ICsConfigurationBuilder confBuilder, IConfiguration subscriptionConfiguration)
         {
             confBuilder.BindSetEntry<ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs, string>(
@@ -183,21 +232,48 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _configSerializer.ToString(subscriptionConfiguration));
         }
 
+        /// <summary>
+        /// Append an operator configuration to a configuration builder object.
+        /// </summary>
+        /// <param name="serializedOperatorsConfs">The list where the operator configuration will be appended to</param>
+        /// <param name="subscriptionConf">The operator configuration at hand</param>
+        /// <returns>The configuration containing the serialized operator configuration</returns>
         public void SerializeOperatorConfiguration(ref IList<string> serializedOperatorsConfs, IConfiguration operatorConfiguration)
         {
             serializedOperatorsConfs.Add(_configSerializer.ToString(operatorConfiguration));
         }
 
+        #region Failure Response
+        /// <summary>
+        /// Used to react on a failure occurred on a task.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="task">The failed task</param>
+        /// <param name="failureEvents">A list of events encoding the type of actions to be triggered so far</param>
         public void OnTaskFailure(IFailedTask value, ref List<IFailureEvent> failureEvents)
         {
             var task = value.Id;
             _nameServer.Unregister(task);
         }
 
+        /// <summary>
+        /// Used to react when a timeout event is triggered.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="alarm">The alarm triggering the timeput</param>
+        /// <param name="msgs">A list of messages encoding how remote Tasks need to reach</param>
+        /// <param name="nextTimeouts">The next timeouts to be scheduled</param>
         public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
         }
 
+        /// <summary>
+        /// When a new failure state is reached, this method is used to dispatch
+        /// such event to the proper failure mitigation logic.
+        /// It gets a failure event as input and produces zero or more failure response messages
+        /// for tasks (appended into the event).
+        /// </summary>
+        /// <param name="event">The failure event to react upon</param>
         public void EventDispatcher(ref IFailureEvent @event)
         {
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
@@ -220,7 +296,14 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public void OnReconfigure(ref IReconfigure info)
+        #endregion
+
+        #region Default Failure event Response
+        /// <summary>
+        /// Mechanism to execute when a reconfigure event is triggered.
+        /// <paramref name="reconfigureEvent"/>
+        /// </summary>
+        public void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
             lock (_statusLock)
             {
@@ -228,6 +311,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a reschedule event is triggered.
+        /// <paramref name="rescheduleEvent"/>
+        /// </summary>
         public void OnReschedule(ref IReschedule rescheduleEvent)
         {
             lock (_statusLock)
@@ -236,6 +323,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a stop event is triggered.
+        /// <paramref name="stopEvent"/>
+        /// </summary>
         public void OnStop(ref IStop stopEvent)
         {
             lock (_statusLock)
@@ -244,6 +335,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a fail event is triggered.
+        /// </summary>
         public void OnFail()
         {
             lock (_statusLock)
@@ -251,5 +345,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 _failureStatus = _failureStatus.Merge(new DefaultFailureState((int)DefaultFailureStates.Fail));
             }
         }
+        #endregion
     }
 }

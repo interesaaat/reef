@@ -27,7 +27,6 @@ using Org.Apache.REEF.Network.NetworkService;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
@@ -42,10 +41,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private AggregationRingTopology(
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            [Parameter(typeof(OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
@@ -174,7 +173,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void OnMessageFromDriver(DriverMessagePayload message)
         {
-            if (message.MessageType != DriverMessageType.Ring)
+            if (message.PayloadType != DriverMessagePayloadType.Ring)
             {
                 throw new IllegalStateException("Message not appropriate for Aggregation Ring Topology");
             }
@@ -207,9 +206,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload message)
         {
-            switch (message.MessageType)
+            switch (message.PayloadType)
             {
-                case DriverMessageType.Resume:
+                case DriverMessagePayloadType.Resume:
                     var msg = "Received resume message: going to resume ring computation for ";
                     var destMessage = message as ResumeMessagePayload;
 

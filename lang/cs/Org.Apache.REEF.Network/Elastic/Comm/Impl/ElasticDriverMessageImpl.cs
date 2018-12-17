@@ -15,10 +15,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -26,15 +25,16 @@ using System.Linq;
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent by the driver to operators part of an aggregation ring. 
-    /// This message tells the destination node who is the next step in the ring.
+    /// Message sent by the driver to operators on running tasks. 
+    /// This message contains instructions from the driver to tasks's operators.
     /// </summary>
-    public sealed class ElasticDriverMessageImpl : IElasticDriverMessage
+    [Unstable("0.16", "API may change")]
+    internal sealed class ElasticDriverMessageImpl : IElasticDriverMessage
     {
         /// <summary>
-        /// Create new RingReturnMessage.
+        /// Create a new driver message.
         /// </summary>
-        /// <param name="destination">The message destination</param>
+        /// <param name="destinationTaskId">The message destination task</param>
         /// <param name="message">The message</param>
         public ElasticDriverMessageImpl(
             string destinationTaskId,
@@ -45,14 +45,18 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         }
 
         /// <summary>
-        /// The destination task of the message
+        /// The destination task of the message.
         public string Destination { get; private set; }
 
         /// <summary>
-        /// Returns the Operator id.
+        /// Operator and event specific payload of the message.
         /// </summary>
         public DriverMessagePayload Message { get; private set; }
 
+        /// <summary>
+        /// Utility method to serialize the message for communication over the network.
+        /// </summary>
+        /// <returns>The serialized message</returns>
         public byte[] Serialize()
         {
             List<byte[]> buffer = new List<byte[]>();
@@ -61,33 +65,39 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             buffer.Add(BitConverter.GetBytes(destinationBytes.Length));
             buffer.Add(destinationBytes);
-            buffer.Add(BitConverter.GetBytes((short)Message.MessageType));
+            buffer.Add(BitConverter.GetBytes((short)Message.PayloadType));
             buffer.Add(Message.Serialize());
 
             return buffer.SelectMany(i => i).ToArray();
         }
 
-        public static ElasticDriverMessageImpl From(byte[] data)
+        /// <summary>
+        /// Creates a driver message payload out of the memory buffer. 
+        /// </summary>
+        /// <param name="data">The buffer containing a serialized message payload</param>
+        /// <param name="offset">The offset where to start the deserialization process</param>
+        /// <returns>A topology message payload</returns>
+        public static ElasticDriverMessageImpl From(byte[] data, int offset = 0)
         {
-            int destinationLength = BitConverter.ToInt32(data, 0);
-            int offset = 4;
+            int destinationLength = BitConverter.ToInt32(data, offset);
+            offset = 4;
             string destination = ByteUtilities.ByteArraysToString(data.Skip(offset).Take(destinationLength).ToArray());
             offset += destinationLength;
 
-            DriverMessageType type = (DriverMessageType)BitConverter.ToUInt16(data, offset);
+            DriverMessagePayloadType type = (DriverMessagePayloadType)BitConverter.ToUInt16(data, offset);
             offset += sizeof(ushort);
 
             DriverMessagePayload payload = null;
 
             switch (type)
             {
-                case DriverMessageType.Ring:
+                case DriverMessagePayloadType.Ring:
                     payload = RingMessagePayload.From(data, offset);
                     break;
-                case DriverMessageType.Resume:
+                case DriverMessagePayloadType.Resume:
                     payload = ResumeMessagePayload.From(data, offset);
                     break;
-                case DriverMessageType.Topology:
+                case DriverMessagePayloadType.Topology:
                     payload = TopologyMessagePayload.From(data, offset);
                     break;
                 default:

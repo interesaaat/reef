@@ -19,7 +19,7 @@ using System.Threading;
 using Org.Apache.REEF.Tang.Annotations;
 using System.Collections;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Exceptions;
@@ -47,7 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="innerIterator">The inner enumerator implementing the iterator</param>
         [Inject]
         private DefaultEnumerableIterator(
-            [Parameter(typeof(OperatorId))] int id,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
             ForLoopEnumerator innerIterator,
             ICheckpointableState state,
             IterateTopology topology)

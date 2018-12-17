@@ -17,7 +17,7 @@
 
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Utilities.Logging;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
@@ -37,9 +37,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="topology">The operator topology layer</param>
         [Inject]
         private DefaultReduce(
-            [Parameter(typeof(OperatorId))] int id,
-            [Parameter(typeof(Checkpointing))] int level,
-            [Parameter(typeof(IsLast))] bool isLast,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int id,
+            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
+            [Parameter(typeof(OperatorParameters.IsLast))] bool isLast,
             ReduceTopology<T> topology) : base(id, level, isLast, topology)
         {
             OperatorName = Constants.Reduce;

@@ -28,6 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     {
         /// <summary>
         /// The destination task of the message.
+        /// </summary>
         string Destination { get; }
 
         /// <summary>

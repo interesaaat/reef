@@ -17,16 +17,24 @@
 
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Reconfigure the execution to work with fewer tasks
+    /// Reconfigure the execution to work with fewer tasks.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IReconfigure : IFailureEvent
     {
+        /// <summary>
+        /// The failed task triggering the event.
+        /// </summary>
         Optional<IFailedTask> FailedTask { get; }
 
+        /// <summary>
+        /// The iteration in which the failure is rised.
+        /// </summary>
         Optional<int> Iteration { get; set; }
     }
 }

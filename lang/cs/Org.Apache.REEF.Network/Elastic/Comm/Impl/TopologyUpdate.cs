@@ -16,14 +16,25 @@
 // under the License.
 
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
-    public class TopologyUpdate
+    /// <summary>
+    /// Class defining the updates of the topology for a running task.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    internal sealed class TopologyUpdate
     {
+        /// <summary>
+        /// Create an update for a node containing both the list of children and the root node.
+        /// </summary>
+        /// <param name="node">The node receiving the update</param>
+        /// <param name="children">The update to the children of the node</param>
+        /// <param name="root">The update for the root of the node</param>
         public TopologyUpdate(string node, List<string> children, string root)
         {
             Node = node;
@@ -31,30 +42,52 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Root = root;
         }
 
+        /// <summary>
+        /// Create an update for a node containing only the list of children.
+        /// </summary>
+        /// <param name="node">The node receiving the update</param>
+        /// <param name="children">The update to the children of the node</param>
         public TopologyUpdate(string node, List<string> children) : this(node, children, string.Empty)
         {
         }
 
+        /// <summary>
+        /// Create an update for a node containing only the root node.
+        /// </summary>
+        /// <param name="node">The node receiving the update</param>
+        /// <param name="root">The update for the root of the node</param>
         public TopologyUpdate(string node, string root) : this(node, new List<string>(), root)
         {
         }
 
+        /// <summary>
+        /// The node receiving the update.
+        /// </summary>
         public string Node { get; private set; }
 
+        /// <summary>
+        /// The updates for the children.
+        /// </summary>
         public List<string> Children { get; set; }
 
+        /// <summary>
+        /// The updates for the root.
+        /// </summary>
         public string Root { get; private set; }
 
-        // 1 int for the size of node
-        // The size of node
-        // 1 int for the number of children
-        // 1 int for the length of each children
-        // The size of the string of each child
-        // 1 int + the size of root if not null
+        /// <summary>
+        /// The total memory size for the update (used for serialization).
+        /// </summary>
         public int Size
         {
             get
             {
+                // 1 int for the size of node
+                // The size of node
+                // 1 int for the number of children
+                // 1 int for the length of each children
+                // The size of the string of each child
+                // 1 int + the size of root if not null
                 var nodeSize = sizeof(int) + Node.Length;
                 var childrenSize = sizeof(int) + (Children.Count * sizeof(int)) + Children.Sum(x => x.Length);
                 var rootSize = sizeof(int) + Root.Length;
@@ -63,6 +96,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             }
         }
 
+        /// <summary>
+        /// Serialize the update.
+        /// </summary>
+        /// <param name="buffer">The memory space where to copy the serialized update</param>
+        /// <param name="offset">Where to start writing in the buffer</param>
+        /// <param name="updates">The updates to serialize</param>
         internal static void Serialize(byte[] buffer, ref int offset, List<TopologyUpdate> updates)
         {
             byte[] tmpBuffer;
@@ -102,6 +141,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             }
         }
 
+        /// <summary>
+        /// Deserialize the update.
+        /// </summary>
+        /// <param name="data">The memory space where to fetch the serialized updates/param>
+        /// <param name="totLength">The total memory size of the serialized updates</param>
+        /// <param name="start">Where to start reading in the buffer</param>
         internal static List<TopologyUpdate> Deserialize(byte[] data, int totLength, int start)
         {
             var result = new List<TopologyUpdate>();

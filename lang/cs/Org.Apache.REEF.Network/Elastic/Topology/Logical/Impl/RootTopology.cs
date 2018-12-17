@@ -121,8 +121,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
-            confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
-                    GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
+            confBuilder.BindNamedParameter<OperatorParameters.TopologyRootTaskId, int>(
+                    GenericType<OperatorParameters.TopologyRootTaskId>.Class,
                     _rootId.ToString(CultureInfo.InvariantCulture));
         }
 

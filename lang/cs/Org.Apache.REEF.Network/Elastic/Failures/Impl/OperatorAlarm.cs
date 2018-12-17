@@ -22,6 +22,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     public sealed class OperatorAlarm : Alarm
     {
+        /// <summary>
+        /// Class representing an alarm triggered by an elastic operator.
+        /// </summary>
+        /// <param name="timeout">The amout of time that have to elaps in order to trigger the alarm</param>
+        /// <param name="handler"></param>
+        /// <param name="id"></param>
         public OperatorAlarm(long timeout, IObserver<Alarm> handler, string id) : base(timeout, handler)
         {
             Id = id;

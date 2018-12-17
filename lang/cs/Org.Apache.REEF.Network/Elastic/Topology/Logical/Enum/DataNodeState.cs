@@ -15,36 +15,17 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.Elastic.Failures.Enum;
-using System;
-using System.Collections.Generic;
+using Org.Apache.REEF.Utilities.Attributes;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
+namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum
 {
-    /// <summary>
-    /// Reconfigure the execution to work with fewer tasks
-    /// </summary>
-    public class NoEvent : IFailureEvent
+    [Unstable("0.16", "Types may change")]
+    internal enum DataNodeState : int
     {
-        public int FailureEvent
-        {
-            get { return (int)DefaultFailureStateEvents.Continue; }
-        }
+        Reachable = 1,
 
-        public string TaskId
-        {
-            get { return string.Empty; }
-        }
+        Unreachable = 2,
 
-        public int OperatorId
-        {
-            get { return -1; }
-        }
-
-        public List<IElasticDriverMessage> FailureResponse
-        {
-            get { return new List<IElasticDriverMessage>(); }
-        }
+        Lost = 3
     }
 }

@@ -17,7 +17,9 @@
 
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
@@ -25,6 +27,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
     /// <summary>
     /// Reconfigure the execution to work with fewer tasks
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public class ReconfigureEvent : IReconfigure
     {
         public ReconfigureEvent(IFailedTask failedTask, int opertorId)

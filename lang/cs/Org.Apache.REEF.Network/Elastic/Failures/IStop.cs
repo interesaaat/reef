@@ -15,16 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Utilities;
-using System.Collections.Generic;
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Driver.Context;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Stop task event.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IStop : IFailureEvent
     {
     }

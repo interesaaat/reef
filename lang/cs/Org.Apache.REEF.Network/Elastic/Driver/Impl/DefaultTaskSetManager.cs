@@ -32,6 +32,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Collections.Concurrent;
 using Org.Apache.REEF.Wake.Time.Event;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {

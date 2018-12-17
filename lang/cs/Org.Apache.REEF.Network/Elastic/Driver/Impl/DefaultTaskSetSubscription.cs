@@ -17,7 +17,6 @@
 
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Tang.Exceptions;
-using Org.Apache.REEF.Tang.Formats;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
@@ -26,19 +25,26 @@ using System.Threading;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Config;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Linq;
 using Org.Apache.REEF.Wake.Time.Event;
 using Org.Apache.REEF.IO.PartitionedData;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using System;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    public sealed class DefaultTaskSetSubscription : 
-        IElasticTaskSetSubscription,
-        IDefaultFailureEventResponse
+    /// <summary>
+    /// Used to group elastic operators into logical units. 
+    /// All operators in the same subscriptions share similar semantics and behavior 
+    /// under failures. Subscriptions can only be created by a service.
+    /// This class is used to create subscriptions able to manage default failure events.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    public sealed class DefaultTaskSetSubscription : IElasticTaskSetSubscription, IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
 
@@ -49,15 +55,22 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private int _tasksAdded;
         private HashSet<string> _missingMasterTasks;
         private HashSet<string> _masterTasks;
-        private IFailureStateMachine _defaultFailureMachine;
+        private readonly IFailureStateMachine _defaultFailureMachine;
 
         private int _numOperators;
         private Optional<IConfiguration[]> _datasetConfiguration;
         private bool _isMasterGettingInputData;
 
-        private readonly object _tasksLock;
-        private readonly object _statusLock;
+        private readonly object _tasksLock = new object();
+        private readonly object _statusLock = new object();
 
+        /// <summary>
+        /// Create a new subscription with the input settings.
+        /// </summary>
+        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="numTasks">The number of tasks managed by the subscription</param>
+        /// <param name="elasticService">The service managing the subscription</param>
+        /// <param name="failureMachine">The failure machine for the subscription</param>
         internal DefaultTaskSetSubscription(
             string subscriptionName,
             int numTasks,
@@ -78,35 +91,62 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator = new DefaultEmpty(this, _defaultFailureMachine.Clone());
 
             IsIterative = false;
-
-            _tasksLock = new object();
-            _statusLock = new object();
         }
 
+        /// <summary>
+        /// The name of the subscriptions.
+        /// </summary>
         public string SubscriptionName { get; set; }
 
+        /// <summary>
+        /// The operator at the beginning of the computation workflow.
+        /// </summary>
         public ElasticOperator RootOperator { get; private set; }
 
+        /// <summary>
+        /// The service managing the subscriptions.
+        /// </summary
         public IElasticTaskSetService Service { get; private set; }
 
+        /// <summary>
+        /// Whether the subscriptions contains iterations or not.
+        /// </summary>
         public bool IsIterative { get; set; }
 
+        /// <summary>
+        /// The failure state of the target subscriptions. 
+        /// </summary>
         public IFailureState FailureState { get; private set; }
 
+        /// <summary>
+        /// Whether the subscriptions is completed or not.
+        /// </summary>
         public bool IsCompleted { get; set; }
 
+        /// <summary>
+        /// Generates an id to uniquely identify operators in the subscriptions.
+        /// </summary>
+        /// <returns>A new unique id</returns>
         public int GetNextOperatorId()
         {
             return Interlocked.Increment(ref _numOperators);
         }
 
+        /// <summary>
+        /// Add a partitioned dataset to the subscription.
+        /// </summary>
+        /// <param name="inputDataSet">The partitioned dataset</param>
+        /// <param name="isMasterGettingInputData">Whether the master node should get a partition</param>
         public void AddDataset(IPartitionedInputDataSet inputDataSet, bool isMasterGettingInputData = false)
         {
-            _isMasterGettingInputData = isMasterGettingInputData;
-
-            _datasetConfiguration = Optional<IConfiguration[]>.Of(inputDataSet.Select(x => x.GetPartitionConfiguration()).ToArray());
+            AddDataset(inputDataSet.Select(x => x.GetPartitionConfiguration()).ToArray(), isMasterGettingInputData);
         }
 
+        /// <summary>
+        /// Add a set of datasets to the subscription.
+        /// </summary>
+        /// <param name="inputDataSet">The configuration for the datasets</param>
+        /// <param name="isMasterGettingInputData">Whether the master node should get a partition</param>
         public void AddDataset(IConfiguration[] inputDataSet, bool isMasterGettingInputData = false)
         {
             _isMasterGettingInputData = isMasterGettingInputData;
@@ -114,115 +154,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _datasetConfiguration = Optional<IConfiguration[]>.Of(inputDataSet);
         }
 
-        public bool AddTask(string taskId)
-        {
-            if (IsCompleted || (_scheduled && FailureState.FailureState == (int)DefaultFailureStates.Fail))
-            {
-                LOGGER.Log(Level.Warning, string.Format("Taskset {0}", IsCompleted ? "completed." : "failed."));
-                return false;
-            }
-
-            if (!_finalized)
-            {
-                throw new IllegalStateException(
-                    "CommunicationGroupDriver must call Build() before adding tasks to the group.");
-            }
-
-            lock (_tasksLock)
-            {
-                // We don't add a task if eventually we end up by not adding the master task
-                var tooManyTasks = _tasksAdded >= _numTasks;
-                var notAddingMaster = _tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId);
-
-                if (!_scheduled && (tooManyTasks || notAddingMaster))
-                {
-                    if (tooManyTasks)
-                    {
-                        LOGGER.Log(Level.Warning, $"Already added {_tasksAdded} tasks when total tasks request is {_numTasks}");
-                    }
-                    if (notAddingMaster)
-                    {
-                        LOGGER.Log(Level.Warning, $"Already added {_tasksAdded} over {_numTasks} but missing master task(s)");
-                    }
-                    return false;
-                }
-
-                if (!RootOperator.AddTask(taskId))
-                {
-                    return true;
-                }
-
-                _tasksAdded++;
-
-                _missingMasterTasks.Remove(taskId);
-
-                _defaultFailureMachine.AddDataPoints(1, false);
-            }
-
-            return true;
-        }
-
-        public bool ScheduleSubscription()
-        {
-            if (!_scheduled && (_numTasks == _tasksAdded || (IsIterative && _defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled())))
-            {
-                _scheduled = true;
-
-                RootOperator.BuildState();
-            }
-
-            return _scheduled;
-        }
-
-        public bool IsMasterTaskContext(IActiveContext activeContext)
-        {
-            if (!_finalized)
-            {
-                throw new IllegalStateException(
-                    "Driver must call Build() before checking IsMasterTaskContext.");
-            }
-
-            int id = Utils.GetContextNum(activeContext);
-            return _masterTasks.Select(Utils.GetTaskNum).Any(x => x == id);
-        }
-
-        public IConfiguration GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
-        {
-            IList<string> serializedOperatorsConfs = new List<string>();
-            builder = builder
-                .BindNamedParameter<GroupCommunicationConfigurationOptions.SubscriptionName, string>(
-                    GenericType<GroupCommunicationConfigurationOptions.SubscriptionName>.Class,
-                    SubscriptionName);
-
-            RootOperator.GetTaskConfiguration(ref serializedOperatorsConfs, taskId);
-
-            var subConf = builder
-                .BindList<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs, string>(
-                    GenericType<GroupCommunicationConfigurationOptions.SerializedOperatorConfigs>.Class,
-                    serializedOperatorsConfs)
-                .Build();
-
-            return subConf;
-        }
-
-        public Optional<IConfiguration> GetPartitionConf(string taskId)
-        {
-            if (!_datasetConfiguration.IsPresent() || (_masterTasks.Contains(taskId) && !_isMasterGettingInputData))
-            {
-                return Optional<IConfiguration>.Empty();
-            }
-
-            var index = Utils.GetTaskNum(taskId) - 1;
-            index = _masterTasks.Count == 0 || _isMasterGettingInputData ? index : index - 1;
-
-            if (index < 0 || index >= _datasetConfiguration.Value.Length)
-            {
-                throw new IllegalStateException($"Asking for a not existing partition configuration {index}.");
-            }
-
-            return Optional<IConfiguration>.Of(_datasetConfiguration.Value[index]);
-        }
-
+        /// <summary>
+        /// Finalizes the subscriptions.
+        /// After the subscriptions has been finalized, no more operators can
+        /// be added to the group.
+        /// </summary>
+        /// <returns>The same finalized subscriptions</returns>
         public IElasticTaskSetSubscription Build()
         {
             if (_finalized == true)
@@ -248,11 +185,188 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             return this;
         }
 
+        /// <summary>
+        /// Add a task to the subscriptions.
+        /// The subscriptions must have been buit before tasks can be added.
+        /// </summary>
+        /// <param name="taskId">The id of the task to add</param>
+        /// <returns>True if the task is correctly added to the subscriptions</returns>
+        public bool AddTask(string taskId)
+        {
+            if (taskId == string.Empty)
+            {
+                throw new ArgumentException($"{nameof(taskId)} cannot be empty.");
+            }
+
+            if (IsCompleted || (_scheduled && FailureState.FailureState == (int)DefaultFailureStates.Fail))
+            {
+                LOGGER.Log(Level.Warning, "Taskset " + (IsCompleted ? "completed." : "failed."));
+                return false;
+            }
+
+            if (!_finalized)
+            {
+                throw new IllegalStateException("Subscription must be finalized before adding tasks.");
+            }
+
+            lock (_tasksLock)
+            {
+                // We don't add a task if eventually we end up by not adding the master task
+                var tooManyTasks = _tasksAdded >= _numTasks;
+                var notAddingMaster = _tasksAdded + _missingMasterTasks.Count >= _numTasks && !_missingMasterTasks.Contains(taskId);
+
+                if (!_scheduled && (tooManyTasks || notAddingMaster))
+                {
+                    if (tooManyTasks)
+                    {
+                        LOGGER.Log(Level.Warning, $"Already added {_tasksAdded} tasks when total tasks request is {_numTasks}");
+                    }
+
+                    if (notAddingMaster)
+                    {
+                        LOGGER.Log(Level.Warning, $"Already added {_tasksAdded} over {_numTasks} but missing master task(s)");
+                    }
+
+                    return false;
+                }
+
+                if (!RootOperator.AddTask(taskId))
+                {
+                    return true;
+                }
+
+                _tasksAdded++;
+
+                _missingMasterTasks.Remove(taskId);
+
+                _defaultFailureMachine.AddDataPoints(1, false);
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Decides if the tasks added to the subscriptions can be scheduled for execution
+        /// or not. This method is used for implementing different policies for 
+        /// triggering the scheduling of tasks.
+        /// </summary>
+        /// <returns>True if the previously added tasks can be scheduled for execution</returns>
+        public bool ScheduleSubscription()
+        {
+            // Schedule if we reach the number of requested tasks or the subscription contains an iterative pipeline that is ready to be scheduled and the 
+            // policy requested by the user allow early start with ramp up.
+            if (!_scheduled && (_numTasks == _tasksAdded || (IsIterative && _defaultFailureMachine.State.FailureState < (int)DefaultFailureStates.StopAndReschedule && RootOperator.CanBeScheduled())))
+            {
+                _scheduled = true;
+
+                RootOperator.BuildState();
+            }
+
+            return _scheduled;
+        }
+
+        /// <summary>
+        /// Whether the input activeContext is the one of the master tasks.
+        /// </summary>
+        /// <param name="activeContext">The active context of the task</param>
+        /// <returns>True if the input parameter is the master task's active context</returns>
+        public bool IsMasterTaskContext(IActiveContext activeContext)
+        {
+            if (!_finalized)
+            {
+                throw new IllegalStateException("Driver must call Build() before checking IsMasterTaskContext.");
+            }
+
+            int id = Utils.GetContextNum(activeContext);
+            return _masterTasks.Select(Utils.GetTaskNum).Any(x => x == id);
+        }
+
+        /// <summary>
+        /// Creates the Configuration for the input task.
+        /// Must be called only after all tasks have been added to the subscriptions.
+        /// </summary>
+        /// <param name="builder">The configuration builder the configuration will be appended to</param>
+        /// <param name="taskId">The task id of the task that belongs to this subscriptions</param>
+        /// <returns>The configuration for the Task with added subscriptions informations</returns>
+        public IConfiguration GetTaskConfiguration(ref ICsConfigurationBuilder builder, int taskId)
+        {
+            IList<string> serializedOperatorsConfs = new List<string>();
+            builder = builder
+                .BindNamedParameter<Config.OperatorParameters.SubscriptionName, string>(
+                    GenericType<Config.OperatorParameters.SubscriptionName>.Class,
+                    SubscriptionName);
+
+            RootOperator.GetTaskConfiguration(ref serializedOperatorsConfs, taskId);
+
+            var subConf = builder
+                .BindList<Config.OperatorParameters.SerializedOperatorConfigs, string>(
+                    GenericType<Config.OperatorParameters.SerializedOperatorConfigs>.Class,
+                    serializedOperatorsConfs)
+                .Build();
+
+            return subConf;
+        }
+
+        /// <summary>
+        /// Given a task id, this method returns the configuration of the task's data partition
+        /// (if any).
+        /// </summary>
+        /// <param name="taskId">The task id of the task we wanto to retrieve the data partition. 
+        /// The task is required to belong to thq subscriptions</param>
+        /// <returns>The configuration of the data partition (if any) of the task</returns>
+        public Optional<IConfiguration> GetPartitionConf(string taskId)
+        {
+            if (!_datasetConfiguration.IsPresent() || (_masterTasks.Contains(taskId) && !_isMasterGettingInputData))
+            {
+                return Optional<IConfiguration>.Empty();
+            }
+
+            var index = Utils.GetTaskNum(taskId) - 1;
+            index = _masterTasks.Count == 0 || _isMasterGettingInputData ? index : index - 1;
+
+            if (index < 0 || index >= _datasetConfiguration.Value.Length)
+            {
+                throw new IllegalStateException($"Asking for a not existing partition configuration {index}.");
+            }
+
+            return Optional<IConfiguration>.Of(_datasetConfiguration.Value[index]);
+        }
+
+        /// <summary>
+        /// Retrieve the log the final statistics of the computation: this is the sum of all 
+        /// the stats of all the Operators compising the subscription. This method can be called
+        /// only once the subscriptions is completed.
+        /// </summary>
+        /// <returns>The final statistics for the computation</returns>
+        public string LogFinalStatistics()
+        {
+            if (!IsCompleted)
+            {
+                throw new IllegalStateException($"Cannot log statistics before Subscription {SubscriptionName} is completed");
+            }
+
+            return RootOperator.LogFinalStatistics();
+        }
+
+        /// <summary>
+        /// Method triggered when a task to driver message is received. 
+        /// </summary>
+        /// <param name="message">The task message for the operator</param>
+        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
         public void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
+            // Messages have to be propagated down to the operators
             RootOperator.OnTaskMessage(message, ref returnMessages);
         }
 
+        #region Failure Response
+        /// <summary>
+        /// Used to react when a timeout event is triggered.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="alarm">The alarm triggering the timeput</param>
+        /// <param name="msgs">A list of messages encoding how remote Tasks need to reach</param>
+        /// <param name="nextTimeouts">The next timeouts to be scheduled</param>
         public void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
             var isInit = msgs == null;
@@ -274,12 +388,25 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Used to react on a failure occurred on a task.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="task">The failed task</param>
+        /// <param name="failureEvents">A list of events encoding the type of actions to be triggered so far</param>
         public void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             // Failures have to be propagated down to the operators
             RootOperator.OnTaskFailure(task, ref failureEvents);
         }
 
+        /// <summary>
+        /// When a new failure state is reached, this method is used to dispatch
+        /// such event to the proper failure mitigation logic.
+        /// It gets a failure event as input and produces zero or more failure response messages
+        /// for tasks (appended into the event).
+        /// </summary>
+        /// <param name="event">The failure event to react upon</param>
         public void EventDispatcher(ref IFailureEvent @event)
         {
             switch ((DefaultFailureStateEvents)@event.FailureEvent)
@@ -304,7 +431,15 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             RootOperator.EventDispatcher(ref @event);
         }
 
-        public void OnReconfigure(ref IReconfigure info)
+        #endregion
+
+        #region Default Failure Events Response
+
+        /// <summary>
+        /// Mechanism to execute when a reconfigure event is triggered.
+        /// <paramref name="reconfigureEvent"/>
+        /// </summary>
+        public void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
             lock (_statusLock)
             {
@@ -312,6 +447,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a reschedule event is triggered.
+        /// <paramref name="rescheduleEvent"/>
+        /// </summary>
         public void OnReschedule(ref IReschedule rescheduleEvent)
         {
             lock (_statusLock)
@@ -320,6 +459,10 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a stop event is triggered.
+        /// <paramref name="stopEvent"/>
+        /// </summary>
         public void OnStop(ref IStop stopEvent)
         {
             lock (_statusLock)
@@ -328,6 +471,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a fail event is triggered.
+        /// </summary>
         public void OnFail()
         {
             lock (_statusLock)
@@ -336,14 +482,6 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        public string LogFinalStatistics()
-        {
-            if (!IsCompleted)
-            {
-                throw new IllegalStateException($"Cannot log statistics before Subscription {SubscriptionName} is completed");
-            }
-
-            return RootOperator.LogFinalStatistics();
-        }
+        #endregion
     }
 }

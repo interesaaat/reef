@@ -38,6 +38,7 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

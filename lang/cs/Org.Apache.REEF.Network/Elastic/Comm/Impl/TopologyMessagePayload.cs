@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -23,28 +24,61 @@ using System.Linq;
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent by the driver to operators part of an aggregation ring. 
-    /// This message tells the destination node who is the next step in the ring.
+    /// Messages sent by the driver to operators. 
+    /// This message contains information for the destination node on the topology.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal sealed class TopologyMessagePayload : DriverMessagePayload
     {
+        /// <summary>
+        /// Create a driver message payload containing topology updates 
+        /// </summary>
+        /// <param name="updates">The topology updates</param>
+        /// <param name="toRemove">Whether the updates are additions to the current topology state or nodes removal</param>
+        /// <param name="subscriptionName">The subscription context for the message</param>
+        /// <param name="operatorId">The id of the operator receiving the topology update</param>
+        /// <param name="iteration">The iteration in which the update takes effect</param>
         public TopologyMessagePayload(List<TopologyUpdate> updates, bool toRemove, string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId, iteration)
         {
-            MessageType = DriverMessageType.Topology;
+            PayloadType = DriverMessagePayloadType.Topology;
             TopologyUpdates = updates;
             ToRemove = toRemove;
         }
 
+        /// <summary>
+        /// Clone the message.
+        /// </summary>
+        /// <returns>An object containing the shallow copy of the message.</returns>
         public override object Clone()
         {
-            return new TopologyMessagePayload(TopologyUpdates, ToRemove, SubscriptionName, OperatorId, Iteration);
+            var updatesClone = new List<TopologyUpdate>();
+
+            foreach(var update in TopologyUpdates)
+            {
+                var clone = new TopologyUpdate(update.Node, update.Children, update.Root);
+                updatesClone.Add(update);
+            }
+
+            return new TopologyMessagePayload(updatesClone, ToRemove, SubscriptionName, OperatorId, Iteration);
         }
 
+        /// <summary>
+        /// The updates for the topology.
+        /// </summary>
         internal List<TopologyUpdate> TopologyUpdates { get; private set; }
 
+        /// <summary>
+        /// Whether the updates are additions or removals to the current node topology.
+        /// </summary>
         internal bool ToRemove { get; private set; }
 
+        /// <summary>
+        /// Creates a topology message payload out of memory buffer. 
+        /// </summary>
+        /// <param name="data">The buffer containing a serialized message payload</param>
+        /// <param name="offset">The offset where to start the deserialization process</param>
+        /// <returns>A topology message payload</returns>
         internal static DriverMessagePayload From(byte[] data, int offset = 0)
         {
             int length = BitConverter.ToInt32(data, offset);
@@ -66,6 +100,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return new TopologyMessagePayload(updates, toRemove, subscription, operatorId, iteration);
         }
 
+        /// <summary>
+        /// Utility method to serialize the payload for communication.
+        /// </summary>
+        /// <returns>The serialized payload</returns>
         internal override byte[] Serialize()
         {
             byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);

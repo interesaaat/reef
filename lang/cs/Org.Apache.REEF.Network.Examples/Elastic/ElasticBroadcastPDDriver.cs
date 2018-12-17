@@ -45,6 +45,7 @@ using Org.Apache.REEF.Tang.Formats;
 using System.Linq;
 using Org.Apache.REEF.IO.FileSystem;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {

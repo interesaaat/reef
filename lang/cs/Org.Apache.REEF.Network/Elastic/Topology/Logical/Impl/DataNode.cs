@@ -15,23 +15,31 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
     /// <summary>
     /// Represents a node in the operator topology graph.
+    /// Nodes are logical representations in the Driver for tasks.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal sealed class DataNode
     {
-        private int _taskId;
-
-        private DataNode _parent;
-        private bool _isRoot;
-        private DataNodeState _state;
-
+        private readonly int _taskId;
+        private readonly bool _isRoot;
         private readonly List<DataNode> _children;
 
+        private DataNode _parent;
+        private DataNodeState _state;
+
+        /// <summary>
+        /// Construct a node using a given task id.
+        /// </summary>
+        /// <param name="taskId">The id for the node</param>
+        /// <param name="isRoot">Whether the node is the root/master of the topology or not</param>
         public DataNode(
             int taskId, 
             bool isRoot)
@@ -43,33 +51,51 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _children = new List<DataNode>();
         }
 
+        /// <summary>
+        /// The current state for the node.
+        /// </summary>
         public DataNodeState FailState
         {
             get { return _state; }
             set { _state = value; }
         }
 
+        /// <summary>
+        /// The parent of the target node.
+        /// </summary>
         public DataNode Parent
         {
             get { return _parent; }
             set { _parent = value; }
         }
 
+        /// <summary>
+        /// Add a node to the list of children nodes of the current one.
+        /// </summary>
         public void AddChild(DataNode child)
         {
             _children.Add(child);
         }
 
+        /// <summary>
+        /// The task id represented by the data node.
+        /// </summary>
         public int TaskId
         {
             get { return _taskId; }
         }
 
+        /// <summary>
+        /// Return how many children the current node has.
+        /// </summary>
         public int NumberOfChildren
         {
             get { return _children.Count; }
         }
 
+        /// <summary>
+        /// Return the list of children fro the current node.
+        /// </summary>
         public IList<DataNode> Children
         {
             get { return _children; }

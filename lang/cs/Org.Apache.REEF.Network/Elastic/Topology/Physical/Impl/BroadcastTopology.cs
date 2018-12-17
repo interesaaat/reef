@@ -21,7 +21,6 @@ using Org.Apache.REEF.Tang.Annotations;
 using System.Collections.Generic;
 using Org.Apache.REEF.Common.Tasks;
 using System;
-using Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
@@ -34,11 +33,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         [Inject]
         private BroadcastTopology(
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.SubscriptionName))] string subscription,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyRootTaskId))] int rootId,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.TopologyChildTaskIds))] ISet<int> children,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
+            [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
+            [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            [Parameter(typeof(OperatorId))] int operatorId,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,

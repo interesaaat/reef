@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         public RingMessagePayload(string nextTaskId, string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId, iteration)
         {
-            MessageType = DriverMessageType.Ring;
+            PayloadType = DriverMessagePayloadType.Ring;
             NextTaskId = nextTaskId;
         }
 

@@ -30,6 +30,7 @@ using Org.Apache.REEF.Network.Elastic.Comm;
 using System.Diagnostics;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Utilities;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 {
@@ -247,13 +248,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 if (tId.TaskId != taskId)
                 {
-                    confBuilder.BindSetEntry<GroupCommunicationConfigurationOptions.TopologyChildTaskIds, int>(
-                        GenericType<GroupCommunicationConfigurationOptions.TopologyChildTaskIds>.Class,
+                    confBuilder.BindSetEntry<Config.OperatorParameters.TopologyChildTaskIds, int>(
+                        GenericType<Config.OperatorParameters.TopologyChildTaskIds>.Class,
                         tId.TaskId.ToString(CultureInfo.InvariantCulture));
                 }
             }
-            confBuilder.BindNamedParameter<GroupCommunicationConfigurationOptions.TopologyRootTaskId, int>(
-                GenericType<GroupCommunicationConfigurationOptions.TopologyRootTaskId>.Class,
+            confBuilder.BindNamedParameter<Config.OperatorParameters.TopologyRootTaskId, int>(
+                GenericType<Config.OperatorParameters.TopologyRootTaskId>.Class,
                 _rootId.ToString(CultureInfo.InvariantCulture));
         }
 
@@ -485,7 +486,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             Iteration = iteration;
             Next = null;
             Prev = prev;
-            Type = DriverMessageType.Ring;
+            Type = DriverMessagePayloadType.Ring;
         }
 
         public string TaskId { get; private set; }
@@ -496,6 +497,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public RingNode Prev { get; set; }
 
-        public DriverMessageType Type { get; set; }
+        public DriverMessagePayloadType Type { get; set; }
     }
 }

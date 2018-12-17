@@ -16,61 +16,83 @@
 // under the License.
 
 using Org.Apache.REEF.Tang.Annotations;
+using System.Collections.Generic;
 
-namespace Org.Apache.REEF.Network.Elastic.Config.OperatorParameters
+namespace Org.Apache.REEF.Network.Elastic.Config
 {
-    [NamedParameter("Operator Name")]
-    public sealed class OperatorType : Name<string>
+    ///<summary>
+    ///Class wrapping the configuration option parameters for operators.
+    ///</summary>
+    public sealed class OperatorParameters
     {
-    }
+        [NamedParameter("Operator Name")]
+        public sealed class OperatorType : Name<string>
+        {
+        }
 
-    [NamedParameter("Type of the message")]
-    public sealed class MessageType : Name<string>
-    {
-    }
+        [NamedParameter("Type of the message")]
+        public sealed class MessageType : Name<string>
+        {
+        }
 
-    [NamedParameter("Operator Id")]
-    public sealed class OperatorId : Name<int>
-    {
-    }
+        [NamedParameter("Operator Id")]
+        public sealed class OperatorId : Name<int>
+        {
+        }
 
-    [NamedParameter("Request topology update", defaultValue: "false")]
-    public sealed class RequestTopologyUpdate : Name<bool>
-    {
-    }
+        [NamedParameter("Name of the subscriptions")]
+        public sealed class SubscriptionName : Name<string>
+        {
+        }
 
-    [NamedParameter("Number of iterations")]
-    public sealed class NumIterations : Name<int>
-    {
-    }
+        [NamedParameter("Serialized operator configuration")]
+        public sealed class SerializedOperatorConfigs : Name<IList<string>>
+        {
+        }
 
-    [NamedParameter("Number of element to scatter for each node", defaultValue: "0")]
-    public sealed class NumScatterElements : Name<int>
-    {
-    }
+        [NamedParameter("Request topology update", defaultValue: "false")]
+        public sealed class RequestTopologyUpdate : Name<bool>
+        {
+        }
 
-    [NamedParameter("Iteration number to begin with", defaultValue: "1")]
-    public sealed class StartIteration : Name<int>
-    {
-    }
+        [NamedParameter("Number of iterations")]
+        public sealed class NumIterations : Name<int>
+        {
+        }
 
-    [NamedParameter("Master Id")]
-    public sealed class MasterId : Name<int>
-    {
-    }
+        [NamedParameter("Number of element to scatter for each node", defaultValue: "0")]
+        public sealed class NumScatterElements : Name<int>
+        {
+        }
 
-    [NamedParameter("Checkpoint level", defaultValue: "0")]
-    public sealed class Checkpointing : Name<int>
-    {
-    }
+        [NamedParameter("Iteration number to begin with", defaultValue: "1")]
+        public sealed class StartIteration : Name<int>
+        {
+        }
 
-    [NamedParameter("Restore computation from a previous checkpoint", defaultValue: "false")]
-    public sealed class Restore : Name<bool>
-    {
-    }
+        [NamedParameter("Master Id")]
+        public sealed class MasterId : Name<int>
+        {
+        }
 
-    [NamedParameter("Whether the operator is the last to be executed in the subscription", defaultValue: "false")]
-    public sealed class IsLast : Name<bool>
-    {
+        [NamedParameter("Checkpoint level", defaultValue: "0")]
+        public sealed class Checkpointing : Name<int>
+        {
+        }
+
+        [NamedParameter("Whether the operator is the last to be executed in the subscription", defaultValue: "false")]
+        public sealed class IsLast : Name<bool>
+        {
+        }
+
+        [NamedParameter("Id of root task in operator topology", defaultValue: "-1")]
+        public sealed class TopologyRootTaskId : Name<int>
+        {
+        }
+
+        [NamedParameter("Ids of child tasks in operator topology")]
+        public sealed class TopologyChildTaskIds : Name<ISet<int>>
+        {
+        }
     }
 }

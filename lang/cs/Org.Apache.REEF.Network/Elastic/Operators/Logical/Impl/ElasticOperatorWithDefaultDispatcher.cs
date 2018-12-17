@@ -20,9 +20,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Utilities.Logging;
-using System.Globalization;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
-using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using System.Collections.Generic;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Utilities;
@@ -30,73 +28,159 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Wake.Time.Event;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
-    /// Empty operator implementing the default failure logic. To use only as root.
+    /// Abstract operator implementing the default failure logic.
+    /// This can be used as super class for default operators.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal abstract class ElasticOperatorWithDefaultDispatcher : ElasticOperator, IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticOperatorWithDefaultDispatcher));
 
+        /// <summary>
+        /// Base constructor for an abstract operator implementing the default failure logic.
+        /// </summary>
+        /// <param name="subscription">The subscription the operator is part of</param>
+        /// <param name="prev">The previous operator in the pipelines</param>
+        /// <param name="topology">The topology for the operator</param>
+        /// <param name="failureMachine">The failure machine of the operator</param>
+        /// <param name="level">The chckpoint level for the opearator</param>
+        /// <param name="configurations">Additonal opeartor specific configurations</param>
         protected ElasticOperatorWithDefaultDispatcher(
             IElasticTaskSetSubscription subscription, 
             ElasticOperator prev, ITopology topology, 
             IFailureStateMachine failureMachine, 
-            CheckpointLevel level = CheckpointLevel.None,
+            CheckpointLevel checkpointLevel = CheckpointLevel.None,
             params IConfiguration[] configurations) : 
-        base(subscription, prev, topology, failureMachine, level, configurations)
+        base(subscription, prev, topology, failureMachine, checkpointLevel, configurations)
         {
         }
 
-        public override ElasticOperator Broadcast<T>(int senderTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        /// <summary>
+        /// Add the broadcast operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that the operator will send / receive</typeparam>
+        /// <param name="senderId">The id of the sender / root node of the broadcast</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added broadcast operator</returns>
+        public override ElasticOperator Broadcast<T>(int senderId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new DefaultBroadcast<T>(senderTaskId, this, topology, failureMachine, checkpointLevel, configurations);
+            _next = new DefaultBroadcast<T>(senderId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator AggregationRing<T>(int coordinatorTaskId, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        /// <summary>
+        /// Add an instance of the aggregation ring operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that the operator will send / receive</typeparam>
+        /// <param name="coordinatorId">The id of the coordinator node starting the ring</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added aggregation ring operator</returns>
+        public override ElasticOperator AggregationRing<T>(int coordinatorId, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             if (checkpointLevel > 0 && (int)checkpointLevel % 2 == 0)
             {
                 throw new ArgumentException("Checkpoint level for Aggregation Ring operator must be All or None");
             }
 
-            _next = new DefaultAggregationRing<T>(coordinatorTaskId, this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
+            _next = new DefaultAggregationRing<T>(coordinatorId, this, failureMachine ?? _failureMachine.Clone(), checkpointLevel, configurations);
             return _next;
         }
 
+        /// <summary>
+        /// Add the reduce operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that the operator will send / receive</typeparam>
+        /// <param name="receiverId">The id of the received / root node of the reduce</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added reduce operator</returns>
         public override ElasticOperator Reduce<T>(int receiverTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             _next = new DefaultReduce<T>(receiverTaskId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
+        /// <summary>
+        /// Add an instance of the conditional iterate operator to the operator pipeline.
+        /// This operator iterate until a user provided condition is satisfied.
+        /// </summary>
+        /// <param name="coordinatorId">The id of the node coordinating the iterations</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added conditional iterate operator</returns>
         public override ElasticOperator ConditionalIterate(int coordinatorTaskId,IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
             _next = new DefaultConditionalIterator(coordinatorTaskId, this, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator EnumerableIterate(int masterTaskId, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
+        /// <summary>
+        /// Add an instance of the enumerable iterate operator to the operator pipeline.
+        /// This operator iterate a user provided number of times.
+        /// </summary>
+        /// <param name="masterId">The id of the node coordinating the iterations</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added enumerable iterate operator</returns>
+        public override ElasticOperator EnumerableIterate(int masterId, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel, params IConfiguration[] configurations)
         {
-            _next = new DefaultEnumerableIterator(masterTaskId, this, failureMachine, checkpointLevel, configurations);
+            _next = new DefaultEnumerableIterator(masterId, this, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator Scatter<T>(int senderTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        /// <summary>
+        /// Add an instance of the scatter operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that the operator will send / receive</typeparam>
+        /// <param name="senderId">The id of the sender / root node of the scatter</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added scatter operator</returns>
+        public override ElasticOperator Scatter<T>(int senderId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultScatter<T>(senderTaskId, this, topology, failureMachine, checkpointLevel, configurations);
+            _next = new DefaultScatter<T>(senderId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
-        public override ElasticOperator Gather<T>(int receiverTaskId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
+        /// <summary>
+        /// Add an instance of the gather operator to the operator pipeline.
+        /// </summary>
+        /// <typeparam name="T">The type of messages that the operator will send / receive</typeparam>
+        /// <param name="receiverId">The id of the received / root node of the gatger</param>
+        /// <param name="topology">The topology of the operator</param>
+        /// <param name="failureMachine">The failure state machine of the operator</param>
+        /// <param name="checkpointLevel">The checkpoint policy for the operator</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
+        /// <returns>The same operator pipeline with the added gather operator</returns>
+        public override ElasticOperator Gather<T>(int receiverId, ITopology topology, IFailureStateMachine failureMachine, CheckpointLevel checkpointLevel = CheckpointLevel.None, params IConfiguration[] configurations)
         {
-            _next = new DefaultGather<T>(receiverTaskId, this, topology, failureMachine, checkpointLevel, configurations);
+            _next = new DefaultGather<T>(receiverId, this, topology, failureMachine, checkpointLevel, configurations);
             return _next;
         }
 
+        /// <summary>
+        /// Used to react on a failure occurred on a task.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="task">The failed task</param>
+        /// <param name="failureEvents">A list of events encoding the type of actions to be triggered so far</param>
         public override void OnTaskFailure(IFailedTask task, ref List<IFailureEvent> failureEvents)
         {
             var failedOperatorId = _id;
@@ -108,7 +192,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
             else
             {
-                LOGGER.Log(Level.Info, "Failure from {0} cannot be properly managed: failing", task.Id);
+                LOGGER.Log(Level.Info, $"Failure from {task.Id} cannot be properly managed: failing");
                 failureEvents.Add(new FailEvent(task.Id));
             }
 
@@ -125,19 +209,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     case DefaultFailureStates.ContinueAndReschedule:
                         if (failedOperatorId == _id)
                         {
-                            var @event = new RescheduleEvent(task.Id, -1);
-                            @event.FailedTask = Optional<IFailedTask>.Of(task);
+                            var @event = new RescheduleEvent(task.Id)
+                            {
+                                FailedTask = Optional<IFailedTask>.Of(task)
+                            };
                             failureEvents.Add(@event);
                         }
                         break;
                     case DefaultFailureStates.StopAndReschedule:
-                        failureEvents.Add(new StopEvent(task.Id, -1));
+                        failureEvents.Add(new StopEvent(task.Id));
                         break;
                     case DefaultFailureStates.Fail:
                         failureEvents.Add(new FailEvent(task.Id));
                         break;
                     default:
-                        LOGGER.Log(Level.Info, "Failure from {0} requires no action", task.Id);
+                        LOGGER.Log(Level.Info, $"Failure from {task.Id} requires no action");
                         break;
                 }
 
@@ -150,6 +236,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// Used to react when a timeout event is triggered.
+        /// It gets a failed task as input and in response it produces zero or more failure events.
+        /// </summary>
+        /// <param name="alarm">The alarm triggering the timeput</param>
+        /// <param name="msgs">A list of messages encoding how remote Tasks need to reach</param>
+        /// <param name="nextTimeouts">The next timeouts to be scheduled</param>
         public override void OnTimeout(Alarm alarm, ref List<IElasticDriverMessage> msgs, ref List<ITimeout> nextTimeouts)
         {
             if (_next != null)
@@ -158,6 +251,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// When a new failure state is reached, this method is used to dispatch
+        /// such event to the proper failure mitigation logic.
+        /// It gets a failure event as input and produces zero or more failure response messages
+        /// for tasks (appended into the event).
+        /// </summary>
+        /// <param name="event">The failure event to react upon</param>
         public override void EventDispatcher(ref IFailureEvent @event)
         {
             if (@event.OperatorId == _id || (@event.OperatorId < 0 && WithinIteration))
@@ -188,22 +288,41 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a reconfigure event is triggered.
+        /// <paramref name="reconfigureEvent"/>
+        /// </summary>
         public virtual void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
         }
 
+        /// <summary>
+        /// Mechanism to execute when a reschedule event is triggered.
+        /// <paramref name="rescheduleEvent"/>
+        /// </summary>
         public virtual void OnReschedule(ref IReschedule rescheduleEvent)
         {
         }
 
+        /// <summary>
+        /// Mechanism to execute when a stop event is triggered.
+        /// <paramref name="stopEvent"/>
+        /// </summary>
         public virtual void OnStop(ref IStop stopEvent)
         {
         }
 
+        /// <summary>
+        /// Mechanism to execute when a fail event is triggered.
+        /// </summary>
         public virtual void OnFail()
         {
         }
 
+        /// <summary>
+        /// Returns whether a failure should be propagated to downstream operators or not.
+        /// </summary>
+        /// <returns>True if the failure has to be sent downstream</returns>
         protected override bool PropagateFailureDownstream()
         {
             switch (_failureMachine.State.FailureState)
@@ -217,13 +336,15 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// Logs the current operator state. 
+        /// </summary>
         protected override void LogOperatorState()
         {
-            string intro = string.Format(CultureInfo.InvariantCulture,
-               "State for Operator {0} in Subscription {1}:\n", OperatorName, Subscription.SubscriptionName);
-            string topologyState = string.Format(CultureInfo.InvariantCulture, "Topology:\n{0}\n", _topology.LogTopologyState());
-            string failureMachineState = "Failure State: " + (DefaultFailureStates)_failureMachine.State.FailureState +
-                    "\nFailure(s) Reported: " + _failureMachine.NumOfFailedDataPoints + " / " + _failureMachine.NumOfDataPoints;
+            string intro = $"State for Operator {OperatorName} in Subscription {Subscription.SubscriptionName}:\n";
+            string topologyState = $"Topology:\n{_topology.LogTopologyState()}\n";
+            string failureMachineState = $"Failure State: {(DefaultFailureStates)_failureMachine.State.FailureState}" +
+                    $"\nFailure(s) Reported: {_failureMachine.NumOfFailedDataPoints}/{_failureMachine.NumOfDataPoints}";
 
             LOGGER.Log(Level.Info, intro + topologyState + failureMachineState);
         }

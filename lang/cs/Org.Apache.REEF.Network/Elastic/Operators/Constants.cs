@@ -15,8 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Operators
 {
+    /// <summary>
+    /// Constants labeling the set of available operators.
+    /// </summary>
+    [Unstable("0.16", "Constants may change")]
     public static class Constants
     {
         public const string Broadcast = "broadcast";
