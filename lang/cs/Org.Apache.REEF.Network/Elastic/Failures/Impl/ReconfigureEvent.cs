@@ -25,35 +25,56 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
-    /// Reconfigure the execution to work with fewer tasks
+    /// Reconfigure the execution to work with fewer tasks.
     /// </summary>
     [Unstable("0.16", "API may change")]
     public class ReconfigureEvent : IReconfigure
     {
+        /// <summary>
+        /// Constructor for a reconfigure event.
+        /// </summary>
+        /// <param name="failedTask">The failed task</param>
+        /// <param name="opertorId">The operator identifier in which the event was detected</param>
         public ReconfigureEvent(IFailedTask failedTask, int opertorId)
         {
             FailedTask = Optional<IFailedTask>.Of(failedTask);
             OperatorId = opertorId;
             FailureResponse = new List<IElasticDriverMessage>();
             Iteration = Optional<int>.Empty();
+            TaskId = failedTask.Id;
         }
 
+        /// <summary>
+        /// The event / action raised by the transition to the new failure state.
+        /// </summary>
         public int FailureEvent
         {
             get { return (int)DefaultFailureStateEvents.Reconfigure; }
         }
 
+        /// <summary>
+        /// The failed task triggering the event.
+        /// </summary>
         public Optional<IFailedTask> FailedTask { get; set; }
 
+        /// <summary>
+        /// The iteration in which the failure is rised.
+        /// </summary>
         public Optional<int> Iteration { get; set; }
 
-        public string TaskId
-        {
-            get { return FailedTask.Value.Id; }
-        }
+        /// <summary>
+        /// The identifier of the task triggering the event.
+        /// </summary>
+        public string TaskId { get; private set; }
 
+        /// <summary>
+        /// The opeartor id in which the failure is rised.
+        /// </summary>
         public int OperatorId { get; private set; }
 
+        /// <summary>
+        /// The response message generated to react to the failure event.
+        /// </summary>
         public List<IElasticDriverMessage> FailureResponse { get; private set; }
     }
 }

@@ -15,21 +15,21 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Elastic.Failures.Enum;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Tang.Interface;
-using Org.Apache.REEF.Wake.StreamingCodec;
+using Org.Apache.REEF.Utilities.Attributes;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures
+namespace Org.Apache.REEF.Network.Elastic.Comm.Enum
 {
-    public class CheckpointableModel<T> : CheckpointableObject<T[]> where T : struct 
+    [Unstable("0.16", "Types may change")]
+    internal enum TaskMessageType : ushort
     {
-        [Inject]
-        private CheckpointableModel([Parameter(typeof(OperatorParameters.Checkpointing))] int level)
-        {
-            Level = (CheckpointLevel)level;
-        }
+        IterationNumber = 0,
+
+        JoinTopology = 1,
+
+        TopologyUpdateRequest = 2,
+
+        NextDataRequest = 3,
+
+        CompleteSubscription = 4
     }
 }

@@ -31,6 +31,8 @@ using Org.Apache.REEF.Wake.Time.Event;
 using System.Diagnostics;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -83,7 +85,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultAggregationRing<T>>.Class);
+            confBuilder
+                .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultAggregationRing<T>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<GroupCommunicationMessage>>.Class);
+
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }
 

@@ -15,12 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Typed base Group Communication operator.
+    /// Typed physical group communication operator.
     /// </summary>
     /// <typeparam name="T">The type of data managed by the operator</typeparam>
+    [Unstable("0.16", "API may change")]
     public interface IElasticTypedOperator<T> : IElasticOperator
     {
     }

@@ -52,6 +52,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     .Set(DriverConfiguration.OnTaskRunning, GenericType<ElasticBroadcastDriver>.Class)
                     .Set(DriverConfiguration.OnTaskCompleted, GenericType<ElasticBroadcastDriver>.Class)
                     .Set(DriverConfiguration.OnTaskFailed, GenericType<ElasticBroadcastDriver>.Class)
+                    .Set(DriverConfiguration.OnTaskMessage, GenericType<ElasticBroadcastDriver>.Class)
                     .Set(DriverConfiguration.CustomTraceLevel, Level.Info.ToString())
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(

@@ -17,21 +17,26 @@
 
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Tang.Interface;
-using Org.Apache.REEF.Tang.Util;
-using Org.Apache.REEF.Wake.StreamingCodec;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    // Is users duty to make sure that if T is an IEnumerable type, the inner objects are clonable as well
-    public class CheckpointableObject<T> : ICheckpointableState where T : ICloneable
+    // Is users duty to make sure that if T is an IEnumerable type, the inner objects are clonable as well.
+    [Unstable("0.16", "API may change")]
+    public class CheckpointableImmutableObject<T> : ICheckpointableState
     {
         [Inject]
-        internal CheckpointableObject()
+        private CheckpointableImmutableObject([Parameter(typeof(OperatorParameters.Checkpointing))] int level) : base()
         {
+            Level = (CheckpointLevel)level;
+        }
+
+        private CheckpointableImmutableObject()
+        {
+            State = default;
+            Iteration = 0;
         }
 
         protected T State { get; set; }
@@ -40,18 +45,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         public int Iteration { get; internal set; }
 
-        public void MakeCheckpointable(T model)
+        public void MakeCheckpointable(object model)
         {
-            State = model;
-        }
-
-        void ICheckpointableState.MakeCheckpointable(object model)
-        {
-            MakeCheckpointable((T)model);
+            State = (T)model;
         }
 
         // Create a copy of the state
-        internal CheckpointState<T> GetState()
+        public ICheckpointState Checkpoint()
         {
             switch (Level)
             {
@@ -60,15 +60,19 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
                     return new CheckpointState<T>(Level, Iteration, State);
                 case CheckpointLevel.PersistentMemoryMaster:
                 case CheckpointLevel.PersistentMemoryAll:
-                    return new CheckpointState<T>(Level, Iteration, (T)State.Clone());
+                    return new CheckpointState<T>(Level, Iteration, State);
                 default:
                     return new CheckpointState<T>();
             }
         }
 
-        ICheckpointState ICheckpointableState.Checkpoint()
+        public ICheckpointableState From(int iteration = 0)
         {
-            return GetState();
+            return new CheckpointableImmutableObject<T>()
+            {
+                Level = Level,
+                Iteration = iteration
+            };
         }
     }
 }

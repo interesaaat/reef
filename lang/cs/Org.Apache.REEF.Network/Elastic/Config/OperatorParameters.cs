@@ -94,5 +94,10 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         public sealed class TopologyChildTaskIds : Name<ISet<int>>
         {
         }
+
+        [NamedParameter("Whether topology updates can be piggybacked to data messages", defaultValue: "false")]
+        public sealed class PiggybackTopologyUpdates : Name<bool>
+        {
+        }
     }
 }

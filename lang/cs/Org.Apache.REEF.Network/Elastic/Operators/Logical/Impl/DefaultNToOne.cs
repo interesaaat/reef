@@ -27,6 +27,7 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {

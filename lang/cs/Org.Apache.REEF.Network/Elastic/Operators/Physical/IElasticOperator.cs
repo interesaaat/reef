@@ -16,14 +16,16 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Task;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Basic Group Communication operator.
+    /// Base class for task-side, physical, group communication operators.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IElasticOperator : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
@@ -37,32 +39,35 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         int OperatorId { get; }
 
         /// <summary>
-        /// Operator specific information in case of failure
+        /// Operator-specific information that is sent to the driver in case of failure.
         /// </summary>
         string FailureInfo { get; }
 
         /// <summary>
-        /// Get a reference of the iterator in the pipeline (if it exists)
+        /// Get a reference of the iterator in the pipeline (if it exists).
         /// </summary>
         IElasticIterator IteratorReference { set; }
 
         /// <summary>
-        /// TODO
+        /// Cancellation source for stopping the exeuction of the opearator.
         /// </summary>
         CancellationTokenSource CancellationSource { get; set; }
 
         /// <summary>
         /// Wait until computation is globally completed for this operator 
-        /// before disposing the object
+        /// before disposing the object.
         /// </summary>
         void WaitCompletionBeforeDisposing();
 
         /// <summary>
         /// Reset the internal position tracker. This should be called
-        /// every time a new iteration start in the workflow
+        /// every time a new iteration start in the workflow.
         /// </summary>
         void ResetPosition();
 
+        /// <summary>
+        /// Action to execute when a task is re-scheduled.
+        /// </summary>
         Action OnTaskRescheduled { get; }
     }
 }

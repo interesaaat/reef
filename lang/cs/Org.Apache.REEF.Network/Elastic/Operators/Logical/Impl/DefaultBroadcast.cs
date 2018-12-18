@@ -21,14 +21,29 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
+using static Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
+using System.Globalization;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
-    /// Broadcast operator implementation.
+    /// Driver-side broadcast operator implementation.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     class DefaultBroadcast<T> : DefaultOneToN<T>, IElasticBroadcast
     {
+        /// <summary>
+        /// Constructor for a driver-side broadcast opearator.
+        /// </summary>
+        /// <param name="senderId">The identifier of the sender task</param>
+        /// <param name="prev">The previous operator in the pipeline</param>
+        /// <param name="topology">The topology for the broadcast operation</param>
+        /// <param name="failureMachine">The failure machine managing the failures for the operator</param>
+        /// <param name="checkpointLevel">The checkpoint level</param>
+        /// <param name="configurations">Additional configurations for the operator</param>
         public DefaultBroadcast(
             int senderId,
             ElasticOperator prev,
@@ -46,9 +61,23 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             OperatorName = Constants.Broadcast;
         }
 
+        /// <summary>
+        /// Binding from logical to physical operator. 
+        /// </summary>
+        /// <param name="builder">The configuration builder the binding will be added to</param>
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultBroadcast<T>>.Class);
+            confBuilder
+                .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultBroadcast<T>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<GroupCommunicationMessage>>.Class);
+
+            if (_topology is TreeTopology)
+            {
+                confBuilder
+                    .BindNamedParameter<PiggybackTopologyUpdates, bool>(GenericType<PiggybackTopologyUpdates>.Class,
+                    true.ToString(CultureInfo.InvariantCulture));
+            }
+
             SetMessageType(typeof(Physical.Impl.DefaultBroadcast<T>), ref confBuilder);
         }
     }

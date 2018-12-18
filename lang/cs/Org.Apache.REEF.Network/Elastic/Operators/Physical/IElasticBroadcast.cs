@@ -15,11 +15,14 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication operator used to broadcast messages.
+    /// Group communication operator used to broadcast messages.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IElasticBroadcast<T> : IElasticTypedOperator<T>, IReceiver<T>, ISender<T>
     {
     }

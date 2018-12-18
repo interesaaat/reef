@@ -26,7 +26,7 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastMasterTask : ITask
+    public class BroadcastMasterTask : ITask, IObserver<ICloseEvent>
     {
         private readonly IElasticTaskSetService _serviceClient;
         private readonly IElasticTaskSetSubscription _subscriptionClient;
@@ -85,6 +85,19 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         {
             _cancellationSource.Cancel();
             _serviceClient.Dispose();
+        }
+
+        public void OnNext(ICloseEvent value)
+        {
+            _subscriptionClient.Cancel();
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

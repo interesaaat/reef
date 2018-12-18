@@ -23,11 +23,15 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
     /// <summary>
-    /// Reconfigure the execution to work with fewer tasks
+    /// Stop the execution and try to add new tasks.
     /// </summary>
     [Unstable("0.16", "API may change")]
     public class StopEvent : IStop
     {
+        /// <summary>
+        /// Constructor for the stop event.
+        /// </summary>
+        /// <param name="taskId">The identifier of the task triggering the failure event</param>
         public StopEvent(string taskId)
         {
             TaskId = taskId;
@@ -35,15 +39,27 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
             FailureResponse = new List<IElasticDriverMessage>();
         }
 
+        /// <summary>
+        /// The event / action raised by the transition to the new failure state.
+        /// </summary>
         public int FailureEvent
         {
             get { return (int)DefaultFailureStateEvents.Stop; }
         }
 
+        /// <summary>
+        /// The identifier of the task triggering the event.
+        /// </summary>
         public string TaskId { get; private set; }
 
+        /// <summary>
+        /// The opeartor id in which the failure is rised.
+        /// </summary>
         public int OperatorId { get; private set; }
 
+        /// <summary>
+        /// The response message generated to react to the failure event.
+        /// </summary>
         public List<IElasticDriverMessage> FailureResponse { get; private set; }
     }
 }

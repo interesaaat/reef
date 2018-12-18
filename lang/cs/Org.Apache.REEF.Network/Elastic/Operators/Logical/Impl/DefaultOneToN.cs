@@ -26,18 +26,32 @@ using System.Collections.Generic;
 using System;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Comm.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
     /// <summary>
-    /// Broadcast operator implementation.
+    /// Generic implementation of an operator having one node sending to N nodes
+    /// and with default failure behaviour.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal abstract class DefaultOneToN<T> : ElasticOperatorWithDefaultDispatcher
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultOneToN<>));
 
         private volatile bool _stop;
 
+        /// <summary>
+        /// Constructor for an operator where one node sends to N nodes and with default
+        /// failure behavior.
+        /// </summary>
+        /// <param name="senderId">The identifier of the task sending the message</param>
+        /// <param name="prev">The previous node in the pipeline</param>
+        /// <param name="topology">The toopology the message routing protocol will use</param>
+        /// <param name="failureMachine">The failure machine for this operator</param>
+        /// <param name="checkpointLevel">The checkpoint level for the operator</param>
+        /// <param name="configurations">Additional operator specific configurations</param>
         public DefaultOneToN(
             int senderId,
             ElasticOperator prev,
@@ -58,6 +72,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             _stop = false;
         }
 
+        /// <summary>
+        /// Operator specific logic for reacting when a task message is received.
+        /// </summary>
+        /// <param name="message">Incoming message from a task</param>
+        /// <param name="returnMessages">Zero or more reply messages for the task</param>
+        /// <returns>True if the operator has reacted to the task message</returns>
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
             var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
@@ -76,7 +96,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         if (!Subscription.IsCompleted && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             var taskId = message.TaskId;
-                            LOGGER.Log(Level.Info, "{0} joins the topology for operator {1}", taskId, _id);
+                            LOGGER.Log(Level.Info, $"{taskId} joins the topology for operator {_id}");
 
                             _topology.AddTask(taskId, _failureMachine);
                         }
@@ -92,7 +112,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             return false;
                         }
 
-                        LOGGER.Log(Level.Info, "Received topology update request for {0} {1} from {2}", OperatorName, _id, message.TaskId);
+                        LOGGER.Log(Level.Info, $"Received topology update request for {OperatorName} {_id} from {message.TaskId}");
 
                         if (!_stop)
                         {
@@ -100,7 +120,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         }
                         else
                         {
-                            LOGGER.Log(Level.Info, "Operator {0} is in stopped: Ignoring", OperatorName);
+                            LOGGER.Log(Level.Info, $"Operator {OperatorName} is in stopped: Ignoring");
                         }
 
                         return true;
@@ -117,9 +137,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a reconfigure event is triggered.
+        /// <paramref name="reconfigureEvent"/>
+        /// </summary>
         public override void OnReconfigure(ref IReconfigure reconfigureEvent)
         {
-            LOGGER.Log(Level.Info, "Going to reconfigure the {0} operator", OperatorName);
+            LOGGER.Log(Level.Info, $"Going to reconfigure the {OperatorName} operator");
 
             if (_stop)
             {
@@ -132,16 +156,22 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 {
                     var info = Optional<string>.Of(((OperatorException)reconfigureEvent.FailedTask.Value.AsError()).AdditionalInfo);
                     var msg = _topology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, info, reconfigureEvent.Iteration);
+
                     reconfigureEvent.FailureResponse.AddRange(msg);
                 }
                 else
                 {
                     var msg = _topology.Reconfigure(reconfigureEvent.FailedTask.Value.Id, Optional<string>.Empty(), reconfigureEvent.Iteration);
+
                     reconfigureEvent.FailureResponse.AddRange(msg);
                 }
             }
         }
 
+        /// <summary>
+        /// Mechanism to execute when a reschedule event is triggered.
+        /// <paramref name="rescheduleEvent"/>
+        /// </summary>
         public override void OnReschedule(ref IReschedule rescheduleEvent)
         {
             var reconfigureEvent = rescheduleEvent as IReconfigure;
@@ -149,6 +179,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             OnReconfigure(ref reconfigureEvent);
         }
 
+        /// <summary>
+        /// Mechanism to execute when a stop event is triggered.
+        /// <paramref name="stopEvent"/>
+        /// </summary>
         public override void OnStop(ref IStop stopEvent)
         {
             if (!_stop)

@@ -24,6 +24,7 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -35,6 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultAggregationRing<>));
 
+        private readonly ICheckpointableState _checkpointableState;
         private readonly AggregationRingTopology _topology;
         private volatile PositionTracker _position;
 
@@ -47,11 +49,13 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         private DefaultAggregationRing(
             [Parameter(typeof(OperatorParameters.OperatorId))] int id,
             [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
-            AggregationRingTopology topology)
+            AggregationRingTopology topology,
+            ICheckpointableState checkpointableState)
         {
             OperatorName = Constants.AggregationRing;
             OperatorId = id;
             CheckpointLevel = (CheckpointLevel)level;
+            _checkpointableState = checkpointableState;
             _position = PositionTracker.Nil;
 
             _topology = topology;
@@ -164,14 +168,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
-                var state = new CheckpointableObject<GroupCommunicationMessage>()
-                {
-                    Level = CheckpointLevel,
-                    Iteration = iteration
-                };
+                var state = _checkpointableState.From(iteration);
 
                 state.MakeCheckpointable(data);
-
                 _topology.Checkpoint(state);
             }
         }

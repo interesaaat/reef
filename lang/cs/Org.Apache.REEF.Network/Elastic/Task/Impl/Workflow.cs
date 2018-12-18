@@ -194,10 +194,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 var checkpointable = (_operators[_iteratorsPosition[0]] as ICheckpointingOperator).CheckpointState;
 
-                if (!(checkpointable is NoCheckpointableState))
-                {
-                    return checkpointable;
-                }
+                 return checkpointable;
             }
 
             throw new IllegalStateException("No checkpointable state enabled for this workflow");

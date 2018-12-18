@@ -16,23 +16,39 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
-using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Wake.StreamingCodec;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Interface for checkpointing some task state
-    /// Clients can implement this interface and inject it into context service and task function to save the current task state
+    /// Interface for checkpointing some task state.
+    /// Clients can implement this interface and inject it into operators to save the current task state.
     /// </summary>
-    [DefaultImplementation(typeof(NoCheckpointableState))]
+    [Unstable("0.16", "API may change")]
     public interface ICheckpointableState
     {
+        /// <summary>
+        /// The current checkpoint level.
+        /// </summary>
         CheckpointLevel Level { get; }
 
+        /// <summary>
+        /// Make the given input state a checkpointable state.
+        /// </summary>
+        /// <param name="state"></param>
         void MakeCheckpointable(object state);
 
+        /// <summary>
+        /// Checkpoint the current state.
+        /// </summary>
+        /// <returns></returns>
         ICheckpointState Checkpoint();
+
+        /// <summary>
+        /// Create a new empty checkpointable state from the current one.
+        /// </summary>
+        /// <param name="iteration">The current iteration for which we need to create a new checkpointable state</param>
+        /// <returns></returns>
+        ICheckpointableState From(int iteration = 0);
     }
 }

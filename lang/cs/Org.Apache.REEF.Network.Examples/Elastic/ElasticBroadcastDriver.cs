@@ -39,20 +39,23 @@ using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
     /// Example implementation of broadcasting using the elastic group communication service.
     /// </summary>
-    public class ElasticBroadcastDriver : 
-        IObserver<IAllocatedEvaluator>, 
-        IObserver<IActiveContext>, 
+    public class ElasticBroadcastDriver :
+        IObserver<IAllocatedEvaluator>,
+        IObserver<IActiveContext>,
         IObserver<IDriverStarted>,
         IObserver<IRunningTask>,
         IObserver<ICompletedTask>,
-        IObserver<IFailedEvaluator>, 
-        IObserver<IFailedTask>
+        IObserver<IFailedEvaluator>,
+        IObserver<IFailedTask>,
+        IObserver<ITaskMessage>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
 
@@ -93,6 +96,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastMasterTask>.Class)
                     .Build())
                 .Build();
 
@@ -100,6 +105,8 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastMasterTask>.Class)
                     .Build())
                 .Build();
 
@@ -108,7 +115,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             ElasticOperator pipeline = subscription.RootOperator;
 
             // Create and build the pipeline
-            pipeline.Broadcast<int>(TopologyType.Tree)
+            pipeline.Broadcast<int>(TopologyType.Flat)
                     .Build();
 
             // Build the subscription
@@ -156,6 +163,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IActiveContext activeContext)
         {
+            System.Threading.Thread.Sleep(10000);
             _taskManager.OnNewActiveContext(activeContext);
         }
 
@@ -192,6 +200,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             {
                 _taskManager.Dispose();
             }
+        }
+
+        public void OnNext(ITaskMessage taskMessage)
+        {
+            _taskManager.OnTaskMessage(taskMessage);
         }
 
         public void OnCompleted()

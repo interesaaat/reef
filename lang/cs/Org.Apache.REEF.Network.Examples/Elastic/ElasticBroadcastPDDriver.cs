@@ -35,7 +35,6 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.IO.PartitionedData;
 using Org.Apache.REEF.IO.PartitionedData.FileSystem;
 using System.Collections.Generic;
@@ -43,7 +42,6 @@ using Org.Apache.REEF.IO.FileSystem.Local;
 using System.IO;
 using Org.Apache.REEF.Tang.Formats;
 using System.Linq;
-using Org.Apache.REEF.IO.FileSystem;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 

@@ -19,13 +19,17 @@ using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
+using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Default implementation of a group communication operator used to broadcast messages.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
+    [Unstable("0.16", "API may change")]
     public sealed class DefaultBroadcast<T> : DefaultOneToN<T>, IElasticBroadcast<T>
     {
         /// <summary>
@@ -36,13 +40,17 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultBroadcast(
             [Parameter(typeof(OperatorParameters.OperatorId))] int id,
-            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
             [Parameter(typeof(OperatorParameters.IsLast))] bool isLast,
-            BroadcastTopology topology) : base(id, level, isLast, topology)
+            ICheckpointableState checkpointableState,
+            BroadcastTopology topology) : base(id, isLast, checkpointableState, topology)
         {
             OperatorName = Constants.Broadcast;
         }
 
+        /// <summary>
+        /// Send the data to all child receivers.
+        /// </summary>
+        /// <param name="data">The data to send</param>
         public void Send(T data)
         {
             _topology.TopologyUpdateRequest();

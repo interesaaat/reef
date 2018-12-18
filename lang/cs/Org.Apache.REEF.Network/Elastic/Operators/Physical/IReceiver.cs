@@ -15,7 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
@@ -23,10 +23,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// Group Communication Operator receiving messages.
     /// </summary>
     /// <typeparam name="T">The type of data being receive.</typeparam>
+    [Unstable("0.16", "API may change")]
     public interface IReceiver<T>
     {
         /// <summary>
-        /// Receive a message from sender.
+        /// Receive a message from a sender task.
         /// </summary>
         /// <returns>The incoming message</returns>
         T Receive();

@@ -25,6 +25,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Tang.Exceptions;
 using System;
 using System.Collections.Generic;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -37,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         private readonly ElasticIteratorEnumerator<int> _inner;
         private readonly IterateTopology _topology;
-        private ICheckpointableState _checkpointState;
+        private readonly ICheckpointableState _checkpointState;
         private readonly IList<Action> _actions;
 
         /// <summary>
@@ -107,10 +108,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                     }
                 }
                 return _checkpointState;
-            }
-            set
-            {
-                _checkpointState = value;
             }
         }
 

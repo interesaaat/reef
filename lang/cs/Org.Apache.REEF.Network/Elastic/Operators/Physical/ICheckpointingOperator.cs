@@ -24,6 +24,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
     /// </summary>
     internal interface ICheckpointingOperator
     {
-        ICheckpointableState CheckpointState { get; set; }
+        ICheckpointableState CheckpointState { get; }
     }
 }

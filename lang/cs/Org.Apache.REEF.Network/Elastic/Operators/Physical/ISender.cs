@@ -15,14 +15,15 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Threading;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication Operator used to send messages to child Tasks.
+    /// Group communication operator used to send messages to child tasks.
     /// </summary>
     /// <typeparam name="T">The data type of the message</typeparam>
+    [Unstable("0.16", "API may change")]
     public interface ISender<T>
     {
         /// <summary>

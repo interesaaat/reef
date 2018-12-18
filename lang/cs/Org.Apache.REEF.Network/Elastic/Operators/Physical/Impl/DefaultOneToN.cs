@@ -23,32 +23,37 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
     /// <summary>
-    /// Group Communication Operator used to receive broadcast messages.
+    /// Generic implementation of a group communication operator where one node sends to N.
     /// </summary>
     /// <typeparam name="T">The type of message being sent.</typeparam>
+    [Unstable("0.16", "API may change")]
     public abstract class DefaultOneToN<T>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultOneToN<>));
 
+        private readonly ICheckpointableState _checkpointableState;
         internal readonly OneToNTopology _topology;
-
-        protected volatile PositionTracker _position;
+        internal volatile PositionTracker _position;
 
         private readonly bool _isLast;
 
         /// <summary>
-        /// Creates a new Broadcast operator.
+        /// Creates a new one to N operator.
         /// </summary>
         /// <param name="id">The operator identifier</param>
+        /// <param name="level">The checkpoint level for the operator</param>
+        /// <param name="isLast">Whether this operator is the last in the pipeline</param>
         /// <param name="topology">The operator topology layer</param>
-        internal DefaultOneToN(int id, int level, bool isLast, OneToNTopology topology)
+        internal DefaultOneToN(int id, bool isLast, ICheckpointableState checkpointableState, OneToNTopology topology)
         {
             OperatorId = id;
-            CheckpointLevel = (CheckpointLevel)level;
+            _checkpointableState = checkpointableState;
             _isLast = isLast;
             _topology = topology;
             _position = PositionTracker.Nil;
@@ -60,16 +65,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         }
 
         /// <summary>
-        /// Returns the operator identifier.
+        /// The operator identifier.
         /// </summary>
         public int OperatorId { get; private set; }
 
+        /// <summary>
+        /// The operator name.
+        /// </summary>
         public string OperatorName { get; protected set; }
 
-        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
-
-        private CheckpointLevel CheckpointLevel { get; set; }
-
+        /// <summary>
+        /// Operator-specific information that is sent to the driver in case of failure.
+        /// </summary>
         public string FailureInfo
         {
             get
@@ -81,16 +88,29 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             }
         }
 
-        public IElasticIterator IteratorReference { protected get;  set; }
+        /// <summary>
+        /// Get a reference of the iterator in the pipeline (if it exists).
+        /// </summary>
+        public IElasticIterator IteratorReference { protected get; set; }
 
+        /// <summary>
+        /// Cancellation source for stopping the exeuction of the opearator.
+        /// </summary>
         public CancellationTokenSource CancellationSource { get; set; }
 
+        /// <summary>
+        /// Action to execute when a task is re-scheduled.
+        /// </summary>
         public Action OnTaskRescheduled { get; private set; }
+
+        /// <summary>
+        /// The set of messages checkpointed in memory.
+        /// </summary>
+        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.
         /// </summary>
-        /// <param name="cancellationSource">The cancellation token for the data reading operation cancellation</param>
         /// <returns>The incoming data</returns>
         public T Receive()
         {
@@ -106,7 +126,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
                 if (isIterative && message.Iteration < (int)IteratorReference.Current)
                 {
-                    LOGGER.Log(Level.Warning, "Received message for iteration {0} but I am already in iteration {1}: ignoring", message.Iteration, (int)IteratorReference.Current);
+                    LOGGER.Log(Level.Warning, $"Received message for iteration {message.Iteration} but I am already in iteration {(int)IteratorReference.Current}: ignoring");
                 }
                 else
                 {
@@ -124,27 +144,45 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                 IteratorReference.SyncIteration(message.Iteration);
             }
 
+            Checkpoint(message, message.Iteration);
+
             _position = PositionTracker.AfterReceive;
 
             return message.Data;
         }
 
+        /// <summary>
+        /// Reset the internal position tracker. This should be called
+        /// every time a new iteration start in the workflow.
+        /// </summary>
         public void ResetPosition()
         {
             _position = PositionTracker.Nil;
         }
 
+        /// <summary>
+        /// Initializes the communication group.
+        /// Computation blocks until all required tasks are registered in the group.
+        /// </summary>
+        /// <param name="cancellationSource"></param>
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             LOGGER.Log(Level.Info, "Waiting for task registration for {0} operator", OperatorName);
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 
+        /// <summary>
+        /// Wait until computation is globally completed for this operator 
+        /// before disposing the object.
+        /// </summary>
         public void WaitCompletionBeforeDisposing()
         {
             _topology.WaitCompletionBeforeDisposing(CancellationSource);
         }
 
+        /// <summary>
+        /// Dispose the operator.
+        /// </summary>
         public void Dispose()
         {
             if (_isLast)
@@ -154,18 +192,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
+        /// <summary>
+        /// Checkpoint the input data for the input iteration using the defined checkpoint level.
+        /// </summary>
+        /// <param name="data">The messages to checkpoint</param>
+        /// <param name="iteration">The iteration of the checkpoint</param>
         internal void Checkpoint(GroupCommunicationMessage data, int iteration)
         {
-            if (CheckpointLevel > CheckpointLevel.None)
+            if (_checkpointableState.Level > CheckpointLevel.None)
             {
-                var state = new CheckpointableObject<GroupCommunicationMessage>()
-                {
-                    Level = CheckpointLevel,
-                    Iteration = iteration
-                };
+                var state = _checkpointableState.From(iteration);
 
                 state.MakeCheckpointable(data);
-
                 _topology.Checkpoint(state);
             }
         }

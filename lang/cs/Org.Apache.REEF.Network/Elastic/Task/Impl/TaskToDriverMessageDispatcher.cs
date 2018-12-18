@@ -21,6 +21,7 @@ using Org.Apache.REEF.Common.Runtime.Evaluator;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Common.Protobuf.ReefProtocol;
 using Org.Apache.REEF.Utilities.Logging;
+using Org.Apache.REEF.Network.Elastic.Comm.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {

@@ -34,6 +34,7 @@ using Org.Apache.REEF.Tang.Types;
 using Org.Apache.REEF.Utilities;
 using System.Diagnostics;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -142,7 +143,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             confBuilder
                 .BindImplementation(GenericType<IElasticTypedOperator<int>>.Class, GenericType<Physical.Impl.DefaultEnumerableIterator>.Class);
-            SetMessageType(typeof(IElasticTypedOperator<int>), ref confBuilder);
+            SetMessageType(typeof(IElasticTypedOperator<int>), ref confBuilder);                
         }
 
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)

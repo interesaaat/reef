@@ -16,13 +16,16 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Interface for checkpointing some task state
-    /// Clients can implement this interface and inject it into context service and task function to save the current task state
+    /// Abstract class for checkpointing some task state.
+    /// Clients can implement this abstract class and inject it into context service
+    /// and task function to save the current task state.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public abstract class ICheckpointState
     {
         internal int Iteration { get; set; }

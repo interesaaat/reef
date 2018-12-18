@@ -48,7 +48,6 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 
         /// <summary>
         /// The response message generated to react to the failure event.
-        /// 
         /// </summary>
         List<IElasticDriverMessage> FailureResponse { get; }
     }

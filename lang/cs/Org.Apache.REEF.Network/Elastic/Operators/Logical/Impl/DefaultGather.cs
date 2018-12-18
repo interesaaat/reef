@@ -25,6 +25,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -54,10 +55,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultGather<T>>.Class)
-                       .BindNamedParameter<OperatorParameters.RequestTopologyUpdate, bool>(
-                            GenericType<OperatorParameters.RequestTopologyUpdate>.Class,
-                            (_topology.GetType() == typeof(TreeTopology)).ToString(CultureInfo.InvariantCulture));
+            confBuilder
+                .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultGather<T>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<GroupCommunicationMessage>>.Class)
+                .BindNamedParameter<OperatorParameters.RequestTopologyUpdate, bool>(
+                    GenericType<OperatorParameters.RequestTopologyUpdate>.Class,
+                    (_topology.GetType() == typeof(TreeTopology)).ToString(CultureInfo.InvariantCulture));
             SetMessageType(typeof(Physical.Impl.DefaultGather<T>), ref confBuilder);
         }
     }

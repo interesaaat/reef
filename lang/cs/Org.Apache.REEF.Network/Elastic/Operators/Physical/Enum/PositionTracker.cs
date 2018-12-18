@@ -15,31 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 
-namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
+namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum
 {
-    class NoCheckpointableState : ICheckpointableState
+    /// <summary>
+    /// Enum summarizing the positions in which the exeuction is within an operator.
+    /// This information is used in case of failure to properly reconfigure computation.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    internal enum PositionTracker : int
     {
-        [Inject]
-        public NoCheckpointableState()
-        {
-        }
+        Nil = 0,
 
-        public CheckpointLevel Level
-        {
-            get { return CheckpointLevel.None; }
-        }
+        InSend = 1,
 
-        public void MakeCheckpointable(object state)
-        {
-        }
- 
-        public ICheckpointState Checkpoint()
-        {
-            return new CheckpointState<object>();
-        }
+        InReceive = 2,
+
+        AfterReceiveBeforeSend = 3,
+
+        AfterReceive = 4,
+
+        AfterSendBeforeReceive = 5,
+
+        AfterSend = 6
     }
 }

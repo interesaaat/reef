@@ -15,31 +15,60 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent by MPI Operators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by Network Service
+    /// Untyped data message sent by group communicationoOperators. This is the class inherited by 
+    /// GroupCommunicationMessage but seen by the Network Service.
+    /// DataMessages are untyped and used to semplify message propapagation through the
+    /// communication layers that are type-agnostic.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal abstract class DataMessage : GroupCommunicationMessage
     {
+        /// <summary>
+        /// Constructor for an untyped data message.
+        /// </summary>
+        /// <param name="subscriptionName">The name of the subscription for the message</param>
+        /// <param name="operatorId">The operator sending the message</param>
+        /// <param name="iteration">The iteration in which the message is sent/valid</param>
         public DataMessage(string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId)
         {
             Iteration = iteration;
         }
 
+        /// <summary>
+        /// The iteration number for the message.
+        /// </summary>
         internal int Iteration { get; set; }
 
-        // The assumption is that messages are immutable therefore there is no need to clone them
+        /// <summary>
+        /// Clone the message.
+        /// </summary>
         override public object Clone()
         {
+            // The assumption is that messages are immutable therefore there is no need to clone them
             return this;
         }
     }
 
+    /// <summary>
+    /// A typed data message.
+    /// </summary>
+    /// <typeparam name="T">The type for the data message</typeparam>
+    [Unstable("0.16", "API may change")]
     internal sealed class DataMessage<T> : DataMessage
     {
+        /// <summary>
+        /// Constructor of a typed data message.
+        /// </summary>
+        /// <param name="subscriptionName">The name of the subscription for the message</param>
+        /// <param name="operatorId">The operator sending the message</param>
+        /// <param name="iteration">The iteration in which the message is sent/valid</param>
+        /// <param name="data">The data contained in the message</param>
         public DataMessage(
             string subscriptionName,
             int operatorId,
@@ -49,6 +78,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Data = data;
         }
 
+        /// <summary>
+        /// The data contained in the message.
+        /// </summary>
         internal T Data { get; set; }
     }
 }

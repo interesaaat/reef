@@ -43,9 +43,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         [Inject]
         private DefaultGather(
             [Parameter(typeof(OperatorParameters.OperatorId))] int id,
-            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
             [Parameter(typeof(OperatorParameters.IsLast))] bool isLast,
-            GatherTopology<T> topology) : base(id, level, isLast, topology)
+            ICheckpointableState checkpointableState,
+            GatherTopology<T> topology) : base(id, isLast, checkpointableState, topology)
         {
             OperatorName = Constants.Gather;
         }

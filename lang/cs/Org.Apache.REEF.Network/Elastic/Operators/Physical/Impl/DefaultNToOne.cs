@@ -23,6 +23,7 @@ using System;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -34,6 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultNToOne<>));
 
+        private readonly ICheckpointableState _checkpointableState;
         private readonly NToOneTopology<T> _topology;
 
         private volatile PositionTracker _position;
@@ -45,10 +47,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// </summary>
         /// <param name="id">The operator identifier</param>
         /// <param name="topology">The operator topology layer</param>
-        internal DefaultNToOne(int id, int level, bool isLast, NToOneTopology<T> topology)
+        internal DefaultNToOne(int id, bool isLast, ICheckpointableState checkpointableState, NToOneTopology<T> topology)
         {
             OperatorId = id;
-            CheckpointLevel = (CheckpointLevel)level;
+            _checkpointableState = checkpointableState;
             _isLast = isLast;
             _topology = topology;
             _position = PositionTracker.Nil;
@@ -67,8 +69,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         public string OperatorName { get; protected set; }
 
         private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
-
-        private CheckpointLevel CheckpointLevel { get; set; }
 
         public string FailureInfo
         {
@@ -173,16 +173,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         internal void Checkpoint(GroupCommunicationMessage data, int iteration)
         {
-            if (CheckpointLevel > CheckpointLevel.None)
+            if (_checkpointableState.Level > CheckpointLevel.None)
             {
-                var state = new CheckpointableObject<GroupCommunicationMessage>()
-                {
-                    Level = CheckpointLevel,
-                    Iteration = iteration
-                };
+                var state = _checkpointableState.From(iteration);
 
                 state.MakeCheckpointable(data);
-
                 _topology.Checkpoint(state);
             }
         }

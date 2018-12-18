@@ -44,6 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             string subscription,
             int rootId,
             ISet<int> children,
+            bool piggyback,
             string taskId,
             int operatorId,
             int retry,
@@ -100,13 +101,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.SubscriptionName = SubscriptionName;
+                        checkpoint.TaskId = _taskId;
                         _checkpointService.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
-                    OperatorId = OperatorId;
-                    SubscriptionName = SubscriptionName;
+                    checkpoint.OperatorId = OperatorId;
+                    checkpoint.SubscriptionName = SubscriptionName;
+                    checkpoint.TaskId = _taskId;
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
@@ -195,7 +198,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (message.PayloadType != DriverMessagePayloadType.Topology)
             {
-                throw new IllegalStateException("Message not appropriate for NToOne Topology");
+                throw new IllegalStateException("Message not appropriate for OneToN topology");
             }
 
             var rmsg = message as TopologyMessagePayload;

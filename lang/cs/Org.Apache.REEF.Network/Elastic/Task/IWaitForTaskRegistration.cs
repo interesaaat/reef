@@ -15,18 +15,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System.Collections.Generic;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    /// Extended by classes requiring the initialization of group communication
+    /// Extended by classes requiring the initialization of group communication.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IWaitForTaskRegistration
     {
         /// <summary>
-        /// Initializes group communication
+        /// Initializes the communication group.
+        /// Computation blocks until all required tasks are registered in the group.
         /// </summary>
         /// <param name="cancellationSource"></param>
         void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null);

@@ -21,6 +21,7 @@ using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -48,7 +49,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override void PhysicalOperatorConfiguration(ref ICsConfigurationBuilder confBuilder)
         {
-            confBuilder.BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultScatter<T>>.Class);
+            confBuilder
+                .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultScatter<T>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<GroupCommunicationMessage>>.Class);
             SetMessageType(typeof(Physical.Impl.DefaultScatter<T>), ref confBuilder);
         }
     }

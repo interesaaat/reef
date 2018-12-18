@@ -15,21 +15,39 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
 {
     /// <summary>
-    /// Group Communication operator used to for iterations.
+    /// Group communication operator used to for iterations.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     public interface IElasticIterator : IElasticOperator
     {
+        /// <summary>
+        /// Move to the next iteration.
+        /// </summary>
+        /// <returns>True if the next iteration exists</returns>
         bool MoveNext();
 
+        /// <summary>
+        /// The current iteration.
+        /// </summary>
+        /// <returns>An object representing the current iteration</returns>
         object Current { get; }
 
+        /// <summary>
+        /// Synchronize the current iteration with the input one.
+        /// </summary>
+        /// <param name="iteration">The state in which the iterator will be moved</param>
         void SyncIteration(int iteration);
 
+        /// <summary>
+        /// Register the action to trigger when a task is rescheduled.
+        /// </summary>
+        /// <param name="action">Some code to execute upon task rescheduling</param>
         void RegisterActionOnTaskRescheduled(Action action);
     }
 }
