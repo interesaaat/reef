@@ -70,7 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void RegisterOperatorRoot(string subscriptionName, int operatorId, string rootTaskId, bool amIRoot)
         {
-            var id = new CheckpointIdentifier(string.Empty, subscriptionName, operatorId);
+            var id = new CheckpointIdentifier(subscriptionName, operatorId);
             if (!_roots.ContainsKey(id) && !amIRoot)
             {
                 _roots.TryAdd(id, rootTaskId);
@@ -80,7 +80,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string subscriptionName, int operatorId, int iteration = -1, bool requestToMaster = true)
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
-            var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
+            var id = new CheckpointIdentifier(subscriptionName, operatorId);
             checkpoint = null;
 
             if (!_checkpoints.TryGetValue(id, out checkpoints))
@@ -93,17 +93,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     return false;
                 }
 
-                var id2 = new CheckpointIdentifier(string.Empty, subscriptionName, operatorId);
                 string rootTaskId;
 
-                if (!_roots.TryGetValue(id2, out rootTaskId))
+                if (!_roots.TryGetValue(id, out rootTaskId))
                 {
-                    // I am in root, try to fetch as root
-                    if (!_checkpoints.TryGetValue(id, out checkpoints))
-                    {
-                        Logger.Log(Level.Warning, "Trying to recover from a non existing checkpoint");
-                        return false;
-                    }
+                    Logger.Log(Level.Warning, "Trying to recover from a non existing checkpoint");
+                    return false;
                 }
 
                 var received = new ManualResetEvent(false);
@@ -139,7 +134,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public void Checkpoint(ICheckpointState state)
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
-            var id = new CheckpointIdentifier(state.TaskId, state.SubscriptionName, state.OperatorId);
+            var id = new CheckpointIdentifier(state.SubscriptionName, state.OperatorId);
             ManualResetEvent waiting;
 
             if (!_checkpoints.TryGetValue(id, out checkpoints))
@@ -160,7 +155,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         
         public void RemoveCheckpoint(string taskId, string subscriptionName, int operatorId)
         {
-            var id = new CheckpointIdentifier(taskId, subscriptionName, operatorId);
+            var id = new CheckpointIdentifier(subscriptionName, operatorId);
             SortedDictionary<int, ICheckpointState> checkpoints;
             _checkpoints.TryRemove(id, out checkpoints);
         }

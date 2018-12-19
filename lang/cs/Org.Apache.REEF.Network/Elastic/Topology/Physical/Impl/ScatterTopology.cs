@@ -36,7 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private ScatterTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(OperatorParameters.PiggybackTopologyUpdates))] bool piggyback,
@@ -49,8 +49,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CommunicationLayer commLayer,
             CheckpointService checkpointService,
             StreamingNetworkService<GroupCommunicationMessage> networkService) : base(
-                subscription,
-                rootId,
+                subscriptionName,
+                Utils.BuildTaskId(subscriptionName, rootId),
                 children,
                 piggyback,
                 taskId,
@@ -94,7 +94,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 _sendQueue.TryDequeue(out message);
 
-                if (_taskId == _rootTaskId)
+                if (TaskId == RootTaskId)
                 {
                     _topologyUpdateReceived.Reset();
                 }

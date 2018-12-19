@@ -16,43 +16,55 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
-    /// Interface for a state that is checkpointed.
+    /// Class wrapping a state that has been checkpointed or is ready to.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    [DefaultImplementation(typeof(DefaultCheckpointState))]
-    public interface ICheckpointState
+    public sealed class DefaultCheckpointState : ICheckpointState
     {
+        [Inject]
+        private DefaultCheckpointState()
+        {
+        }
+
         /// <summary>
         /// The iteration number for this checkpoint.
         /// </summary>
-        int Iteration { get; set; }
+        public int Iteration { get; set; }
 
         /// <summary>
         /// The operator id for this checkpoint.
         /// </summary>
-        int OperatorId { get; set; }
+        public int OperatorId { get; set; }
 
         /// <summary>
         /// The subscription name of the checkpoint.
         /// </summary>
-        string SubscriptionName { get; set; }
+        public string SubscriptionName { get; set; }
 
         /// <summary>
         /// The actual state of the checkpoint.
         /// </summary>
-        object State { get; }
+        public object State { get; private set; }
 
         /// <summary>
         /// Create a new empty checkpoint from the settings of the current one.
         /// </summary>
         /// <returns>A checkpoint with no state but with properly set up fields</returns>
-        ICheckpointState Create(int iteration, object state);
+        public ICheckpointState Create(int iteration, object state)
+        {
+            return new DefaultCheckpointState()
+            {
+                Iteration = iteration,
+                State = state,
+            };
+        }
 
         /// <summary>
         /// Utility method used to create message out of
@@ -60,6 +72,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// to be sent among nodes to recover computation.
         /// </summary>
         /// <returns>A checkpoint ready to be communicated</returns>
-        GroupCommunicationMessage ToMessage();
+        public GroupCommunicationMessage ToMessage()
+        {
+            return new CheckpointMessage(this);
+        }
     }
 }

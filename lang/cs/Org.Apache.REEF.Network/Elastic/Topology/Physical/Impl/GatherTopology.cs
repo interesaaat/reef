@@ -28,7 +28,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         [Inject]
         private GatherTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
@@ -39,8 +39,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationLayer commLayer,
             CheckpointService checkpointService) : base(
-                subscription, 
-                rootId, 
+                subscriptionName,
+                Utils.BuildTaskId(subscriptionName, rootId), 
                 children,
                 taskId, 
                 operatorId, 

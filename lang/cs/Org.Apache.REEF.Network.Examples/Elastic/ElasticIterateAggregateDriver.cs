@@ -96,7 +96,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             IConfiguration iteratorConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindNamedParameter<OperatorParameters.NumIterations, int>(GenericType<OperatorParameters.NumIterations>.Class,
                     numIterations.ToString(CultureInfo.InvariantCulture))
-                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<float[]>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableMutableObject<float[]>>.Class)
                 .Build();
 
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(

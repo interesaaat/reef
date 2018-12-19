@@ -24,23 +24,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// </summary>
     internal sealed class CheckpointIdentifier
     {
-        private readonly string _taskId;
         private readonly string _subscriptionName;
         private readonly int _operatorId;
 
-        public CheckpointIdentifier(string taskId, string subscriptionName, int operatorName)
+        public CheckpointIdentifier(string subscriptionName, int operatorName)
         {
-            _taskId = taskId;
             _subscriptionName = subscriptionName;
             _operatorId = operatorName;
-        }
-
-        /// <summary>
-        /// The operator name of the node.
-        /// </summary>
-        public string TaskId
-        {
-            get { return _taskId; }
         }
 
         /// <summary>
@@ -83,7 +73,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public override int GetHashCode()
         {
             int hash = 17;
-            hash = (hash * 31) + _taskId.GetHashCode();
             hash = (hash * 31) + _subscriptionName.GetHashCode();
             return (hash * 31) + _operatorId.GetHashCode();
         }
@@ -93,8 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         private bool Equals(CheckpointIdentifier other)
         {
-            return _taskId.Equals(other.TaskId) &&
-                _subscriptionName.Equals(other.SubscriptionName) &&
+            return _subscriptionName.Equals(other.SubscriptionName) &&
                 _operatorId.Equals(other.OperatorId);
         }
     }

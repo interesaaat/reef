@@ -32,14 +32,16 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     internal sealed class CheckpointMessageStreamingCodec<T> : IStreamingCodec<CheckpointMessage>
     {
         private readonly IStreamingCodec<T> _codec;
+        private readonly ICheckpointState _checkpoint;
 
         /// <summary>
         /// Empty constructor to allow instantiation by reflection
         /// </summary>
         [Inject]
-        private CheckpointMessageStreamingCodec(IStreamingCodec<T> codec)
+        private CheckpointMessageStreamingCodec(IStreamingCodec<T> codec, ICheckpointState checkpoint)
         {
             _codec = codec;
+            _checkpoint = checkpoint;
         }
 
         /// <summary>
@@ -58,7 +60,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int operatorId = res.Item2;
             int iteration = res.Item3;
             var data = _codec.Read(reader);
-            var payload = new CheckpointState<T>(0, iteration, data);
+            var payload = _checkpoint.Create(iteration, data);
+
+            payload.SubscriptionName = subscriptionName;
+            payload.OperatorId = operatorId;
 
             return new CheckpointMessage(payload);
         }
@@ -74,7 +79,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
    
             writer.Write(encodedMetadata, 0, encodedMetadata.Length);
 
-            _codec.Write((T)obj.Payload.State, writer);
+            _codec.Write((T)obj.Checkpoint.State, writer);
         }
 
         /// <summary>
@@ -93,10 +98,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             
             var data = await _codec.ReadAsync(reader, token);
             int iteration = res.Item3;
-            var payload = new CheckpointState<T>(0, iteration, data);
+            var payload = _checkpoint.Create(iteration, data);
             payload.SubscriptionName = res.Item1;
             payload.OperatorId = res.Item2;
-            payload.Iteration = iteration;
 
             return new CheckpointMessage(payload);
         }
@@ -113,7 +117,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             await writer.WriteAsync(encodedMetadata, 0, encodedMetadata.Length, token);
 
-            await _codec.WriteAsync((T)obj.Payload.State, writer, token);
+            await _codec.WriteAsync((T)obj.Checkpoint.State, writer, token);
         }
 
         private static byte[] GenerateMetaDataEncoding(CheckpointMessage obj)
@@ -132,7 +136,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, metadataBytes, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(BitConverter.GetBytes(obj.Payload.Iteration), 0, metadataBytes, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(obj.Checkpoint.Iteration), 0, metadataBytes, offset, sizeof(int));
 
             return metadataBytes;
         }

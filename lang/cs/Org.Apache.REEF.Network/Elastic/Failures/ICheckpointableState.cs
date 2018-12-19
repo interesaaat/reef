@@ -20,9 +20,13 @@ using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    /// <summary>
+    ///<summary>
     /// Interface for checkpointing some task state.
     /// Clients can implement this interface and inject it into operators to save the current task state.
+    /// The workflow is as follows:
+    /// 1-Create a checkpointable state either through injection or for an iteration
+    /// 2-Make an object checkpointable using the MakeCheckpointable. At this point the state is not checkpointed.
+    /// 3-Create a checkpoint state.
     /// </summary>
     [Unstable("0.16", "API may change")]
     public interface ICheckpointableState
@@ -35,20 +39,20 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <summary>
         /// Make the given input state a checkpointable state.
         /// </summary>
-        /// <param name="state"></param>
+        /// <param name="state">The state that needs to be make checkpointable</param>
         void MakeCheckpointable(object state);
 
         /// <summary>
         /// Checkpoint the current state.
         /// </summary>
-        /// <returns></returns>
+        /// <returns>A checkpoint state</returns>
         ICheckpointState Checkpoint();
 
         /// <summary>
         /// Create a new empty checkpointable state from the current one.
         /// </summary>
         /// <param name="iteration">The current iteration for which we need to create a new checkpointable state</param>
-        /// <returns></returns>
-        ICheckpointableState From(int iteration = 0);
+        /// <returns>An empty checkpointable state</returns>
+        ICheckpointableState Create(int iteration = 0);
     }
 }

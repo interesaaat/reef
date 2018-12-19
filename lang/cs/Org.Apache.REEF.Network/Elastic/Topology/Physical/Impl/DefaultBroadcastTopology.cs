@@ -26,14 +26,20 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.NetworkService;
 using System.Linq;
+using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Failures.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class BroadcastTopology : OneToNTopology
+    /// <summary>
+    /// Topology class managing data communication for broadcast operators.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    internal sealed class DefaultBroadcastTopology : OneToNTopology
     {
         [Inject]
-        private BroadcastTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+        private DefaultBroadcastTopology(
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(OperatorParameters.PiggybackTopologyUpdates))] bool piggyback,
@@ -45,8 +51,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CommunicationLayer commLayer,
             CheckpointService checkpointService,
             StreamingNetworkService<GroupCommunicationMessage> networkService) : base(
-                subscription,
-                rootId,
+                subscriptionName,
+                Utils.BuildTaskId(subscriptionName, rootId),
                 children,
                 piggyback,
                 taskId,
@@ -60,16 +66,25 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
         }
 
+        /// <summary>
+        /// Send a previously queued data message.
+        /// </summary>
+        /// <param name="cancellationSource">The source in case the task is cancelled</param>
         protected override void Send(CancellationTokenSource cancellationSource)
         {
             GroupCommunicationMessage message;
             int retry = 0;
 
+            // Check if we have a message to send
             if (_sendQueue.TryPeek(out message))
             {
                 var dm = message as DataMessage;
+
+                // Broadcast topology require the driver to send topology updates to the root node
+                // in order to have the most update topology at each boradcast round.
                 while (!_topologyUpdateReceived.WaitOne(_timeout))
                 {
+                    // If we are here, we weren't able to receive a topology update on time. Retry for a certain amount of times.
                     if (cancellationSource.IsCancellationRequested)
                     {
                         Logger.Log(Level.Warning, "Received cancellation request: stop sending");
@@ -80,20 +95,22 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                     if (retry > _retry)
                     {
-                        throw new Exception(string.Format(
-                            "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
+                        throw new OperatorException($"Iteration {dm.Iteration}: Failed to send message to the next node in the ring after {_retry} try.", OperatorId);
                     }
 
                     TopologyUpdateRequest();
                 }
 
+                // Get the actual message to send. Note that altough message sending is asynchronous, broadcast rounds should not overlap.
                 _sendQueue.TryDequeue(out message);
 
-                if (_taskId == _rootTaskId)
+                if (TaskId == RootTaskId)
                 {
+                    // Prepare the mutex to block for the next round of topology updates.
                     _topologyUpdateReceived.Reset();
                 }
 
+                // Deliver the message to the commonication layer.
                 foreach (var node in _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)))
                 {
                     _commLayer.Send(node.Value, message, cancellationSource);

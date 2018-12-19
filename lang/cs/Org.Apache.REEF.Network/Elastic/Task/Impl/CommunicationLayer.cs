@@ -182,10 +182,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 ICheckpointState checkpoint;
                 if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration))
                 {
-                    var returnMessage = checkpoint.ToMessage();
+                    CheckpointMessage returnMessage = checkpoint.ToMessage() as CheckpointMessage;
                     var cancellationSource = new CancellationTokenSource();
 
-                    returnMessage.Payload = checkpoint;
+                    returnMessage.Checkpoint = checkpoint;
 
                     Send(gcMessageTaskSource, returnMessage, cancellationSource);
                 }
@@ -196,8 +196,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 Logger.Log(Level.Info, "Received checkpoint from " + gcMessageTaskSource);
                 var cpm = gcm as CheckpointMessage;
-                cpm.Payload.TaskId = nsMessage.DestId.ToString();
-                _checkpointService.Checkpoint(cpm.Payload);
+                _checkpointService.Checkpoint(cpm.Checkpoint);
                 return;
             }
             

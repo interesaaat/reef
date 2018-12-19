@@ -46,13 +46,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal OperatorTopologyWithCommunication(
             string taskId, 
-            int rootId, 
+            string rootTaskId, 
             string subscription, 
             int operatorId, 
             CommunicationLayer commLayer, 
             int retry, 
             int timeout, 
-            int disposeTimeout) : base(taskId, rootId, subscription, operatorId)
+            int disposeTimeout) : base(taskId, rootTaskId, subscription, operatorId)
         {
             _initialized = false;
             _commLayer = commLayer;
@@ -77,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     throw new OperationCanceledException("Received cancellation request: stop receiving");
                 }
 
-                _commLayer.NextDataRequest(_taskId, -1);
+                _commLayer.NextDataRequest(TaskId, -1);
                 if (retry++ > _retry)
                 {
                     throw new Exception(string.Format(
@@ -100,14 +100,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal virtual void JoinTopology()
         {
-            _commLayer.JoinTopology(_taskId, OperatorId);
+            _commLayer.JoinTopology(TaskId, OperatorId);
         }
 
         internal void SignalSubscriptionComplete()
         {
-            if (_taskId == _rootTaskId)
+            if (TaskId == RootTaskId)
             {
-                _commLayer.SignalSubscriptionComplete(_taskId);
+                _commLayer.SignalSubscriptionComplete(TaskId);
             }
         }
 
@@ -119,7 +119,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
             catch (Exception e)
             {
-                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
+                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + TaskId, e);
             }
 
             _initialized = true;
@@ -180,6 +180,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _commLayer.Dispose();
         }
 
+        /// <summary>
+        /// Send a previously queued data message.
+        /// </summary>
+        /// <param name="cancellationSource">The source in case the task is cancelled</param>
         protected virtual void Send(CancellationTokenSource cancellationSource)
         {
             GroupCommunicationMessage message;

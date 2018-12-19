@@ -16,28 +16,40 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
+    /// <summary>
+    /// Base class for task-side topologies. Task-side topologies are
+    /// not generic but directly related to the operators using them to communicate data.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
     internal abstract class OperatorTopology
     {
-        protected string _rootTaskId;
-        protected readonly string _taskId;
-
-        internal OperatorTopology(string taskId, int rootId, string subscription, int operatorId)
+        /// <summary>
+        /// Constructor for an operator topology.
+        /// </summary>
+        /// <param name="taskId">The identifier of the task the topology is running on</param>
+        /// <param name="rootTaskId">The identifier of the root note in the topology</param>
+        /// <param name="subscriptionName">The subscription name the topology is working on</param>
+        /// <param name="operatorId">The identifier of the operator for this topology</param>
+        internal OperatorTopology(string taskId, string rootTaskId, string subscriptionName, int operatorId)
         {
-            _taskId = taskId;
-            SubscriptionName = subscription;
+            TaskId = taskId;
+            SubscriptionName = subscriptionName;
             OperatorId = operatorId;
 
-            _rootTaskId = Utils.BuildTaskId(SubscriptionName, rootId);
+            RootTaskId = rootTaskId;
         }
 
-        internal string SubscriptionName { get; set; }
+        internal string SubscriptionName { get; private set; }
 
-        internal int OperatorId { get; set; }
+        internal int OperatorId { get; private set; }
 
-        internal IElasticOperator Operator { get; set; }
+        protected string TaskId { get; private set; }
+
+        protected string RootTaskId { get; set; }
 
         public virtual void WaitCompletionBeforeDisposing()
         {

@@ -126,7 +126,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
                 if (isIterative && message.Iteration < (int)IteratorReference.Current)
                 {
-                    LOGGER.Log(Level.Warning, $"Received message for iteration {message.Iteration} but I am already in iteration {(int)IteratorReference.Current}: ignoring");
+                    LOGGER.Log(Level.Warning, $"Received message for iteration {message.Iteration} but I am already in iteration {(int)IteratorReference.Current}: ignoring.");
                 }
                 else
                 {
@@ -136,7 +136,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             if (message == null)
             {
-                throw new OperationCanceledException("Impossible to receive messages: operation canceled");
+                throw new OperationCanceledException("Impossible to receive messages: operation cancelled.");
             }
 
             if (isIterative)
@@ -201,7 +201,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_checkpointableState.Level > CheckpointLevel.None)
             {
-                var state = _checkpointableState.From(iteration);
+                var state = _checkpointableState.Create(iteration);
 
                 state.MakeCheckpointable(data);
                 _topology.Checkpoint(state);

@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             [Parameter(typeof(OperatorParameters.OperatorId))] int id,
             [Parameter(typeof(OperatorParameters.IsLast))] bool isLast,
             ICheckpointableState checkpointableState,
-            BroadcastTopology topology) : base(id, isLast, checkpointableState, topology)
+            DefaultBroadcastTopology topology) : base(id, isLast, checkpointableState, topology)
         {
             OperatorName = Constants.Broadcast;
         }

@@ -41,8 +41,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         StreamingNetworkService<GroupCommunicationMessage> _networkService;
 
         protected OneToNTopology(
-            string subscription,
-            int rootId,
+            string subscriptionName,
+            string rootTaskId,
             ISet<int> children,
             bool piggyback,
             string taskId,
@@ -52,15 +52,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int disposeTimeout,
             CommunicationLayer commLayer,
             CheckpointService checkpointService,
-            StreamingNetworkService<GroupCommunicationMessage> networkService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
+            StreamingNetworkService<GroupCommunicationMessage> networkService) : base(taskId, rootTaskId, subscriptionName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _networkService = networkService;
             _checkpointService = checkpointService;
             _toRemove = new ConcurrentDictionary<string, byte>();
-            _topologyUpdateReceived = new ManualResetEvent(_rootTaskId == taskId ? false : true);
+            _topologyUpdateReceived = new ManualResetEvent(RootTaskId == taskId ? false : true);
 
-            _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
-            _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
+            _commLayer.RegisterOperatorTopologyForTask(TaskId, this);
+            _commLayer.RegisterOperatorTopologyForDriver(TaskId, this);
 
             foreach (var child in children)
             {
@@ -86,7 +86,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 case CheckpointLevel.None:
                     break;
                 case CheckpointLevel.EphemeralMaster:
-                    if (_taskId == _rootTaskId)
+                    if (TaskId == RootTaskId)
                     {
                         InternalCheckpoint = state.Checkpoint();
                     }
@@ -96,12 +96,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
-                    if (_taskId == _rootTaskId)
+                    if (TaskId == RootTaskId)
                     {
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.SubscriptionName = SubscriptionName;
-                        checkpoint.TaskId = _taskId;
                         _checkpointService.Checkpoint(checkpoint);
                     }
                     break;
@@ -109,11 +108,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     checkpoint = state.Checkpoint();
                     checkpoint.OperatorId = OperatorId;
                     checkpoint.SubscriptionName = SubscriptionName;
-                    checkpoint.TaskId = _taskId;
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
-                    throw new IllegalStateException("Checkpoint level not supported");
+                    throw new IllegalStateException("Checkpoint level not supported.");
             }
         }
 
@@ -125,7 +123,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration, false);
+            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration, false);
         }
 
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
@@ -136,7 +134,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
             catch (Exception e)
             {
-                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
+                throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + TaskId, e);
             }
 
             _initialized = true;
@@ -146,7 +144,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public void WaitCompletionBeforeDisposing(CancellationTokenSource cancellationSource)
         {
-            if (_taskId == _rootTaskId)
+            if (TaskId == RootTaskId)
             {
                 foreach (var node in _children.Values)
                 {
@@ -160,7 +158,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal void TopologyUpdateRequest()
         {
-            _commLayer.TopologyUpdateRequest(_taskId, OperatorId);
+            _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
         }
 
         public override void OnNext(NsMessage<GroupCommunicationMessage> message)
@@ -251,7 +249,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             TopologyUpdate toRemove = null;
             foreach (var update in updates)
             {
-                if (update.Node == _taskId)
+                if (update.Node == TaskId)
                 {
                     toRemove = update;
                     foreach (var child in update.Children)

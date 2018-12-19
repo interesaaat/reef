@@ -16,26 +16,37 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent by MPI Operators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by Network Service
+    /// Message used to communicated checkpoints between nodes in order to
+    /// recover execution.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal sealed class CheckpointMessage : GroupCommunicationMessage
     {
-        public CheckpointMessage(ICheckpointState payload) : base(payload.SubscriptionName, payload.OperatorId)
+        /// <summary>
+        /// Constructor for a message containig a checkpoint.
+        /// </summary>
+        /// <param name="checkpoint">The checkpoint state</param>
+        public CheckpointMessage(ICheckpointState checkpoint) : base(checkpoint.SubscriptionName, checkpoint.OperatorId)
         {
-            Payload = payload;
+            Checkpoint = checkpoint;
         }
 
-        public ICheckpointState Payload { get; set; }
+        /// <summary>
+        /// The checkpoint contained in the message.
+        /// </summary>
+        public ICheckpointState Checkpoint { get; internal set; }
 
+        /// <summary>
+        /// Clone the message.
+        /// </summary>
         public override object Clone()
         {
-            return new CheckpointMessage(Payload);
+            return new CheckpointMessage(Checkpoint);
         }
     }
 }

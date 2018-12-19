@@ -30,6 +30,7 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -41,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private AggregationRingTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
@@ -49,16 +50,18 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationLayer commLayer,
-            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
             _checkpointService = checkpointService;
 
-            _commLayer.RegisterOperatorTopologyForTask(_taskId, this);
-            _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
+            _commLayer.RegisterOperatorTopologyForTask(TaskId, this);
+            _commLayer.RegisterOperatorTopologyForDriver(TaskId, this);
         }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
+
+        internal IElasticOperator Operator { get; set; }
 
         internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
@@ -78,7 +81,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 case CheckpointLevel.None:
                     break;
                 case CheckpointLevel.EphemeralMaster:
-                    if (_taskId == _rootTaskId)
+                    if (TaskId == RootTaskId)
                     {
                         InternalCheckpoint = state.Checkpoint();
                     }
@@ -88,7 +91,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
-                    if (_taskId == _rootTaskId)
+                    if (TaskId == RootTaskId)
                     {
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
@@ -98,8 +101,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
-                    OperatorId = OperatorId;
-                    SubscriptionName = SubscriptionName;
+                    checkpoint.OperatorId = OperatorId;
+                    checkpoint.SubscriptionName = SubscriptionName;
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
@@ -115,14 +118,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration, false);
+            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration, false);
         }
 
         public void WaitCompletionBeforeDisposing(CancellationTokenSource cancellationSource)
         {
-            if (_taskId != _rootTaskId)
+            if (TaskId != RootTaskId)
             {
-                while (_commLayer.Lookup(_rootTaskId) == true && !cancellationSource.IsCancellationRequested)
+                while (_commLayer.Lookup(RootTaskId) == true && !cancellationSource.IsCancellationRequested)
                 {
                     Thread.Sleep(100);
                 }
@@ -131,17 +134,17 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            if (_rootTaskId != _taskId)
+            if (RootTaskId != TaskId)
             {
                 try
                 {
                     var tmp = new ConcurrentDictionary<int, string>();
-                    tmp.TryAdd(0, _rootTaskId);
-                    _commLayer.WaitForTaskRegistration(new List<string>() { _rootTaskId }, cancellationSource);
+                    tmp.TryAdd(0, RootTaskId);
+                    _commLayer.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
                 }
                 catch (Exception e)
                 {
-                    throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
+                    throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + TaskId, e);
                 }
             }
 
@@ -168,7 +171,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             base.Dispose();
 
-            _checkpointService.RemoveCheckpoint(_taskId, SubscriptionName, OperatorId);
+            _checkpointService.RemoveCheckpoint(TaskId, SubscriptionName, OperatorId);
         }
 
         internal override void OnMessageFromDriver(DriverMessagePayload message)
@@ -191,7 +194,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                 {
                     Logger.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
-                    _commLayer.NextDataRequest(_taskId, rmsg.Iteration);
+                    _commLayer.NextDataRequest(TaskId, rmsg.Iteration);
                     return;
                 }
 
@@ -221,12 +224,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         var splits = Operator.FailureInfo.Split(':');
 
                         var iteration = destMessage.Iteration;
-                        if (_rootTaskId == _taskId)
+                        if (RootTaskId == TaskId)
                         {
                             iteration--;
                         }
                         Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
-                        _commLayer.NextDataRequest(_taskId, iteration);
+                        _commLayer.NextDataRequest(TaskId, iteration);
                         return;
                     }
 
@@ -244,7 +247,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal override void JoinTopology()
         {
-            if (_taskId != _rootTaskId)
+            if (TaskId != RootTaskId)
             {
                 // This is required because data (coming from when the task was alive)
                 // could have been received while a task recovers from a failure. 
@@ -252,7 +255,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     _messageQueue.Take();
                 }
-                _commLayer.JoinTopology(_taskId, OperatorId);
+                _commLayer.JoinTopology(TaskId, OperatorId);
             }
         }
 
@@ -266,7 +269,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 var dm = message as DataMessage;
 
-                _commLayer.TopologyUpdateRequest(_taskId, OperatorId);
+                _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
 
                 while (!_next.TryTake(out nextNode, _timeout))
                 {
@@ -284,7 +287,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
                     }
 
-                    _commLayer.TopologyUpdateRequest(_taskId, OperatorId);
+                    _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
                 }
 
                 _sendQueue.TryDequeue(out message);

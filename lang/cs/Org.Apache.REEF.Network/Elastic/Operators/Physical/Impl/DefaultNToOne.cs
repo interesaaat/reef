@@ -175,7 +175,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_checkpointableState.Level > CheckpointLevel.None)
             {
-                var state = _checkpointableState.From(iteration);
+                var state = _checkpointableState.Create(iteration);
 
                 state.MakeCheckpointable(data);
                 _topology.Checkpoint(state);

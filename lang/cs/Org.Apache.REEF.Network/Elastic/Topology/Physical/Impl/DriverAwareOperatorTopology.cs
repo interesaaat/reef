@@ -22,8 +22,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<DriverMessagePayload>
     {
-        internal DriverAwareOperatorTopology(string taskId, int rootId, string subscription, int operatorId)
-            : base(taskId, rootId, subscription, operatorId)
+        internal DriverAwareOperatorTopology(string taskId, string rootTaskId, string subscription, int operatorId)
+            : base(taskId, rootTaskId, subscription, operatorId)
         {
         }
 

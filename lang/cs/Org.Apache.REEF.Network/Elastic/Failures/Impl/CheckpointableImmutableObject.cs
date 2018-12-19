@@ -23,50 +23,82 @@ using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
 {
-    // Is users duty to make sure that if T is an IEnumerable type, the inner objects are clonable as well.
+    /// <summary>
+    /// Checkpointable state wrapping an immutable object. 
+    /// Since immutable when creating a checkpoint we don't need a copy.
+    /// </summary>
+    /// <typeparam name="T"></typeparam>
     [Unstable("0.16", "API may change")]
     public class CheckpointableImmutableObject<T> : ICheckpointableState
     {
+        protected ICheckpointState _checkpoint;
+
         [Inject]
-        private CheckpointableImmutableObject([Parameter(typeof(OperatorParameters.Checkpointing))] int level) : base()
+        private CheckpointableImmutableObject(
+            [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
+            ICheckpointState checkpoint) : this()
         {
             Level = (CheckpointLevel)level;
+            _checkpoint = checkpoint;
         }
 
-        private CheckpointableImmutableObject()
+        /// <summary>
+        /// Basic constructor returning a checkponitable object with default state and iteration number = 0.
+        /// </summary>
+        protected CheckpointableImmutableObject()
         {
             State = default;
             Iteration = 0;
         }
 
-        protected T State { get; set; }
-
+        /// <summary>
+        /// The current checkpoint level.
+        /// </summary>
         public CheckpointLevel Level { get; internal set; }
 
-        public int Iteration { get; internal set; }
+        /// <summary>
+        /// The current iteration number.
+        /// </summary>
+        internal int Iteration { get; set; }
 
+        /// <summary>
+        /// The actual state to checkpoint.
+        /// </summary>
+        internal T State { get; set; }
+
+        /// <summary>
+        /// Make the given input state a checkpointable state.
+        /// </summary>
+        /// <param name="state">The state that needs to be make checkpointable</param>
         public void MakeCheckpointable(object model)
         {
             State = (T)model;
         }
 
-        // Create a copy of the state
-        public ICheckpointState Checkpoint()
+        /// <summary>
+        /// Checkpoint the current state.
+        /// </summary>
+        /// <returns>A checkpoint state</returns>
+        public virtual ICheckpointState Checkpoint()
         {
             switch (Level)
             {
                 case CheckpointLevel.EphemeralMaster:
                 case CheckpointLevel.EphemeralAll:
-                    return new CheckpointState<T>(Level, Iteration, State);
                 case CheckpointLevel.PersistentMemoryMaster:
                 case CheckpointLevel.PersistentMemoryAll:
-                    return new CheckpointState<T>(Level, Iteration, State);
+                    return _checkpoint.Create(Iteration, State);
                 default:
-                    return new CheckpointState<T>();
+                    throw new ArgumentException($"Level {Level} not recognized.");
             }
         }
 
-        public ICheckpointableState From(int iteration = 0)
+        /// <summary>
+        /// Create a new empty checkpointable state from the current one.
+        /// </summary>
+        /// <param name="iteration">The current iteration for which we need to create a new checkpointable state</param>
+        /// <returns>An empty checkpointable state</returns>
+        public virtual ICheckpointableState Create(int iteration = 0)
         {
             return new CheckpointableImmutableObject<T>()
             {

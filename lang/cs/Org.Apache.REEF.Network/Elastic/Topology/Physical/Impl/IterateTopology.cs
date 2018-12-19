@@ -24,8 +24,6 @@ using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Comm;
 using Org.Apache.REEF.Network.NetworkService;
 using System.Collections.Generic;
@@ -43,20 +41,20 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private IterateTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscription,
+            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             CommunicationLayer commLayer,
-            CheckpointService checkpointService) : base(taskId, rootId, subscription, operatorId)
+            CheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId)
         {
             _commLayer = commLayer;
 
-            _commLayer.RegisterOperatorTopologyForDriver(_taskId, this);
+            _commLayer.RegisterOperatorTopologyForDriver(TaskId, this);
 
             Service = checkpointService;
 
-            Service.RegisterOperatorRoot(subscription, operatorId, _rootTaskId, _rootTaskId == taskId);
+            Service.RegisterOperatorRoot(subscriptionName, operatorId, RootTaskId, RootTaskId == taskId);
         }
 
         public CheckpointService Service { get; private set; }
@@ -65,14 +63,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public bool IsRoot
         {
-            get { return _rootTaskId == _taskId; }
+            get { return RootTaskId == TaskId; }
         }
 
         public void IterationNumber(int iteration)
         {
-            if (_taskId == _rootTaskId)
+            if (TaskId == RootTaskId)
             {
-                _commLayer.IterationNumber(_taskId, OperatorId, iteration);
+                _commLayer.IterationNumber(TaskId, OperatorId, iteration);
             }
         }
 
@@ -85,7 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 case CheckpointLevel.None:
                     break;
                 case CheckpointLevel.EphemeralMaster:
-                    if (_taskId == _rootTaskId)
+                    if (TaskId == RootTaskId)
                     {
                         checkpoint = state.Checkpoint();
                         checkpoint.Iteration = iteration ?? -1;
@@ -98,11 +96,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
-                    if (_taskId == _rootTaskId)
+                    if (TaskId == RootTaskId)
                     {
                         checkpoint = state.Checkpoint();
                         checkpoint.Iteration = iteration ?? -1;
-                        checkpoint.TaskId = _taskId;
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.SubscriptionName = SubscriptionName;
                         Service.Checkpoint(checkpoint);
@@ -111,7 +108,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
                     checkpoint.Iteration = iteration ?? -1;
-                    checkpoint.TaskId = _taskId;
                     checkpoint.OperatorId = OperatorId;
                     checkpoint.SubscriptionName = SubscriptionName;
                     Service.Checkpoint(checkpoint);
@@ -129,31 +125,31 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return Service.GetCheckpoint(out checkpoint, _taskId, SubscriptionName, OperatorId, iteration);
+            return Service.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration);
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            if (_rootTaskId != _taskId)
+            if (RootTaskId != TaskId)
             {
                 try
                 {
                     var tmp = new ConcurrentDictionary<int, string>();
-                    tmp.TryAdd(0, _rootTaskId);
-                    _commLayer.WaitForTaskRegistration(new List<string>() { _rootTaskId }, cancellationSource);
+                    tmp.TryAdd(0, RootTaskId);
+                    _commLayer.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
                 }
                 catch (Exception e)
                 {
-                    throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + _taskId, e);
+                    throw new OperationCanceledException("Failed to find parent/children nodes in operator topology for node: " + TaskId, e);
                 }
             }
         }
 
         public override void WaitCompletionBeforeDisposing()
         {
-            if (_taskId != _rootTaskId)
+            if (TaskId != RootTaskId)
             {
-                while (_commLayer.Lookup(_rootTaskId) == true)
+                while (_commLayer.Lookup(RootTaskId) == true)
                 {
                     Thread.Sleep(100);
                 }
@@ -162,7 +158,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public void Dispose()
         {
-            Service.RemoveCheckpoint(_taskId, SubscriptionName, OperatorId);
+            Service.RemoveCheckpoint(TaskId, SubscriptionName, OperatorId);
         }
 
         internal override void OnMessageFromDriver(DriverMessagePayload message)
