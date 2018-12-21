@@ -16,20 +16,39 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
 {
     /// <summary>
-    /// Group Communication operator used to receive and send messages.
+    /// Interface for topologies able to checkpoint state.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal interface ICheckpointingTopology : IDisposable
     {
-        void Checkpoint(ICheckpointableState state, int? iteration);
-
-        bool GetCheckpoint(out ICheckpointState checkpoint, int iteration = -1);
-
+        /// <summary>
+        /// An internal (to the topology) checkpoint. This can be used to implement
+        /// ephemeral level checkpoints.
+        /// </summary>
         // For the moment the assumption is that only one object is stored
         ICheckpointState InternalCheckpoint { get; }
+
+        /// <summary>
+        /// Checkpoint the input state for the given iteration.
+        /// </summary>
+        /// <param name="state">The state to checkpoint</param>
+        /// <param name="iteration">The iteration in which the checkpoint is happening</param>
+        void Checkpoint(ICheckpointableState state, int iteration);
+
+        /// <summary>
+        /// Retrieve a previously saved checkpoint.
+        /// The iteration number specificy which cehckpoint to retrieve, where -1
+        /// is used by default to indicate the latest available checkpoint.
+        /// </summary>
+        /// <param name="checkpoint">The retrieved checkpoint</param>
+        /// <param name="iteration">The iteration number for the checkpoint to retrieve.</param>
+        /// <returns></returns>
+        bool GetCheckpoint(out ICheckpointState checkpoint, int iteration = -1);
     }
 }

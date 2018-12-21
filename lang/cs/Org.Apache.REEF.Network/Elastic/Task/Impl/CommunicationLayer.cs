@@ -37,10 +37,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Handles all incoming messages for this Task.
     /// Writable version
     /// </summary>
-    internal sealed class CommunicationLayer : 
+    internal sealed class CommunicationService : 
         IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationService));
 
         private readonly int _timeout;
         private readonly int _retryRegistration;
@@ -64,7 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// Creates a new GroupCommNetworkObserver.
         /// </summary>
         [Inject]
-        private CommunicationLayer(
+        private CommunicationService(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryRegistration,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
@@ -97,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// If the <see cref="OperatorTopologyWithCommunication"/> has already been initialized, it will return
         /// the existing one.
         /// </summary>
-        public void RegisterOperatorTopologyForTask(string taskDestinationId, OperatorTopologyWithCommunication operatorObserver)
+        public void RegisterOperatorTopologyForTask(OperatorTopologyWithCommunication operatorObserver)
         {
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
@@ -109,7 +109,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _groupMessageObservers.TryAdd(id, operatorObserver);
         }
 
-        internal void RegisterOperatorTopologyForDriver(string taskDestinationId, DriverAwareOperatorTopology operatorObserver)
+        internal void RegisterOperatorTopologyForDriver(DriverAwareOperatorTopology operatorObserver)
         {
             // Add a TaskMessage observer for each upstream/downstream source.
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
@@ -233,7 +233,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskToDriverDispatcher.JoinTopology(taskId, operatorId);
         }
 
-        public void SignalSubscriptionComplete(string taskId)
+        public void SubscriptionComplete(string taskId)
         {
             _taskToDriverDispatcher.SignalSubscriptionComplete(taskId);
         }

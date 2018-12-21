@@ -54,16 +54,13 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             reader.Read(ref metadata, 0, metadataSize);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
-
-            string subscriptionName = res.Item1;
-            int operatorId = res.Item2;
-            int iteration = res.Item3;
+            var (subscriptionName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             var data = _codec.Read(reader);
-            var payload = _checkpoint.Create(iteration, data);
+            var payload = _checkpoint.Create(data);
 
             payload.SubscriptionName = subscriptionName;
             payload.OperatorId = operatorId;
+            payload.Iteration = iteration;
 
             return new CheckpointMessage(payload);
         }
@@ -94,13 +91,14 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
+            var (subscriptionName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             
             var data = await _codec.ReadAsync(reader, token);
-            int iteration = res.Item3;
-            var payload = _checkpoint.Create(iteration, data);
-            payload.SubscriptionName = res.Item1;
-            payload.OperatorId = res.Item2;
+            var payload = _checkpoint.Create(data);
+
+            payload.SubscriptionName = subscriptionName;
+            payload.OperatorId = operatorId;
+            payload.Iteration = iteration;
 
             return new CheckpointMessage(payload);
         }
@@ -141,7 +139,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return metadataBytes;
         }
 
-        private static Tuple<string, int, int> GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
+        private static (string subscriptionName, int operatorId, int iteration) GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
         {
             int offset = 0;
             string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
@@ -152,7 +150,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             int iteration = BitConverter.ToInt32(obj, offset);
 
-            return new Tuple<string, int, int>(subscriptionString, operatorInt, iteration);
+            return (subscriptionName: subscriptionString, operatorId: operatorInt, iteration);
         }
     }
 }

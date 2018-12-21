@@ -89,7 +89,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         string LogTopologyState();
 
         /// <summary>
-        /// This method is triggered when a node detects a change in the topology and asks the driver for an update.
+        /// This method is triggered when a node contacts the driver to synchronize the remote topology
+        /// with the driver's one.
         /// </summary>
         /// <param name="taskId">The identifier of the task asking for the update</param>
         /// <param name="returnMessages">A list of message containing the topology update</param>

@@ -36,6 +36,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal class AggregationRingTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
     {
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(AggregationRingTopology));
+
         private BlockingCollection<string> _next;
 
         private readonly CheckpointService _checkpointService;
@@ -49,21 +51,21 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationLayer commLayer,
+            CommunicationService commLayer,
             CheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
             _checkpointService = checkpointService;
 
-            _commLayer.RegisterOperatorTopologyForTask(TaskId, this);
-            _commLayer.RegisterOperatorTopologyForDriver(TaskId, this);
+            _commService.RegisterOperatorTopologyForTask(this);
+            _commService.RegisterOperatorTopologyForDriver(this);
         }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
         internal IElasticOperator Operator { get; set; }
 
-        internal override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
+        public override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
             GroupCommunicationMessage message;
 
@@ -72,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             return message;
         }
 
-        public void Checkpoint(ICheckpointableState state, int? iteration = null)
+        public void Checkpoint(ICheckpointableState state, int iteration)
         {
             ICheckpointState checkpoint;
 
@@ -106,7 +108,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
-                    throw new IllegalStateException("Checkpoint level not supported");
+                    throw new IllegalStateException("Checkpoint level not supported.");
             }
         }
 
@@ -125,7 +127,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (TaskId != RootTaskId)
             {
-                while (_commLayer.Lookup(RootTaskId) == true && !cancellationSource.IsCancellationRequested)
+                while (_commService.Lookup(RootTaskId) == true && !cancellationSource.IsCancellationRequested)
                 {
                     Thread.Sleep(100);
                 }
@@ -140,7 +142,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     var tmp = new ConcurrentDictionary<int, string>();
                     tmp.TryAdd(0, RootTaskId);
-                    _commLayer.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
+                    _commService.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
                 }
                 catch (Exception e)
                 {
@@ -155,7 +157,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (!_initialized)
             {
-                Logger.Log(Level.Warning, "Received data while task is not initialized: ignoring");
+                LOGGER.Log(Level.Warning, "Received data while task is not initialized: ignoring");
                 return;
             }
 
@@ -171,81 +173,82 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             base.Dispose();
 
-            _checkpointService.RemoveCheckpoint(TaskId, SubscriptionName, OperatorId);
+            _checkpointService.RemoveCheckpoint(SubscriptionName, OperatorId);
         }
 
-        internal override void OnMessageFromDriver(DriverMessagePayload message)
-        {
-            if (message.PayloadType != DriverMessagePayloadType.Ring)
-            {
-                throw new IllegalStateException("Message not appropriate for Aggregation Ring Topology");
-            }
-
-            var rmsg = message as RingMessagePayload;
-
-            if (_sendQueue.Count > 0)
-            {
-                _next.TryAdd(rmsg.NextTaskId);
-            }
-            else
-            {
-                Logger.Log(Level.Info, "Going to resume ring computation for " + rmsg.NextTaskId);
-
-                if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
-                {
-                    Logger.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
-                    _commLayer.NextDataRequest(TaskId, rmsg.Iteration);
-                    return;
-                }
-
-                var cancellationSource = new CancellationTokenSource();
-
-                foreach (var data in checkpoint.State as GroupCommunicationMessage[])
-                {
-                    _commLayer.Send(rmsg.NextTaskId, data, cancellationSource);
-                }
-            }
-        }
-
-        internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload message)
+        /// <summary>
+        /// Handler for messages coming from the driver.
+        /// </summary>
+        /// <param name="message">Message from the driver</param>
+        public override void OnNext(DriverMessagePayload message)
         {
             switch (message.PayloadType)
             {
-                case DriverMessagePayloadType.Resume:
-                    var msg = "Received resume message: going to resume ring computation for ";
-                    var destMessage = message as ResumeMessagePayload;
-
-                    Logger.Log(Level.Info, msg + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
-
-                    ICheckpointState checkpoint;
-
-                    if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                case DriverMessagePayloadType.Ring:
                     {
-                        var splits = Operator.FailureInfo.Split(':');
+                        var rmsg = message as RingMessagePayload;
 
-                        var iteration = destMessage.Iteration;
-                        if (RootTaskId == TaskId)
+                        if (_sendQueue.Count > 0)
                         {
-                            iteration--;
+                            _next.TryAdd(rmsg.NextTaskId);
                         }
-                        Logger.Log(Level.Warning, "I am blocked as well: propagating the request");
-                        _commLayer.NextDataRequest(TaskId, iteration);
-                        return;
+                        else
+                        {
+                            LOGGER.Log(Level.Info, "Going to resume ring computation for " + rmsg.NextTaskId);
+
+                            if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                            {
+                                LOGGER.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
+                                _commService.NextDataRequest(TaskId, rmsg.Iteration);
+                                return;
+                            }
+
+                            var cancellationSource = new CancellationTokenSource();
+
+                            foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                            {
+                                _commService.Send(rmsg.NextTaskId, data, cancellationSource);
+                            }
+                        }
                     }
-
-                    var cancellationSource = new CancellationTokenSource();
-
-                    foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                    break;
+                case DriverMessagePayloadType.Resume:
                     {
-                        _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
+                        var msg = "Received resume message: going to resume ring computation for ";
+                        var destMessage = message as ResumeMessagePayload;
+
+                        LOGGER.Log(Level.Info, msg + destMessage.NextTaskId + " in iteration " + destMessage.Iteration);
+
+                        ICheckpointState checkpoint;
+
+                        if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                        {
+                            var splits = Operator.FailureInfo.Split(':');
+
+                            var iteration = destMessage.Iteration;
+                            if (RootTaskId == TaskId)
+                            {
+                                iteration--;
+                            }
+                            LOGGER.Log(Level.Warning, "I am blocked as well: propagating the request");
+                            _commService.NextDataRequest(TaskId, iteration);
+                            return;
+                        }
+
+                        var cancellationSource = new CancellationTokenSource();
+
+                        foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                        {
+                            _commService.Send(destMessage.NextTaskId, data, cancellationSource);
+                        }
                     }
                     break;
                 default:
-                    throw new IllegalStateException("Failure Message not supported");
+                    throw new ArgumentException($"Message type {message.PayloadType} not supported by aggregation ring topology.");
             }
         }
 
-        internal override void JoinTopology()
+        public override void JoinTopology()
         {
             if (TaskId != RootTaskId)
             {
@@ -255,7 +258,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     _messageQueue.Take();
                 }
-                _commLayer.JoinTopology(TaskId, OperatorId);
+                _commService.JoinTopology(TaskId, OperatorId);
             }
         }
 
@@ -269,13 +272,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 var dm = message as DataMessage;
 
-                _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
+                _commService.TopologyUpdateRequest(TaskId, OperatorId);
 
                 while (!_next.TryTake(out nextNode, _timeout))
                 {
                     if (cancellationSource.IsCancellationRequested)
                     {
-                        Logger.Log(Level.Warning, "Received cancellation request: stop sending");
+                        LOGGER.Log(Level.Warning, "Received cancellation request: stop sending");
                         return;
                     }
 
@@ -287,12 +290,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
                     }
 
-                    _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
+                    _commService.TopologyUpdateRequest(TaskId, OperatorId);
                 }
 
                 _sendQueue.TryDequeue(out message);
 
-                _commLayer.Send(nextNode, message, cancellationSource);
+                _commService.Send(nextNode, message, cancellationSource);
             }
         }
     }

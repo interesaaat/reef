@@ -15,7 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
@@ -34,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="rootTaskId">The identifier of the root note in the topology</param>
         /// <param name="subscriptionName">The subscription name the topology is working on</param>
         /// <param name="operatorId">The identifier of the operator for this topology</param>
-        internal OperatorTopology(string taskId, string rootTaskId, string subscriptionName, int operatorId)
+        public OperatorTopology(string taskId, string rootTaskId, string subscriptionName, int operatorId)
         {
             TaskId = taskId;
             SubscriptionName = subscriptionName;
@@ -43,17 +42,31 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             RootTaskId = rootTaskId;
         }
 
-        internal string SubscriptionName { get; private set; }
+        /// <summary>
+        /// The subscription name context in which the topology is running.
+        /// </summary>
+        public string SubscriptionName { get; private set; }
 
-        internal int OperatorId { get; private set; }
+        /// <summary>
+        /// The identifier of the operator in which the topology is running.
+        /// </summary>
+        public int OperatorId { get; private set; }
 
+        /// <summary>
+        /// The identifier of the task in which the topology is running.
+        /// </summary>
         protected string TaskId { get; private set; }
 
+        /// <summary>
+        /// The task identifier of the root node of the topology.
+        /// </summary>
         protected string RootTaskId { get; set; }
 
+        /// <summary>
+        /// Waiting logic before disposing topologies. 
+        /// </summary>
         public virtual void WaitCompletionBeforeDisposing()
         {
-            return;
         }
     }
 }

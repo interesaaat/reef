@@ -15,6 +15,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities;
 using Org.Apache.REEF.Utilities.Attributes;
 using System;
@@ -28,22 +29,21 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// This message contains information for the destination node on the topology.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal sealed class TopologyMessagePayload : DriverMessagePayload
+    internal class TopologyMessagePayload : DriverMessagePayload
     {
         /// <summary>
-        /// Create a driver message payload containing topology updates 
+        /// Create a driver message payload containing topology updates.
         /// </summary>
         /// <param name="updates">The topology updates</param>
         /// <param name="toRemove">Whether the updates are additions to the current topology state or nodes removal</param>
         /// <param name="subscriptionName">The subscription context for the message</param>
         /// <param name="operatorId">The id of the operator receiving the topology update</param>
         /// <param name="iteration">The iteration in which the update takes effect</param>
-        public TopologyMessagePayload(List<TopologyUpdate> updates, bool toRemove, string subscriptionName, int operatorId, int iteration)
+        public TopologyMessagePayload(DriverMessagePayloadType type, List<TopologyUpdate> updates, string subscriptionName, int operatorId, int iteration)
             : base(subscriptionName, operatorId, iteration)
         {
-            PayloadType = DriverMessagePayloadType.Topology;
+            PayloadType = type;
             TopologyUpdates = updates;
-            ToRemove = toRemove;
         }
 
         /// <summary>
@@ -60,7 +60,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
                 updatesClone.Add(update);
             }
 
-            return new TopologyMessagePayload(updatesClone, ToRemove, SubscriptionName, OperatorId, Iteration);
+            return TopologyMessageBuilder(PayloadType, updatesClone, SubscriptionName, OperatorId, Iteration);
         }
 
         /// <summary>
@@ -69,17 +69,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         internal List<TopologyUpdate> TopologyUpdates { get; private set; }
 
         /// <summary>
-        /// Whether the updates are additions or removals to the current node topology.
-        /// </summary>
-        internal bool ToRemove { get; private set; }
-
-        /// <summary>
         /// Creates a topology message payload out of memory buffer. 
         /// </summary>
         /// <param name="data">The buffer containing a serialized message payload</param>
         /// <param name="offset">The offset where to start the deserialization process</param>
         /// <returns>A topology message payload</returns>
-        internal static DriverMessagePayload From(byte[] data, int offset = 0)
+        internal static DriverMessagePayload From(DriverMessagePayloadType type, byte[] data, int offset = 0)
         {
             int length = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
@@ -90,14 +85,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             offset += sizeof(int);
             string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
             offset += length;
-
-            bool toRemove = BitConverter.ToBoolean(data, offset);
-            offset += sizeof(bool);
             int operatorId = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
             int iteration = BitConverter.ToInt32(data, offset);
 
-            return new TopologyMessagePayload(updates, toRemove, subscription, operatorId, iteration);
+            return TopologyMessageBuilder(type, updates, subscription, operatorId, iteration);
         }
 
         /// <summary>
@@ -118,17 +110,26 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
-
             Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
             offset += subscriptionBytes.Length;
-
-            Buffer.BlockCopy(BitConverter.GetBytes(ToRemove), 0, buffer, offset, sizeof(bool));
-            offset += sizeof(bool);
             Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
             Buffer.BlockCopy(BitConverter.GetBytes(Iteration), 0, buffer, offset, sizeof(int));
 
             return buffer;
+        }
+
+        private static DriverMessagePayload TopologyMessageBuilder(DriverMessagePayloadType type, List<TopologyUpdate> updates, string subscriptionName, int operatorId, int iteration)
+        {
+            switch (type)
+            {
+                case DriverMessagePayloadType.Update:
+                    return new UpdateMessagePayload(updates, subscriptionName, operatorId, iteration);
+                case DriverMessagePayloadType.Failure:
+                    return new FailureMessagePayload(updates, subscriptionName, operatorId, iteration);
+                default:
+                    throw new IllegalStateException($"Topology message type {type} not found.");
+            }
         }
     }
 }

@@ -58,15 +58,13 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
         {
             int metadataSize = reader.ReadInt32();
             byte[] metadata = new byte[metadataSize];
+
             reader.Read(ref metadata, 0, metadataSize);
+
             var res = GenerateMetaDataDecoding(metadata);
-
-            Type messageType = res.Item2;
-            NsMessage<T> message = res.Item1;
-
+            Type messageType = res.type;
             var codecReadFunc = _codecFunctionsCache.ReadFunction(messageType);
-
-            message.Data = codecReadFunc(reader);
+            var message = new NsMessage<T>(res.source, res.destination, codecReadFunc(reader));
 
             return message;
         }
@@ -83,9 +81,9 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             byte[] totalEncoding = encodedInt.Concat(encodedMetadata).ToArray();
             writer.Write(totalEncoding, 0, totalEncoding.Length);
 
-            Type messageType = obj.Data.GetType();        
+            Type messageType = obj.Data.GetType();
             var codecWriteFunc = _codecFunctionsCache.WriteFunction(messageType);
-          
+
             codecWriteFunc(obj.Data, writer);
         }
 
@@ -101,11 +99,9 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
             var res = GenerateMetaDataDecoding(metadata);
-            Type messageType = res.Item2;
-            NsMessage<T> message = res.Item1;
+            Type messageType = res.type;
             var codecReadFunc = _codecFunctionsCache.ReadAsyncFunction(messageType);
-
-            message.Data = codecReadFunc(reader, token);
+            var message = new NsMessage<T>(res.source, res.destination, codecReadFunc(reader, token));
 
             return message;
         }
@@ -130,7 +126,7 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             var asyncResult = codecWriteFunc.BeginInvoke(obj.Data, writer, token, null, null);
             await codecWriteFunc.EndInvoke(asyncResult);
         }
-       
+
         private static byte[] GenerateMetaDataEncoding(NsMessage<T> obj)
         {
             List<byte[]> metadataBytes = new List<byte[]>();
@@ -148,7 +144,7 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             return metadataBytes.SelectMany(i => i).ToArray();
         }
 
-        private Tuple<NsMessage<T>, Type> GenerateMetaDataDecoding(byte[] obj)
+        private (IIdentifier source, IIdentifier destination, Type type) GenerateMetaDataDecoding(byte[] obj)
         {
             int srcCount = BitConverter.ToInt32(obj, 0);
             int dstCount = BitConverter.ToInt32(obj, sizeof(int));
@@ -162,8 +158,7 @@ namespace Org.Apache.REEF.Network.NetworkService.Codec
             Type msgType = Type.GetType(BytesToString(obj.Skip(offset).Take(msgTypeCount).ToArray()));
             offset += msgTypeCount;
 
-            NsMessage<T> msg = new NsMessage<T>(_idFactory.Create(srcString), _idFactory.Create(dstString));
-            return new Tuple<NsMessage<T>, Type>(msg, msgType);
+            return (source: _idFactory.Create(srcString), destination: _idFactory.Create(dstString), type: msgType);
         }
 
         private static byte[] StringToBytes(string str)

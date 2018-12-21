@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _timeout;
         private readonly int _retry;
 
-        private CommunicationLayer _communicationLayer;
+        private CommunicationService _communicationLayer;
 
         [Inject]
         public CheckpointService(
@@ -63,7 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _checkpointsWaiting = new ConcurrentDictionary<CheckpointIdentifier, ManualResetEvent>();
         }
 
-        public CommunicationLayer CommunicationLayer
+        public CommunicationService CommunicationLayer
         {
             set { _communicationLayer = value; }
         }
@@ -133,6 +133,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void Checkpoint(ICheckpointState state)
         {
+            if (state.SubscriptionName == null || state.SubscriptionName == string.Empty)
+            {
+                throw new ArgumentException(nameof(state.SubscriptionName), "Null or empty.");
+            }
+
+            if (state.OperatorId < 0)
+            {
+                throw new ArgumentException(nameof(state.OperatorId), "Invalid.");
+            }
+
             SortedDictionary<int, ICheckpointState> checkpoints;
             var id = new CheckpointIdentifier(state.SubscriptionName, state.OperatorId);
             ManualResetEvent waiting;
@@ -143,7 +153,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 _checkpoints.TryAdd(id, checkpoints);
             }
 
-            checkpoints.Add(state.Iteration, state);
+            checkpoints[state.Iteration] = state;
 
             if (_checkpointsWaiting.TryRemove(id, out waiting))
             {
@@ -153,10 +163,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             CheckSize(checkpoints);
         }
         
-        public void RemoveCheckpoint(string taskId, string subscriptionName, int operatorId)
+        public void RemoveCheckpoint(string subscriptionName, int operatorId)
         {
+            if (subscriptionName == null || subscriptionName == string.Empty)
+            {
+                throw new ArgumentException(nameof(subscriptionName), "Null or empty.");
+            }
+
+            if (operatorId < 0)
+            {
+                throw new ArgumentException(nameof(operatorId), "Invalid.");
+            }
+
             var id = new CheckpointIdentifier(subscriptionName, operatorId);
             SortedDictionary<int, ICheckpointState> checkpoints;
+
             _checkpoints.TryRemove(id, out checkpoints);
         }
 

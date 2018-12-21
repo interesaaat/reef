@@ -20,11 +20,9 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using System.Collections.Generic;
 using Org.Apache.REEF.Common.Tasks;
-using System;
 using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Network.NetworkService;
 using System.Linq;
 using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
@@ -48,22 +46,32 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationLayer commLayer,
-            CheckpointService checkpointService,
-            StreamingNetworkService<GroupCommunicationMessage> networkService) : base(
+            CommunicationService commLayer,
+            CheckpointService checkpointService) : base(
                 subscriptionName,
+                taskId,
                 Utils.BuildTaskId(subscriptionName, rootId),
+                operatorId,
                 children,
                 piggyback,
-                taskId,
-                operatorId,
                 retry,
                 timeout,
                 disposeTimeout,
                 commLayer,
-                checkpointService,
-                networkService)
+                checkpointService)
         {
+        }
+
+        public override DataMessage AssembleDataMessage<T>(int iteration, T[] data)
+        {
+            if(_piggybackTopologyUpdates)
+            {
+                return new DataMessageWithTopology<T>(SubscriptionName, OperatorId, iteration, data[0]);
+            }
+            else
+            {
+                return new DataMessage<T>(SubscriptionName, OperatorId, iteration, data[0]);
+            }
         }
 
         /// <summary>
@@ -84,10 +92,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 // in order to have the most update topology at each boradcast round.
                 while (!_topologyUpdateReceived.WaitOne(_timeout))
                 {
-                    // If we are here, we weren't able to receive a topology update on time. Retry for a certain amount of times.
+                    // If we are here, we weren't able to receive a topology update on time. Retry.
                     if (cancellationSource.IsCancellationRequested)
                     {
-                        Logger.Log(Level.Warning, "Received cancellation request: stop sending");
+                        LOGGER.Log(Level.Warning, "Received cancellation request: stop sending");
                         return;
                     }
 
@@ -111,9 +119,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
 
                 // Deliver the message to the commonication layer.
-                foreach (var node in _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)))
+                foreach (var node in _children.Where(x => !_nodesToRemove.TryGetValue(x.Value, out byte val)))
                 {
-                    _commLayer.Send(node.Value, message, cancellationSource);
+                    _commService.Send(node.Value, message, cancellationSource);
                 }
             }
         }

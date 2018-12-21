@@ -298,7 +298,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _cachedMessageUpdates = tempUpdates.Values.ToList();
                 }
 
-                var data = new TopologyMessagePayload(_cachedMessageUpdates, false, SubscriptionName, OperatorId, _iteration);
+                var data = new UpdateMessagePayload(_cachedMessageUpdates, SubscriptionName, OperatorId, _iteration);
                 var returnMessage = new ElasticDriverMessageImpl(taskId, data);
                 returnMessages.Add(returnMessage);
             }
@@ -354,7 +354,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                     updates.Add(new TopologyUpdate(parentTaskId, new List<string>() { taskIdToRemove }));
 
-                    var data = new TopologyMessagePayload(updates, true, SubscriptionName, OperatorId, iter);
+                    var data = new FailureMessagePayload(updates, SubscriptionName, OperatorId, iter);
                     var returnMessage = new ElasticDriverMessageImpl(parentTaskId, data);
 
                     LOGGER.Log(Level.Info, "Task {0} is removed from topology of node {1}", taskIdToRemove, parentTaskId);

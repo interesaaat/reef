@@ -16,30 +16,48 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Comm;
+using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
+    /// <summary>
+    /// Abstract class for topologies able to receive messages from the driver.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
     internal abstract class DriverAwareOperatorTopology : OperatorTopology, IObserver<DriverMessagePayload>
     {
-        internal DriverAwareOperatorTopology(string taskId, string rootTaskId, string subscription, int operatorId)
-            : base(taskId, rootTaskId, subscription, operatorId)
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="taskId">The identifier of the task the topology is running on</param>
+        /// <param name="rootTaskId">The identifier of the root note in the topology</param>
+        /// <param name="subscriptionName">The subscription name the topology is working on</param>
+        /// <param name="operatorId">The identifier of the operator for this topology</param>
+        public DriverAwareOperatorTopology(string taskId, string rootTaskId, string subscriptionName, int operatorId)
+            : base(taskId, rootTaskId, subscriptionName, operatorId)
         {
         }
 
-        public void OnNext(DriverMessagePayload message)
+        /// <summary>
+        /// Basic handler for messages coming from the driver.
+        /// </summary>
+        /// <param name="message">Message from the driver</param>
+        public virtual void OnNext(DriverMessagePayload message)
         {
             switch (message.PayloadType)
             {
                 case DriverMessagePayloadType.Ring:
-                case DriverMessagePayloadType.Topology:
-                    OnMessageFromDriver(message);
+                case DriverMessagePayloadType.Resume:
+                case DriverMessagePayloadType.Update:
+                case DriverMessagePayloadType.Failure:
                     break;
                 default:
-                    OnFailureResponseMessageFromDriver(message);
-                    break;
+                    throw new ArgumentException($"Message type {message.PayloadType} not recognized.");
             }
         }
+
+        #region Empty Handlers
 
         public void OnError(Exception error)
         {
@@ -48,9 +66,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         public void OnCompleted()
         {
         }
-
-        internal abstract void OnMessageFromDriver(DriverMessagePayload value);
-
-        internal abstract void OnFailureResponseMessageFromDriver(DriverMessagePayload value);
+        #endregion
     }
 }

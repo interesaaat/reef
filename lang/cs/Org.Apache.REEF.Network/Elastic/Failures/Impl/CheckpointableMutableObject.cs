@@ -56,7 +56,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
                 case CheckpointLevel.EphemeralAll:
                 case CheckpointLevel.PersistentMemoryMaster:
                 case CheckpointLevel.PersistentMemoryAll:
-                    return _checkpoint.Create(Iteration, State.Clone());
+                    return _checkpoint.Create(State.Clone());
                 default:
                     throw new ArgumentException($"Level {Level} not recognized.");
             }
@@ -67,12 +67,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// </summary>
         /// <param name="iteration">The current iteration for which we need to create a new checkpointable state</param>
         /// <returns>An empty checkpointable state</returns>
-        public override ICheckpointableState Create(int iteration = 0)
+        public override ICheckpointableState Create()
         {
             return new CheckpointableMutableObject<T>()
             {
                 Level = Level,
-                Iteration = iteration
             };
         }
     }

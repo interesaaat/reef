@@ -34,6 +34,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
     internal abstract class NToOneTopology<T> : OperatorTopologyWithCommunication, ICheckpointingTopology
     {
+        protected static readonly Logger LOGGER = Logger.GetLogger(typeof(NToOneTopology<>));
+
         private readonly ReduceFunction<T> _reducer;
         private readonly CheckpointService _checkpointService;
         private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
@@ -57,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int timeout,
             int disposeTimeout,
             ReduceFunction<T> reduceFunction,
-            CommunicationLayer commLayer,
+            CommunicationService commLayer,
             CheckpointService checkpointService) : base(taskId, rootTaskId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _reducer = reduceFunction;
@@ -78,8 +80,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             _aggregationQueueData = new Queue<Tuple<string, GroupCommunicationMessage>>();
 
-            _commLayer.RegisterOperatorTopologyForTask(TaskId, this);
-            _commLayer.RegisterOperatorTopologyForDriver(TaskId, this);
+            _commService.RegisterOperatorTopologyForTask(this);
+            _commService.RegisterOperatorTopologyForDriver(this);
 
             foreach (var child in children)
             {
@@ -95,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
-        public void Checkpoint(ICheckpointableState state, int? iteration = null)
+        public void Checkpoint(ICheckpointableState state, int iteration)
         {
             ICheckpointState checkpoint;
 
@@ -144,11 +146,6 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             return _checkpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration, false);
         }
 
-        internal void TopologyUpdateRequest()
-        {
-            _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
-        }
-
         public override void OnNext(NsMessage<GroupCommunicationMessage> message)
         {
             if (_messageQueue.IsAddingCompleted)
@@ -161,16 +158,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             Merge(message.Data, message.SourceId.ToString());
         }
 
-        internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload value)
-        {
-            throw new NotImplementedException();
-        }
-
         public override void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
             try
             {
-                _commLayer.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
+                _commService.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
             }
             catch (Exception e)
             {
@@ -193,73 +185,75 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        internal override void OnMessageFromDriver(DriverMessagePayload message)
+        /// <summary>
+        /// Handler for messages coming from the driver.
+        /// </summary>
+        /// <param name="message">Message from the driver</param>
+        public override void OnNext(DriverMessagePayload message)
         {
-            if (message.PayloadType != DriverMessagePayloadType.Topology)
+            switch (message.PayloadType)
             {
-                throw new IllegalStateException("Message not appropriate for Reduce Topology");
-            }
-
-            var rmsg = message as TopologyMessagePayload;
-            Console.WriteLine("Received message " + rmsg.ToRemove);
-
-            foreach (var updates in rmsg.TopologyUpdates)
-            {   
-                if (rmsg.ToRemove)
-                {
-                    lock (_lock)
+                case DriverMessagePayloadType.Failure:
                     {
-                        foreach (var node in updates.Children)
-                        {
-                            Console.WriteLine("Removing " + node);
-                            _toRemove.TryAdd(node, 0);
-                            _commLayer.RemoveConnection(node);
-                        }
-                    }
-                }
-                else
-                {
-                    if (updates.Node == TaskId)
-                    {
+                        var rmsg = message as TopologyMessagePayload;
+
                         lock (_lock)
                         {
-                            foreach (var node in updates.Children)
+                            foreach (var updates in rmsg.TopologyUpdates)
                             {
-                                var id = Utils.GetTaskNum(node);
-
-                                if (!_children.TryAdd(id, node))
+                                foreach (var node in updates.Children)
                                 {
-                                    if (!_toRemove.TryRemove(node, out byte val))
+                                    _toRemove.TryAdd(node, 0);
+                                    _commService.RemoveConnection(node);
+                                }
+                            }
+                        }
+                    }
+                    break;
+                case DriverMessagePayloadType.Update:
+                    {
+                        var rmsg = message as TopologyMessagePayload;
+
+                        foreach (var updates in rmsg.TopologyUpdates)
+                        {
+                            if (updates.Node == TaskId)
+                            {
+                                lock (_lock)
+                                {
+                                    foreach (var node in updates.Children)
                                     {
-                                        Logger.Log(Level.Warning, string.Format("Trying to remove unknown task {0}: ignoring", node));
+                                        var id = Utils.GetTaskNum(node);
+
+                                        if (!_children.TryAdd(id, node))
+                                        {
+                                            if (!_toRemove.TryRemove(node, out byte val))
+                                            {
+                                                LOGGER.Log(Level.Warning, string.Format("Trying to remove unknown task {0}: ignoring", node));
+                                            }
+                                        }
                                     }
+
+                                    if (RootTaskId != TaskId)
+                                    {
+                                        RootTaskId = updates.Root;
+                                        Console.WriteLine("Updated Root: " + RootTaskId);
+                                    }
+                                    Console.WriteLine("Updated Children: " + string.Join(",", _children.Values));
                                 }
                             }
 
-                            if (RootTaskId != TaskId)
-                            {
-                                RootTaskId = updates.Root;
-                                Console.WriteLine("Updated Root: " + RootTaskId);
-                            }
-                            Console.WriteLine("Updated Children: " + string.Join(",", _children.Values));
+                            _topologyUpdateReceived.Set();
                         }
                     }
-                }
-            }
-
-            Console.WriteLine("Root: " + RootTaskId);
-            Console.WriteLine("Children: " + string.Join(",", _children.Values.Where(x => !_toRemove.ContainsKey(x))));
-
-            if (!rmsg.ToRemove)
-            {
-                _topologyUpdateReceived.Set();
-                Console.WriteLine("Setting");
+                    break;
+                default:
+                    throw new ArgumentException($"Message type {message.PayloadType} not supported by N to One topologies.");
             }
 
             Reduce();
         }
 
-        internal override void Send(GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
+        public override void Send(GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
             if (_requestUpdate)
             {
@@ -288,7 +282,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
                 Console.WriteLine("reduce sending to {0}", RootTaskId);
-                _commLayer.Send(RootTaskId, message, cancellationSource);
+                _commService.Send(RootTaskId, message, cancellationSource);
             }
         }
 

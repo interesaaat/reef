@@ -30,7 +30,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         /// Initializes the communication group.
         /// Computation blocks until all required tasks are registered in the group.
         /// </summary>
-        /// <param name="cancellationSource"></param>
+        /// <param name="cancellationSource">The signal to cancel the operation</param>
         void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null);
     }
 }

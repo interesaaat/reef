@@ -46,23 +46,33 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationLayer commLayer,
-            CheckpointService checkpointService,
-            StreamingNetworkService<GroupCommunicationMessage> networkService) : base(
-                subscriptionName,
+            CommunicationService commLayer,
+            CheckpointService checkpointService) : base(
+                taskId,
                 Utils.BuildTaskId(subscriptionName, rootId),
+                subscriptionName,
+                operatorId,
                 children,
                 piggyback,
-                taskId,
-                operatorId,
                 retry,
                 timeout,
                 disposeTimeout,
                 commLayer,
-                checkpointService,
-                networkService)
+                checkpointService)
         {
             _numElements = numElements;
+        }
+
+        public override DataMessage AssembleDataMessage<T>(int iteration, T[] data)
+        {
+            if (_piggybackTopologyUpdates)
+            {
+                return new SplittableDataMessageWithTopology<T>(SubscriptionName, OperatorId, iteration, data);
+            }
+            else
+            {
+                throw new NotImplementedException();
+            }
         }
 
         protected override void Send(CancellationTokenSource cancellationSource)
@@ -77,7 +87,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     if (cancellationSource.IsCancellationRequested)
                     {
-                        Logger.Log(Level.Warning, "Received cancellation request: stop sending");
+                        LOGGER.Log(Level.Warning, "Received cancellation request: stop sending");
                         return;
                     }
 
@@ -100,11 +110,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 }
 
                 var sm = message as SplittableDataMessageWithTopology;
-                var children = _children.Values.Where(x => !_toRemove.TryGetValue(x, out byte val));
+                var children = _children.Values.Where(x => !_nodesToRemove.TryGetValue(x, out byte val));
 
                 foreach (var pair in children.Zip(sm.GetSplits(children.Count()), (lhs, rhs) => Tuple.Create(lhs, rhs)))
                 {
-                    _commLayer.Send(pair.Item1, pair.Item2, cancellationSource);
+                    _commService.Send(pair.Item1, pair.Item2, cancellationSource);
                 }
             }
         }

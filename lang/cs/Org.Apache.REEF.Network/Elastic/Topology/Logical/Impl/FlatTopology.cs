@@ -19,7 +19,6 @@ using System;
 using Org.Apache.REEF.Tang.Interface;
 using System.Collections.Generic;
 using Org.Apache.REEF.Tang.Util;
-using Org.Apache.REEF.Network.Elastic.Config;
 using System.Globalization;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
@@ -302,7 +301,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         }
 
         /// <summary>
-        /// This method is triggered when a node detects a change in the topology and asks the driver for an update.
+        /// This method is triggered when a node contacts the driver to synchronize the remote topology
+        /// with the driver's one.
         /// </summary>
         /// <param name="taskId">The identifier of the task asking for the update</param>
         /// <param name="returnMessages">A list of message containing the topology update</param>
@@ -323,7 +323,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             {
                 var list = _nodesWaitingToJoinTopology.ToList();
                 var update = new TopologyUpdate(_rootTaskId, list);
-                var data = new TopologyMessagePayload(new List<TopologyUpdate>() { update }, false, SubscriptionName, OperatorId, _iteration);
+                var data = new UpdateMessagePayload(new List<TopologyUpdate>() { update }, SubscriptionName, OperatorId, _iteration);
                 var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
 
                 returnMessages.Add(returnMessage);
@@ -393,7 +393,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
 
                 var children = _lostNodesToBeRemoved.ToList();
-                var data = new TopologyMessagePayload(new List<TopologyUpdate>() { new TopologyUpdate(_rootTaskId, children) }, true, SubscriptionName, OperatorId, -1);
+                var update = new List<TopologyUpdate>()
+                {
+                    new TopologyUpdate(_rootTaskId, children)
+                };
+                var data = new FailureMessagePayload(update, SubscriptionName, OperatorId, -1);
                 var returnMessage = new ElasticDriverMessageImpl(_rootTaskId, data);
 
                 LOGGER.Log(Level.Info, $"Task {taskId} is removed from topology");

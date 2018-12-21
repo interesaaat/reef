@@ -168,10 +168,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {
-                var state = _checkpointableState.Create(iteration);
+                var state = _checkpointableState.Create();
 
                 state.MakeCheckpointable(data);
-                _topology.Checkpoint(state);
+                _topology.Checkpoint(state, iteration);
             }
         }
     }

@@ -16,6 +16,7 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures
@@ -51,8 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <summary>
         /// Create a new empty checkpointable state from the current one.
         /// </summary>
-        /// <param name="iteration">The current iteration for which we need to create a new checkpointable state</param>
         /// <returns>An empty checkpointable state</returns>
-        ICheckpointableState Create(int iteration = 0);
+        ICheckpointableState Create();
     }
 }

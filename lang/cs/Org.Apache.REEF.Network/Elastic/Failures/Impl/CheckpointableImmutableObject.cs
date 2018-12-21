@@ -47,19 +47,14 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// </summary>
         protected CheckpointableImmutableObject()
         {
+            Level = 0;
             State = default;
-            Iteration = 0;
         }
 
         /// <summary>
         /// The current checkpoint level.
         /// </summary>
         public CheckpointLevel Level { get; internal set; }
-
-        /// <summary>
-        /// The current iteration number.
-        /// </summary>
-        internal int Iteration { get; set; }
 
         /// <summary>
         /// The actual state to checkpoint.
@@ -87,7 +82,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
                 case CheckpointLevel.EphemeralAll:
                 case CheckpointLevel.PersistentMemoryMaster:
                 case CheckpointLevel.PersistentMemoryAll:
-                    return _checkpoint.Create(Iteration, State);
+                    return _checkpoint.Create(State);
                 default:
                     throw new ArgumentException($"Level {Level} not recognized.");
             }
@@ -98,12 +93,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// </summary>
         /// <param name="iteration">The current iteration for which we need to create a new checkpointable state</param>
         /// <returns>An empty checkpointable state</returns>
-        public virtual ICheckpointableState Create(int iteration = 0)
+        public virtual ICheckpointableState Create()
         {
             return new CheckpointableImmutableObject<T>()
             {
                 Level = Level,
-                Iteration = iteration
             };
         }
     }

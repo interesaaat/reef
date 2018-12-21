@@ -65,6 +65,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
 
         Resume = 2,
 
-        Topology = 3
+        Update = 3, // This is a topology message update
+
+        Failure = 4 // This is a topology message update
     }
 }

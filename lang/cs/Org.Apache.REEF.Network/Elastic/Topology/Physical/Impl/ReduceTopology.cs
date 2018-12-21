@@ -39,7 +39,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             ReduceFunction<T> reduceFunction,
-            CommunicationLayer commLayer,
+            CommunicationService commLayer,
             CheckpointService checkpointService) : base(
                 subscriptionName,
                 Utils.BuildTaskId(subscriptionName, rootId), 

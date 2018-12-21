@@ -167,7 +167,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <param name="cancellationSource"></param>
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
         {
-            LOGGER.Log(Level.Info, "Waiting for task registration for {0} operator", OperatorName);
+            LOGGER.Log(Level.Info, $"Waiting for task registration for {OperatorName} operator.");
             _topology.WaitForTaskRegistration(cancellationSource);
         }
 
@@ -187,7 +187,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_isLast)
             {
-                _topology.SignalSubscriptionComplete();
+                _topology.SubscriptionComplete();
             }
             _topology.Dispose();
         }
@@ -201,10 +201,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_checkpointableState.Level > CheckpointLevel.None)
             {
-                var state = _checkpointableState.Create(iteration);
+                var state = _checkpointableState.Create();
 
                 state.MakeCheckpointable(data);
-                _topology.Checkpoint(state);
+                _topology.Checkpoint(state, iteration);
             }
         }
     }

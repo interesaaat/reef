@@ -25,19 +25,23 @@ using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm;
-using Org.Apache.REEF.Network.NetworkService;
 using System.Collections.Generic;
 using Org.Apache.REEF.Network.Elastic.Task;
 using System.Collections.Concurrent;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class IterateTopology : DriverAwareOperatorTopology, IDisposable, ICheckpointingTopology, IWaitForTaskRegistration
+    /// <summary>
+    /// Task-side topology for iterating operators.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    internal sealed class IterateTopology : DriverAwareOperatorTopology, ICheckpointingTopology, IWaitForTaskRegistration
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(IterateTopology));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(IterateTopology));
 
-        private readonly CommunicationLayer _commLayer;
+        private readonly CommunicationService _commLayer;
 
         [Inject]
         private IterateTopology(
@@ -45,19 +49,19 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            CommunicationLayer commLayer,
+            CommunicationService commLayer,
             CheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId)
         {
             _commLayer = commLayer;
 
-            _commLayer.RegisterOperatorTopologyForDriver(TaskId, this);
+            _commLayer.RegisterOperatorTopologyForDriver(this);
 
-            Service = checkpointService;
+            CheckpointService = checkpointService;
 
-            Service.RegisterOperatorRoot(subscriptionName, operatorId, RootTaskId, RootTaskId == taskId);
+            CheckpointService.RegisterOperatorRoot(subscriptionName, operatorId, RootTaskId, RootTaskId == taskId);
         }
 
-        public CheckpointService Service { get; private set; }
+        public CheckpointService CheckpointService { get; private set; }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 
@@ -74,7 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public void Checkpoint(ICheckpointableState state, int? iteration)
+        public void Checkpoint(ICheckpointableState state, int iteration = -1)
         {
             ICheckpointState checkpoint;
 
@@ -86,31 +90,31 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     if (TaskId == RootTaskId)
                     {
                         checkpoint = state.Checkpoint();
-                        checkpoint.Iteration = iteration ?? -1;
+                        checkpoint.Iteration = iteration;
                         InternalCheckpoint = checkpoint;
                     }
                     break;
                 case CheckpointLevel.EphemeralAll:
                     checkpoint = state.Checkpoint();
-                    checkpoint.Iteration = iteration ?? -1;
+                    checkpoint.Iteration = iteration;
                     InternalCheckpoint = checkpoint;
                     break;
                 case CheckpointLevel.PersistentMemoryMaster:
                     if (TaskId == RootTaskId)
                     {
                         checkpoint = state.Checkpoint();
-                        checkpoint.Iteration = iteration ?? -1;
+                        checkpoint.Iteration = iteration;
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.SubscriptionName = SubscriptionName;
-                        Service.Checkpoint(checkpoint);
+                        CheckpointService.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
-                    checkpoint.Iteration = iteration ?? -1;
+                    checkpoint.Iteration = iteration;
                     checkpoint.OperatorId = OperatorId;
                     checkpoint.SubscriptionName = SubscriptionName;
-                    Service.Checkpoint(checkpoint);
+                    CheckpointService.Checkpoint(checkpoint);
                     break;
                 default:
                     throw new IllegalStateException("Checkpoint level not supported");
@@ -125,7 +129,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return Service.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration);
+            return CheckpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration);
         }
 
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource)
@@ -156,24 +160,31 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
+        /// <summary>
+        /// Handler for messages coming from the driver.
+        /// </summary>
+        /// <param name="message">Message from the driver</param>
+        public override void OnNext(DriverMessagePayload message)
+        {
+            switch (message.PayloadType)
+            {
+                case DriverMessagePayloadType.Resume:
+                    LOGGER.Log(Level.Info, "Received failure recovery, going to resume computation from my checkpoint.");
+
+                    ICheckpointState checkpoint;
+                    if (GetCheckpoint(out checkpoint))
+                    {
+                        InternalCheckpoint = checkpoint;
+                    }
+                    break;
+                default:
+                    throw new ArgumentException($"Message type {message.PayloadType} not supported by iterate topology.");
+            }
+        }
+
         public void Dispose()
         {
-            Service.RemoveCheckpoint(TaskId, SubscriptionName, OperatorId);
-        }
-
-        internal override void OnMessageFromDriver(DriverMessagePayload message)
-        {
-        }
-
-        internal override void OnFailureResponseMessageFromDriver(DriverMessagePayload message)
-        {
-            Logger.Log(Level.Info, "Received failure recovery, going to resume computation from my checkpoint");
-
-            ICheckpointState checkpoint;
-            if (GetCheckpoint(out checkpoint))
-            {
-                InternalCheckpoint = checkpoint;
-            }
+            CheckpointService.RemoveCheckpoint(SubscriptionName, OperatorId);
         }
     }
 }

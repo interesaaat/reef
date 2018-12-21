@@ -31,6 +31,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         [Inject]
         private DefaultCheckpointState()
         {
+            Iteration = -1;
+            OperatorId = -1;
+            SubscriptionName = string.Empty;
         }
 
         /// <summary>
@@ -57,11 +60,10 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// Create a new empty checkpoint from the settings of the current one.
         /// </summary>
         /// <returns>A checkpoint with no state but with properly set up fields</returns>
-        public ICheckpointState Create(int iteration, object state)
+        public ICheckpointState Create(object state)
         {
             return new DefaultCheckpointState()
             {
-                Iteration = iteration,
                 State = state,
             };
         }

@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// Create a new empty checkpoint from the settings of the current one.
         /// </summary>
         /// <returns>A checkpoint with no state but with properly set up fields</returns>
-        ICheckpointState Create(int iteration, object state);
+        ICheckpointState Create(object state);
 
         /// <summary>
         /// Utility method used to create message out of

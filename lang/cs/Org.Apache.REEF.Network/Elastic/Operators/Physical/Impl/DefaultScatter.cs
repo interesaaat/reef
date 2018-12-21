@@ -54,7 +54,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             int iteration = IteratorReference == null ? 0 : (int)IteratorReference.Current;
 
-            var message = new SplittableDataMessageWithTopology<T>(_topology.SubscriptionName, OperatorId, iteration, data);
+            var message = _topology.AssembleDataMessage(iteration, data);
 
             Checkpoint(message, message.Iteration);
 

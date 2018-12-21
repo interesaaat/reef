@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
 using Org.Apache.REEF.Network.Elastic.Failures;
@@ -49,6 +48,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         /// <summary>
         /// Send the data to all child receivers.
+        /// Send is asynchronous but works in 3 phases:
+        /// 1-The task asks the driver for updates to the topology
+        /// 2-Updates are received and added to the local topology 
+        /// --(Note that altough the method is non-blocking, no message will be sent until
+        ///    updates are not received)
+        /// 3-Send the message.
         /// </summary>
         /// <param name="data">The data to send</param>
         public void Send(T data)
@@ -58,8 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _position = PositionTracker.InSend;
 
             int iteration = IteratorReference == null ? 0 : (int)IteratorReference.Current;
-
-            var message = new DataMessageWithTopology<T>(_topology.SubscriptionName, OperatorId, iteration, data);
+            var message = _topology.AssembleDataMessage(iteration, new[] { data });
 
             Checkpoint(message, message.Iteration);
 
