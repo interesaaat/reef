@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected static readonly Logger LOGGER = Logger.GetLogger(typeof(NToOneTopology<>));
 
         private readonly ReduceFunction<T> _reducer;
-        private readonly CheckpointService _checkpointService;
+        private readonly CentralizedCheckpointService _checkpointService;
         private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
         private readonly object _lock;
 
@@ -60,7 +60,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int disposeTimeout,
             ReduceFunction<T> reduceFunction,
             CommunicationService commLayer,
-            CheckpointService checkpointService) : base(taskId, rootTaskId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CentralizedCheckpointService checkpointService) : base(taskId, rootTaskId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _reducer = reduceFunction;
             _requestUpdate = requestUpdate;

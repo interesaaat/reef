@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         private BlockingCollection<string> _next;
 
-        private readonly CheckpointService _checkpointService;
+        private readonly CentralizedCheckpointService _checkpointService;
 
         [Inject]
         private AggregationRingTopology(
@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationService commLayer,
-            CheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CentralizedCheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
             _checkpointService = checkpointService;

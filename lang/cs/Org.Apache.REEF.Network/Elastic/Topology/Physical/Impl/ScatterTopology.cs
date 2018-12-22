@@ -47,7 +47,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationService commLayer,
-            CheckpointService checkpointService) : base(
+            CentralizedCheckpointService checkpointService) : base(
                 taskId,
                 Utils.BuildTaskId(subscriptionName, rootId),
                 subscriptionName,
@@ -63,7 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _numElements = numElements;
         }
 
-        public override DataMessage AssembleDataMessage<T>(int iteration, T[] data)
+        public override DataMessage GetDataMessage<T>(int iteration, T[] data)
         {
             if (_piggybackTopologyUpdates)
             {

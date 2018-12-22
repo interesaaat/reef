@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             ReduceFunction<T> reduceFunction,
             CommunicationService commLayer,
-            CheckpointService checkpointService) : base(
+            CentralizedCheckpointService checkpointService) : base(
                 subscriptionName,
                 Utils.BuildTaskId(subscriptionName, rootId), 
                 children,

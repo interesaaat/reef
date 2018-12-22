@@ -58,7 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             AvroConfigurationSerializer configSerializer,
             TaskToDriverMessageDispatcher taskToDriverDispatcher, // Otherwise the correct instance does not propagate through
             DriverMessageHandler ringDriverSource,
-            CheckpointService checkpointService,
+            CentralizedCheckpointService checkpointService,
             IInjector injector)
         {
             _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();

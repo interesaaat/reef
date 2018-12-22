@@ -19,6 +19,9 @@ using Org.Apache.REEF.Tang.Annotations;
 
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
+    ///<summary>
+    ///Class wrapping the configuration option parameters for task-side group communication.
+    ///</summary>
     public sealed class GroupCommunicationConfigurationOptions
     {
         [NamedParameter("Timeout for sending or receiving messages", defaultValue: "600000")]
@@ -37,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         }
 
         /// <summary>
-        /// Each Communication group needs to check and wait until all the other nodes in the group are registered to the NameServer
+        /// Each communication group needs to check and wait until all the other nodes in the group are registered to the NameServer.
         /// Sleep time is set between each retry. 
         /// </summary>
         [NamedParameter("sleep time (in milliseconds) to wait for nodes to be registered", defaultValue: "60000")]
@@ -46,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         }
 
         /// <summary>
-        /// Each Communication group needs to check and wait until all the other nodes in the group are registered to the NameServer
+        /// Each Communication group needs to check and wait until all the other nodes in the group are registered to the NameServer.
         /// </summary>
         /// <remarks>
         /// If a node is waiting for others that need to download data, the waiting time could be long. 

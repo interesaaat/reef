@@ -56,10 +56,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             _disposed = false;
             _lock = new object();
 
-            Workflow.CancellationSource = _cancellationSource;
-
-            System.Threading.Thread.Sleep(20000);
-
             foreach (string operatorConfigStr in operatorConfigs)
             {
                 IConfiguration operatorConfig = configSerializer.FromString(operatorConfigStr);
@@ -111,7 +107,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
 
         public void Cancel()
         {
-            if (!_cancellationSource.IsCancelled())
+            if (!_cancellationSource.IsCancelled)
             {
                 _cancellationSource.Cancel();
 

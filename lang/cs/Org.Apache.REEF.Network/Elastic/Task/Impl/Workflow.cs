@@ -33,24 +33,26 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     public class Workflow : IEnumerator<IElasticOperator>
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(Workflow));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(Workflow));
 
         private int _position = -1;
         private bool _failed;
         private bool _disposed;
-        private readonly object _lock;
-
-        private readonly IList<IElasticOperator> _operators;
         private List<int> _iteratorsPosition;
 
+        private readonly object _lock;
+        private readonly IList<IElasticOperator> _operators;
+        private readonly CancellationSource _cancellationSource;
+
         [Inject]
-        private Workflow()
+        private Workflow(CancellationSource cancellationSource)
         {
             _operators = new List<IElasticOperator>();
             _failed = false;
             _disposed = false;
             _lock = new object();
             _iteratorsPosition = new List<int>();
+            _cancellationSource = cancellationSource;
         }
 
         public object Iteration
@@ -70,11 +72,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        internal CancellationSource CancellationSource { get; set; }
-
         public void Add(IElasticOperator op)
         {
-            op.CancellationSource = CancellationSource.Source;
+            op.CancellationSource = _cancellationSource.Source;
 
             _operators.Add(op);
 
@@ -97,7 +97,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         {
             _position++;
 
-            if (_failed || CancellationSource.IsCancelled())
+            if (_failed || _cancellationSource.IsCancelled)
             {
                 return false;
             }
@@ -148,13 +148,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         public void Throw(Exception e)
         {
-            if (CancellationSource.IsCancelled())
+            if (_cancellationSource.IsCancelled)
             {
-                Logger.Log(Level.Warning, "Workflow captured an Exception while Cancellation Source is True", e);
+                LOGGER.Log(Level.Warning, "Workflow captured an Exception while Cancellation Source is True", e);
             }
             else
             {
-                Logger.Log(Level.Error, "Workflow captured an Exception", e);
+                LOGGER.Log(Level.Error, "Workflow captured an Exception", e);
                 _failed = true;
 
                 throw new OperatorException(

@@ -50,7 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly TaskToDriverMessageDispatcher _taskToDriverDispatcher;
         private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
-        private readonly CheckpointService _checkpointService;
+        private readonly CentralizedCheckpointService _checkpointService;
 
         private bool _disposed;
         private IDisposable _disposableObserver;
@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             TaskToDriverMessageDispatcher taskToDriverDispatcher,
             DriverMessageHandler driverMessagesHandler,
-            CheckpointService checkpointService,
+            CentralizedCheckpointService checkpointService,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -83,7 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskToDriverDispatcher = taskToDriverDispatcher;
             _driverMessagesHandler = driverMessagesHandler;
             _checkpointService = checkpointService;
-            _checkpointService.CommunicationLayer = this;
+            _checkpointService.CommunicationService = this;
             _idFactory = idFactory;
 
             _disposed = false;
@@ -152,7 +152,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 {
                     throw new IllegalStateException("Unable to send message after " + retry + " retry");
                 }
-                Thread.Sleep(_sleepTime);
+                Thread.Sleep(_timeout);
 
                 retry++;
             }

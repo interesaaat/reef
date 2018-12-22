@@ -15,6 +15,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
@@ -22,32 +24,29 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// A node is uniquely identifiable by a combination of its Task ID, 
     /// <see cref="SubscriptionName"/>, and <see cref="OperatorName"/>.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal sealed class CheckpointIdentifier
     {
-        private readonly string _subscriptionName;
-        private readonly int _operatorId;
-
-        public CheckpointIdentifier(string subscriptionName, int operatorName)
+        /// <summary>
+        /// Construct a new checkpoint identifier.
+        /// </summary>
+        /// <param name="subscriptionName">The subscription name</param>
+        /// <param name="operatorId">The operator identifier</param>
+        public CheckpointIdentifier(string subscriptionName, int operatorId)
         {
-            _subscriptionName = subscriptionName;
-            _operatorId = operatorName;
+            SubscriptionName = subscriptionName;
+            OperatorId = operatorId;
         }
 
         /// <summary>
-        /// The group name of the node.
+        /// The subscription name of the node.
         /// </summary>
-        public string SubscriptionName
-        {
-            get { return _subscriptionName; }
-        }
+        public string SubscriptionName { get; private set; }
 
         /// <summary>
-        /// The operator name of the node.
+        /// The operator id of the node.
         /// </summary>
-        public int OperatorId
-        {
-            get { return _operatorId; }
-        }
+        public int OperatorId { get; private set; }
 
         /// <summary>
         /// Overrides <see cref="Equals"/>. Simply compares equivalence of instance fields.
@@ -73,8 +72,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public override int GetHashCode()
         {
             int hash = 17;
-            hash = (hash * 31) + _subscriptionName.GetHashCode();
-            return (hash * 31) + _operatorId.GetHashCode();
+            hash = (hash * 31) + SubscriptionName.GetHashCode();
+            return (hash * 31) + OperatorId.GetHashCode();
         }
 
         /// <summary>
@@ -82,8 +81,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         private bool Equals(CheckpointIdentifier other)
         {
-            return _subscriptionName.Equals(other.SubscriptionName) &&
-                _operatorId.Equals(other.OperatorId);
+            return SubscriptionName.Equals(other.SubscriptionName) &&
+                OperatorId.Equals(other.OperatorId);
         }
     }
 }

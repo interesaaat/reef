@@ -50,7 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             CommunicationService commLayer,
-            CheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId)
+            ICheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId)
         {
             _commLayer = commLayer;
 
@@ -58,10 +58,10 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             CheckpointService = checkpointService;
 
-            CheckpointService.RegisterOperatorRoot(subscriptionName, operatorId, RootTaskId, RootTaskId == taskId);
+            CheckpointService.RegisterNode(subscriptionName, operatorId, taskId, RootTaskId);
         }
 
-        public CheckpointService CheckpointService { get; private set; }
+        public ICheckpointService CheckpointService { get; private set; }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
 

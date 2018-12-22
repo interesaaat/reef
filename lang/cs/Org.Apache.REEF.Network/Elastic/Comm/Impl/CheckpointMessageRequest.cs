@@ -15,14 +15,22 @@
 // specific language governing permissions and limitations
 // under the License.
 
+using Org.Apache.REEF.Utilities.Attributes;
+
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent by MPI Operators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by Network Service
+    /// Messages sent a checkpoint service to retrieve a remote checkpoint.
     /// </summary>
+    [Unstable("0.16", "API may change")]
     internal sealed class CheckpointMessageRequest : GroupCommunicationMessage
     {
+        /// <summary>
+        /// Constructor.
+        /// </summary>
+        /// <param name="subscriptionName">The subscription name ffor the checkpoint to retrieve</param>
+        /// <param name="operatorId">The operator identifier</param>
+        /// <param name="iteration">The iteration of the checkpoint of interest</param>
         public CheckpointMessageRequest(
            string subscriptionName,
            int operatorId,
@@ -31,11 +39,17 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Iteration = iteration;
         }
 
+        /// <summary>
+        /// Iteration number for the checkpoint of interest.
+        /// </summary>
+        public int Iteration { get; set; }
+
+        /// <summary>
+        /// Clone the message.
+        /// </summary>
         public override object Clone()
         {
             return new CheckpointMessageRequest(SubscriptionName, OperatorId, Iteration);
         }
-
-        internal int Iteration { get; set; }
     }
 }

@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationService commLayer,
-            CheckpointService checkpointService) : base(
+            CentralizedCheckpointService checkpointService) : base(
                 subscriptionName,
                 Utils.BuildTaskId(subscriptionName, rootId), 
                 children,

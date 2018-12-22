@@ -16,11 +16,18 @@
 // under the License.
 
 using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Utilities.Attributes;
 using System.Threading;
 
-namespace Org.Apache.REEF.Network.Elastic.Task
+namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    internal class CancellationSource
+    /// <summary>
+    /// Generic cancellation source for task operations.
+    /// This class basically wraps <see cref="CancellationTokenSource"/> and uses Tang
+    /// to inject the same source through the elastic communication services.
+    /// </summary>
+    [Unstable("0.16", "API may change")]
+    internal sealed class CancellationSource
     {
         [Inject]
         public CancellationSource()
@@ -28,13 +35,23 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             Source = new CancellationTokenSource();
         }
 
+        /// <summary>
+        /// The wrapped cancellation source.
+        /// </summary>
         public CancellationTokenSource Source { get; private set; }
 
-        public bool IsCancelled()
+        /// <summary>
+        /// Whether the operation is cancelled.
+        /// </summary>
+        /// <returns></returns>
+        public bool IsCancelled
         {
-            return Source.IsCancellationRequested;
+            get { return Source.IsCancellationRequested; }
         }
 
+        /// <summary>
+        /// Cancel the currently running computation.
+        /// </summary>
         public void Cancel()
         {
             Source.Cancel();

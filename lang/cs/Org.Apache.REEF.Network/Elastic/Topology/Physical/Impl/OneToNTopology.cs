@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         protected static readonly Logger LOGGER = Logger.GetLogger(typeof(OneToNTopology));
 
-        private readonly CheckpointService _checkpointService;
+        private readonly ICheckpointService _checkpointService;
         protected readonly ConcurrentDictionary<string, byte> _nodesToRemove;
 
         protected readonly ManualResetEvent _topologyUpdateReceived;
@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int timeout,
             int disposeTimeout,
             CommunicationService commService,
-            CheckpointService checkpointService) : base(taskId, rootTaskId, subscriptionName, operatorId, commService, retry, timeout, disposeTimeout)
+            ICheckpointService checkpointService) : base(taskId, rootTaskId, subscriptionName, operatorId, commService, retry, timeout, disposeTimeout)
         {
             _checkpointService = checkpointService;
             _nodesToRemove = new ConcurrentDictionary<string, byte>();
@@ -187,7 +187,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        public abstract DataMessage AssembleDataMessage<T>(int iteration, T[] data);
+        public abstract DataMessage GetDataMessage<T>(int iteration, T[] data);
 
         /// <summary>
         /// Initializes the communication group.
