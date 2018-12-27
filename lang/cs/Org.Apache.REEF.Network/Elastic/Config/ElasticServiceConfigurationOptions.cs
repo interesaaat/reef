@@ -96,6 +96,11 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
+        [NamedParameter("Number of failures before an evaluator abort the task set", defaultValue: "3")]
+        public sealed class NumEvaluatorFailures : Name<int>
+        {
+        }
+
         [NamedParameter(Documentation = "Rack name used when a new evaluator is requested", DefaultValue = "WonderlandRack")]
         public sealed class NewEvaluatorRackName : Name<string>
         {

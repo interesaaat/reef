@@ -35,9 +35,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// This service allows to reach remote checkpoints stored in root node when operators support it.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal class CentralizedCheckpointService : ICheckpointService
+    internal class CentralizedCheckpointLayer : ICheckpointLayer
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(CentralizedCheckpointService));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(CentralizedCheckpointLayer));
 
         private readonly ConcurrentDictionary<CheckpointIdentifier, SortedDictionary<int, ICheckpointState>> _checkpoints;
         private readonly ConcurrentDictionary<CheckpointIdentifier, string> _roots;
@@ -50,11 +50,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly CancellationSource _cancellationSource;
 
         [Inject]
-        private CentralizedCheckpointService(
+        private CentralizedCheckpointLayer(
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
-            CancellationSource cancellationSource)
+            CancellationSource cancellationSource,
+            CommunicationLayer commLayer)
         {
             _limit = num;
             _timeout = timeout;
@@ -69,7 +70,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
         /// The service for communicating with the other available nodes.
         /// </summary>
-        public CommunicationService CommunicationService { private get; set; }
+        public CommunicationLayer CommunicationLayer { private get; set; }
 
         /// <summary>
         /// Register the current task id as well as notify the root task for the operator.
@@ -157,7 +158,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     return false;
                 }
 
-                if (CommunicationService == null)
+                if (CommunicationLayer == null)
                 {
                     throw new IllegalStateException("Communication service not set up.");
                 }
@@ -170,7 +171,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     LOGGER.Log(Level.Info, $"Retrieving the checkpoint from {rootTaskId}.");
                     var cpm = new CheckpointMessageRequest(stageName, operatorId, iteration);
 
-                    CommunicationService.Send(rootTaskId, cpm, _cancellationSource.Source);
+                    CommunicationLayer.Send(rootTaskId, cpm, _cancellationSource.Source);
 
                     _checkpointsWaiting.TryAdd(id, received);
                     retry++;

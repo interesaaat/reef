@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         private BlockingCollection<string> _next;
 
-        private readonly CentralizedCheckpointService _checkpointService;
+        private readonly CentralizedCheckpointLayer _checkpointService;
 
         [Inject]
         private AggregationRingTopology(
@@ -51,14 +51,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationService commLayer,
-            CentralizedCheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(stageName, rootId), stageName, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CommunicationLayer commLayer,
+            CentralizedCheckpointLayer checkpointService) : base(taskId, Utils.BuildTaskId(stageName, rootId), stageName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
             _checkpointService = checkpointService;
 
-            _commService.RegisterOperatorTopologyForTask(this);
-            _commService.RegisterOperatorTopologyForDriver(this);
+            _commLayer.RegisterOperatorTopologyForTask(this);
+            _commLayer.RegisterOperatorTopologyForDriver(this);
         }
 
         public ICheckpointState InternalCheckpoint { get; private set; }
@@ -127,7 +127,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (TaskId != RootTaskId)
             {
-                while (_commService.Lookup(RootTaskId) == true && !cancellationSource.IsCancellationRequested)
+                while (_commLayer.Lookup(RootTaskId) == true && !cancellationSource.IsCancellationRequested)
                 {
                     Thread.Sleep(100);
                 }
@@ -142,7 +142,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     var tmp = new ConcurrentDictionary<int, string>();
                     tmp.TryAdd(0, RootTaskId);
-                    _commService.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
+                    _commLayer.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
                 }
                 catch (Exception e)
                 {
@@ -199,7 +199,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
                             {
                                 LOGGER.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
-                                _commService.NextDataRequest(TaskId, rmsg.Iteration);
+                                _commLayer.NextDataRequest(TaskId, rmsg.Iteration);
                                 return;
                             }
 
@@ -207,7 +207,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                             {
-                                _commService.Send(rmsg.NextTaskId, data, cancellationSource);
+                                _commLayer.Send(rmsg.NextTaskId, data, cancellationSource);
                             }
                         }
                     }
@@ -231,7 +231,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                                 iteration--;
                             }
                             LOGGER.Log(Level.Warning, "I am blocked as well: propagating the request");
-                            _commService.NextDataRequest(TaskId, iteration);
+                            _commLayer.NextDataRequest(TaskId, iteration);
                             return;
                         }
 
@@ -239,7 +239,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                         foreach (var data in checkpoint.State as GroupCommunicationMessage[])
                         {
-                            _commService.Send(destMessage.NextTaskId, data, cancellationSource);
+                            _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
                         }
                     }
                     break;
@@ -258,7 +258,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     _messageQueue.Take();
                 }
-                _commService.JoinTopology(TaskId, OperatorId);
+                _commLayer.JoinTopology(TaskId, OperatorId);
             }
         }
 
@@ -272,7 +272,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 var dm = message as DataMessage;
 
-                _commService.TopologyUpdateRequest(TaskId, OperatorId);
+                _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
 
                 while (!_next.TryTake(out nextNode, _timeout))
                 {
@@ -290,12 +290,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
                     }
 
-                    _commService.TopologyUpdateRequest(TaskId, OperatorId);
+                    _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
                 }
 
                 _sendQueue.TryDequeue(out message);
 
-                _commService.Send(nextNode, message, cancellationSource);
+                _commLayer.Send(nextNode, message, cancellationSource);
             }
         }
     }

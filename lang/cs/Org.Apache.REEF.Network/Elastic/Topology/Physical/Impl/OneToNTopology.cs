@@ -29,6 +29,7 @@ using System.Collections.Concurrent;
 using System.Linq;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Utilities.Attributes;
+using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -40,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         protected static readonly Logger LOGGER = Logger.GetLogger(typeof(OneToNTopology));
 
-        private readonly ICheckpointService _checkpointService;
+        private readonly ICheckpointLayer _checkpointLayer;
         protected readonly ConcurrentDictionary<string, byte> _nodesToRemove;
 
         protected readonly ManualResetEvent _topologyUpdateReceived;
@@ -58,8 +59,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="retry">How many times the topology will retry to send a message</param>
         /// <param name="timeout">After how long the topology waits for an event</param>
         /// <param name="disposeTimeout">Maximum wait time for topology disposal</param>
-        /// <param name="commService">Service responsible for communication</param>
-        /// <param name="checkpointService">Service responsible for saving and retrieving checkpoints</param>
+        /// <param name="commLayer">Service responsible for communication</param>
+        /// <param name="checkpointLayer">Service responsible for saving and retrieving checkpoints</param>
         public OneToNTopology(
             string stageName,
             string taskId,
@@ -70,15 +71,15 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int retry,
             int timeout,
             int disposeTimeout,
-            CommunicationService commService,
-            ICheckpointService checkpointService) : base(stageName, taskId, rootTaskId, operatorId, commService, retry, timeout, disposeTimeout)
+            CommunicationLayer commLayer,
+            ICheckpointLayer checkpointLayer) : base(stageName, taskId, rootTaskId, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
-            _checkpointService = checkpointService;
+            _checkpointLayer = checkpointLayer;
             _nodesToRemove = new ConcurrentDictionary<string, byte>();
             _topologyUpdateReceived = new ManualResetEvent(RootTaskId == taskId ? false : true);
 
-            _commService.RegisterOperatorTopologyForTask(this);
-            _commService.RegisterOperatorTopologyForDriver(this);
+            _commLayer.RegisterOperatorTopologyForTask(this);
+            _commLayer.RegisterOperatorTopologyForDriver(this);
 
             _piggybackTopologyUpdates = piggyback;
 
@@ -136,7 +137,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.Iteration = iteration;
                         checkpoint.StageName = StageName;
-                        _checkpointService.Checkpoint(checkpoint);
+                        _checkpointLayer.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
@@ -144,7 +145,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     checkpoint.OperatorId = OperatorId;
                     checkpoint.Iteration = iteration;
                     checkpoint.StageName = StageName;
-                    _checkpointService.Checkpoint(checkpoint);
+                    _checkpointLayer.Checkpoint(checkpoint);
                     break;
                 default:
                     throw new IllegalStateException($"Checkpoint level {state.Level} not supported.");
@@ -167,7 +168,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, StageName, OperatorId, iteration, false);
+            return _checkpointLayer.GetCheckpoint(out checkpoint, TaskId, StageName, OperatorId, iteration, false);
         }
 
         /// <summary>
@@ -179,7 +180,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 foreach (var node in _children.Values)
                 {
-                    while (_commService.Lookup(node) && !cancellationSource.IsCancellationRequested)
+                    while (_commLayer.Lookup(node) && !cancellationSource.IsCancellationRequested)
                     {
                         Thread.Sleep(100);
                     }
@@ -198,7 +199,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             try
             {
-                _commService.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource, _nodesToRemove);
+                _commLayer.WaitForTaskRegistration(_children.Values.ToList(), cancellationSource, _nodesToRemove);
             }
             catch (Exception e)
             {
@@ -260,7 +261,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             foreach (var node in updates.Children)
                             {
                                 _nodesToRemove.TryAdd(node, new byte());
-                                _commService.RemoveConnection(node);
+                                _commLayer.RemoveConnection(node);
                             }
                         }
                         break;

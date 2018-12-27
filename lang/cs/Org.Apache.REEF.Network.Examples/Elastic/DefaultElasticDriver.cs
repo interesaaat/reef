@@ -58,6 +58,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(IAllocatedEvaluator allocatedEvaluator)
         {
+            System.Threading.Thread.Sleep(10000);
             if (TaskSetManager.TryGetNextTaskContextId(allocatedEvaluator, out string identifier))
             {
                 IConfiguration contextConf = ContextConfiguration.ConfigurationModule

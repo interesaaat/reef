@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             ActiveContext = context;
             EvaluatorId = evaluatorId;
             Stages = stages;
-            NumRetry = 0;
+            NumRetry = 1;
             TaskStatus = status;
             RescheduleConfigurations = new Dictionary<string, IList<IConfiguration>>();
             Lock = new object();

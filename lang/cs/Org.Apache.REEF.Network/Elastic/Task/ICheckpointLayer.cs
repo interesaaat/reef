@@ -16,23 +16,24 @@
 // under the License.
 
 using Org.Apache.REEF.Network.Elastic.Failures;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Utilities.Attributes;
 using System;
 
-namespace Org.Apache.REEF.Network.Elastic.Task.Impl
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
     /// Checkpointing service interface used to locally checkpoint some task state or retrieve previously checkpointed local / remote states.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    [DefaultImplementation(typeof(CentralizedCheckpointService))]
-    internal interface ICheckpointService : IDisposable
+    [DefaultImplementation(typeof(CentralizedCheckpointLayer))]
+    internal interface ICheckpointLayer : IDisposable
     {
         /// <summary>
         /// The service for communicating with the other available nodes.
         /// </summary>
-        CommunicationService CommunicationService { set; }
+        CommunicationLayer CommunicationLayer { set; }
 
         /// <summary>
         /// Register the current task id as well as notify the root task for the operator.

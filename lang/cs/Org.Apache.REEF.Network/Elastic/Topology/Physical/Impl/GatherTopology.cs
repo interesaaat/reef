@@ -37,8 +37,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationService commLayer,
-            CentralizedCheckpointService checkpointService) : base(
+            CommunicationLayer commLayer,
+            CentralizedCheckpointLayer checkpointService) : base(
                 stageName,
                 Utils.BuildTaskId(stageName, rootId), 
                 children,

@@ -36,7 +36,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retry,
             [Parameter(typeof(ElasticServiceConfigurationOptions.RetryWaitTime))] int waitTime,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.NumTaskFailures))] int numFailures,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumTaskFailures))] int numTaskFailures,
+            [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluatorFailures))] int numEvaluatorFailures,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorRackName))] string rackName,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorBatchId))] string batchId,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorNumCores))] int numCores,
@@ -46,7 +47,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             Timeout = timeout;
             Retry = retry;
             WaitTime = waitTime;
-            NumTaskFailures = numFailures;
+            NumTaskFailures = numTaskFailures;
+            NumEvaluatorFailures = numEvaluatorFailures;
             NewEvaluatorRackName = rackName;
             NewEvaluatorBatchId = batchId;
             NewEvaluatorNumCores = numCores;
@@ -62,6 +64,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         internal int WaitTime { get; private set; }
 
         internal int NumTaskFailures { get; private set; }
+
+        internal int NumEvaluatorFailures { get; private set; }
 
         internal string NewEvaluatorRackName { get; private set; }
 

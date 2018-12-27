@@ -26,6 +26,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using System.Linq;
 using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
+using Org.Apache.REEF.Network.Elastic.Task;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
@@ -46,8 +47,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationService commLayer,
-            ICheckpointService checkpointService) : base(
+            CommunicationLayer commLayer,
+            ICheckpointLayer checkpointLayer) : base(
                 stageName,
                 taskId,
                 Utils.BuildTaskId(stageName, rootId),
@@ -58,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 timeout,
                 disposeTimeout,
                 commLayer,
-                checkpointService)
+                checkpointLayer)
         {
         }
 
@@ -121,7 +122,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 // Deliver the message to the commonication layer.
                 foreach (var node in _children.Where(x => !_nodesToRemove.TryGetValue(x.Value, out byte val)))
                 {
-                    _commService.Send(node.Value, message, cancellationSource);
+                    _commLayer.Send(node.Value, message, cancellationSource);
                 }
             }
         }

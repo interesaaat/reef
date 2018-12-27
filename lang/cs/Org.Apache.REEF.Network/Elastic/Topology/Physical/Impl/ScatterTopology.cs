@@ -46,8 +46,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationService commLayer,
-            CentralizedCheckpointService checkpointService) : base(
+            CommunicationLayer commLayer,
+            CentralizedCheckpointLayer checkpointService) : base(
                 taskId,
                 Utils.BuildTaskId(stageName, rootId),
                 stageName,
@@ -114,7 +114,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                 foreach (var pair in children.Zip(sm.GetSplits(children.Count()), (lhs, rhs) => Tuple.Create(lhs, rhs)))
                 {
-                    _commService.Send(pair.Item1, pair.Item2, cancellationSource);
+                    _commLayer.Send(pair.Item1, pair.Item2, cancellationSource);
                 }
             }
         }

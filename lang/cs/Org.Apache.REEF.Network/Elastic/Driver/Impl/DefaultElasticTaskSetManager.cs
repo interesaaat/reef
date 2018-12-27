@@ -67,12 +67,12 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private readonly List<TaskInfo> _taskInfos;
         private readonly Dictionary<string, IElasticStage> _stages;
         private readonly ConcurrentQueue<int> _queuedTasks;
-        private readonly ConcurrentQueue<int> _queuedContexts;
+        private readonly ConcurrentQueue<ContextInfo> _queuedContexts;
         // Used both for knowing which evaluator the task set is responsible for and to 
         // maintain a mapping betwween evaluators and contextes.
         // This latter is necessary because evaluators may fail between context init
         // and the time when the context is installed on the evaluator
-        private readonly ConcurrentDictionary<string, int> _evaluatorToContextIdMapping;
+        private readonly ConcurrentDictionary<string, ContextInfo> _evaluatorToContextIdMapping;
         private IFailureState _failureStatus;
         private volatile bool _hasProgress;
 
@@ -106,8 +106,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _taskInfos = new List<TaskInfo>(numTasks);
             _stages = new Dictionary<string, IElasticStage>();
             _queuedTasks = new ConcurrentQueue<int>();
-            _queuedContexts = new ConcurrentQueue<int>();
-            _evaluatorToContextIdMapping = new ConcurrentDictionary<string, int>();
+            _queuedContexts = new ConcurrentQueue<ContextInfo>();
+            _evaluatorToContextIdMapping = new ConcurrentDictionary<string, ContextInfo>();
             _failureStatus = new DefaultFailureState();
             _hasProgress = true;
 
@@ -147,18 +147,20 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         public bool TryGetNextTaskContextId(IAllocatedEvaluator evaluator, out string identifier)
         {
             int id;
+            ContextInfo cinfo;
 
             if (_queuedTasks.TryDequeue(out id))
             {
                 identifier = Utils.BuildContextId(StagesId, id);
-                _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+                cinfo = new ContextInfo(id);
+                _evaluatorToContextIdMapping.TryAdd(evaluator.Id, cinfo);
                 return true;
             }
 
-            if (_queuedContexts.TryDequeue(out id))
+            if (_queuedContexts.TryDequeue(out cinfo))
             {
-                identifier = Utils.BuildContextId(StagesId, id);
-                _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+                identifier = Utils.BuildContextId(StagesId, cinfo.Id);
+                _evaluatorToContextIdMapping.TryAdd(evaluator.Id, cinfo);
                 return true;
             }
 
@@ -172,7 +174,8 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
 
             identifier = Utils.BuildContextId(StagesId, id);
-            _evaluatorToContextIdMapping.TryAdd(evaluator.Id, id);
+            cinfo = new ContextInfo(id);
+            _evaluatorToContextIdMapping.TryAdd(evaluator.Id, cinfo);
 
             LOGGER.Log(Level.Info, "Evaluator {0} is scheduled on node {1}", evaluator.Id, evaluator.GetEvaluatorDescriptor().NodeDescriptor.HostName);
 
@@ -558,7 +561,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                 }
 
                 OnTaskFailure(failedTask);
-                _evaluatorToContextIdMapping.TryRemove(evaluator.Id, out id);
+                _evaluatorToContextIdMapping.TryRemove(evaluator.Id, out ContextInfo cinfo);
             }
             else
             {
@@ -566,19 +569,30 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
                 if (!Completed() && !Failed())
                 {
-                    if (_evaluatorToContextIdMapping.TryRemove(evaluator.Id, out int id))
+                    if (_evaluatorToContextIdMapping.TryRemove(evaluator.Id, out ContextInfo cinfo))
                     {
-                        if (_taskInfos[id - 1] != null)
+                        int id = cinfo.Id - 1;
+
+                        if (_taskInfos[id] != null)
                         {
-                            lock (_taskInfos[id - 1].Lock)
+                            lock (_taskInfos[id].Lock)
                             {
-                                _taskInfos[id - 1].DropRuntime();
+                                _taskInfos[id].DropRuntime();
+                                _taskInfos[id].SetTaskStatus(TaskState.Failed);
                             }
                         }
 
-                        _queuedContexts.Enqueue(id);
+                        cinfo.NumRetry++;
+
+                        if(cinfo.NumRetry > _parameters.NumEvaluatorFailures)
+                        {
+                            LOGGER.Log(Level.Error, $"Context {cinfo.Id} failed more than {_parameters.NumEvaluatorFailures} times: Aborting");
+                            OnFail();
+                        }
+
+                        _queuedContexts.Enqueue(cinfo);
                     }
-                    SpawnNewEvaluator();
+                    SpawnNewEvaluator(cinfo.Id);
                 }
             }
         }
@@ -796,7 +810,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
                         _queuedTasks.Enqueue(id + 1);
                         _taskInfos[id].SetTaskStatus(TaskState.Queued);
 
-                        SpawnNewEvaluator("_" + id + "_" + _taskInfos[id].NumRetry);
+                        SpawnNewEvaluator(id);
                     }
  
                     return;
@@ -815,9 +829,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             }
         }
 
-        private void SpawnNewEvaluator(string id = "")
+        private void SpawnNewEvaluator(int id)
         {
-            LOGGER.Log(Level.Warning, "Spawning new evaluator with batchId " + _parameters.NewEvaluatorBatchId + id);
+            LOGGER.Log(Level.Warning, $"Spawning new evaluator for id {id}");
 
             var request = _evaluatorRequestor.NewBuilder()
                 .SetNumber(1)

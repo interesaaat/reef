@@ -37,10 +37,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Handles all incoming messages for this Task.
     /// Writable version
     /// </summary>
-    internal sealed class CommunicationService : 
+    internal sealed class CommunicationLayer : 
         IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationService));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
         private readonly int _timeout;
         private readonly int _retryRegistration;
@@ -50,7 +50,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly TaskToDriverMessageDispatcher _taskToDriverDispatcher;
         private readonly DriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
-        private readonly CentralizedCheckpointService _checkpointService;
+        private readonly CentralizedCheckpointLayer _checkpointService;
 
         private bool _disposed;
         private IDisposable _disposableObserver;
@@ -64,7 +64,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// Creates a new GroupCommNetworkObserver.
         /// </summary>
         [Inject]
-        private CommunicationService(
+        private CommunicationLayer(
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryRegistration,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             TaskToDriverMessageDispatcher taskToDriverDispatcher,
             DriverMessageHandler driverMessagesHandler,
-            CentralizedCheckpointService checkpointService,
+            CentralizedCheckpointLayer checkpointService,
             IIdentifierFactory idFactory)
         {
             _timeout = timeout;
@@ -83,7 +83,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskToDriverDispatcher = taskToDriverDispatcher;
             _driverMessagesHandler = driverMessagesHandler;
             _checkpointService = checkpointService;
-            _checkpointService.CommunicationService = this;
+            _checkpointService.CommunicationLayer = this;
             _idFactory = idFactory;
 
             _disposed = false;

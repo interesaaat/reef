@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected static readonly Logger LOGGER = Logger.GetLogger(typeof(NToOneTopology<>));
 
         private readonly ReduceFunction<T> _reducer;
-        private readonly CentralizedCheckpointService _checkpointService;
+        private readonly CentralizedCheckpointLayer _checkpointService;
         private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
         private readonly object _lock;
 
@@ -59,8 +59,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int timeout,
             int disposeTimeout,
             ReduceFunction<T> reduceFunction,
-            CommunicationService commLayer,
-            CentralizedCheckpointService checkpointService) : base(taskId, rootTaskId, stage, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CommunicationLayer commLayer,
+            CentralizedCheckpointLayer checkpointService) : base(taskId, rootTaskId, stage, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _reducer = reduceFunction;
             _requestUpdate = requestUpdate;
@@ -80,8 +80,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             _aggregationQueueData = new Queue<Tuple<string, GroupCommunicationMessage>>();
 
-            _commService.RegisterOperatorTopologyForTask(this);
-            _commService.RegisterOperatorTopologyForDriver(this);
+            _commLayer.RegisterOperatorTopologyForTask(this);
+            _commLayer.RegisterOperatorTopologyForDriver(this);
 
             foreach (var child in children)
             {
@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             try
             {
-                _commService.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
+                _commLayer.WaitForTaskRegistration(new List<string>() { RootTaskId }, cancellationSource);
             }
             catch (Exception e)
             {
@@ -204,7 +204,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                                 foreach (var node in updates.Children)
                                 {
                                     _toRemove.TryAdd(node, 0);
-                                    _commService.RemoveConnection(node);
+                                    _commLayer.RemoveConnection(node);
                                 }
                             }
                         }
@@ -282,7 +282,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
                 Console.WriteLine("reduce sending to {0}", RootTaskId);
-                _commService.Send(RootTaskId, message, cancellationSource);
+                _commLayer.Send(RootTaskId, message, cancellationSource);
             }
         }
 

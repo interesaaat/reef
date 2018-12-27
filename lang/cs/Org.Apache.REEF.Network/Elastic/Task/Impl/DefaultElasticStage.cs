@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
            [Parameter(typeof(OperatorParameters.StartIteration))] int startIteration,
            AvroConfigurationSerializer configSerializer,
            Workflow workflow,
-           CommunicationService commLayer,
+           CommunicationLayer commLayer,
            CancellationSource cancellationSource,
            IInjector injector)
         {
