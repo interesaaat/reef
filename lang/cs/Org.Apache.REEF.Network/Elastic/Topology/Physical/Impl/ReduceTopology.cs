@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         [Inject]
         private ReduceTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
+            [Parameter(typeof(OperatorParameters.StageName))] string stageName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
@@ -41,8 +41,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             ReduceFunction<T> reduceFunction,
             CommunicationService commLayer,
             CentralizedCheckpointService checkpointService) : base(
-                subscriptionName,
-                Utils.BuildTaskId(subscriptionName, rootId), 
+                stageName,
+                Utils.BuildTaskId(stageName, rootId), 
                 children,
                 taskId, 
                 operatorId, 

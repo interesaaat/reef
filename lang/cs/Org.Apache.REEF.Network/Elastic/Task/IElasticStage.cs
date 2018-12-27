@@ -25,15 +25,15 @@ using System.Collections.Generic;
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    ///  Used by Tasks to fetch the Workflow of the Subscriptions configured by the Driver.
+    ///  Used by tasks to fetch the workflow of the stages configured by the driver.
     /// </summary>
-    [DefaultImplementation(typeof(DefaultTaskSetSubscription))]
-    public interface IElasticTaskSetSubscription : IWaitForTaskRegistration, IDisposable
+    [DefaultImplementation(typeof(DefaultTaskSetStage))]
+    public interface IElasticStage : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
-        /// The name of the Subscription
+        /// The name of the Stage
         /// </summary>
-        string SubscriptionName { get; }
+        string StageName { get; }
 
         /// <summary>
         /// TODO

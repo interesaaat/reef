@@ -24,6 +24,7 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -99,12 +100,12 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _position = PositionTracker.InReceive;
 
             var received = false;
-            DataMessage<T> message = null;
+            ITypedDataMessage<T> message = null;
             var isIterative = IteratorReference != null;
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource) as DataMessage<T>;
+                message = _topology.Receive(CancellationSource) as ITypedDataMessage<T>;
 
                 if (message != null && isIterative && message.Iteration < (int)IteratorReference.Current)
                 {
@@ -137,7 +138,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
             int iteration = IteratorReference == null ? 0 : (int)IteratorReference.Current;
 
-            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, iteration, data);
+            var message = new DataMessage<T>(_topology.StageName, OperatorId, iteration, data);
 
             Checkpoint(message, message.Iteration);
 
@@ -166,7 +167,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_isLast)
             {
-                _topology.SubscriptionComplete();
+                _topology.StageComplete();
             }
             _topology.Dispose();
         }

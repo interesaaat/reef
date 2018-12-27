@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         [Inject]
         private DefaultBroadcastTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
+            [Parameter(typeof(OperatorParameters.StageName))] string stageName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(OperatorParameters.PiggybackTopologyUpdates))] bool piggyback,
@@ -48,9 +48,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationService commLayer,
             ICheckpointService checkpointService) : base(
-                subscriptionName,
+                stageName,
                 taskId,
-                Utils.BuildTaskId(subscriptionName, rootId),
+                Utils.BuildTaskId(stageName, rootId),
                 operatorId,
                 children,
                 piggyback,
@@ -66,11 +66,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if(_piggybackTopologyUpdates)
             {
-                return new DataMessageWithTopology<T>(SubscriptionName, OperatorId, iteration, data[0]);
+                return new DataMessageWithTopology<T>(StageName, OperatorId, iteration, data[0]);
             }
             else
             {
-                return new DataMessage<T>(SubscriptionName, OperatorId, iteration, data[0]);
+                return new DataMessage<T>(StageName, OperatorId, iteration, data[0]);
             }
         }
 

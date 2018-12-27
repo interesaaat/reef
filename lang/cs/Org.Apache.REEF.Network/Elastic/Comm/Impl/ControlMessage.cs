@@ -26,9 +26,9 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     internal sealed class ControlMessage<T> : GroupCommunicationMessage
     {
         public ControlMessage(
-           string subscriptionName,
+           string stageName,
            int operatorId,
-           ControlMessageType type) : base(subscriptionName, operatorId)
+           ControlMessageType type) : base(stageName, operatorId)
         {
             Type = Type;
             Payload = default(T);

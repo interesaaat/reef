@@ -131,7 +131,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             _position = PositionTracker.InSend;
 
-            var message = new DataMessage<T>(_topology.SubscriptionName, OperatorId, (int)IteratorReference.Current, data);
+            var message = new DataMessage<T>(_topology.StageName, OperatorId, (int)IteratorReference.Current, data);
 
             Checkpoint(message, message.Iteration);
 

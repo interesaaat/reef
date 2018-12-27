@@ -26,15 +26,16 @@ using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Wake.Remote.Impl;
 using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Common.Tasks.Events;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Used by Tasks to fetch Subscriptions.
+    /// Used by Tasks to fetch Stages.
     /// </summary>
-    internal sealed class DefaultTaskSetService : IElasticTaskSetService
+    internal sealed class DefaultElasticContext : IElasticContext
     {
-        private readonly Dictionary<string, IElasticTaskSetSubscription> _subscriptions;
+        private readonly Dictionary<string, IElasticStage> _stages;
         private readonly string _taskId;
 
         private readonly INetworkService<GroupCommunicationMessage> _networkService;
@@ -45,14 +46,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Creates a new DefaultTaskSetService and registers the task ID with the Name Server.
         /// </summary>
-        /// <param name="subscriptionConfigs">The set of serialized subscriptions configurations</param>
+        /// <param name="stageConfigs">The set of serialized stages configurations</param>
         /// <param name="taskId">The identifier for this task</param>
         /// <param name="networkService">The writable network service used to send messages</param>
         /// <param name="configSerializer">Used to deserialize service configuration</param>
         /// <param name="injector">injector forked from the injector that creates this instance</param>
         [Inject]
-        public DefaultTaskSetService(
-            [Parameter(typeof(ElasticServiceConfigurationOptions.SerializedSubscriptionConfigs))] ISet<string> subscriptionConfigs,
+        public DefaultElasticContext(
+            [Parameter(typeof(ElasticServiceConfigurationOptions.SerializedStageConfigs))] ISet<string> stageConfigs,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             StreamingNetworkService<GroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
@@ -61,21 +62,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             CentralizedCheckpointService checkpointService,
             IInjector injector)
         {
-            _subscriptions = new Dictionary<string, IElasticTaskSetSubscription>();
+            _stages = new Dictionary<string, IElasticStage>();
             _networkService = networkService;
             _taskId = taskId;
 
             _disposed = false;
             _lock = new object();
 
-            foreach (string serializedGroupConfig in subscriptionConfigs)
+            foreach (string serializedGroupConfig in stageConfigs)
             {
-                IConfiguration subscriptionConfig = configSerializer.FromString(serializedGroupConfig);
-                IInjector subInjector = injector.ForkInjector(subscriptionConfig);
+                IConfiguration stageConfig = configSerializer.FromString(serializedGroupConfig);
+                IInjector subInjector = injector.ForkInjector(stageConfig);
 
-                var subscriptionClient = subInjector.GetInstance<IElasticTaskSetSubscription>();
+                var stageClient = subInjector.GetInstance<IElasticStage>();
 
-                _subscriptions[subscriptionClient.SubscriptionName] = subscriptionClient;
+                _stages[stageClient.StageName] = stageClient;
             }
 
             _networkService.Register(new StringIdentifier(_taskId));
@@ -89,33 +90,33 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="cancellationSource"></param>
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
-            foreach (var subscription in _subscriptions.Values)
+            foreach (var stage in _stages.Values)
             {
-                subscription.WaitForTaskRegistration(cancellationSource);
+                stage.WaitForTaskRegistration(cancellationSource);
             }
         }
 
         /// <summary>
-        /// Gets the subscription client object for the given subscription name.
+        /// Gets the stage client object for the given stage name.
         /// </summary>
-        /// <param name="subscriptionpName">The name of the subscription</param>
-        /// <returns>The subscription client object</returns>
-        public IElasticTaskSetSubscription GetSubscription(string subscriptionpName)
+        /// <param name="stagepName">The name of the stage</param>
+        /// <returns>The stage client object</returns>
+        public IElasticStage GetStage(string stagepName)
         {
-            if (string.IsNullOrEmpty(subscriptionpName))
+            if (string.IsNullOrEmpty(stagepName))
             {
-                throw new ArgumentNullException("subscriptionpName");
+                throw new ArgumentNullException("stagepName");
             }
-            if (!_subscriptions.ContainsKey(subscriptionpName))
+            if (!_stages.ContainsKey(stagepName))
             {
-                throw new ArgumentException("No subscription with name: " + subscriptionpName);
+                throw new ArgumentException("No stage with name: " + stagepName);
             }
 
-            return _subscriptions[subscriptionpName];
+            return _stages[stagepName];
         }
 
         /// <summary>
-        /// Disposes of the services.
+        /// Disposes the services.
         /// </summary>
         public void Dispose()
         {
@@ -123,7 +124,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 if (!_disposed)
                 {
-                    foreach (var sub in _subscriptions.Values)
+                    foreach (var sub in _stages.Values)
                     {
                         sub.Dispose();
                     }
@@ -133,6 +134,22 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     _disposed = true;
                 }
             }
+        }
+
+        public void OnNext(ICloseEvent value)
+        {
+            foreach(var stage in _stages.Values)
+            {
+                stage.Cancel();
+            }
+        }
+
+        public void OnError(Exception error)
+        {
+        }
+
+        public void OnCompleted()
+        {
         }
     }
 }

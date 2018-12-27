@@ -22,8 +22,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     internal abstract class SplittableDataMessageWithTopology : DataMessageWithTopology
     {
-        public SplittableDataMessageWithTopology(string subscriptionName, int operatorId, int iteration, List<TopologyUpdate> updates)
-            : base(subscriptionName, operatorId, iteration)
+        public SplittableDataMessageWithTopology(string stageName, int operatorId, int iteration, List<TopologyUpdate> updates)
+            : base(stageName, operatorId, iteration)
         {
             TopologyUpdates = updates;
         }
@@ -34,20 +34,20 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     internal sealed class SplittableDataMessageWithTopology<T> : SplittableDataMessageWithTopology
     {
         public SplittableDataMessageWithTopology(
-            string subscriptionName,
+            string stageName,
             int operatorId,
             int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
             T[] data,
-            List<TopologyUpdate> updates) : base(subscriptionName, operatorId, iteration, updates)
+            List<TopologyUpdate> updates) : base(stageName, operatorId, iteration, updates)
         {
             Data = data;
         }
 
         public SplittableDataMessageWithTopology(
-            string subscriptionName,
+            string stageName,
             int operatorId,
             int iteration, //// For the moment we consider iterations as ints. Maybe this would change in the future
-            T[] data) : this(subscriptionName, operatorId, iteration, data, new List<TopologyUpdate>())
+            T[] data) : this(stageName, operatorId, iteration, data, new List<TopologyUpdate>())
         {
         }
 
@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             for (var i = 0; i < numSplits; i++)
             {
-                yield return new DataMessageWithTopology<T[]>(SubscriptionName, OperatorId, Iteration, Data.Skip(i * size).Take(size).ToArray(), TopologyUpdates);
+                yield return new DataMessageWithTopology<T[]>(StageName, OperatorId, Iteration, Data.Skip(i * size).Take(size).ToArray(), TopologyUpdates);
             }
         }
     }

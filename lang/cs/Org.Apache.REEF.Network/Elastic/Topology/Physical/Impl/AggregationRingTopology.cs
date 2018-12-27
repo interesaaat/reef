@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private AggregationRingTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
+            [Parameter(typeof(OperatorParameters.StageName))] string stageName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
@@ -52,7 +52,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
             CommunicationService commLayer,
-            CentralizedCheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(subscriptionName, rootId), subscriptionName, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CentralizedCheckpointService checkpointService) : base(taskId, Utils.BuildTaskId(stageName, rootId), stageName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
             _checkpointService = checkpointService;
@@ -97,14 +97,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     {
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
-                        checkpoint.SubscriptionName = SubscriptionName;
+                        checkpoint.StageName = StageName;
                         _checkpointService.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
                     checkpoint.OperatorId = OperatorId;
-                    checkpoint.SubscriptionName = SubscriptionName;
+                    checkpoint.StageName = StageName;
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
@@ -120,7 +120,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration, false);
+            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, StageName, OperatorId, iteration, false);
         }
 
         public void WaitCompletionBeforeDisposing(CancellationTokenSource cancellationSource)
@@ -173,7 +173,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             base.Dispose();
 
-            _checkpointService.RemoveCheckpoint(SubscriptionName, OperatorId);
+            _checkpointService.RemoveCheckpoint(StageName, OperatorId);
         }
 
         /// <summary>

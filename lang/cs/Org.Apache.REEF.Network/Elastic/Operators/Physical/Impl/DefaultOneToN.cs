@@ -25,6 +25,7 @@ using Org.Apache.REEF.Utilities.Logging;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Utilities.Attributes;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
+using Org.Apache.REEF.Network.Elastic.Comm;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
@@ -117,16 +118,18 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _position = PositionTracker.InReceive;
 
             var received = false;
-            DataMessageWithTopology<T> message = null;
+            DataMessage dataMessage = null;
+            ITypedDataMessage<T> typedDataMessage = null;
             var isIterative = IteratorReference != null;
 
             while (!received && !CancellationSource.IsCancellationRequested)
             {
-                message = _topology.Receive(CancellationSource) as DataMessageWithTopology<T>;
+                dataMessage = _topology.Receive(CancellationSource) as DataMessage;
+                typedDataMessage = dataMessage as ITypedDataMessage<T>;
 
-                if (isIterative && message.Iteration < (int)IteratorReference.Current)
+                if (isIterative && typedDataMessage.Iteration < (int)IteratorReference.Current)
                 {
-                    LOGGER.Log(Level.Warning, $"Received message for iteration {message.Iteration} but I am already in iteration {(int)IteratorReference.Current}: ignoring.");
+                    LOGGER.Log(Level.Warning, $"Received message for iteration {typedDataMessage.Iteration} but I am already in iteration {(int)IteratorReference.Current}: ignoring.");
                 }
                 else
                 {
@@ -134,21 +137,21 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
                 }
             }
 
-            if (message == null)
+            if (typedDataMessage == null)
             {
                 throw new OperationCanceledException("Impossible to receive messages: operation cancelled.");
             }
 
             if (isIterative)
             {
-                IteratorReference.SyncIteration(message.Iteration);
+                IteratorReference.SyncIteration(typedDataMessage.Iteration);
             }
 
-            Checkpoint(message, message.Iteration);
+            Checkpoint(dataMessage, dataMessage.Iteration);
 
             _position = PositionTracker.AfterReceive;
 
-            return message.Data;
+            return typedDataMessage.Data;
         }
 
         /// <summary>
@@ -187,7 +190,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         {
             if (_isLast)
             {
-                _topology.SubscriptionComplete();
+                _topology.StageComplete();
             }
             _topology.Dispose();
         }

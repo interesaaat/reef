@@ -33,7 +33,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         private volatile bool _isActiveContextDisposed;
         private volatile bool _isDisposed;
 
-        internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskState status, IList<IElasticTaskSetSubscription> subscriptions)
+        internal TaskInfo(IConfiguration config, IActiveContext context, string evaluatorId, TaskState status, IList<IElasticStage> stages)
         {
             _isTaskDisposed = false;
             _isActiveContextDisposed = false;
@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             TaskConfiguration = config;
             ActiveContext = context;
             EvaluatorId = evaluatorId;
-            Subscriptions = subscriptions;
+            Stages = stages;
             NumRetry = 0;
             TaskStatus = status;
             RescheduleConfigurations = new Dictionary<string, IList<IConfiguration>>();
@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 
         internal string EvaluatorId { get; private set; }
 
-        internal IList<IElasticTaskSetSubscription> Subscriptions { get; private set; }
+        internal IList<IElasticStage> Stages { get; private set; }
 
         internal Dictionary<string, IList<IConfiguration>> RescheduleConfigurations { get; set; }
 

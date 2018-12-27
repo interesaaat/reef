@@ -28,25 +28,25 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     public class IterateAggregateMasterTask : ITask, IObserver<ICloseEvent>
     {
-        private readonly IElasticTaskSetService _serviceClient;
-        private readonly IElasticTaskSetSubscription _subscriptionClient;
+        private readonly IElasticContext _contextClient;
+        private readonly IElasticStage _stageClient;
 
         [Inject]
-        public IterateAggregateMasterTask(IElasticTaskSetService serviceClient)
+        public IterateAggregateMasterTask(IElasticContext serviceClient)
         {
-            _serviceClient = serviceClient;
+            _contextClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateAggregate");
+            _stageClient = _contextClient.GetStage("IterateAggregate");
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.WaitForTaskRegistration();
+            _contextClient.WaitForTaskRegistration();
 
             var rand = new Random();
             int n = 1024 * 1024 * 256;
 
-            using (var workflow = _subscriptionClient.Workflow)
+            using (var workflow = _stageClient.Workflow)
             {
                 try
                 {
@@ -98,13 +98,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void OnNext(ICloseEvent value)
         {
-            _subscriptionClient.Cancel();
+            _stageClient.Cancel();
         }
 
         public void Dispose()
         {
-            _subscriptionClient.Cancel();
-            _serviceClient.Dispose();
+            _stageClient.Cancel();
+            _contextClient.Dispose();
         }
 
         public void OnError(Exception error)

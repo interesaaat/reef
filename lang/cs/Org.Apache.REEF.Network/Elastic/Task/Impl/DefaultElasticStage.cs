@@ -29,9 +29,9 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    internal class DefaultTaskSetSubscription : IElasticTaskSetSubscription
+    internal class DefaultTaskSetStage : IElasticStage
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetSubscription));
+        private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetStage));
 
         private readonly CancellationSource _cancellationSource;
 
@@ -39,8 +39,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         private bool _disposed;
 
         [Inject]
-        private DefaultTaskSetSubscription(
-           [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
+        private DefaultTaskSetStage(
+           [Parameter(typeof(OperatorParameters.StageName))] string stageName,
            [Parameter(typeof(OperatorParameters.SerializedOperatorConfigs))] IList<string> operatorConfigs,
            [Parameter(typeof(OperatorParameters.StartIteration))] int startIteration,
            AvroConfigurationSerializer configSerializer,
@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
            CancellationSource cancellationSource,
            IInjector injector)
         {
-            SubscriptionName = subscriptionName;
+            StageName = stageName;
             Workflow = workflow;
 
             _cancellationSource = cancellationSource;
@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
         }
 
-        public string SubscriptionName { get; private set; }
+        public string StageName { get; private set; }
 
         public Workflow Workflow { get; private set; }
 
@@ -84,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
             catch (OperationCanceledException e)
             {
-                Logger.Log(Level.Error, "Subscription {0} failed during registration", SubscriptionName);
+                Logger.Log(Level.Error, "Stage {0} failed during registration", StageName);
                 throw e;
             }
         }
@@ -111,7 +111,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             {
                 _cancellationSource.Cancel();
 
-                Logger.Log(Level.Info, "Received request to close Subscription", SubscriptionName);
+                Logger.Log(Level.Info, "Received request to close Stage", StageName);
             }
         }
     }

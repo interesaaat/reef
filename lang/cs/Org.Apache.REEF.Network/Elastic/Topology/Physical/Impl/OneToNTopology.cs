@@ -49,9 +49,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <summary>
         /// Construct a one to N topology.
         /// </summary>
+        /// <param name="stageName">The stage name the topology is working on</param>
         /// <param name="taskId">The identifier of the task the topology is running on</param>
         /// <param name="rootTaskId">The identifier of the root note in the topology</param>
-        /// <param name="subscriptionName">The subscription name the topology is working on</param>
         /// <param name="operatorId">The identifier of the operator for this topology</param>
         /// <param name="children">The list of nodes this task has to send messages to</param>
         /// <param name="piggyback">Whether to piggyback topology update messages to data message</param>
@@ -61,9 +61,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="commService">Service responsible for communication</param>
         /// <param name="checkpointService">Service responsible for saving and retrieving checkpoints</param>
         public OneToNTopology(
+            string stageName,
             string taskId,
             string rootTaskId,
-            string subscriptionName,
             int operatorId,
             ISet<int> children,
             bool piggyback,
@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int timeout,
             int disposeTimeout,
             CommunicationService commService,
-            ICheckpointService checkpointService) : base(taskId, rootTaskId, subscriptionName, operatorId, commService, retry, timeout, disposeTimeout)
+            ICheckpointService checkpointService) : base(stageName, taskId, rootTaskId, operatorId, commService, retry, timeout, disposeTimeout)
         {
             _checkpointService = checkpointService;
             _nodesToRemove = new ConcurrentDictionary<string, byte>();
@@ -84,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             foreach (var child in children)
             {
-                var childTaskId = Utils.BuildTaskId(SubscriptionName, child);
+                var childTaskId = Utils.BuildTaskId(StageName, child);
 
                 _children.TryAdd(child, childTaskId);
             }
@@ -135,7 +135,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
                         checkpoint.Iteration = iteration;
-                        checkpoint.SubscriptionName = SubscriptionName;
+                        checkpoint.StageName = StageName;
                         _checkpointService.Checkpoint(checkpoint);
                     }
                     break;
@@ -143,7 +143,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     checkpoint = state.Checkpoint();
                     checkpoint.OperatorId = OperatorId;
                     checkpoint.Iteration = iteration;
-                    checkpoint.SubscriptionName = SubscriptionName;
+                    checkpoint.StageName = StageName;
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
@@ -167,7 +167,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration, false);
+            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, StageName, OperatorId, iteration, false);
         }
 
         /// <summary>

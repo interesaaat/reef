@@ -37,11 +37,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Register the current task id as well as notify the root task for the operator.
         /// </summary>
-        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="stageName">The name of the stage</param>
         /// <param name="operatorId">The operator identifier</param>
         /// <param name="taskId">The identifier of the current task</param>
         /// <param name="rootTaskId">The identifier of the root task of the operator</param>
-        void RegisterNode(string subscriptionName, int operatorId, string taskId, string rootTaskId);
+        void RegisterNode(string stageName, int operatorId, string taskId, string rootTaskId);
 
         /// <summary>
         /// Checkpoint the input state.
@@ -54,18 +54,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="checkpoint">The retrieve checkpoint if exists</param>
         /// <param name="taskId">The local task identifier</param>
-        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="stageName">The name of the stage</param>
         /// <param name="operatorId">The operator identifier</param>
         /// <param name="iteration">The iteration number of the checkpoint</param>
         /// <param name="requestToRemote">Whether to request the checkpoint remotely if not found locally</param>
         /// <returns>True if the checkpoint is found, false otherwise</returns>
-        bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string subscriptionName, int operatorId, int iteration = -1, bool requestToRemote = true);
+        bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string stageName, int operatorId, int iteration = -1, bool requestToRemote = true);
 
         /// <summary>
         /// Remove a checkpoint.
         /// </summary>
-        /// <param name="subscriptionName">The subscription of the checkpoint to remove</param>
+        /// <param name="stageName">The stage of the checkpoint to remove</param>
         /// <param name="operatorId">The operator id of the checkpoint to remove</param>
-        void RemoveCheckpoint(string subscriptionName, int operatorId);
+        void RemoveCheckpoint(string stageName, int operatorId);
     }
 }

@@ -82,12 +82,12 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             Send(taskId, message);     
         }
 
-        internal void SignalSubscriptionComplete(string taskId)
+        internal void SignalStageComplete(string taskId)
         {
             var message = new byte[2];
-            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.CompleteSubscription), 0, message, 0, sizeof(ushort));
+            Buffer.BlockCopy(BitConverter.GetBytes((ushort)TaskMessageType.CompleteStage), 0, message, 0, sizeof(ushort));
 
-            Logger.Log(Level.Info, "Sending notification that subscription is completed");
+            Logger.Log(Level.Info, "Sending notification that stage is completed");
 
             Send(taskId, message);
         }

@@ -26,12 +26,12 @@ using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    class TaskSetManagerParameters
+    class ElasticTaskSetManagerParameters
     {
         private FailuresClock _clock;
 
         [Inject]
-        public TaskSetManagerParameters(
+        public ElasticTaskSetManagerParameters(
             FailuresClock clock,
             [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retry,

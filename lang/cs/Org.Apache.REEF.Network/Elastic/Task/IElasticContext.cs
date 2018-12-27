@@ -15,23 +15,27 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Driver.Task;
-using Org.Apache.REEF.Utilities.Attributes;
-using System.Collections.Generic;
+using System;
+using Org.Apache.REEF.Tang.Annotations;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
+using Org.Apache.REEF.Common.Tasks.Events;
 
-namespace Org.Apache.REEF.Network.Elastic.Comm
+namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    /// Used to propagate task reponses through operators and stages.
+    /// Used by Tasks to initialize Group Communication and fetch Stages.
     /// </summary>
-    [Unstable("0.16", "API may change")]
-    public interface ITaskMessageResponse
+    [DefaultImplementation(typeof(DefaultElasticContext))]
+    public interface IElasticContext : 
+        IWaitForTaskRegistration, 
+        IDisposable,
+        IObserver<ICloseEvent>
     {
         /// <summary>
-        /// Method triggered when a task to driver message is received. 
+        /// Gets the stage with the given name.
         /// </summary>
-        /// <param name="message">The task message for the operator</param>
-        /// <param name="returnMessages">A list of messages containing the instructions for the task</param>
-        void OnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages);
+        /// <param name="stageName">The name of the stage</param>
+        /// <returns>The configured stage</returns>
+        IElasticStage GetStage(string stageName);
     }
 }

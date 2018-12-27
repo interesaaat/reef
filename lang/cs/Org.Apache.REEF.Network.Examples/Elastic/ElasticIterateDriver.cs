@@ -63,9 +63,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly IConfiguration _codecConfig;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
-        private readonly IElasticTaskSetService _service;
-        private readonly IElasticTaskSetSubscription _subscription;
-        private readonly ITaskSetManager _taskManager;
+        private readonly IElasticContext _context;
+        private readonly IElasticStage _stage;
+        private readonly IElasticTaskSetManager _taskManager;
 
         [Inject]
         private ElasticIterateDriver(
@@ -73,14 +73,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
-            IElasticTaskSetService service,
+            IElasticContext service,
             IEvaluatorRequestor evaluatorRequestor)
         {
             System.Threading.Thread.Sleep(20000);
 
             _numIterations = numIterations;
             _numEvaluators = numEvaluators;
-            _service = service;
+            _context = service;
             _evaluatorRequestor = evaluatorRequestor;
 
             _tcpPortProviderConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -120,9 +120,9 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     .Build())
                 .Build();
 
-            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
+            IElasticStage stage = _context.DefaultStage();
 
-            ElasticOperator pipeline = subscription.RootOperator;
+            ElasticOperator pipeline = stage.RootOperator;
 
             // Create and build the pipeline
             pipeline.Iterate(new DefaultFailureStateMachine(),
@@ -130,14 +130,14 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         iteratorConfig)
                     .Build();
 
-            // Build the subscription
-            _subscription = subscription.Build();
+            // Build the stage
+            _stage = stage.Build();
 
             // Create the task manager
-            _taskManager = new DefaultTaskSetManager(_numEvaluators, _evaluatorRequestor, masterTaskConfiguration, slaveTaskConfiguration);
+            _taskManager = _context.CreateNewTaskSetManager(masterTaskConfiguration, slaveTaskConfiguration);
 
-            // Register the subscription to the task manager
-            _taskManager.AddTaskSetSubscription(_subscription);
+            // Register the stage to the task manager
+            _taskManager.AddStage(_stage);
 
             // Build the task set manager
             _taskManager.Build();
@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                     .Set(ContextConfiguration.Identifier, identifier)
                     .Build();
-                IConfiguration serviceConf = _service.GetServiceConfiguration();
+                IConfiguration serviceConf = _context.GetElasticServiceConfiguration();
 
                 serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
                 allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);

@@ -55,12 +55,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             reader.Read(ref metadata, 0, metadataSize);
             var res = MetaDataDecoding(metadata);
 
-            string subscriptionName = res.Item1;
+            string stageName = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
             var data = _codec.Read(reader);
 
-            return new DataMessageWithTopology<T>(subscriptionName, operatorId, iteration, data);
+            return new DataMessageWithTopology<T>(stageName, operatorId, iteration, data);
         }
 
         /// <summary>
@@ -92,12 +92,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             var res = MetaDataDecoding(metadata);
             
             var data = await _codec.ReadAsync(reader, token);
-            string subscriptionString = res.Item1;
+            string stageString = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
             List<TopologyUpdate> update = res.Item4;
 
-            return new DataMessageWithTopology<T>(subscriptionString, operatorId, iteration, data, update);
+            return new DataMessageWithTopology<T>(stageString, operatorId, iteration, data, update);
         }
 
         /// <summary>
@@ -118,16 +118,16 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
         private static byte[] MetaDataEncoding(DataMessageWithTopology<T> obj)
         {
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
+            byte[] stageBytes = ByteUtilities.StringToByteArrays(obj.StageName);
             var totalLengthUpdates = obj.TopologyUpdates.Sum(x => x.Size);
-            byte[] buffer = new byte[sizeof(int) + totalLengthUpdates + sizeof(int) + subscriptionBytes.Length + sizeof(bool) + sizeof(int) + sizeof(int)];
+            byte[] buffer = new byte[sizeof(int) + totalLengthUpdates + sizeof(int) + stageBytes.Length + sizeof(bool) + sizeof(int) + sizeof(int)];
             int offset = 0;
 
-            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(stageBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
-            offset += subscriptionBytes.Length;
+            Buffer.BlockCopy(stageBytes, 0, buffer, offset, stageBytes.Length);
+            offset += stageBytes.Length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -146,11 +146,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         private static Tuple<string, int, int, List<TopologyUpdate>> MetaDataDecoding(byte[] obj)
         {
             int offset = 0;
-            int subscriptionLength = BitConverter.ToInt32(obj, offset);
+            int stageLength = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
-            string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
-            offset += subscriptionLength;
+            string stageString = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
+            offset += stageLength;
 
             int operatorInt = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
@@ -163,7 +163,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             var updates = TopologyUpdate.Deserialize(obj, length, offset);
 
-            return new Tuple<string, int, int, List<TopologyUpdate>>(subscriptionString, operatorInt, iterationInt, updates);
+            return new Tuple<string, int, int, List<TopologyUpdate>>(stageString, operatorInt, iterationInt, updates);
         }
     }
 }

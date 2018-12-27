@@ -26,15 +26,15 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// </summary>
     internal sealed class ResumeMessagePayload : WithNextMessagePayload
     {
-        public ResumeMessagePayload(string nextTaskId, string subscriptionName, int operatorId, int iteration)
-            : base(nextTaskId, subscriptionName, operatorId, iteration)
+        public ResumeMessagePayload(string nextTaskId, string stageName, int operatorId, int iteration)
+            : base(nextTaskId, stageName, operatorId, iteration)
         {
             PayloadType = DriverMessagePayloadType.Resume;
         }
 
         public override object Clone()
         {
-            return new ResumeMessagePayload(NextTaskId, SubscriptionName, OperatorId, Iteration);
+            return new ResumeMessagePayload(NextTaskId, StageName, OperatorId, Iteration);
         }
 
         internal static DriverMessagePayload From(byte[] data, int offset = 0)
@@ -46,14 +46,14 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             length = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
-            string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
+            string stage = ByteUtilities.ByteArraysToString(data, offset, length);
             offset += length;
 
             int operatorId = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
             int iteration = BitConverter.ToInt32(data, offset);
 
-            return new ResumeMessagePayload(destination, subscription, operatorId, iteration);
+            return new ResumeMessagePayload(destination, stage, operatorId, iteration);
         }
     }
 }

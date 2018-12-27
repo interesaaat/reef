@@ -25,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Checkpointable state wrapping an immutable object. 
-    /// Since immutable when creating a checkpoint we don't need a copy.
+    /// Since immutable, when creating a checkpoint we don't need a copy.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     [Unstable("0.16", "API may change")]
@@ -34,20 +34,12 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         protected ICheckpointState _checkpoint;
 
         [Inject]
-        private CheckpointableImmutableObject(
+        protected CheckpointableImmutableObject(
             [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
-            ICheckpointState checkpoint) : this()
+            ICheckpointState checkpoint)
         {
             Level = (CheckpointLevel)level;
             _checkpoint = checkpoint;
-        }
-
-        /// <summary>
-        /// Basic constructor returning a checkponitable object with default state and iteration number = 0.
-        /// </summary>
-        protected CheckpointableImmutableObject()
-        {
-            Level = 0;
             State = default;
         }
 
@@ -95,10 +87,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <returns>An empty checkpointable state</returns>
         public virtual ICheckpointableState Create()
         {
-            return new CheckpointableImmutableObject<T>()
-            {
-                Level = Level,
-            };
+            return new CheckpointableImmutableObject<T>((int)Level, _checkpoint);
         }
     }
 }

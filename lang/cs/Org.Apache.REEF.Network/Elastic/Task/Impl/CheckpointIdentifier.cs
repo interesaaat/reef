@@ -22,7 +22,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// <summary>
     /// An identifier for a given node in the group communication graph.
     /// A node is uniquely identifiable by a combination of its Task ID, 
-    /// <see cref="SubscriptionName"/>, and <see cref="OperatorName"/>.
+    /// <see cref="StageName"/>, and <see cref="OperatorName"/>.
     /// </summary>
     [Unstable("0.16", "API may change")]
     internal sealed class CheckpointIdentifier
@@ -30,18 +30,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Construct a new checkpoint identifier.
         /// </summary>
-        /// <param name="subscriptionName">The subscription name</param>
+        /// <param name="stageName">The stage name</param>
         /// <param name="operatorId">The operator identifier</param>
-        public CheckpointIdentifier(string subscriptionName, int operatorId)
+        public CheckpointIdentifier(string stageName, int operatorId)
         {
-            SubscriptionName = subscriptionName;
+            StageName = stageName;
             OperatorId = operatorId;
         }
 
         /// <summary>
-        /// The subscription name of the node.
+        /// The stage name of the node.
         /// </summary>
-        public string SubscriptionName { get; private set; }
+        public string StageName { get; private set; }
 
         /// <summary>
         /// The operator id of the node.
@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public override int GetHashCode()
         {
             int hash = 17;
-            hash = (hash * 31) + SubscriptionName.GetHashCode();
+            hash = (hash * 31) + StageName.GetHashCode();
             return (hash * 31) + OperatorId.GetHashCode();
         }
 
@@ -81,7 +81,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         private bool Equals(CheckpointIdentifier other)
         {
-            return SubscriptionName.Equals(other.SubscriptionName) &&
+            return StageName.Equals(other.StageName) &&
                 OperatorId.Equals(other.OperatorId);
         }
     }

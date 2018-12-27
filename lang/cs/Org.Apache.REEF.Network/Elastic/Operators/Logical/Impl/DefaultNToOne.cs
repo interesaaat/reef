@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             return false;
                         }
 
-                        if (!Subscription.IsCompleted && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
+                        if (!Stage.IsCompleted && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             var taskId = message.TaskId;
                             LOGGER.Log(Level.Info, "{0} joins the topology for operator {1}", taskId, _id);
@@ -108,9 +108,9 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                         return true;
                     }
 
-                case TaskMessageType.CompleteSubscription:
+                case TaskMessageType.CompleteStage:
                     {
-                        Subscription.IsCompleted = true;
+                        Stage.IsCompleted = true;
 
                         return true;
                     }

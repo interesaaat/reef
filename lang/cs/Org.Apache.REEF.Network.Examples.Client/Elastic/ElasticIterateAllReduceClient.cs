@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
         public void RunIterateAllReduce(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
             const string driverId = "ElasticIterativeAllReduceDriver";
-            const string subscription = "IterativeAllReduce";
+            const string stage = "IterativeAllReduce";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
@@ -68,7 +68,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
             IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
-                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultSubscriptionName>(subscription)
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultStageName>(stage)
                 .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 

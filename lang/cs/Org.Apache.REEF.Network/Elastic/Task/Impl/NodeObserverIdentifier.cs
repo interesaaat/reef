@@ -23,11 +23,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// <summary>
     /// An identifier for a given node in the group communication graph.
     /// A node is uniquely identifiable by a combination of its Task ID, 
-    /// <see cref="SubscriptionName"/>, and <see cref="OperatorName"/>.
+    /// <see cref="StageName"/>, and <see cref="OperatorName"/>.
     /// </summary>
     internal sealed class NodeObserverIdentifier
     {
-        private readonly string _subscriptionName;
+        private readonly string _stageName;
         private readonly int _operatorId;
 
         /// <summary>
@@ -35,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         public static NodeObserverIdentifier FromObserver(OperatorTopologyWithCommunication observer)
         {
-            return new NodeObserverIdentifier(observer.SubscriptionName, observer.OperatorId);
+            return new NodeObserverIdentifier(observer.StageName, observer.OperatorId);
         }
 
         /// <summary>
@@ -43,7 +43,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         public static NodeObserverIdentifier FromObserver(DriverAwareOperatorTopology observer)
         {
-            return new NodeObserverIdentifier(observer.SubscriptionName, observer.OperatorId);
+            return new NodeObserverIdentifier(observer.StageName, observer.OperatorId);
         }
 
         /// <summary>
@@ -51,21 +51,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         public static NodeObserverIdentifier FromMessage(GroupCommunicationMessage message)
         {
-            return new NodeObserverIdentifier(message.SubscriptionName, message.OperatorId);
+            return new NodeObserverIdentifier(message.StageName, message.OperatorId);
         }
 
-        private NodeObserverIdentifier(string subscriptionName, int operatorName)
+        private NodeObserverIdentifier(string stageName, int operatorName)
         {
-            _subscriptionName = subscriptionName;
+            _stageName = stageName;
             _operatorId = operatorName;
         }
 
         /// <summary>
         /// The group name of the node.
         /// </summary>
-        public string SubscriptionName
+        public string StageName
         {
-            get { return _subscriptionName; }
+            get { return _stageName; }
         }
 
         /// <summary>
@@ -100,7 +100,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public override int GetHashCode()
         {
             int hash = 17;
-            hash = (hash * 31) + _subscriptionName.GetHashCode();
+            hash = (hash * 31) + _stageName.GetHashCode();
             return (hash * 31) + _operatorId.GetHashCode();
         }
 
@@ -109,7 +109,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         private bool Equals(NodeObserverIdentifier other)
         {
-            return _subscriptionName.Equals(other.SubscriptionName) &&
+            return _stageName.Equals(other.StageName) &&
                 _operatorId.Equals(other.OperatorId);
         }
     }

@@ -16,8 +16,6 @@
 // under the License.
 
 using System;
-using System.Globalization;
-using System.Linq;
 using Org.Apache.REEF.Driver;
 using Org.Apache.REEF.Driver.Context;
 using Org.Apache.REEF.Driver.Evaluator;
@@ -27,7 +25,6 @@ using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
 using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Wake.Remote.Parameters;
 using Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs;
 using Org.Apache.REEF.Network.Elastic.Driver;
 using Org.Apache.REEF.Network.Elastic.Driver.Impl;
@@ -36,8 +33,6 @@ using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Context;
-using Org.Apache.REEF.Network.Elastic;
-using Org.Apache.REEF.Network.Elastic.Topology.Logical;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
@@ -47,174 +42,42 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
     /// <summary>
     /// Example implementation of broadcasting using the elastic group communication service.
     /// </summary>
-    public class ElasticBroadcastDriver :
-        IObserver<IAllocatedEvaluator>,
-        IObserver<IActiveContext>,
-        IObserver<IDriverStarted>,
-        IObserver<IRunningTask>,
-        IObserver<ICompletedTask>,
-        IObserver<IFailedEvaluator>,
-        IObserver<IFailedTask>,
-        IObserver<ITaskMessage>
+    public class ElasticBroadcastDriver : DefaultElasticDriver
     {
-        private static readonly Logger LOGGER = Logger.GetLogger(typeof(ElasticBroadcastDriver));
-
-        private readonly int _numEvaluators;
-
-        private readonly IConfiguration _tcpPortProviderConfig;
-        private readonly IConfiguration _codecConfig;
-        private readonly IEvaluatorRequestor _evaluatorRequestor;
-
-        private readonly IElasticTaskSetService _service;
-        private readonly IElasticTaskSetSubscription _subscription;
-        private readonly ITaskSetManager _taskManager;
-
         [Inject]
-        private ElasticBroadcastDriver(
-            [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
-            IElasticTaskSetService service,
-            IEvaluatorRequestor evaluatorRequestor)
+        private ElasticBroadcastDriver(IElasticContext context) : base(context)
         {
-            _numEvaluators = numEvaluators;
-            _service = service;
-            _evaluatorRequestor = evaluatorRequestor;
-
-            _tcpPortProviderConfig = TangFactory.GetTang().NewConfigurationBuilder()
-                .BindNamedParameter<TcpPortRangeStart, int>(GenericType<TcpPortRangeStart>.Class,
-                    startingPort.ToString(CultureInfo.InvariantCulture))
-                .BindNamedParameter<TcpPortRangeCount, int>(GenericType<TcpPortRangeCount>.Class,
-                    portRange.ToString(CultureInfo.InvariantCulture))
-                .Build();
-
-            _codecConfig = StreamingCodecConfiguration<int>.Conf
-                .Set(StreamingCodecConfiguration<int>.Codec, GenericType<IntStreamingCodec>.Class)
-                .Build();
-
             Func<string, IConfiguration> masterTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
-                TaskConfiguration.ConfigurationModule
-                    .Set(TaskConfiguration.Identifier, taskId)
+                Context.GetTaskConfigurationModule(taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastMasterTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastMasterTask>.Class)
                     .Build())
                 .Build();
 
             Func<string, IConfiguration> slaveTaskConfiguration = (taskId) => TangFactory.GetTang().NewConfigurationBuilder(
-                TaskConfiguration.ConfigurationModule
-                    .Set(TaskConfiguration.Identifier, taskId)
+                Context.GetTaskConfigurationModule(taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastSlaveTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
-                    .Set(TaskConfiguration.OnClose, GenericType<BroadcastMasterTask>.Class)
                     .Build())
                 .Build();
 
-            IElasticTaskSetSubscription subscription = _service.DefaultTaskSetSubscription();
+            IElasticStage stage = Context.DefaultStage();
 
-            ElasticOperator pipeline = subscription.RootOperator;
+            ElasticOperator pipeline = stage.RootOperator;
 
             // Create and build the pipeline
             pipeline.Broadcast<int>(TopologyType.Flat, CheckpointLevel.EphemeralAll)
                     .Build();
 
-            // Build the subscription
-            _subscription = subscription.Build();
+            // Build the stage
+            stage = stage.Build();
 
             // Create the task manager
-            _taskManager = new DefaultTaskSetManager(_numEvaluators, _evaluatorRequestor, masterTaskConfiguration, slaveTaskConfiguration);
+            TaskSetManager = Context.CreateNewTaskSetManager(masterTaskConfiguration, slaveTaskConfiguration);
 
-            // Register the subscription to the task manager
-            _taskManager.AddTaskSetSubscription(_subscription);
+            // Register the stage to the task manager
+            TaskSetManager.AddStage(stage);
 
             // Build the task set manager
-            _taskManager.Build();
-        }
-
-        public void OnNext(IDriverStarted value)
-        {
-            var request = _evaluatorRequestor.NewBuilder()
-                .SetNumber(_numEvaluators)
-                .SetMegabytes(512)
-                .SetCores(1)
-                .SetRackName("WonderlandRack")
-                .SetEvaluatorBatchId("BroadcastEvaluator")
-                .Build();
-            _evaluatorRequestor.Submit(request);
-        }
-
-        public void OnNext(IAllocatedEvaluator allocatedEvaluator)
-        {
-            if (_taskManager.TryGetNextTaskContextId(allocatedEvaluator, out string identifier))
-            {
-                IConfiguration contextConf = ContextConfiguration.ConfigurationModule
-                    .Set(ContextConfiguration.Identifier, identifier)
-                    .Build();
-                IConfiguration serviceConf = _service.GetServiceConfiguration();
-
-                serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
-                allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);
-            }
-            else
-            {
-                allocatedEvaluator.Dispose();
-            }
-        }
-
-        public void OnNext(IActiveContext activeContext)
-        {
-            System.Threading.Thread.Sleep(10000);
-            _taskManager.OnNewActiveContext(activeContext);
-        }
-
-        public void OnNext(IRunningTask value)
-        {
-            _taskManager.OnTaskRunning(value);
-        }
-
-        public void OnNext(ICompletedTask value)
-        {
-            _taskManager.OnTaskCompleted(value);
-
-            if (_taskManager.IsCompleted())
-            {
-                _taskManager.Dispose();
-            }
-        }
-
-        public void OnNext(IFailedEvaluator failedEvaluator)
-        {
-            _taskManager.OnEvaluatorFailure(failedEvaluator);
-
-            if (_taskManager.IsCompleted())
-            {
-                _taskManager.Dispose();
-            }
-        }
-
-        public void OnNext(IFailedTask failedTask)
-        {
-            _taskManager.OnTaskFailure(failedTask);
-
-            if (_taskManager.IsCompleted())
-            {
-                _taskManager.Dispose();
-            }
-        }
-
-        public void OnNext(ITaskMessage taskMessage)
-        {
-            _taskManager.OnTaskMessage(taskMessage);
-        }
-
-        public void OnCompleted()
-        {
-            _taskManager.Dispose();
-        }
-
-        public void OnError(Exception error)
-        {
-            _taskManager.Dispose();
+            TaskSetManager.Build();
         }
     }
 }

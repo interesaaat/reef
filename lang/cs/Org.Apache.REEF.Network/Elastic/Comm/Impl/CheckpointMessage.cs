@@ -31,7 +31,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// Constructor for a message containig a checkpoint.
         /// </summary>
         /// <param name="checkpoint">The checkpoint state</param>
-        public CheckpointMessage(ICheckpointState checkpoint) : base(checkpoint.SubscriptionName, checkpoint.OperatorId)
+        public CheckpointMessage(ICheckpointState checkpoint) : base(checkpoint.StageName, checkpoint.OperatorId)
         {
             Checkpoint = checkpoint;
         }

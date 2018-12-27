@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         private readonly ManualResetEvent _topologyUpdateReceived;
 
         protected NToOneTopology(
-            string subscription,
+            string stage,
             string rootTaskId,
             ISet<int> children,
             string taskId,
@@ -60,7 +60,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int disposeTimeout,
             ReduceFunction<T> reduceFunction,
             CommunicationService commLayer,
-            CentralizedCheckpointService checkpointService) : base(taskId, rootTaskId, subscription, operatorId, commLayer, retry, timeout, disposeTimeout)
+            CentralizedCheckpointService checkpointService) : base(taskId, rootTaskId, stage, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _reducer = reduceFunction;
             _requestUpdate = requestUpdate;
@@ -85,7 +85,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
             foreach (var child in children)
             {
-                var childTaskId = Utils.BuildTaskId(SubscriptionName, child);
+                var childTaskId = Utils.BuildTaskId(StageName, child);
                 _children.TryAdd(child, childTaskId);
             }
         }
@@ -120,14 +120,14 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     {
                         checkpoint = state.Checkpoint();
                         checkpoint.OperatorId = OperatorId;
-                        checkpoint.SubscriptionName = SubscriptionName;
+                        checkpoint.StageName = StageName;
                         _checkpointService.Checkpoint(checkpoint);
                     }
                     break;
                 case CheckpointLevel.PersistentMemoryAll:
                     checkpoint = state.Checkpoint();
                     checkpoint.OperatorId = OperatorId;
-                    checkpoint.SubscriptionName = SubscriptionName;
+                    checkpoint.StageName = StageName;
                     _checkpointService.Checkpoint(checkpoint);
                     break;
                 default:
@@ -143,7 +143,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 return true;
             }
 
-            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, SubscriptionName, OperatorId, iteration, false);
+            return _checkpointService.GetCheckpoint(out checkpoint, TaskId, StageName, OperatorId, iteration, false);
         }
 
         public override void OnNext(NsMessage<GroupCommunicationMessage> message)

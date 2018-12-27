@@ -39,9 +39,9 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         int OperatorId { get; set; }
 
         /// <summary>
-        /// The subscription name of the checkpoint.
+        /// The stage name of the checkpoint.
         /// </summary>
-        string SubscriptionName { get; set; }
+        string StageName { get; set; }
 
         /// <summary>
         /// The actual state of the checkpoint.

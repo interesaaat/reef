@@ -180,7 +180,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 var cpm = gcm as CheckpointMessageRequest;
                 ICheckpointState checkpoint;
-                if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.SubscriptionName, cpm.OperatorId, cpm.Iteration))
+                if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.StageName, cpm.OperatorId, cpm.Iteration))
                 {
                     CheckpointMessage returnMessage = checkpoint.ToMessage() as CheckpointMessage;
                     var cancellationSource = new CancellationTokenSource();
@@ -206,8 +206,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             if (!_groupMessageObservers.TryGetValue(id, out operatorObserver))
             {
-                throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
-                    gcm.SubscriptionName + " operator " + gcm.OperatorId);
+                throw new KeyNotFoundException("Unable to find registered Operator Topology for Stage " +
+                    gcm.StageName + " operator " + gcm.OperatorId);
             }
 
             operatorObserver.OnNext(nsMessage);
@@ -233,9 +233,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _taskToDriverDispatcher.JoinTopology(taskId, operatorId);
         }
 
-        public void SubscriptionComplete(string taskId)
+        public void StageComplete(string taskId)
         {
-            _taskToDriverDispatcher.SignalSubscriptionComplete(taskId);
+            _taskToDriverDispatcher.SignalStageComplete(taskId);
         }
 
         public void OnError(Exception error)

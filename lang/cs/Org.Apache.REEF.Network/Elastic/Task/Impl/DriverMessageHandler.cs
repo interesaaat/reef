@@ -47,8 +47,8 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 if (!DriverMessageObservers.TryGetValue(id, out operatorObserver))
                 {
-                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Subscription " +
-                        edm.Message.SubscriptionName + " operator " + edm.Message.OperatorId);
+                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Stage " +
+                        edm.Message.StageName + " operator " + edm.Message.OperatorId);
                 }
 
                 operatorObserver.OnNext(edm.Message);

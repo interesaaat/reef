@@ -54,11 +54,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             reader.Read(ref metadata, 0, metadataSize);
-            var (subscriptionName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
+            var (stageName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             var data = _codec.Read(reader);
             var payload = _checkpoint.Create(data);
 
-            payload.SubscriptionName = subscriptionName;
+            payload.StageName = stageName;
             payload.OperatorId = operatorId;
             payload.Iteration = iteration;
 
@@ -91,12 +91,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
-            var (subscriptionName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
+            var (stageName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             
             var data = await _codec.ReadAsync(reader, token);
             var payload = _checkpoint.Create(data);
 
-            payload.SubscriptionName = subscriptionName;
+            payload.StageName = stageName;
             payload.OperatorId = operatorId;
             payload.Iteration = iteration;
 
@@ -120,15 +120,15 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
         private static byte[] GenerateMetaDataEncoding(CheckpointMessage obj)
         {
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
-            var length = subscriptionBytes.Length;
+            byte[] stageBytes = ByteUtilities.StringToByteArrays(obj.StageName);
+            var length = stageBytes.Length;
             byte[] metadataBytes = new byte[sizeof(int) + length + sizeof(int) + sizeof(int)];
             int offset = 0;
 
             Buffer.BlockCopy(BitConverter.GetBytes(length), 0, metadataBytes, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscriptionBytes, 0, metadataBytes, offset, length);
+            Buffer.BlockCopy(stageBytes, 0, metadataBytes, offset, length);
             offset += length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, metadataBytes, offset, sizeof(int));
@@ -139,18 +139,18 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return metadataBytes;
         }
 
-        private static (string subscriptionName, int operatorId, int iteration) GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
+        private static (string stageName, int operatorId, int iteration) GenerateMetaDataDecoding(byte[] obj, int stageLength)
         {
             int offset = 0;
-            string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
-            offset += subscriptionLength;
+            string stageString = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
+            offset += stageLength;
 
             int operatorInt = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
             int iteration = BitConverter.ToInt32(obj, offset);
 
-            return (subscriptionName: subscriptionString, operatorId: operatorInt, iteration);
+            return (stageName: stageString, operatorId: operatorInt, iteration);
         }
     }
 }

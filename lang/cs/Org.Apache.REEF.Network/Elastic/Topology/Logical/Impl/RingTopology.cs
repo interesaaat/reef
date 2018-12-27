@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(RingTopology));
 
         private string _rootTaskId;
-        private string _taskSubscription;
+        private string _taskStage;
         private volatile int _iteration;
         private int _rootId;
         private bool _finalized;
@@ -68,7 +68,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _finalized = false;
             _availableDataPoints = 0;
             OperatorId = -1;
-            SubscriptionName = string.Empty;
+            StageName = string.Empty;
 
             _nodes = new Dictionary<int, DataNode>();
             _prevRingHeads = new SortedDictionary<int, RingNode>();
@@ -76,7 +76,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _nextWaitingList = new HashSet<string>();
             _nodesWaitingToJoinRing = new HashSet<string>();
             _rootTaskId = string.Empty;
-            _taskSubscription = string.Empty;
+            _taskStage = string.Empty;
             _iteration = 1;
 
             _totNumberofNodes = 0;
@@ -85,7 +85,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public int OperatorId { get; set; }
 
-        public string SubscriptionName { get; set; }
+        public string StageName { get; set; }
 
         public bool AddTask(string taskId, IFailureStateMachine failureMachine)
         {
@@ -130,9 +130,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _availableDataPoints++;
 
                     // This is required later in order to build the topology
-                    if (_taskSubscription == string.Empty)
+                    if (_taskStage == string.Empty)
                     {
-                        _taskSubscription = Utils.GetTaskSubscriptions(taskId);
+                        _taskStage = Utils.GetTaskStages(taskId);
                     }
                 }
             }
@@ -201,12 +201,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
-            if (SubscriptionName == string.Empty)
+            if (StageName == string.Empty)
             {
-                throw new IllegalStateException("Topology cannot be built because not linked to any subscription");
+                throw new IllegalStateException("Topology cannot be built because not linked to any stage");
             }
 
-            _rootTaskId = Utils.BuildTaskId(_taskSubscription, _rootId);
+            _rootTaskId = Utils.BuildTaskId(_taskStage, _rootId);
             _tasksInRing = new HashSet<string> { { _rootTaskId } };
             _ringHead = new RingNode(_rootTaskId, _iteration);
 
@@ -363,7 +363,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     if (_availableDataPoints <= _tasksInRing.Count)
                     {
                         var dest = _ringHead.TaskId;
-                        var data = new RingMessagePayload(_rootTaskId, SubscriptionName, OperatorId, _iteration);
+                        var data = new RingMessagePayload(_rootTaskId, StageName, OperatorId, _iteration);
                         var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                         LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, _rootTaskId, _iteration);
@@ -375,7 +375,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     {
                         var dest = _ringHead.TaskId;
                         var nextTask = _currentWaitingList.First();
-                        var data = new RingMessagePayload(nextTask, SubscriptionName, OperatorId, _iteration);
+                        var data = new RingMessagePayload(nextTask, StageName, OperatorId, _iteration);
                         var returnMessage = new ElasticDriverMessageImpl(dest, data);
 
                         messages.Add(returnMessage);
@@ -397,7 +397,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         {
                             var dest = node.Prev;
                             var nextTask = node.TaskId;
-                            var data = new RingMessagePayload(nextTask, SubscriptionName, OperatorId, _iteration);
+                            var data = new RingMessagePayload(nextTask, StageName, OperatorId, _iteration);
                             var returnMessage = new ElasticDriverMessageImpl(dest.TaskId, data);
 
                             messages.Add(returnMessage);
@@ -447,7 +447,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 if (node.TaskId == taskId && node.Iteration == iteration)
                 {
                     var dest = node.Prev.TaskId;
-                    var data = new ResumeMessagePayload(node.TaskId, SubscriptionName, OperatorId, node.Iteration);
+                    var data = new ResumeMessagePayload(node.TaskId, StageName, OperatorId, node.Iteration);
                     returnMessages.Add(new ElasticDriverMessageImpl(dest, data));
                     LOGGER.Log(Level.Info, "Task {0} sends to {1} in iteration {2}", dest, node.TaskId, node.Iteration);
                     return;

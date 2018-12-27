@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
         public void RunElasticBroadcast(bool runOnYarn, int numTasks, int startingPortNo, int portRange)
         {
             const string driverId = "ElasticBroadcastClientPD";
-            const string subscription = "Broadcast";
+            const string stage = "Broadcast";
 
             string modelFilePath = MakeLocalTempFile(new string[] { "1", "2", "3", "4", "5" });
             string partitionFilePath1 = MakeLocalTempFile(new string[] { "1", "2", "3", "4", "5", "6" });
@@ -89,7 +89,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
             IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
-                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultSubscriptionName>(subscription)
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultStageName>(stage)
                 .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 

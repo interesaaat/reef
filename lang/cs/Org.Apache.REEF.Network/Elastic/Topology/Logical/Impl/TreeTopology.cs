@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
         private readonly bool _sorted;
         private bool _finalized;
         private volatile int _iteration;
-        private string _taskSubscription;
+        private string _taskStage;
 
         private volatile int _availableDataPoints;
         private int _totNumberofNodes;
@@ -65,7 +65,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
             _sorted = sorted;
             _degree = degree;
             OperatorId = -1;
-            _taskSubscription = string.Empty;
+            _taskStage = string.Empty;
             _rootTaskId = string.Empty;
 
             _availableDataPoints = 0;
@@ -81,7 +81,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public int OperatorId { get; set; }
 
-        public string SubscriptionName { get; set; }
+        public string StageName { get; set; }
 
         public void GetTaskConfiguration(ref ICsConfigurationBuilder confBuilder, int taskId)
         {
@@ -146,9 +146,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 }
 
                 // This is required later in order to build the topology
-                if (_taskSubscription == string.Empty)
+                if (_taskStage == string.Empty)
                 {
-                    _taskSubscription = Utils.GetTaskSubscriptions(taskId);
+                    _taskStage = Utils.GetTaskStages(taskId);
                 }
             }
 
@@ -234,9 +234,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 throw new IllegalStateException("Topology cannot be built because not linked to any operator");
             }
 
-            if (SubscriptionName == string.Empty)
+            if (StageName == string.Empty)
             {
-                throw new IllegalStateException("Topology cannot be built because not linked to any subscription");
+                throw new IllegalStateException("Topology cannot be built because not linked to any stage");
             }
 
             IEnumerator<DataNode> iter = _sorted ? _nodes.Where(x => x.Key != _rootId).OrderBy(kv => kv.Key).Select(kv => kv.Value).GetEnumerator() : _nodes.Where(x => x.Key != _rootId).Select(x => x.Value).GetEnumerator();
@@ -245,7 +245,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
             BuildTopology(parents, ref iter);
 
-            _rootTaskId = Utils.BuildTaskId(_taskSubscription, _rootId);
+            _rootTaskId = Utils.BuildTaskId(_taskStage, _rootId);
             _finalized = true;
 
             return this;
@@ -298,7 +298,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     _cachedMessageUpdates = tempUpdates.Values.ToList();
                 }
 
-                var data = new UpdateMessagePayload(_cachedMessageUpdates, SubscriptionName, OperatorId, _iteration);
+                var data = new UpdateMessagePayload(_cachedMessageUpdates, StageName, OperatorId, _iteration);
                 var returnMessage = new ElasticDriverMessageImpl(taskId, data);
                 returnMessages.Add(returnMessage);
             }
@@ -350,11 +350,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                         continue;
                     }
                     
-                    var parentTaskId = Utils.BuildTaskId(_taskSubscription, node.Parent.TaskId);
+                    var parentTaskId = Utils.BuildTaskId(_taskStage, node.Parent.TaskId);
 
                     updates.Add(new TopologyUpdate(parentTaskId, new List<string>() { taskIdToRemove }));
 
-                    var data = new FailureMessagePayload(updates, SubscriptionName, OperatorId, iter);
+                    var data = new FailureMessagePayload(updates, StageName, OperatorId, iter);
                     var returnMessage = new ElasticDriverMessageImpl(parentTaskId, data);
 
                     LOGGER.Log(Level.Info, "Task {0} is removed from topology of node {1}", taskIdToRemove, parentTaskId);
@@ -405,7 +405,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                 {
                     if (children.Current.FailState == DataNodeState.Reachable)
                     {
-                        var taskId = Utils.BuildTaskId(_taskSubscription, children.Current.TaskId);
+                        var taskId = Utils.BuildTaskId(_taskStage, children.Current.TaskId);
                         children.Current.FailState = DataNodeState.Unreachable;
                         _nodesWaitingToJoinTopologyInNextIteration.Add(taskId);
                         _lostNodesToBeRemoved.Add(taskId);
@@ -435,7 +435,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
                     if (numNodesToAdd > 0)
                     {
                         var children = _nodesWaitingToJoinTopology.Take(numNodesToAdd).ToArray();
-                        var taskId = Utils.BuildTaskId(_taskSubscription, id);
+                        var taskId = Utils.BuildTaskId(_taskStage, id);
 
                         LOGGER.Log(Level.Info, string.Format("Tasks [{0}] are added to node {1} in iteration {2}", string.Join(",", children), taskId, _iteration));
 
@@ -456,13 +456,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
                         if (taskId == _rootTaskId)
                         {
-                            updates.Add(id, new TopologyUpdate(Utils.BuildTaskId(_taskSubscription, id), buffer));
+                            updates.Add(id, new TopologyUpdate(Utils.BuildTaskId(_taskStage, id), buffer));
                         }
                         else
                         {
                             if (!updates.TryGetValue(id, out TopologyUpdate value))
                             {
-                                value = new TopologyUpdate(Utils.BuildTaskId(_taskSubscription, id), buffer, Utils.BuildTaskId(_taskSubscription, _nodes[id].Parent.TaskId));
+                                value = new TopologyUpdate(Utils.BuildTaskId(_taskStage, id), buffer, Utils.BuildTaskId(_taskStage, _nodes[id].Parent.TaskId));
                                 updates.Add(id, value);
                             }
                             else

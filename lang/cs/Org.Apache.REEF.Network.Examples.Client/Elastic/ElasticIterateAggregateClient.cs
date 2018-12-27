@@ -42,7 +42,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
         {
             const int numIterations = 100;
             const string driverId = "ElasticIterateAggregateDriver";
-            const string subscription = "IterateAggregate";
+            const string stage = "IterateAggregate";
 
             IConfiguration driverConfig = TangFactory.GetTang().NewConfigurationBuilder(
                 DriverConfiguration.ConfigurationModule
@@ -72,7 +72,7 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
 
             IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
-                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultSubscriptionName>(subscription)
+                .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultStageName>(stage)
                 .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 

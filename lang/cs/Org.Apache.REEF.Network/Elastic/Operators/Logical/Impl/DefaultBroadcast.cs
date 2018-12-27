@@ -26,6 +26,9 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using static Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
+using Org.Apache.REEF.Tang.Implementations.Tang;
+using Org.Apache.REEF.Tang.Exceptions;
+using Org.Apache.REEF.Tang.Implementations.Configuration;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 {
@@ -59,6 +62,19 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 configurations)
         {
             OperatorName = Constants.Broadcast;
+        }
+
+        internal override void GetCodecConfiguration(ref IConfiguration conf)
+        {
+            if(CODECMAP.TryGetValue(typeof(T), out IConfiguration codecConf))
+            {
+                conf = Configurations.Merge(conf, codecConf);
+                base.GetCodecConfiguration(ref conf);
+            }
+            else
+            {
+                throw new IllegalStateException($"Codec for type {typeof(T)} not found.");
+            }
         }
 
         /// <summary>

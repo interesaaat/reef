@@ -37,9 +37,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical
         int OperatorId { get; set; }
 
         /// <summary>
-        /// The subscription of the operator using the topology.
+        /// The stage of the operator using the topology.
         /// </summary>
-        string SubscriptionName { get; set; }
+        string StageName { get; set; }
 
         /// <summary>
         /// Adds a new task to the topology.

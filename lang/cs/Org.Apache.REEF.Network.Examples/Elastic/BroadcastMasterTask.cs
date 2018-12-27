@@ -26,31 +26,31 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastMasterTask : ITask, IObserver<ICloseEvent>
+    public class BroadcastMasterTask : ITask
     {
-        private readonly IElasticTaskSetService _serviceClient;
-        private readonly IElasticTaskSetSubscription _subscriptionClient;
+        private readonly IElasticContext _contextClient;
+        private readonly IElasticStage _stageClient;
 
         private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
         public BroadcastMasterTask(
-            IElasticTaskSetService serviceClient)
+            IElasticContext serviceClient)
         {
-            _serviceClient = serviceClient;
+            _contextClient = serviceClient;
             _cancellationSource = new CancellationTokenSource();
 
-            _subscriptionClient = _serviceClient.GetSubscription("Broadcast");
+            _stageClient = _contextClient.GetStage("Broadcast");
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.WaitForTaskRegistration(_cancellationSource);
+            _contextClient.WaitForTaskRegistration(_cancellationSource);
 
             var rand = new Random();
             int number = 0;
 
-            using (var workflow = _subscriptionClient.Workflow)
+            using (var workflow = _stageClient.Workflow)
             {
                 try
                 {
@@ -84,20 +84,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         public void Dispose()
         {
             _cancellationSource.Cancel();
-            _serviceClient.Dispose();
-        }
-
-        public void OnNext(ICloseEvent value)
-        {
-            _subscriptionClient.Cancel();
-        }
-
-        public void OnError(Exception error)
-        {
-        }
-
-        public void OnCompleted()
-        {
+            _contextClient.Dispose();
         }
     }
 }

@@ -55,23 +55,23 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <summary>
         /// Constructor for a communicating topology.
         /// </summary>
-        //// <param name="taskId">The identifier of the task the topology is running on</param>
+        /// <param name="stageName">The stage name the topology is working on</param>
+        /// <param name="taskId">The identifier of the task the topology is running on</param>
         /// <param name="rootTaskId">The identifier of the root note in the topology</param>
-        /// <param name="subscriptionName">The subscription name the topology is working on</param>
         /// <param name="operatorId">The identifier of the operator for this topology</param>
         /// <param name="retry">How many times the topology will retry to send a message</param>
         /// <param name="timeout">After how long the topology waits for an event</param>
         /// <param name="disposeTimeout">Maximum wait time for topology disposal</param>
         /// <param name="commService">Class responsible for communication</param>
         public OperatorTopologyWithCommunication(
+            string stageName,
             string taskId, 
             string rootTaskId, 
-            string subscription, 
             int operatorId, 
             CommunicationService commService, 
             int retry, 
             int timeout, 
-            int disposeTimeout) : base(taskId, rootTaskId, subscription, operatorId)
+            int disposeTimeout) : base(stageName, taskId, rootTaskId, operatorId)
         {
             _initialized = false;
             _commService = commService;
@@ -91,11 +91,11 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// Communicate to the driver that the current subscrition has completed its
         /// execution.
         /// </summary>
-        public void SubscriptionComplete()
+        public void StageComplete()
         {
             if (TaskId == RootTaskId)
             {
-                _commService.SubscriptionComplete(TaskId);
+                _commService.StageComplete(TaskId);
             }
         }
 

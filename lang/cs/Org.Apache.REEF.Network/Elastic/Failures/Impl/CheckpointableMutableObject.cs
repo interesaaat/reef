@@ -34,13 +34,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         [Inject]
         private CheckpointableMutableObject(
             [Parameter(typeof(OperatorParameters.Checkpointing))] int level,
-            ICheckpointState checkpoint) : base()
-        {
-            Level = (CheckpointLevel)level;
-            _checkpoint = checkpoint;
-        }
-
-        private CheckpointableMutableObject() : base()
+            ICheckpointState checkpoint) : base(level, checkpoint)
         {
         }
 
@@ -69,10 +63,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// <returns>An empty checkpointable state</returns>
         public override ICheckpointableState Create()
         {
-            return new CheckpointableMutableObject<T>()
-            {
-                Level = Level,
-            };
+            return new CheckpointableMutableObject<T>((int)Level, _checkpoint);
         }
     }
 }

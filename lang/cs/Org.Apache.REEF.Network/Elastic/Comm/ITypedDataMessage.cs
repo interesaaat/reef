@@ -15,23 +15,24 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
-
-namespace Org.Apache.REEF.Network.Elastic.Task
+namespace Org.Apache.REEF.Network.Elastic.Comm
 {
     /// <summary>
-    /// Used by Tasks to initialize Group Communication and fetch Subscriptions.
+    /// Typed interface for data messages.
+    /// This is used to provide a unified interface over the
+    /// different types of data messages.
     /// </summary>
-    [DefaultImplementation(typeof(DefaultTaskSetService))]
-    public interface IElasticTaskSetService : IWaitForTaskRegistration, IDisposable
+    /// <typeparam name="T">The ty</typeparam>
+    internal interface ITypedDataMessage<T>
     {
         /// <summary>
-        /// Gets the Subscrption with the given name.
+        /// The data contained in the message.
         /// </summary>
-        /// <param name="subscriptionName">The name of the Subscription</param>
-        /// <returns>The configured subscription</returns>
-        IElasticTaskSetSubscription GetSubscription(string subscriptionName);
+        T Data { get; }
+
+        /// <summary>
+        /// The iteration number for the message.
+        /// </summary>
+        int Iteration { get; }
     }
 }

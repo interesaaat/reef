@@ -28,25 +28,25 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     public class IterateBroadcastSlaveTask : ITask, IObserver<ICloseEvent>
     {
-        private readonly IElasticTaskSetService _serviceClient;
-        private readonly IElasticTaskSetSubscription _subscriptionClient;
+        private readonly IElasticContext _contextClient;
+        private readonly IElasticStage _stageClient;
 
         [Inject]
         public IterateBroadcastSlaveTask(
-            IElasticTaskSetService serviceClient)
+            IElasticContext serviceClient)
         {
-            _serviceClient = serviceClient;
+            _contextClient = serviceClient;
 
-            _subscriptionClient = _serviceClient.GetSubscription("IterateBroadcast");
+            _stageClient = _contextClient.GetStage("IterateBroadcast");
         }
 
         public byte[] Call(byte[] memento)
         {
-            _serviceClient.WaitForTaskRegistration();
+            _contextClient.WaitForTaskRegistration();
 
             var rand = new Random();
 
-            using (var workflow = _subscriptionClient.Workflow)
+            using (var workflow = _stageClient.Workflow)
             {
                 try
                 {
@@ -108,13 +108,13 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
 
         public void Dispose()
         {
-            _subscriptionClient.Cancel();
-            _serviceClient.Dispose();
+            _stageClient.Cancel();
+            _contextClient.Dispose();
         }
 
         public void OnNext(ICloseEvent value)
         {
-            _subscriptionClient.Cancel();
+            _stageClient.Cancel();
         }
 
         public void OnError(Exception error)

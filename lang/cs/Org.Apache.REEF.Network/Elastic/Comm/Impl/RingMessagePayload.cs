@@ -26,8 +26,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// </summary>
     internal sealed class RingMessagePayload : DriverMessagePayload
     {
-        public RingMessagePayload(string nextTaskId, string subscriptionName, int operatorId, int iteration)
-            : base(subscriptionName, operatorId, iteration)
+        public RingMessagePayload(string nextTaskId, string stageName, int operatorId, int iteration)
+            : base(stageName, operatorId, iteration)
         {
             PayloadType = DriverMessagePayloadType.Ring;
             NextTaskId = nextTaskId;
@@ -35,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
         public override object Clone()
         {
-            return new RingMessagePayload(NextTaskId, SubscriptionName, OperatorId, Iteration);
+            return new RingMessagePayload(NextTaskId, StageName, OperatorId, Iteration);
         }
 
         internal string NextTaskId { get; private set; }
@@ -43,10 +43,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         internal override byte[] Serialize()
         {
             byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
+            byte[] stageBytes = ByteUtilities.StringToByteArrays(StageName);
             int offset = 0;
 
-            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscriptionBytes.Length + sizeof(int) + sizeof(int)];
+            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + stageBytes.Length + sizeof(int) + sizeof(int)];
 
             Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -54,11 +54,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
             offset += nextBytes.Length;
 
-            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(stageBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
-            offset += subscriptionBytes.Length;
+            Buffer.BlockCopy(stageBytes, 0, buffer, offset, stageBytes.Length);
+            offset += stageBytes.Length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -76,14 +76,14 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             length = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
-            string subscription = ByteUtilities.ByteArraysToString(data, offset, length);
+            string stage = ByteUtilities.ByteArraysToString(data, offset, length);
             offset += length;
 
             int operatorId = BitConverter.ToInt32(data, offset);
             offset += sizeof(int);
             int iteration = BitConverter.ToInt32(data, offset);
 
-            return new RingMessagePayload(destination, subscription, operatorId, iteration);
+            return new RingMessagePayload(destination, stage, operatorId, iteration);
         }
     }
 }

@@ -107,7 +107,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                             return false;
                         }
 
-                        if (!Subscription.IsCompleted && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
+                        if (!Stage.IsCompleted && _failureMachine.State.FailureState < (int)DefaultFailureStates.Fail)
                         {
                             LOGGER.Log(Level.Info, "{0} joins the ring", message.TaskId);
 
@@ -157,11 +157,11 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             var isInit = msgs == null;
             var isComputationStarted = _count > 0;
-            var id = Subscription.SubscriptionName + "_" + _id;
+            var id = Stage.StageName + "_" + _id;
 
             if (isInit)
             {
-                LOGGER.Log(Level.Warning, "Timeout for Operator {0} in Subscription {1} initialized", _id, Subscription.SubscriptionName);
+                LOGGER.Log(Level.Warning, "Timeout for Operator {0} in Stage {1} initialized", _id, Stage.StageName);
                 nextTimeouts.Add(new OperatorTimeout(10000, alarm.Handler, id));
 
                 return;

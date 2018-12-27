@@ -102,10 +102,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 _prev.Build();
             }
 
-            Subscription.IsIterative = true;
+            Stage.IsIterative = true;
 
             // Pipelines can have more then 1 iterator: make the last one aware that it has to 
-            // complete the subscription when done
+            // complete the stage when done
             _isLast = _next.CheckIfLastIterator();
 
             _operatorFinalized = true;
@@ -216,10 +216,10 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     0.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-                if (!rescheduleEvent.RescheduleTaskConfigurations.TryGetValue(Subscription.SubscriptionName, out IList<IConfiguration> confs))
+                if (!rescheduleEvent.RescheduleTaskConfigurations.TryGetValue(Stage.StageName, out IList<IConfiguration> confs))
                 {
                     confs = new List<IConfiguration>();
-                    rescheduleEvent.RescheduleTaskConfigurations.Add(Subscription.SubscriptionName, confs);
+                    rescheduleEvent.RescheduleTaskConfigurations.Add(Stage.StageName, confs);
                 }
                 confs.Add(checkpointConf);
 
@@ -250,7 +250,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
             {
                 if (_isLast)
                 {
-                    Subscription.IsCompleted = true;
+                    Stage.IsCompleted = true;
                 }
             }
             else

@@ -80,7 +80,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         public List<IElasticDriverMessage> FailureResponse { get; private set; }
 
         /// <summary>
-        /// The configurations for the subscriptions of the task.
+        /// The configurations for the stages of the task.
         /// </summary>
         public Dictionary<string, IList<IConfiguration>> RescheduleTaskConfigurations { get; private set; }
 

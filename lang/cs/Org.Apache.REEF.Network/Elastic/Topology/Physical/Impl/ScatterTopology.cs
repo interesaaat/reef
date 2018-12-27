@@ -36,7 +36,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         [Inject]
         private ScatterTopology(
-            [Parameter(typeof(OperatorParameters.SubscriptionName))] string subscriptionName,
+            [Parameter(typeof(OperatorParameters.StageName))] string stageName,
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.TopologyChildTaskIds))] ISet<int> children,
             [Parameter(typeof(OperatorParameters.PiggybackTopologyUpdates))] bool piggyback,
@@ -49,8 +49,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             CommunicationService commLayer,
             CentralizedCheckpointService checkpointService) : base(
                 taskId,
-                Utils.BuildTaskId(subscriptionName, rootId),
-                subscriptionName,
+                Utils.BuildTaskId(stageName, rootId),
+                stageName,
                 operatorId,
                 children,
                 piggyback,
@@ -67,7 +67,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (_piggybackTopologyUpdates)
             {
-                return new SplittableDataMessageWithTopology<T>(SubscriptionName, OperatorId, iteration, data);
+                return new SplittableDataMessageWithTopology<T>(StageName, OperatorId, iteration, data);
             }
             else
             {

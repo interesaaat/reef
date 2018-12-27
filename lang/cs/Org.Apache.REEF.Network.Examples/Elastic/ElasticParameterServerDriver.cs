@@ -65,17 +65,17 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
         private readonly IConfiguration _codecConfig;
         private readonly IEvaluatorRequestor _evaluatorRequestor;
 
-        private readonly IElasticTaskSetService _service;
+        private readonly IElasticContext _context;
 
-        private readonly IElasticTaskSetSubscription _serversSubscription;
+        private readonly IElasticStage _serversStage;
 
-        private readonly IElasticTaskSetSubscription _serverA;
-        private readonly IElasticTaskSetSubscription _serverB;
-        private readonly IElasticTaskSetSubscription _serverC;
+        private readonly IElasticStage _serverA;
+        private readonly IElasticStage _serverB;
+        private readonly IElasticStage _serverC;
 
-        private readonly ITaskSetManager _serversTaskManager;
+        private readonly IElasticTaskSetManager _serversTaskManager;
 
-        private readonly ITaskSetManager _workersTaskManager;
+        private readonly IElasticTaskSetManager _workersTaskManager;
 
         [Inject]
         private ElasticParameterServerDriver(
@@ -83,12 +83,12 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumEvaluators))] int numEvaluators,
             [Parameter(typeof(ElasticServiceConfigurationOptions.StartingPort))] int startingPort,
             [Parameter(typeof(ElasticServiceConfigurationOptions.PortRange))] int portRange,
-            IElasticTaskSetService service,
+            IElasticContext service,
             IEvaluatorRequestor evaluatorRequestor)
         {
             _numIterations = numIterations;
             _numEvaluators = numEvaluators;
-            _service = service;
+            _context = service;
             _evaluatorRequestor = evaluatorRequestor;
 
             _tcpPortProviderConfig = TangFactory.GetTang().NewConfigurationBuilder()
@@ -141,10 +141,10 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                     .Build())
                 .Build();
 
-            // Subscriptions
-            IElasticTaskSetSubscription subscription = _service.NewTaskSetSubscription("servers", 3);
+            // Stages
+            IElasticStage stage = _context.CreateNewStage("servers", 3);
 
-            ElasticOperator pipeline = subscription.RootOperator;
+            ElasticOperator pipeline = stage.RootOperator;
 
             pipeline.Iterate(iteratorConfig)
                     .Broadcast<int>(1, new FlatTopology(1),
@@ -152,11 +152,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         CheckpointLevel.None)
                     .Build();
 
-            _serversSubscription = subscription.Build();
+            _serversStage = stage.Build();
 
-            subscription = _service.NewTaskSetSubscription("server A", 7);
+            stage = _context.CreateNewStage("server A", 7);
 
-            pipeline = subscription.RootOperator;
+            pipeline = stage.RootOperator;
 
             pipeline.Broadcast<int>(1, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
@@ -167,11 +167,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         reduceFunctionConfig)
                     .Build();
 
-            _serverA = subscription.Build();
+            _serverA = stage.Build();
 
-            subscription = _service.NewTaskSetSubscription("server B", 7);
+            stage = _context.CreateNewStage("server B", 7);
 
-            pipeline = subscription.RootOperator;
+            pipeline = stage.RootOperator;
 
             pipeline.Broadcast<int>(2, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
@@ -182,11 +182,11 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         reduceFunctionConfig)
                     .Build();
 
-            _serverB = subscription.Build();
+            _serverB = stage.Build();
 
-            subscription = _service.NewTaskSetSubscription("server C", 7);
+            stage = _context.CreateNewStage("server C", 7);
 
-            pipeline = subscription.RootOperator;
+            pipeline = stage.RootOperator;
 
             pipeline.Broadcast<int>(3, new TreeTopology(1, 2, true),
                         new DefaultFailureStateMachine(),
@@ -197,24 +197,24 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                         reduceFunctionConfig)
                     .Build();
 
-            _serverC = subscription.Build();
+            _serverC = stage.Build();
 
             // Create the servers task manager
-            _serversTaskManager = new DefaultTaskSetManager(3, _evaluatorRequestor, masterServerTaskConfiguration, slaveServerTaskConfiguration);
+            _serversTaskManager = _context.CreateNewTaskSetManager(3, masterServerTaskConfiguration, slaveServerTaskConfiguration);
 
-            // Register the subscriptions to the server task manager
-            _serversTaskManager.AddTaskSetSubscription(_serversSubscription);
-            _serversTaskManager.AddTaskSetSubscription(_serverA);
-            _serversTaskManager.AddTaskSetSubscription(_serverB);
-            _serversTaskManager.AddTaskSetSubscription(_serverC);
+            // Register the stages to the server task manager
+            _serversTaskManager.AddStage(_serversStage);
+            _serversTaskManager.AddStage(_serverA);
+            _serversTaskManager.AddStage(_serverB);
+            _serversTaskManager.AddStage(_serverC);
 
             // Create the workers task manager
-            _workersTaskManager = new DefaultTaskSetManager(6, _evaluatorRequestor, workerTaskConfiguration);
+            _workersTaskManager = _context.CreateNewTaskSetManager(6, workerTaskConfiguration);
 
-            // Register the subscriptions to the workers task manager
-            _workersTaskManager.AddTaskSetSubscription(_serverA);
-            _workersTaskManager.AddTaskSetSubscription(_serverB);
-            _workersTaskManager.AddTaskSetSubscription(_serverC);
+            // Register the stages to the workers task manager
+            _workersTaskManager.AddStage(_serverA);
+            _workersTaskManager.AddStage(_serverB);
+            _workersTaskManager.AddStage(_serverC);
 
             // Build the task set managers
             _serversTaskManager.Build();
@@ -255,7 +255,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
             IConfiguration contextConf = ContextConfiguration.ConfigurationModule
                 .Set(ContextConfiguration.Identifier, identifier)
                 .Build();
-            IConfiguration serviceConf = _service.GetServiceConfiguration();
+            IConfiguration serviceConf = _context.GetElasticServiceConfiguration();
 
             serviceConf = Configurations.Merge(serviceConf, _tcpPortProviderConfig, _codecConfig);
             allocatedEvaluator.SubmitContextAndService(contextConf, serviceConf);

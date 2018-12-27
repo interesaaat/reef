@@ -25,7 +25,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
 {
     /// <summary>
     /// Entry point for classes expected to be aware and act over failures.
-    /// Used to propagate failures through operators, subscriptions and the service.
+    /// Used to propagate failures through operators, stages and the service.
     /// </summary>
     [Unstable("0.16", "API may change")]
     public interface IFailureResponse

@@ -54,7 +54,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
-            CommunicationService communicationService,
             CancellationSource cancellationSource)
         {
             _limit = num;
@@ -75,13 +74,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Register the current task id as well as notify the root task for the operator.
         /// </summary>
-        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="stageName">The name of the stage</param>
         /// <param name="operatorId">The operator identifier</param>
         /// <param name="taskId">The identifier of the current task</param>
         /// <param name="rootTaskId">The identifier of the root task of the operator</param>
-        public void RegisterNode(string subscriptionName, int operatorId, string taskId, string rootTaskId)
+        public void RegisterNode(string stageName, int operatorId, string taskId, string rootTaskId)
         {
-            var id = new CheckpointIdentifier(subscriptionName, operatorId);
+            var id = new CheckpointIdentifier(stageName, operatorId);
             if (!_roots.ContainsKey(id) && taskId != rootTaskId)
             {
                 _roots.TryAdd(id, rootTaskId);
@@ -94,9 +93,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <param name="state">The state to checkpoint</param>
         public void Checkpoint(ICheckpointState state)
         {
-            if (state.SubscriptionName == null || state.SubscriptionName == string.Empty)
+            if (state.StageName == null || state.StageName == string.Empty)
             {
-                throw new ArgumentException(nameof(state.SubscriptionName), "Null or empty.");
+                throw new ArgumentException(nameof(state.StageName), "Null or empty.");
             }
 
             if (state.OperatorId < 0)
@@ -105,7 +104,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
 
             SortedDictionary<int, ICheckpointState> checkpoints;
-            var id = new CheckpointIdentifier(state.SubscriptionName, state.OperatorId);
+            var id = new CheckpointIdentifier(state.StageName, state.OperatorId);
             ManualResetEvent waiting;
 
             if (!_checkpoints.TryGetValue(id, out checkpoints))
@@ -129,15 +128,15 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// </summary>
         /// <param name="checkpoint">The retrieve checkpoint if exists</param>
         /// <param name="taskId">The local task identifier</param>
-        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="stageName">The name of the stage</param>
         /// <param name="operatorId">The operator identifier</param>
         /// <param name="iteration">The iteration number of the checkpoint</param>
         /// <param name="requestToRemote">Whether to request the checkpoint remotely if not found locally</param>
         /// <returns>True if the checkpoint is found, false otherwise</returns>
-        public bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string subscriptionName, int operatorId, int iteration = -1, bool requestToRemote = true)
+        public bool GetCheckpoint(out ICheckpointState checkpoint, string taskId, string stageName, int operatorId, int iteration = -1, bool requestToRemote = true)
         {
             SortedDictionary<int, ICheckpointState> checkpoints;
-            var id = new CheckpointIdentifier(subscriptionName, operatorId);
+            var id = new CheckpointIdentifier(stageName, operatorId);
             checkpoint = null;
 
             if (!_checkpoints.TryGetValue(id, out checkpoints))
@@ -169,7 +168,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 do
                 {
                     LOGGER.Log(Level.Info, $"Retrieving the checkpoint from {rootTaskId}.");
-                    var cpm = new CheckpointMessageRequest(subscriptionName, operatorId, iteration);
+                    var cpm = new CheckpointMessageRequest(stageName, operatorId, iteration);
 
                     CommunicationService.Send(rootTaskId, cpm, _cancellationSource.Source);
 
@@ -199,13 +198,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Remove a checkpoint.
         /// </summary>
-        /// <param name="subscriptionName">The subscription of the checkpoint to remove</param>
+        /// <param name="stageName">The stage of the checkpoint to remove</param>
         /// <param name="operatorId">The operator id of the checkpoint to remove</param>
-        public void RemoveCheckpoint(string subscriptionName, int operatorId)
+        public void RemoveCheckpoint(string stageName, int operatorId)
         {
-            if (subscriptionName == null || subscriptionName == string.Empty)
+            if (stageName == null || stageName == string.Empty)
             {
-                throw new ArgumentException(nameof(subscriptionName), "Null or empty.");
+                throw new ArgumentException(nameof(stageName), "Null or empty.");
             }
 
             if (operatorId < 0)
@@ -213,7 +212,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 throw new ArgumentException(nameof(operatorId), "Invalid.");
             }
 
-            var id = new CheckpointIdentifier(subscriptionName, operatorId);
+            var id = new CheckpointIdentifier(stageName, operatorId);
             SortedDictionary<int, ICheckpointState> checkpoints;
 
             _checkpoints.TryRemove(id, out checkpoints);

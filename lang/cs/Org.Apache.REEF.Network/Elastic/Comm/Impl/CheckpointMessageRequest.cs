@@ -28,13 +28,13 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// <summary>
         /// Constructor.
         /// </summary>
-        /// <param name="subscriptionName">The subscription name ffor the checkpoint to retrieve</param>
+        /// <param name="stageName">The stage name ffor the checkpoint to retrieve</param>
         /// <param name="operatorId">The operator identifier</param>
         /// <param name="iteration">The iteration of the checkpoint of interest</param>
         public CheckpointMessageRequest(
-           string subscriptionName,
+           string stageName,
            int operatorId,
-           int iteration) : base(subscriptionName, operatorId)
+           int iteration) : base(stageName, operatorId)
         {
             Iteration = iteration;
         }
@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// </summary>
         public override object Clone()
         {
-            return new CheckpointMessageRequest(SubscriptionName, OperatorId, Iteration);
+            return new CheckpointMessageRequest(StageName, OperatorId, Iteration);
         }
     }
 }

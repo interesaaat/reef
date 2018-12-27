@@ -29,13 +29,13 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// <summary>
         /// Create a new Group Communication Message.
         /// </summary>
-        /// <param name="subscriptionName">The name of the subscription</param>
+        /// <param name="stageName">The name of the stage</param>
         /// <param name="operatorId">The id of the operator sending the message</param>
         protected GroupCommunicationMessage(
-            string subscriptionName,
+            string stageName,
             int operatorId)
         {
-            SubscriptionName = subscriptionName;
+            StageName = stageName;
             OperatorId = operatorId;
         }
 
@@ -45,8 +45,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         public abstract object Clone();
 
         /// <summary>
-        /// Returns the Subscription.
-        internal string SubscriptionName { get; private set; }
+        /// Returns the Stage.
+        internal string StageName { get; private set; }
 
         /// <summary>
         /// Returns the Operator id.

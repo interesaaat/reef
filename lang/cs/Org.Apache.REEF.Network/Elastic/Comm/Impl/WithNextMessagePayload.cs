@@ -26,8 +26,8 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// </summary>
     internal abstract class WithNextMessagePayload : DriverMessagePayload
     {
-        public WithNextMessagePayload(string nextTaskId, string subscriptionName, int iteration, int operatorId)
-            : base(subscriptionName, operatorId, iteration)
+        public WithNextMessagePayload(string nextTaskId, string stageName, int iteration, int operatorId)
+            : base(stageName, operatorId, iteration)
         {
             NextTaskId = nextTaskId;
         }
@@ -37,10 +37,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         internal override byte[] Serialize()
         {
             byte[] nextBytes = ByteUtilities.StringToByteArrays(NextTaskId);
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(SubscriptionName);
+            byte[] stageBytes = ByteUtilities.StringToByteArrays(StageName);
             int offset = 0;
 
-            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + subscriptionBytes.Length + sizeof(int) + sizeof(int)];
+            byte[] buffer = new byte[sizeof(int) + nextBytes.Length + sizeof(int) + stageBytes.Length + sizeof(int) + sizeof(int)];
 
             Buffer.BlockCopy(BitConverter.GetBytes(nextBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
@@ -48,11 +48,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             Buffer.BlockCopy(nextBytes, 0, buffer, offset, nextBytes.Length);
             offset += nextBytes.Length;
 
-            Buffer.BlockCopy(BitConverter.GetBytes(subscriptionBytes.Length), 0, buffer, offset, sizeof(int));
+            Buffer.BlockCopy(BitConverter.GetBytes(stageBytes.Length), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscriptionBytes, 0, buffer, offset, subscriptionBytes.Length);
-            offset += subscriptionBytes.Length;
+            Buffer.BlockCopy(stageBytes, 0, buffer, offset, stageBytes.Length);
+            offset += stageBytes.Length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(OperatorId), 0, buffer, offset, sizeof(int));
             offset += sizeof(int);

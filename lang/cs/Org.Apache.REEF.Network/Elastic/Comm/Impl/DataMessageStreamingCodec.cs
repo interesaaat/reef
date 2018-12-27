@@ -55,12 +55,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             reader.Read(ref metadata, 0, metadataSize);
             var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
 
-            string subscriptionName = res.Item1;
+            string stageName = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
             var data = _codec.Read(reader);
 
-            return new DataMessage<T>(subscriptionName, operatorId, iteration, data);
+            return new DataMessage<T>(stageName, operatorId, iteration, data);
         }
 
         /// <summary>
@@ -92,11 +92,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
             
             var data = await _codec.ReadAsync(reader, token);
-            string subscriptionString = res.Item1;
+            string stageString = res.Item1;
             int operatorId = res.Item2;
             int iteration = res.Item3;
 
-            return new DataMessage<T>(subscriptionString, operatorId, iteration, data);
+            return new DataMessage<T>(stageString, operatorId, iteration, data);
         }
 
         /// <summary>
@@ -116,15 +116,15 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
         private static byte[] GenerateMetaDataEncoding(DataMessage<T> obj)
         {
-            byte[] subscriptionBytes = ByteUtilities.StringToByteArrays(obj.SubscriptionName);
-            var length = subscriptionBytes.Length;
+            byte[] stageBytes = ByteUtilities.StringToByteArrays(obj.StageName);
+            var length = stageBytes.Length;
             byte[] metadataBytes = new byte[sizeof(int) + length + sizeof(int) + sizeof(int)];
             int offset = 0;
 
             Buffer.BlockCopy(BitConverter.GetBytes(length), 0, metadataBytes, offset, sizeof(int));
             offset += sizeof(int);
 
-            Buffer.BlockCopy(subscriptionBytes, 0, metadataBytes, offset, length);
+            Buffer.BlockCopy(stageBytes, 0, metadataBytes, offset, length);
             offset += length;
 
             Buffer.BlockCopy(BitConverter.GetBytes(obj.OperatorId), 0, metadataBytes, offset, sizeof(int));
@@ -135,18 +135,18 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return metadataBytes;
         }
 
-        private static Tuple<string, int, int> GenerateMetaDataDecoding(byte[] obj, int subscriptionLength)
+        private static Tuple<string, int, int> GenerateMetaDataDecoding(byte[] obj, int stageLength)
         {
             int offset = 0;
-            string subscriptionString = ByteUtilities.ByteArraysToString(obj, offset, subscriptionLength);
-            offset += subscriptionLength;
+            string stageString = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
+            offset += stageLength;
 
             int operatorInt = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
             int iterationInt = BitConverter.ToInt32(obj, offset);
 
-            return new Tuple<string, int, int>(subscriptionString, operatorInt, iterationInt);
+            return new Tuple<string, int, int>(stageString, operatorInt, iterationInt);
         }
     }
 }
