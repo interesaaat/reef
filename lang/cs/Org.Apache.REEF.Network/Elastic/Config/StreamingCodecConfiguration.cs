@@ -23,8 +23,7 @@ using Org.Apache.REEF.Wake.StreamingCodec;
 namespace Org.Apache.REEF.Network.Elastic.Config
 {
     /// <summary>
-    /// Defines configuration for streaming codecs and pipeline message 
-    /// streaming codecs by taking streaming codec as input.
+    /// Defines configuration for streaming codecs of messages.
     /// </summary>
     /// <typeparam name="T">Generic type of message</typeparam>
     public sealed class StreamingCodecConfiguration<T> : ConfigurationModuleBuilder
@@ -38,17 +37,6 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         /// Configuration Module for Codec
         /// </summary>
         public static ConfigurationModule Conf = new StreamingCodecConfiguration<T>()
-            .BindImplementation(GenericType<IStreamingCodec<T>>.Class, Codec)
-            .BindImplementation(GenericType<IStreamingCodec<DataMessage<T>>>.Class,
-                GenericType<DataMessageStreamingCodec<T>>.Class)
-            .BindImplementation(GenericType<IStreamingCodec<DataMessageWithTopology<T>>>.Class,
-                GenericType<DataMessageWithTopologyStreamingCodec<T>>.Class)
-            .Build();
-
-        /// <summary>
-        /// Configuration Module for Codec
-        /// </summary>
-        public static ConfigurationModule ConfWithCheckpoint = new StreamingCodecConfiguration<T>()
             .BindImplementation(GenericType<IStreamingCodec<T>>.Class, Codec)
             .BindImplementation(GenericType<IStreamingCodec<DataMessage<T>>>.Class,
                 GenericType<DataMessageStreamingCodec<T>>.Class)

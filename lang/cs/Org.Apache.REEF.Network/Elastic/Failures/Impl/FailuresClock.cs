@@ -33,11 +33,15 @@ using Org.Apache.REEF.Wake.Time.Runtime;
 
 namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 {
-    public sealed class FailuresClock : IClock
+    /// <summary>
+    /// Clock used to trigger failures events.
+    /// </summary>
+    internal sealed class FailuresClock : IClock
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(FailuresClock));
 
         private static int numberOfInstantiations = 0;
+
         private readonly ITimer _timer;
         private readonly PubSubSubject<Time> _handlers;
         private readonly PriorityQueue<Time> _schedule;
@@ -51,7 +55,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         private bool _disposed;
 
         /// <summary>
-        /// Create a new RuntimeClock with injectable IObservers
+        /// Create a new failure clock with injectable IObservers.
         /// </summary>
         /// <param name="timer">The runtime clock timer</param>
         /// <param name="startHandler">The start handler</param>
@@ -86,7 +90,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Schedule a TimerEvent at the given future offset
+        /// Schedule an alarm at the given future offset.
         /// </summary>
         /// <param name="offset">The offset in the future to schedule the alarm, in msec</param>
         /// <param name="handler">The IObserver to to be called</param>
@@ -109,11 +113,11 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Schedule a TimerEvent at the given future offset
+        /// Schedule a timeout at the given future offset.
         /// </summary>
         /// <param name="offset">The offset in the future to schedule the alarm, in msec</param>
         /// <param name="handler">The IObserver to be called</param>
-        public void ScheduleAlarm(ITimeout timeout)
+        public void ScheduleAlarm(ITimeout offset)
         {
             if (_disposed)
             {
@@ -122,13 +126,13 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
 
             lock (_schedule)
             {
-                _schedule.Add(timeout.GetAlarm(_timer.CurrentTime));
+                _schedule.Add(offset.GetAlarm(_timer.CurrentTime));
                 Monitor.PulseAll(_schedule);
             }
         }
 
         /// <summary>
-        /// Clock is idle if it has no future alarms set
+        /// Clock is idle if it has no future alarms set.
         /// </summary>
         /// <returns>True if no future alarms are set, otherwise false</returns>
         public bool IsIdle()
@@ -140,7 +144,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Dispose of the clock and all scheduled alarms
+        /// Dispose of the clock and all scheduled alarms.
         /// </summary>
         public void Dispose()
         {
@@ -154,7 +158,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures.Impl
         }
 
         /// <summary>
-        /// Start the RuntimeClock.
+        /// Start the clock.
         /// Clock will continue to run and handle events until it has been disposed.
         /// </summary>
         public void Run()

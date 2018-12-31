@@ -21,12 +21,12 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
     /// Untyped data message sent by group communicationoOperators. This is the class inherited by 
-    /// GroupCommunicationMessage but seen by the Network Service.
+    /// ElasticGroupCommunicationMessage but seen by the Network Service.
     /// DataMessages are untyped and used to semplify message propapagation through the
     /// communication layers that are type-agnostic.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal abstract class DataMessage : GroupCommunicationMessage
+    internal abstract class DataMessage : ElasticGroupCommunicationMessage
     {
         /// <summary>
         /// Constructor for an untyped data message.

@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         DriverAwareOperatorTopology,
         IWaitForTaskRegistration,
         IDisposable,
-        IObserver<NsMessage<GroupCommunicationMessage>>
+        IObserver<NsMessage<ElasticGroupCommunicationMessage>>
     {
         protected bool _initialized;
 
@@ -47,8 +47,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected readonly int _timeout;
         protected readonly int _retry;
 
-        protected ConcurrentQueue<GroupCommunicationMessage> _sendQueue;
-        protected BlockingCollection<GroupCommunicationMessage> _messageQueue;
+        protected ConcurrentQueue<ElasticGroupCommunicationMessage> _sendQueue;
+        protected BlockingCollection<ElasticGroupCommunicationMessage> _messageQueue;
         protected readonly ConcurrentDictionary<int, string> _children;
         protected readonly CancellationTokenSource _cancellationSignal;
 
@@ -77,8 +77,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _commLayer = commLayer;
 
             _children = new ConcurrentDictionary<int, string>();
-            _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
-            _sendQueue = new ConcurrentQueue<GroupCommunicationMessage>();
+            _messageQueue = new BlockingCollection<ElasticGroupCommunicationMessage>();
+            _sendQueue = new ConcurrentQueue<ElasticGroupCommunicationMessage>();
 
             _cancellationSignal = new CancellationTokenSource();
 
@@ -156,9 +156,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// </summary>
         /// <param name="cancellationSource">The signal that the operation is cacelled</param>
         /// <returns></returns>
-        public virtual GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
+        public virtual ElasticGroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
             int retry = 1;
 
             while (!_messageQueue.TryTake(out message, _timeout, cancellationSource.Token))
@@ -184,7 +184,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// </summary>
         /// <param name="message">The message to communicate</param>
         /// <param name="cancellationSource">The signal for cancelling the operation</param>
-        public virtual void Send(GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
+        public virtual void Send(ElasticGroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
             _sendQueue.Enqueue(message);
 
@@ -198,7 +198,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// Handler for incoming messages from other topology nodes.
         /// </summary>
         /// <param name="message">The message that need to be devlivered to the operator</param>
-        public virtual void OnNext(NsMessage<GroupCommunicationMessage> message)
+        public virtual void OnNext(NsMessage<ElasticGroupCommunicationMessage> message)
         {
             if (_messageQueue.IsAddingCompleted)
             {
@@ -207,7 +207,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     throw new IllegalStateException("Trying to add messages to a closed non-empty queue.");
                 }
 
-                _messageQueue = new BlockingCollection<GroupCommunicationMessage>();
+                _messageQueue = new BlockingCollection<ElasticGroupCommunicationMessage>();
             }
 
             _messageQueue.Add(message.Data);
@@ -260,7 +260,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="cancellationSource">The singal in case the task is cancelled</param>
         protected virtual void Send(CancellationTokenSource cancellationSource)
         {
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
             while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
                 foreach (var child in _children.Values)

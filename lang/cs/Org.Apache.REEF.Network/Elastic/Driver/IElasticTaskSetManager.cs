@@ -35,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     public interface IElasticTaskSetManager : IFailureResponse, IDisposable
     {
         /// <summary>
-        /// An identifier for the set of Stages the Task Manager is subscribed to.
+        /// An identifier for the set of stages the task manager is subscribed to.
         /// The task set has to be built before retrieving its stages id.
         /// </summary>
         string StagesId { get; }
@@ -75,7 +75,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IElasticTaskSetManager Build();
 
         /// <summary>
-        /// Retrieves all stages having the context passed as a parameter
+        /// Retrieve all stages having the context passed as a parameter
         /// as master task context.
         /// </summary>
         /// <param name="context">The target context</param>
@@ -110,7 +110,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         /// <summary>
         /// Method implementing how the task set manager should react when a task message is received.
         /// </summary>
-        /// <param name="task">A message from a task</param>
+        /// <param name="message">A message from a task</param>
         void OnTaskMessage(ITaskMessage message);
 
         /// <summary>
@@ -132,7 +132,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         bool IsEvaluatorManagedBy(string id);
 
         /// <summary>
-        /// Whether this task set manger is done.
+        /// Whether this task set is done.
         /// </summary>
         bool IsCompleted();
 

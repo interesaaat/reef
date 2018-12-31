@@ -18,7 +18,6 @@
 using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Common.Tasks.Events;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Tang.Exceptions;
@@ -27,36 +26,48 @@ using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    public class DriverMessageHandler : IDriverMessageHandler
+    /// <summary>
+    /// Handler for incoming messages from the driver.
+    /// </summary>
+    public class ElasticDriverMessageHandler : IDriverMessageHandler
     {
+        /// <summary>
+        /// Injectable constructor.
+        /// </summary>
         [Inject]
-        public DriverMessageHandler()
+        private ElasticDriverMessageHandler()
         {
             DriverMessageObservers = new ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology>();
         }
 
+        /// <summary>
+        /// Observers of incoming messages from the driver.
+        /// </summary>
         internal ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> DriverMessageObservers { get; set; }
 
-        public void Handle(IDriverMessage value)
+        /// <summary>
+        /// Handle an incoming message.
+        /// </summary>
+        /// <param name="message">The message from the driver</param>
+        public void Handle(IDriverMessage message)
         {
-            if (value.Message.IsPresent())
-            {
-                var edm = ElasticDriverMessageImpl.From(value.Message.Value);
-                var id = NodeObserverIdentifier.FromMessage(edm.Message);
-                DriverAwareOperatorTopology operatorObserver;
 
-                if (!DriverMessageObservers.TryGetValue(id, out operatorObserver))
-                {
-                    throw new KeyNotFoundException("Unable to find registered Operator Topology for Stage " +
-                        edm.Message.StageName + " operator " + edm.Message.OperatorId);
-                }
-
-                operatorObserver.OnNext(edm.Message);
-            }
-            else
+            if (!message.Message.IsPresent())
             {
-                throw new IllegalStateException("Received message with no payload");
+                throw new IllegalStateException("Received message with no payload.");
             }
+
+            var edm = ElasticDriverMessageImpl.From(message.Message.Value);
+            var id = NodeObserverIdentifier.FromMessage(edm.Message);
+            DriverAwareOperatorTopology operatorObserver;
+
+            if (!DriverMessageObservers.TryGetValue(id, out operatorObserver))
+            {
+                throw new KeyNotFoundException("Unable to find registered operator topology for stage " +
+                    edm.Message.StageName + " operator " + edm.Message.OperatorId);
+            }
+
+            operatorObserver.OnNext(edm.Message);
         }
     }
 }

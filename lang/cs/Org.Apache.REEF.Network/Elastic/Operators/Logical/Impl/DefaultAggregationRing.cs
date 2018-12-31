@@ -87,7 +87,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             confBuilder
                 .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultAggregationRing<T>>.Class)
-                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableMutableObject<GroupCommunicationMessage>>.Class);
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableMutableObject<ElasticGroupCommunicationMessage>>.Class);
 
             SetMessageType(typeof(Physical.Impl.DefaultAggregationRing<T>), ref confBuilder);
         }

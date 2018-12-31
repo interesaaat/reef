@@ -45,7 +45,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
         /// </summary>
         /// <param name="elements">The messages to reduce</param>
         /// <returns>The reduced message</returns>
-        internal void OnlineReduce(Queue<Tuple<string, GroupCommunicationMessage>> elements, DataMessage<T> next)
+        internal void OnlineReduce(Queue<Tuple<string, ElasticGroupCommunicationMessage>> elements, DataMessage<T> next)
         {
             if (RequireSorting)
             {
@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
                 next.Data = Combine(next.Data, dataElement.Data);
             }
 
-            elements.Enqueue(Tuple.Create(string.Empty, next as GroupCommunicationMessage));
+            elements.Enqueue(Tuple.Create(string.Empty, next as ElasticGroupCommunicationMessage));
         }
 
         /// <summary>
@@ -80,7 +80,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical
         /// </summary>
         /// <param name="elements">The messages to reduce</param>
         /// <returns>The reduced message</returns>
-        internal GroupCommunicationMessage Reduce(Queue<Tuple<string, GroupCommunicationMessage>> elements)
+        internal ElasticGroupCommunicationMessage Reduce(Queue<Tuple<string, ElasticGroupCommunicationMessage>> elements)
         {
             IEnumerator<DataMessage<T>> messages;
             DataMessage<T> ground = null;

@@ -59,8 +59,8 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="retry">How many times the topology will retry to send a message</param>
         /// <param name="timeout">After how long the topology waits for an event</param>
         /// <param name="disposeTimeout">Maximum wait time for topology disposal</param>
-        /// <param name="commLayer">Service responsible for communication</param>
-        /// <param name="checkpointLayer">Service responsible for saving and retrieving checkpoints</param>
+        /// <param name="commLayer">Layer responsible for communication</param>
+        /// <param name="checkpointLayer">Layer responsible for saving and retrieving checkpoints</param>
         public OneToNTopology(
             string stageName,
             string taskId,
@@ -215,7 +215,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// Handler for incoming messages from other topology nodes.
         /// </summary>
         /// <param name="message">The message that need to be devlivered to the operator</param>
-        public override void OnNext(NsMessage<GroupCommunicationMessage> message)
+        public override void OnNext(NsMessage<ElasticGroupCommunicationMessage> message)
         {
             if (_messageQueue.IsAddingCompleted)
             {
@@ -270,7 +270,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     {
                         if (_sendQueue.Count > 0)
                         {
-                            if (_sendQueue.TryPeek(out GroupCommunicationMessage toSendmsg))
+                            if (_sendQueue.TryPeek(out ElasticGroupCommunicationMessage toSendmsg))
                             {
                                 var rmsg = message as TopologyMessagePayload;
 

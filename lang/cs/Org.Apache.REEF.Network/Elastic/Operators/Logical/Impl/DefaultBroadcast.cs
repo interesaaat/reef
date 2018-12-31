@@ -26,7 +26,6 @@ using Org.Apache.REEF.Network.Elastic.Comm.Impl;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl;
 using static Org.Apache.REEF.Network.Elastic.Config.OperatorParameters;
 using System.Globalization;
-using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Tang.Implementations.Configuration;
 
@@ -36,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
     /// Driver-side broadcast operator implementation.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    class DefaultBroadcast<T> : DefaultOneToN<T>, IElasticBroadcast
+    internal sealed class DefaultBroadcast<T> : DefaultOneToN<T>, IElasticBroadcast
     {
         /// <summary>
         /// Constructor for a driver-side broadcast opearator.
@@ -85,7 +84,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             confBuilder
                 .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultBroadcast<T>>.Class)
-                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<GroupCommunicationMessage>>.Class);
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableImmutableObject<ElasticGroupCommunicationMessage>>.Class);
 
             if (_topology is TreeTopology)
             {

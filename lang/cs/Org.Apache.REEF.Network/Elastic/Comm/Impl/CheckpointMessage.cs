@@ -21,11 +21,11 @@ using Org.Apache.REEF.Utilities.Attributes;
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Message used to communicated checkpoints between nodes in order to
+    /// Message used to communicate checkpoints between nodes in order to
     /// recover execution.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal sealed class CheckpointMessage : GroupCommunicationMessage
+    internal sealed class CheckpointMessage : ElasticGroupCommunicationMessage
     {
         /// <summary>
         /// Constructor for a message containig a checkpoint.

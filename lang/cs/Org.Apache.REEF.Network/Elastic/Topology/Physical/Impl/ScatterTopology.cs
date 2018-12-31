@@ -77,7 +77,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         protected override void Send(CancellationTokenSource cancellationSource)
         {
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
             int retry = 0;
 
             if (_sendQueue.TryPeek(out message))

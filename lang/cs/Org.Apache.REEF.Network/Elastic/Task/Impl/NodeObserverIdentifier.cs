@@ -22,7 +22,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
     /// An identifier for a given node in the group communication graph.
-    /// A node is uniquely identifiable by a combination of its Task ID, 
+    /// A node is uniquely identifiable by a combination of its 
     /// <see cref="StageName"/>, and <see cref="OperatorName"/>.
     /// </summary>
     internal sealed class NodeObserverIdentifier
@@ -49,19 +49,24 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// <summary>
         /// Creates a NodeObserverIdentifier from a group communication message.
         /// </summary>
-        public static NodeObserverIdentifier FromMessage(GroupCommunicationMessage message)
+        public static NodeObserverIdentifier FromMessage(ElasticGroupCommunicationMessage message)
         {
             return new NodeObserverIdentifier(message.StageName, message.OperatorId);
         }
 
-        private NodeObserverIdentifier(string stageName, int operatorName)
+        /// <summary>
+        /// Basic constructor.
+        /// </summary>
+        /// <param name="stageName">The name of the stage</param>
+        /// <param name="operatorId">The identifier of the operator</param>
+        private NodeObserverIdentifier(string stageName, int operatorId)
         {
             _stageName = stageName;
-            _operatorId = operatorName;
+            _operatorId = operatorId;
         }
 
         /// <summary>
-        /// The group name of the node.
+        /// The stage name.
         /// </summary>
         public string StageName
         {
@@ -69,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// The operator name of the node.
+        /// The operator name.
         /// </summary>
         public int OperatorId
         {

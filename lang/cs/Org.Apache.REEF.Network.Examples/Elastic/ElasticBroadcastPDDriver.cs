@@ -131,7 +131,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastPDMasterTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<ElasticDriverMessageHandler>.Class)
                     .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDMasterTask>.Class)
                     .Build(), masterDataSet.First().GetPartitionConfiguration())
                 .Build();
@@ -140,7 +140,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<BroadcastPDSlaveTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<ElasticDriverMessageHandler>.Class)
                     .Set(TaskConfiguration.OnClose, GenericType<BroadcastPDSlaveTask>.Class)
                     .Build())
                 .Build();

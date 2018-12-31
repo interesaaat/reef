@@ -107,7 +107,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherMasterTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<ElasticDriverMessageHandler>.Class)
                     .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherMasterTask>.Class)
                     .Build())
                 .BindNamedParameter<ElasticServiceConfigurationOptions.NumEvaluators, int>(
@@ -119,7 +119,7 @@ namespace Org.Apache.REEF.Network.Examples.Elastic
                 TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
                     .Set(TaskConfiguration.Task, GenericType<IterateBroadcastGatherSlaveTask>.Class)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<ElasticDriverMessageHandler>.Class)
                     .Set(TaskConfiguration.OnClose, GenericType<IterateBroadcastGatherSlaveTask>.Class)
                     .Build())
                 .Build();

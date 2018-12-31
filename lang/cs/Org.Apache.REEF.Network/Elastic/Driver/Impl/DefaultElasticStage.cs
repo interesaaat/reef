@@ -44,7 +44,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// This class is used to create stages able to manage default failure events.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    public sealed class DefaultElasticStage : IElasticStage, IDefaultFailureEventResponse
+    internal sealed class DefaultElasticStage : IElasticStage, IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultElasticStage));
 
@@ -85,7 +85,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             _masterTasks = new HashSet<string>();
             _datasetConfiguration = Optional<IConfiguration[]>.Empty();
             IsCompleted = false;
-            Service = elasticService;
+            Context = elasticService;
             _defaultFailureMachine = failureMachine ?? new DefaultFailureStateMachine(numTasks, DefaultFailureStates.Fail);
             FailureState = _defaultFailureMachine.State;
             RootOperator = new DefaultEmpty(this, _defaultFailureMachine.Clone());
@@ -106,7 +106,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         /// <summary>
         /// The service managing the stages.
         /// </summary
-        public IElasticContext Service { get; private set; }
+        public IElasticContext Context { get; private set; }
 
         /// <summary>
         /// Whether the stages contains iterations or not.

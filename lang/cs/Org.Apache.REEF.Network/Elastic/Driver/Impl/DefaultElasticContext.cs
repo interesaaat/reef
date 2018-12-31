@@ -51,7 +51,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
     /// Also manages configurations for Elastic Group Communication operators/contexts.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    public sealed class DefaultElasticContext : IElasticContext, IDefaultFailureEventResponse
+    internal sealed class DefaultElasticContext : IElasticContext, IDefaultFailureEventResponse
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultElasticContext));
 
@@ -204,7 +204,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             return TaskConfiguration.ConfigurationModule
                     .Set(TaskConfiguration.Identifier, taskId)
-                    .Set(TaskConfiguration.OnMessage, GenericType<DriverMessageHandler>.Class)
+                    .Set(TaskConfiguration.OnMessage, GenericType<ElasticDriverMessageHandler>.Class)
                     .Set(TaskConfiguration.OnClose, GenericType<Task.Impl.DefaultElasticContext>.Class);
         }
 
@@ -258,7 +258,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
         {
             IConfiguration contextConfig = ServiceConfiguration.ConfigurationModule
                 .Set(ServiceConfiguration.Services,
-                    GenericType<StreamingNetworkService<GroupCommunicationMessage>>.Class)
+                    GenericType<StreamingNetworkService<ElasticGroupCommunicationMessage>>.Class)
                 .Build();
 
             return TangFactory.GetTang().NewConfigurationBuilder(contextConfig)

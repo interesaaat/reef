@@ -29,7 +29,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
     /// <summary>
     /// Used to group elastic operators into logical units. 
     /// All operators in the same stages share similar semantics and behavior 
-    /// under failures. Stages can only be created by a service.
+    /// under failures. Stages can only be created by a context.
     /// </summary>
     [Unstable("0.16", "API may change")]
     public interface IElasticStage : IFailureResponse, ITaskMessageResponse
@@ -50,9 +50,9 @@ namespace Org.Apache.REEF.Network.Elastic.Driver
         IFailureState FailureState { get; }
 
         /// <summary>
-        /// The service managing the stages.
+        /// The context where the stage is created.
         /// </summary>
-        IElasticContext Service { get; }
+        IElasticContext Context { get; }
 
         /// <summary>
         /// Whether the stages is completed or not.

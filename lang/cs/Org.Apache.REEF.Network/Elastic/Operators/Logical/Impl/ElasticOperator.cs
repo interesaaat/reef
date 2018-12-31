@@ -665,7 +665,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                 operatorConf = Configurations.Merge(operatorConf, conf);
             }
 
-            Stage.Service.SerializeOperatorConfiguration(ref serializedOperatorsConfs, operatorConf);
+            Stage.Context.SerializeOperatorConfiguration(ref serializedOperatorsConfs, operatorConf);
         }
 
         /// <summary>

@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly Dictionary<string, IElasticStage> _stages;
         private readonly string _taskId;
 
-        private readonly INetworkService<GroupCommunicationMessage> _networkService;
+        private readonly INetworkService<ElasticGroupCommunicationMessage> _networkService;
 
         private readonly object _lock;
         private bool _disposed;
@@ -55,10 +55,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         public DefaultElasticContext(
             [Parameter(typeof(ElasticServiceConfigurationOptions.SerializedStageConfigs))] ISet<string> stageConfigs,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            StreamingNetworkService<GroupCommunicationMessage> networkService,
+            StreamingNetworkService<ElasticGroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
             TaskToDriverMessageDispatcher taskToDriverDispatcher, // Otherwise the correct instance does not propagate through
-            DriverMessageHandler ringDriverSource,
+            ElasticDriverMessageHandler ringDriverSource,
             CentralizedCheckpointLayer checkpointService,
             IInjector injector)
         {

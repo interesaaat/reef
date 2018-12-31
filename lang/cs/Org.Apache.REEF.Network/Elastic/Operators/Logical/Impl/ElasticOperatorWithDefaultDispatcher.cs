@@ -238,7 +238,6 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         /// <summary>
         /// Used to react when a timeout event is triggered.
-        /// It gets a failed task as input and in response it produces zero or more failure events.
         /// </summary>
         /// <param name="alarm">The alarm triggering the timeput</param>
         /// <param name="msgs">A list of messages encoding how remote Tasks need to reach</param>

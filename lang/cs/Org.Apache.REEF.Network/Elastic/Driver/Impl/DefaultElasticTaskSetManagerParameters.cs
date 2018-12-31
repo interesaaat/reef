@@ -17,21 +17,18 @@
 
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Wake.Time;
-using System;
-using Org.Apache.REEF.Wake.Time.Event;
 using System.Threading.Tasks;
 using Org.Apache.REEF.Network.Elastic.Failures.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
 
 namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
 {
-    class ElasticTaskSetManagerParameters
+    /// <summary>
+    /// Injectable class containing all the parameters for the default task set manager.
+    /// </summary>
+    internal sealed class DefaultElasticTaskSetManagerParameters
     {
-        private FailuresClock _clock;
-
         [Inject]
-        public ElasticTaskSetManagerParameters(
+        private DefaultElasticTaskSetManagerParameters(
             FailuresClock clock,
             [Parameter(typeof(ElasticServiceConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retry,
@@ -43,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorNumCores))] int numCores,
             [Parameter(typeof(ElasticServiceConfigurationOptions.NewEvaluatorMemorySize))] int memorySize)
         {
-            _clock = clock;
+            Clock = clock;
             Timeout = timeout;
             Retry = retry;
             WaitTime = waitTime;
@@ -54,35 +51,57 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             NewEvaluatorNumCores = numCores;
             NewEvaluatorMemorySize = memorySize;
 
-            System.Threading.Tasks.Task.Factory.StartNew(() => _clock.Run(), TaskCreationOptions.LongRunning);
+            System.Threading.Tasks.Task.Factory.StartNew(() => Clock.Run(), TaskCreationOptions.LongRunning);
         }
 
-        internal int Timeout { get; private set; }
+        /// <summary>
+        /// The clock for scheduling alarms.
+        /// </summary>
+        public FailuresClock Clock { get; private set; }
 
-        internal int Retry { get; private set; }
+        /// <summary>
+        /// Timeout after which computation is considered inactive.
+        /// </summary>
+        public int Timeout { get; private set; }
 
-        internal int WaitTime { get; private set; }
+        /// <summary>
+        /// How many times a message communication can be retried.
+        /// </summary>
+        public int Retry { get; private set; }
 
-        internal int NumTaskFailures { get; private set; }
+        /// <summary>
+        /// How much time to wait between messages retry.
+        /// </summary>
+        public int WaitTime { get; private set; }
 
-        internal int NumEvaluatorFailures { get; private set; }
+        /// <summary>
+        /// Supported number of task failures.
+        /// </summary>
+        public int NumTaskFailures { get; private set; }
 
-        internal string NewEvaluatorRackName { get; private set; }
+        /// <summary>
+        /// Supported number of evaluator failures.
+        /// </summary>
+        public int NumEvaluatorFailures { get; private set; }
 
-        internal string NewEvaluatorBatchId { get; private set; }
+        /// <summary>
+        /// The rack name when spawning new evaluators.
+        /// </summary>
+        public string NewEvaluatorRackName { get; private set; }
 
-        internal int NewEvaluatorNumCores { get; private set; }
+        /// <summary>
+        /// The batch id when spawning new evaluators.
+        /// </summary>
+        public string NewEvaluatorBatchId { get; private set; }
 
-        internal int NewEvaluatorMemorySize { get; private set; }
+        /// <summary>
+        /// Number of cores for new evaluators.
+        /// </summary>
+        public int NewEvaluatorNumCores { get; private set; }
 
-        internal void ScheduleAlarm(long timeout, IObserver<Alarm> alarm)
-        {
-            _clock.ScheduleAlarm(timeout, alarm);
-        }
-
-        internal void ScheduleAlarm(ITimeout timeout)
-        {
-            _clock.ScheduleAlarm(timeout);
-        }
+        /// <summary>
+        /// Memory size for new evaluators.
+        /// </summary>
+        public int NewEvaluatorMemorySize { get; private set; }
     }
 }

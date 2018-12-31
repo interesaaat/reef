@@ -24,14 +24,14 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
     /// Message sent by Group Communication operators. 
     /// </summary>
     [Unstable("0.16", "API may change")]
-    public abstract class GroupCommunicationMessage : ICloneable
+    public abstract class ElasticGroupCommunicationMessage : ICloneable
     {
         /// <summary>
-        /// Create a new Group Communication Message.
+        /// Create a new elastic group communication message.
         /// </summary>
         /// <param name="stageName">The name of the stage</param>
         /// <param name="operatorId">The id of the operator sending the message</param>
-        protected GroupCommunicationMessage(
+        protected ElasticGroupCommunicationMessage(
             string stageName,
             int operatorId)
         {
@@ -45,11 +45,11 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         public abstract object Clone();
 
         /// <summary>
-        /// Returns the Stage.
+        /// Returns the stage.
         internal string StageName { get; private set; }
 
         /// <summary>
-        /// Returns the Operator id.
+        /// Returns the operator id.
         /// </summary>
         internal int OperatorId { get; private set; }
     }

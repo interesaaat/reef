@@ -38,7 +38,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
     /// Writable version
     /// </summary>
     internal sealed class CommunicationLayer : 
-        IObserver<IRemoteMessage<NsMessage<GroupCommunicationMessage>>>
+        IObserver<IRemoteMessage<NsMessage<ElasticGroupCommunicationMessage>>>
     {
         private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
 
@@ -46,9 +46,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly int _retryRegistration;
         private readonly int _retrySending;
         private readonly int _sleepTime;
-        private readonly StreamingNetworkService<GroupCommunicationMessage> _networkService;
+        private readonly StreamingNetworkService<ElasticGroupCommunicationMessage> _networkService;
         private readonly TaskToDriverMessageDispatcher _taskToDriverDispatcher;
-        private readonly DriverMessageHandler _driverMessagesHandler;
+        private readonly ElasticDriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
         private readonly CentralizedCheckpointLayer _checkpointService;
 
@@ -69,9 +69,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryRegistration,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
             [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retrySending,
-            StreamingNetworkService<GroupCommunicationMessage> networkService,
+            StreamingNetworkService<ElasticGroupCommunicationMessage> networkService,
             TaskToDriverMessageDispatcher taskToDriverDispatcher,
-            DriverMessageHandler driverMessagesHandler,
+            ElasticDriverMessageHandler driverMessagesHandler,
             CentralizedCheckpointLayer checkpointService,
             IIdentifierFactory idFactory)
         {
@@ -127,7 +127,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// included in the message.
         /// </summary>
         /// <param name="message">The message to send.</param>
-        internal void Send(string destination, GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
+        internal void Send(string destination, ElasticGroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
             if (message == null)
             {
@@ -162,7 +162,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         /// Forward the received message to the target <see cref="OperatorTopologyWithCommunication"/>.
         /// </summary>
         /// <param name="remoteMessage"></param>
-        public void OnNext(IRemoteMessage<NsMessage<GroupCommunicationMessage>> remoteMessage)
+        public void OnNext(IRemoteMessage<NsMessage<ElasticGroupCommunicationMessage>> remoteMessage)
         {
             if (_disposed)
             {
@@ -340,7 +340,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _networkService.RemoveConnection(destId);
         }
 
-        private bool Send(IIdentifier destId, GroupCommunicationMessage message)
+        private bool Send(IIdentifier destId, ElasticGroupCommunicationMessage message)
         {
             var connection = _networkService.NewConnection(destId);
             try

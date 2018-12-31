@@ -69,7 +69,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 
         public string OperatorName { get; protected set; }
 
-        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
+        private List<ElasticGroupCommunicationMessage> CheckpointedMessages { get; set; }
 
         public string FailureInfo
         {
@@ -172,7 +172,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal void Checkpoint(GroupCommunicationMessage data, int iteration)
+        internal void Checkpoint(ElasticGroupCommunicationMessage data, int iteration)
         {
             if (_checkpointableState.Level > CheckpointLevel.None)
             {

@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         private readonly ConcurrentDictionary<int, byte> _outOfOrderTopologyRemove;
         private readonly object _lock;
 
-        private readonly Queue<Tuple<string, GroupCommunicationMessage>> _aggregationQueueData;
+        private readonly Queue<Tuple<string, ElasticGroupCommunicationMessage>> _aggregationQueueData;
         private readonly HashSet<string> _aggregationQueueSources;
         private readonly ConcurrentDictionary<string, byte> _toRemove;
 
@@ -78,7 +78,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 _aggregationQueueSources.Add(TaskId);
             }
 
-            _aggregationQueueData = new Queue<Tuple<string, GroupCommunicationMessage>>();
+            _aggregationQueueData = new Queue<Tuple<string, ElasticGroupCommunicationMessage>>();
 
             _commLayer.RegisterOperatorTopologyForTask(this);
             _commLayer.RegisterOperatorTopologyForDriver(this);
@@ -146,7 +146,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             return _checkpointService.GetCheckpoint(out checkpoint, TaskId, StageName, OperatorId, iteration, false);
         }
 
-        public override void OnNext(NsMessage<GroupCommunicationMessage> message)
+        public override void OnNext(NsMessage<ElasticGroupCommunicationMessage> message)
         {
             if (_messageQueue.IsAddingCompleted)
             {
@@ -253,7 +253,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             Reduce();
         }
 
-        public override void Send(GroupCommunicationMessage message, CancellationTokenSource cancellationSource)
+        public override void Send(ElasticGroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
             if (_requestUpdate)
             {
@@ -278,7 +278,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         protected override void Send(CancellationTokenSource cancellationSource)
         {
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
             while (_sendQueue.TryDequeue(out message) && !cancellationSource.IsCancellationRequested)
             {
                 Console.WriteLine("reduce sending to {0}", RootTaskId);
@@ -286,7 +286,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             }
         }
 
-        private void Merge(GroupCommunicationMessage message, string taskId)
+        private void Merge(ElasticGroupCommunicationMessage message, string taskId)
         {
             lock (_lock)
             {
@@ -321,7 +321,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 if (_topologyUpdateReceived.WaitOne(1) && _aggregationQueueSources.Where(x => !_toRemove.TryGetValue(x, out byte val)).Count() > _children.Where(x => !_toRemove.TryGetValue(x.Value, out byte val)).Count())
                 {
-                    GroupCommunicationMessage finalAggregatedMessage;
+                    ElasticGroupCommunicationMessage finalAggregatedMessage;
                     if (_reducer.CanMerge)
                     {
                         finalAggregatedMessage = _aggregationQueueData.Dequeue().Item2;

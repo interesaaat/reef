@@ -53,11 +53,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             reader.Read(ref metadata, 0, metadataSize);
-            var res = MetaDataDecoding(metadata);
-
-            string stageName = res.Item1;
-            int operatorId = res.Item2;
-            int iteration = res.Item3;
+            var (stageName, operatorId, iteration, updates) = MetaDataDecoding(metadata);
             var data = _codec.Read(reader);
 
             return new DataMessageWithTopology<T>(stageName, operatorId, iteration, data);
@@ -89,15 +85,10 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             int metadataSize = await reader.ReadInt32Async(token);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
-            var res = MetaDataDecoding(metadata);
-            
+            var (stageName, operatorId, iteration, updates) = MetaDataDecoding(metadata);
             var data = await _codec.ReadAsync(reader, token);
-            string stageString = res.Item1;
-            int operatorId = res.Item2;
-            int iteration = res.Item3;
-            List<TopologyUpdate> update = res.Item4;
 
-            return new DataMessageWithTopology<T>(stageString, operatorId, iteration, data, update);
+            return new DataMessageWithTopology<T>(stageName, operatorId, iteration, data, updates);
         }
 
         /// <summary>
@@ -143,19 +134,19 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return buffer;
         }
 
-        private static Tuple<string, int, int, List<TopologyUpdate>> MetaDataDecoding(byte[] obj)
+        private static (string stageName, int operatorId, int iteration, List<TopologyUpdate> updates) MetaDataDecoding(byte[] obj)
         {
             int offset = 0;
             int stageLength = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
-            string stageString = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
+            string stageName = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
             offset += stageLength;
 
-            int operatorInt = BitConverter.ToInt32(obj, offset);
+            int operatorId = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
-            int iterationInt = BitConverter.ToInt32(obj, offset);
+            int iteration = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
             int length = BitConverter.ToInt32(obj, offset);
@@ -163,7 +154,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 
             var updates = TopologyUpdate.Deserialize(obj, length, offset);
 
-            return new Tuple<string, int, int, List<TopologyUpdate>>(stageString, operatorInt, iterationInt, updates);
+            return (stageName, operatorId, iteration, updates);
         }
     }
 }

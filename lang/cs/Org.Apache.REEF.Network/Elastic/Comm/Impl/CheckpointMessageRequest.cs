@@ -20,10 +20,10 @@ using Org.Apache.REEF.Utilities.Attributes;
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Messages sent a checkpoint service to retrieve a remote checkpoint.
+    /// Message sent to checkpoint service to retrieve a remote checkpoint.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal sealed class CheckpointMessageRequest : GroupCommunicationMessage
+    internal sealed class CheckpointMessageRequest : ElasticGroupCommunicationMessage
     {
         /// <summary>
         /// Constructor.

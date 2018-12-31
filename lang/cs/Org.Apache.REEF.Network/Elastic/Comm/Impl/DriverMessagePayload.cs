@@ -24,7 +24,7 @@ namespace Org.Apache.REEF.Network.Elastic.Comm
     /// Payload for messages going from the driver to tasks.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    public abstract class DriverMessagePayload : GroupCommunicationMessage
+    public abstract class DriverMessagePayload : ElasticGroupCommunicationMessage
     {
         /// <summary>
         /// Construct a payload for messages created at the driver and directed to tasks.

@@ -107,7 +107,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// <summary>
         /// The set of messages checkpointed in memory.
         /// </summary>
-        private List<GroupCommunicationMessage> CheckpointedMessages { get; set; }
+        private List<ElasticGroupCommunicationMessage> CheckpointedMessages { get; set; }
 
         /// <summary>
         /// Receive a message from neighbors broadcasters.
@@ -200,7 +200,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
         /// </summary>
         /// <param name="data">The messages to checkpoint</param>
         /// <param name="iteration">The iteration of the checkpoint</param>
-        internal void Checkpoint(GroupCommunicationMessage data, int iteration)
+        internal void Checkpoint(ElasticGroupCommunicationMessage data, int iteration)
         {
             if (_checkpointableState.Level > CheckpointLevel.None)
             {

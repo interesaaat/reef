@@ -81,7 +81,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="cancellationSource">The source in case the task is cancelled</param>
         protected override void Send(CancellationTokenSource cancellationSource)
         {
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
             int retry = 0;
 
             // Check if we have a message to send

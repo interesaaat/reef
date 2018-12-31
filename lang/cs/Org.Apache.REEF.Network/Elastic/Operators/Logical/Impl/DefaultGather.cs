@@ -57,7 +57,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
         {
             confBuilder
                 .BindImplementation(GenericType<IElasticTypedOperator<T>>.Class, GenericType<Physical.Impl.DefaultGather<T>>.Class)
-                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableMutableObject<GroupCommunicationMessage>>.Class)
+                .BindImplementation(GenericType<ICheckpointableState>.Class, GenericType<CheckpointableMutableObject<ElasticGroupCommunicationMessage>>.Class)
                 .BindNamedParameter<OperatorParameters.RequestTopologyUpdate, bool>(
                     GenericType<OperatorParameters.RequestTopologyUpdate>.Class,
                     (_topology.GetType() == typeof(TreeTopology)).ToString(CultureInfo.InvariantCulture));

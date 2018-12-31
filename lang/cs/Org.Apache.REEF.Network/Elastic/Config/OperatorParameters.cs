@@ -40,7 +40,7 @@ namespace Org.Apache.REEF.Network.Elastic.Config
         {
         }
 
-        [NamedParameter("Name of the stages")]
+        [NamedParameter("Name of the stage")]
         public sealed class StageName : Name<string>
         {
         }

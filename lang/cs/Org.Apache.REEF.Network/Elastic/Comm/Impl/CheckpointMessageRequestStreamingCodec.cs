@@ -26,12 +26,12 @@ using Org.Apache.REEF.Utilities;
 namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
 {
     /// <summary>
-    /// Streaming Codec for the Group Communication Message
+    /// Streaming codec for the checkpoint message request
     /// </summary>
     internal sealed class CheckpointMessageRequestStreamingCodec : IStreamingCodec<CheckpointMessageRequest>
     {
         /// <summary>
-        /// Empty constructor to allow instantiation by reflection
+        /// Empty constructor to allow instantiation by reflection.
         /// </summary>
         [Inject]
         private CheckpointMessageRequestStreamingCodec()
@@ -41,18 +41,14 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// <summary>
         /// Read the class fields.
         /// </summary>
-        /// <param name="reader">The reader from which to read </param>
-        /// <returns>The Group Communication Message</returns>
+        /// <param name="reader">The reader from which to read</param>
+        /// <returns>The checkpoint message request</returns>
         public CheckpointMessageRequest Read(IDataReader reader)
         {
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             reader.Read(ref metadata, 0, metadataSize);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
-
-            string stageName = res.Item1;
-            int operatorId = res.Item2;
-            int iteration = res.Item3;
+            var (stageName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
 
             return new CheckpointMessageRequest(stageName, operatorId, iteration);
         }
@@ -74,20 +70,16 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
         /// </summary>
         /// <param name="reader">The reader from which to read </param>
         /// <param name="token">The cancellation token</param>
-        /// <returns>The Group Communication Message</returns>
+        /// <returns>The checkpoint message request</returns>
         public async Task<CheckpointMessageRequest> ReadAsync(IDataReader reader,
             CancellationToken token)
         {
             int metadataSize = reader.ReadInt32() + sizeof(int) + sizeof(int);
             byte[] metadata = new byte[metadataSize];
             await reader.ReadAsync(metadata, 0, metadataSize, token);
-            var res = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
-            
-            string stageString = res.Item1;
-            int operatorId = res.Item2;
-            int iteration = res.Item3;
+            var (stageName, operatorId, iteration) = GenerateMetaDataDecoding(metadata, metadataSize - sizeof(int) - sizeof(int));
 
-            return new CheckpointMessageRequest(stageString, operatorId, iteration);
+            return new CheckpointMessageRequest(stageName, operatorId, iteration);
         }
 
         /// <summary>
@@ -124,18 +116,18 @@ namespace Org.Apache.REEF.Network.Elastic.Comm.Impl
             return metadataBytes;
         }
 
-        private static Tuple<string, int, int> GenerateMetaDataDecoding(byte[] obj, int stageLength)
+        private static (string stageName, int operatorId, int iteration) GenerateMetaDataDecoding(byte[] obj, int stageLength)
         {
             int offset = 0;
-            string stageString = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
+            string stageName = ByteUtilities.ByteArraysToString(obj, offset, stageLength);
             offset += stageLength;
 
-            int operatorInt = BitConverter.ToInt32(obj, offset);
+            int operatorId = BitConverter.ToInt32(obj, offset);
             offset += sizeof(int);
 
             int iteration = BitConverter.ToInt32(obj, offset);
 
-            return new Tuple<string, int, int>(stageString, operatorInt, iteration);
+            return (stageName, operatorId, iteration);
         }
     }
 }

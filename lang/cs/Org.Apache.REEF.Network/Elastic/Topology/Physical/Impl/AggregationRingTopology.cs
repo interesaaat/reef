@@ -65,9 +65,9 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
         internal IElasticOperator Operator { get; set; }
 
-        public override GroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
+        public override ElasticGroupCommunicationMessage Receive(CancellationTokenSource cancellationSource)
         {
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
 
             _messageQueue.TryTake(out message, Timeout.Infinite, cancellationSource.Token);
 
@@ -153,7 +153,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             _initialized = true;
         }
 
-        public override void OnNext(NsMessage<GroupCommunicationMessage> message)
+        public override void OnNext(NsMessage<ElasticGroupCommunicationMessage> message)
         {
             if (!_initialized)
             {
@@ -196,7 +196,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                         {
                             LOGGER.Log(Level.Info, "Going to resume ring computation for " + rmsg.NextTaskId);
 
-                            if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                            if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(ElasticGroupCommunicationMessage[]))
                             {
                                 LOGGER.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
                                 _commLayer.NextDataRequest(TaskId, rmsg.Iteration);
@@ -205,7 +205,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                             var cancellationSource = new CancellationTokenSource();
 
-                            foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                            foreach (var data in checkpoint.State as ElasticGroupCommunicationMessage[])
                             {
                                 _commLayer.Send(rmsg.NextTaskId, data, cancellationSource);
                             }
@@ -221,7 +221,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                         ICheckpointState checkpoint;
 
-                        if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(GroupCommunicationMessage[]))
+                        if (!GetCheckpoint(out checkpoint, destMessage.Iteration) || checkpoint.State.GetType() != typeof(ElasticGroupCommunicationMessage[]))
                         {
                             var splits = Operator.FailureInfo.Split(':');
 
@@ -237,7 +237,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 
                         var cancellationSource = new CancellationTokenSource();
 
-                        foreach (var data in checkpoint.State as GroupCommunicationMessage[])
+                        foreach (var data in checkpoint.State as ElasticGroupCommunicationMessage[])
                         {
                             _commLayer.Send(destMessage.NextTaskId, data, cancellationSource);
                         }
@@ -265,7 +265,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         protected override void Send(CancellationTokenSource cancellationSource)
         {
             int retry = 0;
-            GroupCommunicationMessage message;
+            ElasticGroupCommunicationMessage message;
             string nextNode;
 
             if (_sendQueue.TryPeek(out message))

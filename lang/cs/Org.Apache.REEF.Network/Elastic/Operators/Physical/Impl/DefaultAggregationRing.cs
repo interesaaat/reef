@@ -164,7 +164,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
             _topology.Dispose();
         }
 
-        internal void Checkpoint(GroupCommunicationMessage data, int iteration)
+        internal void Checkpoint(ElasticGroupCommunicationMessage data, int iteration)
         {
             if (CheckpointLevel > CheckpointLevel.None)
             {

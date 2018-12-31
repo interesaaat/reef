@@ -74,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Failures
         /// to be sent among nodes to recover computation.
         /// </summary>
         /// <returns>A checkpoint ready to be communicated</returns>
-        public GroupCommunicationMessage ToMessage()
+        public ElasticGroupCommunicationMessage ToMessage()
         {
             return new CheckpointMessage(this);
         }
