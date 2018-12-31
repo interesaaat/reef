@@ -34,7 +34,7 @@ using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal class AggregationRingTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
+    internal class AggregationRingTopology : OperatorTopologyWithDefaultCommunication, ICheckpointingTopology
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(AggregationRingTopology));
 
@@ -51,7 +51,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.DisposeTimeout))] int disposeTimeout,
-            CommunicationLayer commLayer,
+            DefaultCommunicationLayer commLayer,
             CentralizedCheckpointLayer checkpointService) : base(taskId, Utils.BuildTaskId(stageName, rootId), stageName, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _next = new BlockingCollection<string>();
@@ -199,7 +199,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             if (!GetCheckpoint(out ICheckpointState checkpoint, rmsg.Iteration) || checkpoint.State.GetType() != typeof(ElasticGroupCommunicationMessage[]))
                             {
                                 LOGGER.Log(Level.Warning, "Failure recovery from state not available: propagating the request");
-                                _commLayer.NextDataRequest(TaskId, rmsg.Iteration);
+                                _commLayer.NextDataRequest(TaskId, StageName, rmsg.Iteration);
                                 return;
                             }
 
@@ -231,7 +231,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                                 iteration--;
                             }
                             LOGGER.Log(Level.Warning, "I am blocked as well: propagating the request");
-                            _commLayer.NextDataRequest(TaskId, iteration);
+                            _commLayer.NextDataRequest(TaskId, StageName, iteration);
                             return;
                         }
 
@@ -258,7 +258,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                 {
                     _messageQueue.Take();
                 }
-                _commLayer.JoinTopology(TaskId, OperatorId);
+                _commLayer.JoinTopology(TaskId, StageName, OperatorId);
             }
         }
 
@@ -272,7 +272,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             {
                 var dm = message as DataMessage;
 
-                _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
+                _commLayer.TopologyUpdateRequest(TaskId, StageName, OperatorId);
 
                 while (!_next.TryTake(out nextNode, _timeout))
                 {
@@ -290,7 +290,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                             "Iteration {0}: Failed to send message to the next node in the ring after {1} try", dm.Iteration, _retry));
                     }
 
-                    _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
+                    _commLayer.TopologyUpdateRequest(TaskId, StageName, OperatorId);
                 }
 
                 _sendQueue.TryDequeue(out message);

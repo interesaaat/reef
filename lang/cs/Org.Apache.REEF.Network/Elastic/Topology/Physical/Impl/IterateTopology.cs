@@ -41,7 +41,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(IterateTopology));
 
-        private readonly CommunicationLayer _commLayer;
+        private readonly DefaultCommunicationLayer _commLayer;
 
         [Inject]
         private IterateTopology(
@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             [Parameter(typeof(OperatorParameters.TopologyRootTaskId))] int rootId,
             [Parameter(typeof(OperatorParameters.OperatorId))] int operatorId,
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
-            CommunicationLayer commLayer,
+            DefaultCommunicationLayer commLayer,
             ICheckpointLayer checkpointService) : base(taskId, Utils.BuildTaskId(stageName, rootId), stageName, operatorId)
         {
             _commLayer = commLayer;
@@ -74,7 +74,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (TaskId == RootTaskId)
             {
-                _commLayer.IterationNumber(TaskId, OperatorId, iteration);
+                _commLayer.IterationNumber(TaskId, StageName, OperatorId, iteration);
             }
         }
 

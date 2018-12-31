@@ -32,7 +32,7 @@ using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 
 namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
 {
-    internal abstract class NToOneTopology<T> : OperatorTopologyWithCommunication, ICheckpointingTopology
+    internal abstract class NToOneTopology<T> : OperatorTopologyWithDefaultCommunication, ICheckpointingTopology
     {
         protected static readonly Logger LOGGER = Logger.GetLogger(typeof(NToOneTopology<>));
 
@@ -59,7 +59,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int timeout,
             int disposeTimeout,
             ReduceFunction<T> reduceFunction,
-            CommunicationLayer commLayer,
+            DefaultCommunicationLayer commLayer,
             CentralizedCheckpointLayer checkpointService) : base(taskId, rootTaskId, stage, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _reducer = reduceFunction;

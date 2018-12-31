@@ -40,7 +40,6 @@ namespace Org.Apache.REEF.Network.NetworkService
         private readonly INameClient _nameClient;
         private readonly IRemoteManager<NsMessage<T>> _remoteManager;
         private IObserver<NsMessage<T>> _remoteSender;
-        private bool _isOpen;
 
         /// <summary>
         /// Creates a new NsConnection between two hosts.
@@ -61,10 +60,12 @@ namespace Org.Apache.REEF.Network.NetworkService
             _destId = destId;
             _nameClient = nameClient;
             _remoteManager = remoteManager;
-            _isOpen = false;
-            IsOpen = _isOpen;
+            IsOpen = false;
         }
 
+        /// <summary>
+        /// Whether the connection is open or not.
+        /// </summary>
         public bool IsOpen { get; private set; }
 
         /// <summary>

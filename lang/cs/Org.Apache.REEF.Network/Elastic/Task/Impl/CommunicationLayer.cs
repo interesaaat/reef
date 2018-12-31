@@ -20,57 +20,53 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using Org.Apache.REEF.Network.NetworkService;
-using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Wake.Remote;
 using Org.Apache.REEF.Wake;
-using Org.Apache.REEF.Network.Elastic.Config;
 using Org.Apache.REEF.Utilities.Logging;
 using System.Threading;
 using Org.Apache.REEF.Tang.Exceptions;
 using Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl;
-using Org.Apache.REEF.Network.Elastic.Failures;
 using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Network.Elastic.Topology.Physical;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Handles all incoming messages for this Task.
-    /// Writable version
+    /// Handles all incoming / outcoming messages for a given task.
     /// </summary>
-    internal sealed class CommunicationLayer : 
+    internal abstract class CommunicationLayer : 
         IObserver<IRemoteMessage<NsMessage<ElasticGroupCommunicationMessage>>>
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(CommunicationLayer));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(CommunicationLayer));
 
         private readonly int _timeout;
         private readonly int _retryRegistration;
         private readonly int _retrySending;
         private readonly int _sleepTime;
         private readonly StreamingNetworkService<ElasticGroupCommunicationMessage> _networkService;
-        private readonly TaskToDriverMessageDispatcher _taskToDriverDispatcher;
+        protected readonly DefaultTaskToDriverMessageDispatcher _taskToDriverDispatcher;
         private readonly ElasticDriverMessageHandler _driverMessagesHandler;
         private readonly IIdentifierFactory _idFactory;
-        private readonly CentralizedCheckpointLayer _checkpointService;
-
-        private bool _disposed;
-        private IDisposable _disposableObserver;
-
-        private readonly ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication> _groupMessageObservers =
-            new ConcurrentDictionary<NodeObserverIdentifier, OperatorTopologyWithCommunication>();
-
+        private IDisposable _communicationObserver;
         private readonly ConcurrentDictionary<NodeObserverIdentifier, DriverAwareOperatorTopology> _driverMessageObservers;
 
+        protected readonly CentralizedCheckpointLayer _checkpointService;
+
+        protected bool _disposed;
+
+        protected readonly ConcurrentDictionary<NodeObserverIdentifier, IOperatorTopologyWithCommunication> _groupMessageObservers =
+            new ConcurrentDictionary<NodeObserverIdentifier, IOperatorTopologyWithCommunication>();
+
         /// <summary>
-        /// Creates a new GroupCommNetworkObserver.
+        /// Creates a new communication layer.
         /// </summary>
-        [Inject]
-        private CommunicationLayer(
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.RetryCountWaitingForRegistration))] int retryRegistration,
-            [Parameter(typeof(GroupCommunicationConfigurationOptions.SleepTimeWaitingForRegistration))] int sleepTime,
-            [Parameter(typeof(ElasticServiceConfigurationOptions.SendRetry))] int retrySending,
+        protected CommunicationLayer(
+            int timeout,
+            int retryRegistration,
+            int sleepTime,
+            int retrySending,
             StreamingNetworkService<ElasticGroupCommunicationMessage> networkService,
-            TaskToDriverMessageDispatcher taskToDriverDispatcher,
+            DefaultTaskToDriverMessageDispatcher taskToDriverDispatcher,
             ElasticDriverMessageHandler driverMessagesHandler,
             CentralizedCheckpointLayer checkpointService,
             IIdentifierFactory idFactory)
@@ -88,58 +84,59 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
             _disposed = false;
 
-            _disposableObserver = _networkService.RemoteManager.RegisterObserver(this);
+            _communicationObserver = _networkService.RemoteManager.RegisterObserver(this);
             _driverMessageObservers = _driverMessagesHandler.DriverMessageObservers;
         }
 
         /// <summary>
-        /// Registers a <see cref="OperatorTopologyWithCommunication"/> for a given <see cref="taskDestinationId"/>.
-        /// If the <see cref="OperatorTopologyWithCommunication"/> has already been initialized, it will return
-        /// the existing one.
+        /// Registers a <see cref="IOperatorTopologyWithCommunication"/> with the communication layer.
         /// </summary>
-        public void RegisterOperatorTopologyForTask(OperatorTopologyWithCommunication operatorObserver)
+        /// <param name="operatorObserver">The observer of the communicating topology operator</param>
+        public void RegisterOperatorTopologyForTask(IOperatorTopologyWithCommunication operatorObserver)
         {
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
             if (_groupMessageObservers.ContainsKey(id))
             {
-                throw new IllegalStateException("Topology for id " + id + " already added among listeners");
+                throw new IllegalStateException($"Topology for id {id} already added among listeners.");
             }
 
             _groupMessageObservers.TryAdd(id, operatorObserver);
         }
 
+        /// <summary>
+        /// Registers a <see cref="DriverAwareOperatorTopology"/> with the communication layer.
+        /// </summary>
+        /// <param name="operatorObserver">The observer of the driver aware topology</param>
         internal void RegisterOperatorTopologyForDriver(DriverAwareOperatorTopology operatorObserver)
         {
-            // Add a TaskMessage observer for each upstream/downstream source.
             var id = NodeObserverIdentifier.FromObserver(operatorObserver);
 
             if (_driverMessageObservers.ContainsKey(id))
             {
-                throw new IllegalStateException("Topology for id " + id + " already added among driver listeners");
+                throw new IllegalStateException($"Topology for id {id} already added among driver listeners.");
             }
 
             _driverMessageObservers.TryAdd(id, operatorObserver);
         }
 
         /// <summary>
-        /// Send the GroupCommunicationMessage to the Task whose name is
-        /// included in the message.
+        /// Send the communication message to the task whose name is included in the message.
         /// </summary>
-        /// <param name="message">The message to send.</param>
+        /// <param name="message">The message to send</param>
         internal void Send(string destination, ElasticGroupCommunicationMessage message, CancellationTokenSource cancellationSource)
         {
             if (message == null)
             {
-                throw new ArgumentNullException("message");
+                throw new ArgumentNullException(nameof(message));
             }
             if (string.IsNullOrEmpty(destination))
             {
-                throw new ArgumentException("Message destination cannot be null or empty");
+                throw new ArgumentException("Message destination cannot be null or empty.");
             }
             if (_disposed)
             {
-                Logger.Log(Level.Warning, "Received send message request after disposing: Ignoring");
+                LOGGER.Log(Level.Warning, "Received send message request after disposing: Ignoring.");
                 return;
             }
 
@@ -150,7 +147,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             {
                 if (retry > _retrySending)
                 {
-                    throw new IllegalStateException("Unable to send message after " + retry + " retry");
+                    throw new IllegalStateException($"Unable to send message after retying {retry} times.");
                 }
                 Thread.Sleep(_timeout);
 
@@ -159,83 +156,87 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// Forward the received message to the target <see cref="OperatorTopologyWithCommunication"/>.
+        /// Forward the received message to the target <see cref="IOperatorTopologyWithCommunication"/>.
         /// </summary>
-        /// <param name="remoteMessage"></param>
-        public void OnNext(IRemoteMessage<NsMessage<ElasticGroupCommunicationMessage>> remoteMessage)
+        /// <param name="remoteMessage">The received message</param>
+        public abstract void OnNext(IRemoteMessage<NsMessage<ElasticGroupCommunicationMessage>> remoteMessage);
+
+        /// <summary>
+        /// Checks if the identifier is registered with the name server.
+        /// Throws exception if the operation fails more than the retry count.
+        /// </summary>
+        /// <param name="identifiers">The identifier to look up</param>
+        /// <param name="cancellationSource">The token to cancel the operation</param>
+        public void WaitForTaskRegistration(IList<string> identifiers, CancellationTokenSource cancellationSource, ConcurrentDictionary<string, byte> removed = null)
         {
-            if (_disposed)
+            if (removed == null)
             {
-                Logger.Log(Level.Warning, "Received message after disposing: Ignoring");
-                return;
+                removed = new ConcurrentDictionary<string, byte>();
             }
 
-            var nsMessage = remoteMessage.Message;
-            var gcm = nsMessage.Data;
-            var gcMessageTaskSource = nsMessage.SourceId.ToString();
-
-            if (gcm.GetType() == typeof(CheckpointMessageRequest))
+            IList<string> foundList = new List<string>();
+            for (var i = 0; i < _retryRegistration; i++)
             {
-                Logger.Log(Level.Info, "Received checkpoint request from " + gcMessageTaskSource);
-
-                var cpm = gcm as CheckpointMessageRequest;
-                ICheckpointState checkpoint;
-                if (_checkpointService.GetCheckpoint(out checkpoint, nsMessage.DestId.ToString(), cpm.StageName, cpm.OperatorId, cpm.Iteration))
+                if (cancellationSource != null && cancellationSource.Token.IsCancellationRequested)
                 {
-                    CheckpointMessage returnMessage = checkpoint.ToMessage() as CheckpointMessage;
-                    var cancellationSource = new CancellationTokenSource();
-
-                    returnMessage.Checkpoint = checkpoint;
-
-                    Send(gcMessageTaskSource, returnMessage, cancellationSource);
+                    LOGGER.Log(Level.Warning, $"WaitForTaskRegistration is canceled in retryCount {i}.");
+                    throw new OperationCanceledException("WaitForTaskRegistration is canceled");
                 }
 
-                return;
+                LOGGER.Log(Level.Info, $"WaitForTaskRegistration, in retryCount {i}.");
+                foreach (var identifier in identifiers)
+                {
+                    var notFound = !foundList.Contains(identifier);
+                    if (notFound && removed.ContainsKey(identifier))
+                    {
+                        foundList.Add(identifier);
+                        LOGGER.Log(Level.Verbose, $"WaitForTaskRegistration, dependent id {identifier} was removed at loop {i}.");
+                    }
+                    else if (notFound && Lookup(identifier))
+                    {
+                        foundList.Add(identifier);
+                        LOGGER.Log(Level.Verbose, $"WaitForTaskRegistration, find a dependent id {identifier} at loop {i}.");
+                    }
+                }
+
+                if (foundList.Count >= identifiers.Count)
+                {
+                    LOGGER.Log(Level.Info, $"WaitForTaskRegistration, found all {foundList.Count} dependent ids at loop {i}.");
+                    return;
+                }
+
+                Thread.Sleep(_sleepTime);
             }
-            if (gcm.GetType() == typeof(CheckpointMessage))
+
+            ICollection<string> leftovers = foundList.Count == 0 ? identifiers : identifiers.Where(e => !foundList.Contains(e)).ToList();
+            var msg = string.Join(",", leftovers);
+
+            LOGGER.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);
+            throw new Exception("Failed to find parent/children nodes");
+        }
+
+        /// <summary>
+        /// Look up an identifier with the name server.
+        /// </summary>
+        /// <param name="identifier">The identifier to look up</param>
+        /// <returns></returns>
+        public bool Lookup(string identifier)
+        {
+            if (_disposed || _networkService == null)
             {
-                Logger.Log(Level.Info, "Received checkpoint from " + gcMessageTaskSource);
-                var cpm = gcm as CheckpointMessage;
-                _checkpointService.Checkpoint(cpm.Checkpoint);
-                return;
+                return false;
             }
-            
-            // Data message
-            var id = NodeObserverIdentifier.FromMessage(gcm);
-            OperatorTopologyWithCommunication operatorObserver;
-
-            if (!_groupMessageObservers.TryGetValue(id, out operatorObserver))
-            {
-                throw new KeyNotFoundException("Unable to find registered Operator Topology for Stage " +
-                    gcm.StageName + " operator " + gcm.OperatorId);
-            }
-
-            operatorObserver.OnNext(nsMessage);
+            return _networkService.NamingClient.Lookup(identifier) != null;
         }
 
-        internal void TopologyUpdateRequest(string taskId, int operatorId)
+        /// <summary>
+        /// Remove the connection to the target destination.
+        /// </summary>
+        /// <param name="destination">The node to remove the connection</param>
+        public void RemoveConnection(string destination)
         {
-            _taskToDriverDispatcher.TopologyUpdateRequest(taskId, operatorId);
-        }
-
-        internal void NextDataRequest(string taskId, int iteration)
-        {
-            _taskToDriverDispatcher.NextDataRequest(taskId, iteration);
-        }
-
-        public void IterationNumber(string taskId, int operatorId, int iteration)
-        {
-            _taskToDriverDispatcher.IterationNumber(taskId, operatorId, iteration);
-        }
-
-        public void JoinTopology(string taskId, int operatorId)
-        {
-            _taskToDriverDispatcher.JoinTopology(taskId, operatorId);
-        }
-
-        public void StageComplete(string taskId)
-        {
-            _taskToDriverDispatcher.SignalStageComplete(taskId);
+            IIdentifier destId = _idFactory.Create(destination);
+            _networkService.RemoveConnection(destId);
         }
 
         public void OnError(Exception error)
@@ -250,6 +251,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        /// <summary>
+        /// Dispose the connection layer.
+        /// </summary>
         public void Dispose()
         {
             if (!_disposed)
@@ -260,89 +264,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 
                 _checkpointService.Dispose();
 
-                _disposableObserver.Dispose();
+                _communicationObserver.Dispose();
 
                 _disposed = true;
 
-                Logger.Log(Level.Info, "Group communication layer disposed.");
+                LOGGER.Log(Level.Info, "Communication layer disposed.");
             }
-        }
-
-        /// <summary>
-        /// Checks if the identifier is registered with the Name Server.
-        /// Throws exception if the operation fails more than the retry count.
-        /// </summary>
-        /// <param name="identifiers">The identifier to look up</param>
-        /// <param name="cancellationSource">The token to cancel the operation</param>
-        internal void WaitForTaskRegistration(IList<string> identifiers, CancellationTokenSource cancellationSource, ConcurrentDictionary<string, byte> removed = null)
-        {
-            if (removed == null)
-            {
-                removed = new ConcurrentDictionary<string, byte>();
-            }
-
-            using (Logger.LogFunction("CommunicationLayer::WaitForTaskRegistration"))
-            {
-                IList<string> foundList = new List<string>();
-                for (var i = 0; i < _retryRegistration; i++)
-                {
-                    if (cancellationSource != null && cancellationSource.Token.IsCancellationRequested)
-                    {
-                        Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration is canceled in retryCount {0}.", i);
-                        throw new OperationCanceledException("WaitForTaskRegistration is canceled");
-                    }
-
-                    Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, in retryCount {0}.", i);
-                    foreach (var identifier in identifiers)
-                    {
-                        var notFound = !foundList.Contains(identifier);
-                        if (notFound && removed.ContainsKey(identifier))
-                        {
-                            foundList.Add(identifier);
-                            Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, dependent id {0} was removed at loop {1}.", identifier, i);
-                        }
-                        else if (notFound && Lookup(identifier))
-                        {
-                            foundList.Add(identifier);
-                            Logger.Log(Level.Verbose, "OperatorTopology.WaitForTaskRegistration, find a dependent id {0} at loop {1}.", identifier, i);
-                        }
-                    }
-
-                    if (foundList.Count >= identifiers.Count)
-                    {
-                        Logger.Log(Level.Info, "OperatorTopology.WaitForTaskRegistration, found all {0} dependent ids at loop {1}.", foundList.Count, i);
-                        return;
-                    }
-
-                    Thread.Sleep(_sleepTime);
-                }
-
-                ICollection<string> leftovers = foundList.Count == 0 ? identifiers : identifiers.Where(e => !foundList.Contains(e)).ToList();
-                var msg = string.Join(",", leftovers);
-
-                Logger.Log(Level.Error, "Cannot find registered parent/children: {0}.", msg);
-                throw new Exception("Failed to find parent/children nodes");
-            }
-        }
-
-        internal bool Lookup(string identifier)
-        {
-            if (_disposed || _networkService == null)
-            {
-                return false;
-            }
-            return _networkService.NamingClient.Lookup(identifier) != null;
-        }
-
-        internal void RemoveConnection(string destination)
-        {
-            IIdentifier destId = _idFactory.Create(destination);
-            _networkService.RemoveConnection(destId);
         }
 
         private bool Send(IIdentifier destId, ElasticGroupCommunicationMessage message)
         {
             var connection = _networkService.NewConnection(destId);
+
             try
             {
                 if (!connection.IsOpen)
@@ -351,11 +284,11 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 }
 
                 connection.Write(message);
-                Console.WriteLine("message sent to {0}", destId);
+                LOGGER.Log(Level.Verbose, $"message sent to {destId}");
             }
             catch (Exception e)
             {
-                Logger.Log(Level.Warning, "Unable to send message " + e.Message);
+                LOGGER.Log(Level.Warning, "Unable to send message " + e.Message);
                 connection.Dispose();
                 return false;
             }

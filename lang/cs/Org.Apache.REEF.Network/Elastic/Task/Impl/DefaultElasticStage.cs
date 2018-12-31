@@ -111,7 +111,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             {
                 _cancellationSource.Cancel();
 
-                Logger.Log(Level.Info, "Received request to close Stage", StageName);
+                Logger.Log(Level.Info, "Received request to close stage ", StageName);
             }
         }
     }

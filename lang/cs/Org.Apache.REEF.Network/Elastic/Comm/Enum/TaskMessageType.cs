@@ -19,6 +19,9 @@ using Org.Apache.REEF.Utilities.Attributes;
 
 namespace Org.Apache.REEF.Network.Elastic.Comm.Enum
 {
+    /// <summary>
+    /// Supported type of messages between task and driver.
+    /// </summary>
     [Unstable("0.16", "Types may change")]
     internal enum TaskMessageType : ushort
     {

@@ -15,32 +15,29 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Common.Protobuf.ReefProtocol;
-using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Tang.Interface;
+using Org.Apache.REEF.Network.Elastic.Comm.Impl;
+using Org.Apache.REEF.Network.Elastic.Task;
+using Org.Apache.REEF.Network.NetworkService;
+using System;
 
-namespace Org.Apache.REEF.Common.Runtime.Evaluator
+namespace Org.Apache.REEF.Network.Elastic.Topology.Physical
 {
-    public class HeartBeatReference
+    /// <summary>
+    /// Base interface for topologies where nodes communicate betwen themselves.
+    /// </summary>
+    internal interface IOperatorTopologyWithCommunication :
+        IWaitForTaskRegistration,
+        IDisposable,
+        IObserver<NsMessage<ElasticGroupCommunicationMessage>>
     {
-        private readonly IHeartBeatManager _heartBeatManager;
+        /// <summary>
+        /// The stage name context in which the topology is running.
+        /// </summary>
+        string StageName { get; }
 
-        [Inject]
-        internal HeartBeatReference(IInjector subInjector)
-        {
-            _heartBeatManager = subInjector.GetInstance<IHeartBeatManager>();
-        }
-
-        public void Heartbeat(TaskStatusProto proto)
-        {
-            var state = _heartBeatManager.ContextManager.GetTaskState();
-
-            if (state.IsPresent())
-            {
-                proto.state = state.Value;
-            }
-
-            _heartBeatManager.OnNext(proto);
-        }
+        /// <summary>
+        /// The identifier of the operator in which the topology is running.
+        /// </summary>
+        int OperatorId { get; }
     }
 }

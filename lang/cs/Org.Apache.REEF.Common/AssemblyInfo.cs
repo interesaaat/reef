@@ -15,29 +15,6 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using System;
+using System.Runtime.CompilerServices;
 
-namespace Org.Apache.REEF.Network.NetworkService
-{
-    /// <summary>
-    /// Represents a connection between two endpoints named by identifiers
-    /// </summary>
-    public interface IConnection<T> : IDisposable
-    {
-        /// <summary>
-        /// Opens the connection
-        /// </summary>
-        void Open();
-
-        /// <summary>
-        /// Writes the object to the connection
-        /// </summary>
-        /// <param name="obj">The message to send</param>
-        void Write(T obj);
-
-        /// <summary>
-        /// Whether the connection is open or not.
-        /// </summary>
-        bool IsOpen { get; }
-    }
-}
+[assembly: InternalsVisibleTo("Org.Apache.REEF.Network")]

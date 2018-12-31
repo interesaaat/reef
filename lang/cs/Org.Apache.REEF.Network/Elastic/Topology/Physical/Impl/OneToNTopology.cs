@@ -37,7 +37,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     /// Base class for topologies following a one to N communication pattern.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal abstract class OneToNTopology : OperatorTopologyWithCommunication, ICheckpointingTopology
+    internal abstract class OneToNTopology : OperatorTopologyWithDefaultCommunication, ICheckpointingTopology
     {
         protected static readonly Logger LOGGER = Logger.GetLogger(typeof(OneToNTopology));
 
@@ -71,7 +71,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
             int retry,
             int timeout,
             int disposeTimeout,
-            CommunicationLayer commLayer,
+            DefaultCommunicationLayer commLayer,
             ICheckpointLayer checkpointLayer) : base(stageName, taskId, rootTaskId, operatorId, commLayer, retry, timeout, disposeTimeout)
         {
             _checkpointLayer = checkpointLayer;

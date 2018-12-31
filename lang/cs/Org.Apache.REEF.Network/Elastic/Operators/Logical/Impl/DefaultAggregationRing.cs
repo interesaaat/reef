@@ -94,13 +94,16 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
-            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
+            var offset = BitConverter.ToUInt16(message.Message, 0);
+            offset += sizeof(ushort);
+            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, offset);
+            offset += sizeof(ushort);
 
             switch (msgReceived)
             {
                 case TaskMessageType.JoinTopology:
                     {
-                        var operatorId = BitConverter.ToInt16(message.Message, sizeof(ushort));
+                        var operatorId = BitConverter.ToInt16(message.Message, offset);
 
                         if (operatorId != _id)
                         {
@@ -118,7 +121,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.TopologyUpdateRequest:
                     {
-                        var operatorId = BitConverter.ToInt16(message.Message, sizeof(ushort));
+                        var operatorId = BitConverter.ToInt16(message.Message, offset);
 
                         if (operatorId != _id)
                         {
@@ -142,7 +145,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
                     }
                 case TaskMessageType.NextDataRequest:
                     {
-                        var iteration = BitConverter.ToInt16(message.Message, sizeof(ushort));
+                        var iteration = BitConverter.ToInt16(message.Message, offset);
                         LOGGER.Log(Level.Info, "Received next data request from {0} for iteration {1}", message.TaskId, iteration);
 
                         RingTopology.ResumeRing(ref returnMessages, message.TaskId, iteration);

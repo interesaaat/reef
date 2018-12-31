@@ -148,19 +148,23 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl
 
         protected override bool ReactOnTaskMessage(ITaskMessage message, ref List<IElasticDriverMessage> returnMessages)
         {
-            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, 0);
+            var offset = BitConverter.ToUInt16(message.Message, 0);
+            offset += sizeof(ushort);
+            var msgReceived = (TaskMessageType)BitConverter.ToUInt16(message.Message, offset);
+            offset += sizeof(ushort);
 
             switch (msgReceived)
             {
                 case TaskMessageType.IterationNumber:
-                    var operatorId = BitConverter.ToInt16(message.Message, sizeof(ushort));
+                    var operatorId = BitConverter.ToInt16(message.Message, offset);
+                    offset += sizeof(ushort);
 
                     if (operatorId != _id)
                     {
                         return false;
                     }
 
-                    var newIteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, sizeof(ushort) + sizeof(ushort)));
+                    var newIteration = Math.Max(_iteration, BitConverter.ToUInt16(message.Message, offset));
 
                     if (_iteration < newIteration)
                     {

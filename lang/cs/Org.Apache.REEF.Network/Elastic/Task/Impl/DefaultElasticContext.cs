@@ -57,7 +57,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(TaskConfigurationOptions.Identifier))] string taskId,
             StreamingNetworkService<ElasticGroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
-            TaskToDriverMessageDispatcher taskToDriverDispatcher, // Otherwise the correct instance does not propagate through
+            DefaultTaskToDriverMessageDispatcher taskToDriverDispatcher, // Otherwise the correct instance does not propagate through
             ElasticDriverMessageHandler ringDriverSource,
             CentralizedCheckpointLayer checkpointService,
             IInjector injector)

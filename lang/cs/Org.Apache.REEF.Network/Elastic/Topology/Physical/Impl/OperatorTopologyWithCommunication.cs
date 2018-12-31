@@ -33,15 +33,13 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
     /// and to the driver.
     /// </summary>
     [Unstable("0.16", "API may change")]
-    internal abstract class OperatorTopologyWithCommunication : 
+    internal abstract class OperatorTopologyWithDefaultCommunication : 
         DriverAwareOperatorTopology,
-        IWaitForTaskRegistration,
-        IDisposable,
-        IObserver<NsMessage<ElasticGroupCommunicationMessage>>
+        IOperatorTopologyWithCommunication
     {
         protected bool _initialized;
 
-        protected CommunicationLayer _commLayer;
+        protected DefaultCommunicationLayer _commLayer;
 
         protected readonly int _disposeTimeout;
         protected readonly int _timeout;
@@ -63,12 +61,12 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// <param name="timeout">After how long the topology waits for an event</param>
         /// <param name="disposeTimeout">Maximum wait time for topology disposal</param>
         /// <param name="commLayer">Class responsible for communication</param>
-        public OperatorTopologyWithCommunication(
+        public OperatorTopologyWithDefaultCommunication(
             string stageName,
             string taskId, 
             string rootTaskId, 
             int operatorId, 
-            CommunicationLayer commLayer, 
+            DefaultCommunicationLayer commLayer, 
             int retry, 
             int timeout, 
             int disposeTimeout) : base(stageName, taskId, rootTaskId, operatorId)
@@ -95,7 +93,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         {
             if (TaskId == RootTaskId)
             {
-                _commLayer.StageComplete(TaskId);
+                _commLayer.StageComplete(TaskId, StageName);
             }
         }
 
@@ -104,7 +102,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// </summary>
         public void TopologyUpdateRequest()
         {
-            _commLayer.TopologyUpdateRequest(TaskId, OperatorId);
+            _commLayer.TopologyUpdateRequest(TaskId, StageName, OperatorId);
         }
 
         /// <summary>
@@ -126,7 +124,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
         /// </summary>
         public virtual void JoinTopology()
         {
-            _commLayer.JoinTopology(TaskId, OperatorId);
+            _commLayer.JoinTopology(TaskId, StageName, OperatorId);
         }
 
         /// <summary>
@@ -173,7 +171,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Physical.Impl
                     throw new Exception($"Failed to receive message after {_retry} try.");
                 }
 
-                _commLayer.NextDataRequest(TaskId, -1);
+                _commLayer.NextDataRequest(TaskId, StageName);
             }
 
             return message;
