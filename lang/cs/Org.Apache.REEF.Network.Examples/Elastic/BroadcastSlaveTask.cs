@@ -16,83 +16,40 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
-using System.Threading;
 using Org.Apache.REEF.Network.Elastic.Operators;
-using Org.Apache.REEF.Common.Tasks.Events;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastSlaveTask : ITask, IObserver<ICloseEvent>
+    public sealed class BroadcastSlaveTask : DefaultElasticTask
     {
-        private readonly IElasticContext _contextClient;
-        private readonly IElasticStage _stageClient;
-
-        private readonly CancellationTokenSource _cancellationSource;
 
         [Inject]
-        public BroadcastSlaveTask(
-            IElasticContext serviceClient)
+        public BroadcastSlaveTask(CancellationSource source, IElasticContext context)
+            : base(source, context, "Broadcast")
         {
-            _contextClient = serviceClient;
-            _cancellationSource = new CancellationTokenSource();
-
-            _stageClient = _contextClient.GetStage("Broadcast");
         }
 
-        public byte[] Call(byte[] memento)
+        protected override void Execute(byte[] memento, Workflow workflow)
         {
-            _contextClient.WaitForTaskRegistration(_cancellationSource);
-
-            using (var workflow = _stageClient.Workflow)
+            while (workflow.MoveNext())
             {
-                try
+                switch (workflow.Current.OperatorName)
                 {
-                    while (workflow.MoveNext())
-                    {
-                        switch (workflow.Current.OperatorName)
-                        {
-                            case Constants.Broadcast:
-                                var receiver = workflow.Current as IElasticBroadcast<int>;
+                    case Constants.Broadcast:
+                        var receiver = workflow.Current as IElasticBroadcast<int>;
 
-                                var rec = receiver.Receive();
+                        var rec = receiver.Receive();
 
-                                Console.WriteLine("Slave has received {0}", rec);
-                                break;
-                            default:
-                                break;
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    workflow.Throw(e);
+                        Console.WriteLine("Slave has received {0}", rec);
+                        break;
+                    default:
+                        break;
                 }
             }
-
-            return null;
-        }
-
-        public void Dispose()
-        {
-            _cancellationSource.Cancel();
-            _contextClient.Dispose();
-        }
-
-        public void OnNext(ICloseEvent value)
-        {
-            _stageClient.Cancel();
-        }
-
-        public void OnError(Exception error)
-        {
-        }
-
-        public void OnCompleted()
-        {
         }
     }
 }

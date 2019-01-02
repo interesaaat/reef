@@ -358,7 +358,7 @@ namespace Org.Apache.REEF.Network.Elastic.Driver.Impl
             int offset = 0;
             var length = BitConverter.ToUInt16(message.Message, offset);
             offset += sizeof(ushort);
-            var stageName = BitConverter.ToString(message.Message, sizeof(ushort), length);
+            var stageName = ByteUtilities.ByteArraysToString(message.Message, offset, length);
             offset += length;
 
             if (stageName == StageName)

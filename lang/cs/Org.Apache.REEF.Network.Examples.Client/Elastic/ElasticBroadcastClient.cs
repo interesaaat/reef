@@ -66,13 +66,13 @@ namespace Org.Apache.REEF.Network.Examples.Client.Elastic
                     portRange.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            IConfiguration groupCommDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
+            IConfiguration elsticGroupCommServiceDriverConfig = TangFactory.GetTang().NewConfigurationBuilder()
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DriverId>(driverId)
                 .BindStringNamedParam<ElasticServiceConfigurationOptions.DefaultStageName>(stage)
                 .BindIntNamedParam<ElasticServiceConfigurationOptions.NumberOfTasks>(numTasks.ToString(CultureInfo.InvariantCulture))
                 .Build();
 
-            IConfiguration merged = Configurations.Merge(driverConfig, groupCommDriverConfig);
+            IConfiguration merged = Configurations.Merge(driverConfig, elsticGroupCommServiceDriverConfig);
 
             string runPlatform = runOnYarn ? "yarn" : "local";
             TestRun(merged, typeof(ElasticBroadcastDriver), numTasks, "ElasticBroadcastDriver", runPlatform);

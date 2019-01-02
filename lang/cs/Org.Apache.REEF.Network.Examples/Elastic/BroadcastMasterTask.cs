@@ -16,75 +16,44 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Common.Tasks;
 using Org.Apache.REEF.Tang.Annotations;
 using Org.Apache.REEF.Network.Elastic.Task;
-using System.Threading;
-using Org.Apache.REEF.Common.Tasks.Events;
 using Org.Apache.REEF.Network.Elastic.Operators;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical;
+using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
-    public class BroadcastMasterTask : ITask
+    public sealed class BroadcastMasterTask : DefaultElasticTask
     {
-        private readonly IElasticContext _contextClient;
-        private readonly IElasticStage _stageClient;
-
-        private readonly CancellationTokenSource _cancellationSource;
-
         [Inject]
-        public BroadcastMasterTask(
-            IElasticContext serviceClient)
+        private BroadcastMasterTask(CancellationSource source, IElasticContext context) 
+            : base(source, context, "Broadcast")
         {
-            _contextClient = serviceClient;
-            _cancellationSource = new CancellationTokenSource();
-
-            _stageClient = _contextClient.GetStage("Broadcast");
         }
 
-        public byte[] Call(byte[] memento)
+        protected override void Execute(byte[] memento, Workflow workflow)
         {
-            _contextClient.WaitForTaskRegistration(_cancellationSource);
-
             var rand = new Random();
             int number = 0;
 
-            using (var workflow = _stageClient.Workflow)
+            while (workflow.MoveNext())
             {
-                try
+                number = rand.Next();
+
+                switch (workflow.Current.OperatorName)
                 {
-                    while (workflow.MoveNext())
-                    {
-                        number = rand.Next();
+                    case Constants.Broadcast:
+                        var sender = workflow.Current as IElasticBroadcast<int>;
 
-                        switch (workflow.Current.OperatorName)
-                        {
-                            case Constants.Broadcast:
-                                var sender = workflow.Current as IElasticBroadcast<int>;
+                        sender.Send(number);
 
-                                sender.Send(number);
-
-                                Console.WriteLine("Master has sent {0}", number);
-                                break;
-                            default:
-                                throw new InvalidOperationException("Operation " + workflow.Current + " in workflow not implemented");
-                        }
-                    }
-                }
-                catch (Exception e)
-                {
-                    workflow.Throw(e);
+                        Console.WriteLine($"Master has sent {number}");
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Operation {workflow.Current} in workflow not implemented.");
                 }
             }
-
-            return null;
-        }
-
-        public void Dispose()
-        {
-            _cancellationSource.Cancel();
-            _contextClient.Dispose();
         }
     }
 }

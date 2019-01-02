@@ -370,7 +370,7 @@ namespace Org.Apache.REEF.Network.Elastic.Topology.Logical.Impl
 
         public string LogFinalStatistics()
         {
-            return string.Format("\nAverage number of nodes in the topology of Operator {0}: {1}", OperatorId, (float)_totNumberofNodes / (_iteration > 2 ? _iteration - 1 : 1));
+            return $"\nAverage number of nodes in the topology of Operator {OperatorId}: {(_iteration >= 2 ? (float)_totNumberofNodes / (_iteration - 1) : _availableDataPoints)}";
         }
 
         private void BuildTopology(List<DataNode> parents, ref IEnumerator<DataNode> iter)

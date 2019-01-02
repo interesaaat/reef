@@ -29,7 +29,7 @@ using Org.Apache.REEF.Common.Context;
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
     /// <summary>
-    /// Example implementation of broadcasting using the elastic group communication service.
+    /// Default implementation of the elastic driver.
     /// </summary>
     public abstract class DefaultElasticDriver :
         IObserver<IAllocatedEvaluator>,

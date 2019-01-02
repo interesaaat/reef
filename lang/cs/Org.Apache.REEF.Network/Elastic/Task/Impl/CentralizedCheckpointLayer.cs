@@ -54,8 +54,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             [Parameter(typeof(ElasticServiceConfigurationOptions.NumCheckpoints))] int num,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Timeout))] int timeout,
             [Parameter(typeof(GroupCommunicationConfigurationOptions.Retry))] int retry,
-            CancellationSource cancellationSource,
-            CommunicationLayer commLayer)
+            CancellationSource cancellationSource)
         {
             _limit = num;
             _timeout = timeout;

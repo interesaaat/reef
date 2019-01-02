@@ -16,26 +16,15 @@
 // under the License.
 
 using System;
-using Org.Apache.REEF.Driver;
-using Org.Apache.REEF.Driver.Context;
-using Org.Apache.REEF.Driver.Evaluator;
 using Org.Apache.REEF.Tang.Annotations;
-using Org.Apache.REEF.Tang.Implementations.Configuration;
 using Org.Apache.REEF.Tang.Implementations.Tang;
 using Org.Apache.REEF.Tang.Interface;
 using Org.Apache.REEF.Tang.Util;
-using Org.Apache.REEF.Utilities.Logging;
-using Org.Apache.REEF.Wake.StreamingCodec.CommonStreamingCodecs;
 using Org.Apache.REEF.Network.Elastic.Driver;
-using Org.Apache.REEF.Network.Elastic.Driver.Impl;
 using Org.Apache.REEF.Network.Elastic.Operators.Logical.Impl;
-using Org.Apache.REEF.Network.Elastic.Config;
-using Org.Apache.REEF.Driver.Task;
 using Org.Apache.REEF.Common.Tasks;
-using Org.Apache.REEF.Common.Context;
 using Org.Apache.REEF.Network.Elastic.Topology.Logical.Enum;
 using Org.Apache.REEF.Network.Elastic.Failures.Enum;
-using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Examples.Elastic
 {
