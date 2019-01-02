@@ -23,7 +23,7 @@ using Org.Apache.REEF.Common.Tasks.Events;
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    /// Used by Tasks to initialize Group Communication and fetch Stages.
+    /// Used by REEF tasks to initialize group communication and fetch Stages.
     /// </summary>
     [DefaultImplementation(typeof(DefaultElasticContext))]
     public interface IElasticContext : 
@@ -35,7 +35,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task
         /// Gets the stage with the given name.
         /// </summary>
         /// <param name="stageName">The name of the stage</param>
-        /// <returns>The configured stage</returns>
+        /// <returns>The task-side configured stage</returns>
         IElasticStage GetStage(string stageName);
     }
 }

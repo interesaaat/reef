@@ -49,7 +49,7 @@ namespace Org.Apache.REEF.Network.Elastic.Operators.Physical
         IElasticIterator IteratorReference { set; }
 
         /// <summary>
-        /// Cancellation source for stopping the exeuction of the opearator.
+        /// Cancellation source for stopping the exeuction of the operator.
         /// </summary>
         CancellationTokenSource CancellationSource { get; set; }
 

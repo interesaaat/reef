@@ -31,7 +31,12 @@ using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
-    public class Workflow : IEnumerator<IElasticOperator>
+    /// <summary>
+    /// Task-side representation of the the sequence of group communication operations to execute.
+    /// Exception rised during execution are managed by the framework and recovered through the user-defined
+    /// policies / mechanisms.
+    /// </summary>
+    public sealed class Workflow : IEnumerator<IElasticOperator>
     {
         private static readonly Logger LOGGER = Logger.GetLogger(typeof(Workflow));
 
@@ -44,6 +49,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private readonly IList<IElasticOperator> _operators;
         private readonly CancellationSource _cancellationSource;
 
+        /// <summary>
+        /// Injectable constructor.
+        /// </summary>
+        /// <param name="cancellationSource"></param>
         [Inject]
         private Workflow(CancellationSource cancellationSource)
         {
@@ -55,6 +64,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _cancellationSource = cancellationSource;
         }
 
+        /// <summary>
+        /// The current iteration value.
+        /// </summary>
         public object Iteration
         {
             get
@@ -72,27 +84,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
-        public void Add(IElasticOperator op)
-        {
-            op.CancellationSource = _cancellationSource.Source;
-
-            _operators.Add(op);
-
-            if (_iteratorsPosition.Count > 0)
-            {
-                var iterPos = _iteratorsPosition.Last();
-                var iterator = _operators[iterPos] as IElasticIterator;
-
-                op.IteratorReference = iterator;
-                iterator.RegisterActionOnTaskRescheduled(op.OnTaskRescheduled);
-            }
-
-            if (op.OperatorName == Constants.Iterate)
-            {
-                _iteratorsPosition.Add(_operators.Count - 1);
-            }
-        }
-
+        /// <summary>
+        /// Try to move to the next operation in the workflow.
+        /// </summary>
+        /// <returns></returns>
         public bool MoveNext()
         {
             _position++;
@@ -110,7 +105,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                 if (iteratorOperator.MoveNext())
                 {
                     _position++;
-
                     ResetOperatorPositions();
 
                     return true;
@@ -120,7 +114,6 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                     if (_iteratorsPosition.Count > 1)
                     {
                         _iteratorsPosition.RemoveAt(0);
-
                         _position = _iteratorsPosition[0] - 1;
                     }
                     
@@ -146,22 +139,29 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             return true;
         }
 
+        /// <summary>
+        /// Method used to make the framework aware that an exception as been thrown during execution.
+        /// </summary>
+        /// <param name="e">The rised exception</param>
         public void Throw(Exception e)
         {
             if (_cancellationSource.IsCancelled)
             {
-                LOGGER.Log(Level.Warning, "Workflow captured an Exception while Cancellation Source is True", e);
+                LOGGER.Log(Level.Warning, "Workflow captured an exception while cancellation source was true.", e);
             }
             else
             {
-                LOGGER.Log(Level.Error, "Workflow captured an Exception", e);
+                LOGGER.Log(Level.Error, "Workflow captured an exception.", e);
                 _failed = true;
 
                 throw new OperatorException(
-                    "Workflow captured an Exception", Current.OperatorId, e, Current.FailureInfo);
+                    "Workflow captured an exception", Current.OperatorId, e, Current.FailureInfo);
             }     
         }
 
+        /// <summary>
+        /// Start the execution of the workflow from the first operator / iterator.
+        /// </summary>
         public void Reset()
         {
             if (_iteratorsPosition.Count > 0)
@@ -174,11 +174,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        /// <summary>
+        /// Get the current elastic operator.
+        /// </summary>
         public IElasticOperator Current
         {
             get
             {
-                // If the workflow is composed by an iterator operator only, return a empty operator
+                // If the workflow is composed by an iterator operator only, return an empty operator
                 if (_operators.Count == 1 && _iteratorsPosition.Count > 0 &&_iteratorsPosition[0] > 0)
                 {
                     return new EmptyOperator();
@@ -188,6 +191,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        /// <summary>
+        /// Return a state which can be used to checkpoint an object.
+        /// </summary>
+        /// <returns>An object to checkpoint state</returns>
         public ICheckpointableState GetCheckpointableState()
         {
             if (_iteratorsPosition.Count > 0 && _operators[_iteratorsPosition[0]] is ICheckpointingOperator)
@@ -197,14 +204,18 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
                  return checkpointable;
             }
 
-            throw new IllegalStateException("No checkpointable state enabled for this workflow");
+            throw new IllegalStateException("No checkpointable state enabled for this workflow.");
         }
 
+        
         object IEnumerator.Current
         {
             get { return Current; }
         }
 
+        /// <summary>
+        /// Dispose the workflow.
+        /// </summary>
         public void Dispose()
         {
             lock (_lock)
@@ -241,6 +252,36 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        /// <summary>
+        /// Add an elastic operator to the workflow.
+        /// </summary>
+        /// <param name="op"></param>
+        internal void Add(IElasticOperator op)
+        {
+            op.CancellationSource = _cancellationSource.Source;
+
+            _operators.Add(op);
+
+            if (_iteratorsPosition.Count > 0)
+            {
+                var iterPos = _iteratorsPosition.Last();
+                var iterator = _operators[iterPos] as IElasticIterator;
+
+                op.IteratorReference = iterator;
+                iterator.RegisterActionOnTaskRescheduled(op.OnTaskRescheduled);
+            }
+
+            if (op.OperatorName == Constants.Iterate)
+            {
+                _iteratorsPosition.Add(_operators.Count - 1);
+            }
+        }
+
+        /// <summary>
+        /// Initializes the communication group.
+        /// Computation blocks until all required tasks are registered in the group.
+        /// </summary>
+        /// <param name="cancellationSource">The signal to cancel the operation</param>
         internal void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
             try
@@ -256,6 +297,9 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        /// <summary>
+        /// Reset the position tracker for all operators in the workflow.
+        /// </summary>
         private void ResetOperatorPositions()
         {
             for (int pos = _position; pos < _operators.Count; pos++)

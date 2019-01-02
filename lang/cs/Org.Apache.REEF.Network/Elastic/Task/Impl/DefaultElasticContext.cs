@@ -31,7 +31,7 @@ using Org.Apache.REEF.Common.Tasks.Events;
 namespace Org.Apache.REEF.Network.Elastic.Task.Impl
 {
     /// <summary>
-    /// Used by Tasks to fetch Stages.
+    /// Used by REEF tasks to initialize group communication and fetch stages.
     /// </summary>
     internal sealed class DefaultElasticContext : IElasticContext
     {
@@ -44,13 +44,13 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         private bool _disposed;
 
         /// <summary>
-        /// Creates a new DefaultTaskSetService and registers the task ID with the Name Server.
+        /// Creates a new elastic context and registers the task id with the Name Server.
         /// </summary>
         /// <param name="stageConfigs">The set of serialized stages configurations</param>
         /// <param name="taskId">The identifier for this task</param>
         /// <param name="networkService">The writable network service used to send messages</param>
         /// <param name="configSerializer">Used to deserialize service configuration</param>
-        /// <param name="injector">injector forked from the injector that creates this instance</param>
+        /// <param name="injector">Dependency injector</param>
         [Inject]
         public DefaultElasticContext(
             [Parameter(typeof(ElasticServiceConfigurationOptions.SerializedStageConfigs))] ISet<string> stageConfigs,
@@ -58,7 +58,7 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             StreamingNetworkService<ElasticGroupCommunicationMessage> networkService,
             AvroConfigurationSerializer configSerializer,
             DefaultTaskToDriverMessageDispatcher taskToDriverDispatcher, // Otherwise the correct instance does not propagate through
-            ElasticDriverMessageHandler ringDriverSource,
+            ElasticDriverMessageHandler driverMessageHandler,
             CentralizedCheckpointLayer checkpointService,
             IInjector injector)
         {
@@ -82,12 +82,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             _networkService.Register(new StringIdentifier(_taskId));
         }
 
-        public CancellationTokenSource CancellationSource { get; set; }
-
         /// <summary>
         /// This is to ensure all the nodes in the groups are registered before starting communications.
         /// </summary>
-        /// <param name="cancellationSource"></param>
+        /// <param name="cancellationSource">The token used to signal if the operation got cancelled</param>
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
             foreach (var stage in _stages.Values)
@@ -97,10 +95,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
         }
 
         /// <summary>
-        /// Gets the stage client object for the given stage name.
+        /// Gets the stage object for the given stage name.
         /// </summary>
         /// <param name="stagepName">The name of the stage</param>
-        /// <returns>The stage client object</returns>
+        /// <returns>The task-side stage object</returns>
         public IElasticStage GetStage(string stagepName)
         {
             if (string.IsNullOrEmpty(stagepName))
@@ -136,6 +134,10 @@ namespace Org.Apache.REEF.Network.Elastic.Task.Impl
             }
         }
 
+        /// <summary>
+        /// Action to trigger in case a <see cref="ICloseEvent"/> is received.
+        /// </summary>
+        /// <param name="value">The close event</param>
         public void OnNext(ICloseEvent value)
         {
             foreach(var stage in _stages.Values)

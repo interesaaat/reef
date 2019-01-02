@@ -29,17 +29,23 @@ using Org.Apache.REEF.Network.Elastic.Task.Impl;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
-    internal class DefaultTaskSetStage : IElasticStage
+    /// <summary>
+    /// Default implementation of the task-side stage.
+    /// </summary>
+    internal sealed class DefaultElasticStage : IElasticStage
     {
-        private static readonly Logger Logger = Logger.GetLogger(typeof(DefaultTaskSetStage));
+        private static readonly Logger LOGGER = Logger.GetLogger(typeof(DefaultElasticStage));
 
         private readonly CancellationSource _cancellationSource;
 
         private readonly object _lock;
         private bool _disposed;
 
+        /// <summary>
+        /// Injectable constructor.
+        /// </summary>
         [Inject]
-        private DefaultTaskSetStage(
+        private DefaultElasticStage(
            [Parameter(typeof(OperatorParameters.StageName))] string stageName,
            [Parameter(typeof(OperatorParameters.SerializedOperatorConfigs))] IList<string> operatorConfigs,
            [Parameter(typeof(OperatorParameters.StartIteration))] int startIteration,
@@ -72,10 +78,21 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
         }
 
+        /// <summary>
+        /// The stage name.
+        /// </summary>
         public string StageName { get; private set; }
 
+        /// <summary>
+        /// The workflow of the stage.
+        /// </summary>
         public Workflow Workflow { get; private set; }
 
+        /// <summary>
+        /// Initializes the communication group.
+        /// Computation blocks until all required tasks are registered in the group.
+        /// </summary>
+        /// <param name="cancellationSource">The signal to cancel the operation</param>
         public void WaitForTaskRegistration(CancellationTokenSource cancellationSource = null)
         {
             try
@@ -84,11 +101,14 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }
             catch (OperationCanceledException e)
             {
-                Logger.Log(Level.Error, "Stage {0} failed during registration", StageName);
+                LOGGER.Log(Level.Error, "Stage {0} failed during registration", StageName);
                 throw e;
             }
         }
 
+        /// <summary>
+        /// Dispose the stage.
+        /// </summary>
         public void Dispose()
         {
             lock (_lock)
@@ -105,13 +125,16 @@ namespace Org.Apache.REEF.Network.Elastic.Task
             }  
         }
 
+        /// <summary>
+        /// Cancel the execution of stage.
+        /// </summary>
         public void Cancel()
         {
             if (!_cancellationSource.IsCancelled)
             {
                 _cancellationSource.Cancel();
 
-                Logger.Log(Level.Info, "Received request to close stage ", StageName);
+                LOGGER.Log(Level.Info, "Received request to close stage ", StageName);
             }
         }
     }

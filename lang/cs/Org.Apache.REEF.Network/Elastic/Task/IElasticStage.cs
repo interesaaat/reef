@@ -15,33 +15,30 @@
 // specific language governing permissions and limitations
 // under the License.
 
-using Org.Apache.REEF.Network.Elastic.Operators.Physical;
 using Org.Apache.REEF.Network.Elastic.Task.Impl;
-using Org.Apache.REEF.Network.Group.Operators;
 using Org.Apache.REEF.Tang.Annotations;
 using System;
-using System.Collections.Generic;
 
 namespace Org.Apache.REEF.Network.Elastic.Task
 {
     /// <summary>
-    ///  Used by tasks to fetch the workflow of the stages configured by the driver.
+    ///  Used by tasks to fetch the workflow of the stages configured in the driver.
     /// </summary>
-    [DefaultImplementation(typeof(DefaultTaskSetStage))]
+    [DefaultImplementation(typeof(DefaultElasticStage))]
     public interface IElasticStage : IWaitForTaskRegistration, IDisposable
     {
         /// <summary>
-        /// The name of the Stage
+        /// The name of the stage.
         /// </summary>
         string StageName { get; }
 
         /// <summary>
-        /// TODO
+        /// Cacnel the execution of the stage.
         /// </summary>
         void Cancel();
 
         /// <summary>
-        /// The workflow of operators
+        /// The workflow of operators.
         /// </summary>
         Workflow Workflow { get; }
     }

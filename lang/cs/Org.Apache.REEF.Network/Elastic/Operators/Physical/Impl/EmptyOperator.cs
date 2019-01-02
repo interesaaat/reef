@@ -1,13 +1,13 @@
-﻿using Org.Apache.REEF.Network.Elastic.Failures;
-using Org.Apache.REEF.Network.Elastic.Failures.Enum;
+﻿using Org.Apache.REEF.Network.Elastic.Failures.Enum;
 using Org.Apache.REEF.Network.Elastic.Operators.Physical.Enum;
 using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 
 namespace Org.Apache.REEF.Network.Elastic.Operators.Physical.Impl
 {
+    /// <summary>
+    /// Task-side operator used to represent an iterator in the workflow.
+    /// </summary>
     class EmptyOperator : IElasticOperator
     {
         public EmptyOperator()
